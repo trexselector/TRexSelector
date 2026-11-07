@@ -393,7 +393,7 @@ endif()
 # ============================================================================
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set(CPACK_PACKAGE_NAME                 "TRexSelector")
-    set(CPACK_PACKAGE_VENDOR               "Robust Data Science Group - TU Darmstadt")
+    set(CPACK_PACKAGE_VENDOR               "Team T-Rex")
     set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
         "C++ T-Rex Selector for FDR-controlled variable selection in high-dimensional regression")
     set(CPACK_PACKAGE_VERSION              ${PROJECT_VERSION})

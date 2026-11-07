@@ -10,7 +10,7 @@ abstract: >-
   High-dimensional variable selection with false discovery rate (FDR) control through terminating
   random experiments (the T-Rex selector) in C++, R and Python.
 authors:
-  - name: "TRexSelector Team"
+  - name: "Team T-Rex"
 version: 1.0.1
 repository-code: "https://github.com/trexselector/TRexSelector"
 license: GPL-3.0-or-later

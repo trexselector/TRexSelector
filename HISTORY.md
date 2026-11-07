@@ -10,6 +10,15 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-07
 
+#### The license headers and the citations name Team T-Rex
+
+- The GPL headers of the repository, the C++ library and the Python package named a research group
+  with a year as the copyright holder, and the package citations (`inst/CITATION` of the R package and
+  `CITATION.cff`) named a "TRexSelector Team". All of them say Team T-Rex now, the name of the group of
+  authors across the institutions, without a year that would need updating, and so does the CPack
+  vendor of the C++ build. The citation generator `tools/references/make_inst_citation.py` writes the
+  new name, and the R package's `LICENSE.md` has no holder line, so it is unchanged.
+
 #### The Python README tables the dummy strategies and takes its badge from shields.io
 
 - The dummy strategies of the L-loop are a table in the Selectors section, as in the C++ README (the six

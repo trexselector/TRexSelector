@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Write R/TRexSelector/inst/CITATION from references.bib.
 
-The package entry (author "TRexSelector Team", version from DESCRIPTION) is
+The package entry (author "Team T-Rex", version from DESCRIPTION) is
 fixed here; the method papers are taken from the master bibliography so
 that their text versions match the class documentation of all three
 languages (see render_references.py).
@@ -97,7 +97,7 @@ def package_version():
 def build():
     entries = parse_bib(BIB_PATH.read_text(encoding="utf-8"))
     version = package_version()
-    pkg_text = ("TRexSelector Team, \\\"TRexSelector: T-Rex Selector: High-Dimensional Variable "
+    pkg_text = ("Team T-Rex, \\\"TRexSelector: T-Rex Selector: High-Dimensional Variable "
                 f"Selection & FDR Control,\\\" 2026, R package version {version}. [Online]. "
                 "Available: https://github.com/trexselector/TRexSelector")
     head = f'''citHeader("To cite 'TRexSelector' in publications, please use the package entry and the
@@ -105,7 +105,7 @@ def build():
 
 bibentry("Manual",
   title       = "{{TRexSelector: T-Rex Selector: High-Dimensional Variable Selection & FDR Control}}",
-  author      = person(given = "TRexSelector Team"),
+  author      = person(given = "Team T-Rex"),
   note        = "R package version {version}",
   year        = "2026",
   url         = "https://github.com/trexselector/TRexSelector",
