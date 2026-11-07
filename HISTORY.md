@@ -10,6 +10,13 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-07
 
+#### The R README tables the dummy strategies and carries the CRAN badge
+
+- The dummy strategies of the L-loop are a table in the Selectors section, as in the C++ README (the six
+  strategies with their dummies and storage), after a sentence that introduces K, L and p, and a CRAN
+  version badge from r-pkg.org under the title links to the package page on CRAN, as the Python README's
+  badge does for PyPI. README.md is knit from README.Rmd.
+
 #### The repository README names every selector and fences the license
 
 - The "Implemented Variants" table of the repository README named `TRexSPCA` for the class every
