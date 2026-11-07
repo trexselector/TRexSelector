@@ -10,6 +10,13 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-07
 
+#### The Python README tables the dummy strategies and takes its badge from shields.io
+
+- The dummy strategies of the L-loop are a table in the Selectors section, as in the C++ README (the six
+  strategies with their dummies and storage), after a sentence that introduces K, L and p. The PyPI
+  badge comes from shields.io and links to the project page on PyPI, since the badge.fury.io image did
+  not render on GitHub and left its alternative text "PyPI version" in the page.
+
 #### The R README tables the dummy strategies and carries the CRAN badge
 
 - The dummy strategies of the L-loop are a table in the Selectors section, as in the C++ README (the six

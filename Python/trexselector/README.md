@@ -1,6 +1,6 @@
 # trexselector — Python Package
 
-[![PyPI version](https://badge.fury.io/py/trexselector.svg)](https://badge.fury.io/py/trexselector)
+[![PyPI version](https://img.shields.io/pypi/v/trexselector.svg)](https://pypi.org/project/trexselector/)
 
 **Fast variable selection in high-dimensional settings with control of the false discovery rate (FDR).**
 
@@ -114,10 +114,22 @@ the T-solver choice, the dummy settings and the thread budgets, and returns a re
 | `TRexSPCASelector` | sparse principal component analysis (SPCA) under FDR control | `TRexSPCAControlParameter` |
 | `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix | `TRexTikhonovControlParameter` |
 
-The control object also sets the dummy strategy of the L-loop, `lloop_strategy`, with the `LLoopStrategy` enum. Its
-default `STANDARD` draws fresh dummies at every step, as the T-Rex paper does, while the seeded strategies re-derive
-them from the seed and store nothing, for designs whose dummy matrices do not fit in memory. The dummies are standard
-Normal by default, and `DummyDistribution` offers the other laws.
+The selector runs K random experiments on a design of p variables, each experiment with its own dummy matrix, and
+its L-loop calibrates the number of dummies as a multiple L of p. The control object sets the strategy of that loop,
+`lloop_strategy`, with the `LLoopStrategy` enum.
+
+| Strategy | Dummies | Storage |
+| --- | --- | --- |
+| `STANDARD` (default) | fresh matrices at every L step, the law of the T-Rex paper | K matrices |
+| `HCONCAT` | the same K matrices grow by p columns per L step | K matrices |
+| `SEEDED` | the draws of `STANDARD`, re-derived from the seed at every step | none |
+| `PERMUTATION` | permuted columns of the design | K matrices |
+| `PERMUTATION_SEEDED` | the permutation re-derived from the seed | none |
+| `SKIPL` | no L-loop, the cap `max_dummy_multiplier` is used directly | K matrices |
+
+The seeded strategies store nothing and suit designs whose dummy matrices do not fit in memory, and they select
+exactly as their stored counterparts for the same seed. The dummies are standard Normal by default, and
+`DummyDistribution` offers the other laws.
 
 ### T-solvers
 
