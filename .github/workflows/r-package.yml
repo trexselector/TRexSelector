@@ -74,6 +74,9 @@ jobs:
           r-version: ${{ matrix.r-version }}
           use-public-rspm: true
 
+      # The vignettes are R Markdown, so R CMD build and check need pandoc.
+      - uses: r-lib/actions/setup-pandoc@v2
+
       # Reads DESCRIPTION and installs Depends/Imports/LinkingTo/Suggests
       # (with caching) — never hand-list the dependencies here: a stale list
       # fails the moment DESCRIPTION gains a LinkingTo entry.
@@ -106,16 +109,18 @@ jobs:
 
       # R CMD check on the built tarball. The --no-docs install above never
       # parses the Rd pages, so an unparseable page would go unnoticed
-      # without this step. Vignettes are skipped (the
-      # usage-and-simulations vignette is a long run) and the manual needs
-      # no LaTeX. A WARNING in the check status fails the job; NOTEs do not.
+      # without this step. The build renders the fourteen vignettes against
+      # a fresh install of the package (two threads each, about a minute in
+      # all) and the check runs their code and re-builds them, as CRAN does;
+      # the manual needs no LaTeX. A WARNING in the check status fails the
+      # job; NOTEs do not.
       - name: R CMD check
         env:
           _R_CHECK_CRAN_INCOMING_: "false"
           _R_CHECK_FORCE_SUGGESTS_: "false"
         run: |
-          R CMD build --no-build-vignettes --no-manual R/TRexSelector
-          R CMD check --no-manual --ignore-vignettes --no-build-vignettes TRexSelector_*.tar.gz
+          R CMD build --no-manual R/TRexSelector
+          R CMD check --no-manual TRexSelector_*.tar.gz
           if grep -Eq '^Status: .*(WARNING|ERROR)' TRexSelector.Rcheck/00check.log; then
             echo "::error::R CMD check reported warnings or errors (see 00check.log above)"
             exit 1
