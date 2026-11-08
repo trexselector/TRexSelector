@@ -1,0 +1,6 @@
+# Build products of the C++ user guide.
+_build/
+_build_*.log
+_run_examples.log
+examples/build/
+examples/output/

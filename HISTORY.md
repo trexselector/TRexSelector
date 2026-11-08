@@ -8,7 +8,366 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-08
+
+#### A publications page, the software the packages build on, and the documentation toolchain
+
+- `PUBLICATIONS.md` at the repository root lists every paper of the method family, journal articles,
+  conference papers, theses and preprints, newest first. `tools/bib_to_publications.py` writes it from
+  the "T-Rex framework" section of `references.bib`, so the bibliography stays the single source, and
+  `--check` reports a stale page. The section gains the three papers of the library folder it lacked,
+  the neighborhood screening paper for Gaussian graphical models (EUSIPCO 2024), the doctoral thesis
+  behind the framework (TUprints DOI) and the dummy-controlled graph learning paper (EUSIPCO 2026, no
+  DOI yet), fourteen in all, and a second part lists the three papers that carry the framework to
+  complex-valued data (the ICASSP 2025 and EUSIPCO 2025 papers with their DOIs, the EUSIPCO 2026 radar
+  paper without one yet), which the bibliography keeps in a section of their own. A vignette would
+  carry such a page only with a CRAN release, the repository file updates with every paper. The three
+  landing pages link it under Reference, as do the R pane and the root README.
+- The getting-started pages cite the software the packages build on at the end of their installation
+  section: Rcpp, RcppEigen, BH, Rcereal and R6 on the R page, NumPy and pybind11 on the Python page,
+  Eigen, Boost with Boost.Interprocess, cereal and OpenMP on the C++ page. The landing pages cite the
+  documentation toolchain, knitr, rmarkdown and ggplot2, Sphinx, MyST-NB and matplotlib, Doxygen and
+  matplotlib, and the R overview ends with a bibliography like every other page. The R package entries
+  come from `citation()` of the installed packages, matplotlib from Crossref, the rest are software
+  entries with their home pages. Both copies of `references.bib` carry the sixteen new entries, and
+  LinkingTo, Imports and Suggests of the R package are alphabetical.
+
+#### The three surfaces agree on the landing page and on pages 1 and 2
+
+- A comparison tool (`notes/handover_2026-11-07/tools/compare_surfaces.py`) strips a page to its prose,
+  normalizes math, citations, links and headings, and diffs the Python and the C++ page against the R
+  vignette sentence by sentence. It showed four drifts, now closed: the Python and C++ getting-started
+  pages point at the T-Rex selector page for the seed advice, carry the "Page" column of the selector
+  table, and say that the T-solvers page describes the families, and the three landing pages open with
+  the same three sentences (the package or library and its relation to the others, the code that runs
+  at build time with every shown output coming from it, the reference describing every class and
+  function) followed by "The pages cite the literature". What remains differs by surface on purpose:
+  installation, the shipped data set of R against the drawn one, R6 fields against attributes and
+  getters, the registry links, and "Indices are 0-based" on the Python and C++ pages. The paragraph on
+  the three result matrices, with its three-line code, joins the Python and C++ getting-started pages
+  (a new `matrices` section of the C++ example), and the three landing pages quote the preprint on
+  virtual dummies by Koka, Machkour, Palomar and Muma below the two journal articles.
+
+#### The dimensionality pages after the review
+
+- The "Where to go next" section is gone on all three surfaces, since the left pane and the landing
+  page hold the map, and no other page had one. The regime map reaches p = 1e8, so the title of the
+  highest regime, now broken as "Highest" and "dimensionality", sits inside its region with room to
+  spare. The boundary labels run along their lines with the on-screen slope computed after the
+  layout (rotating text in data coordinates misleads on logarithmic axes, since the offset is linear),
+  "p = 1000 n" below the dashed line and left of the title, and the block of the high regime moved
+  up and left, clear of the dashed line. The sentence on false discoveries cites the essays of the
+  library for the laboratory (Ioannidis 2005, MacArthur 2012, Uffelmann et al. 2021, Tandy-Connor et
+  al. 2018, all read from the local PDFs and verified at Crossref) and Harvey, Liu and Zhu 2016 for the
+  investment team. The four essays join the application references of `references.bib`, and the
+  vignette copy gains that section with the finance entry. The FDR paragraph says "multiple hypothesis
+  testing", cites Benjamini's 2010 review of the rate's origins, Holm 1979 for the family-wise error
+  rate (a local PDF, the 1979 volume carries no DOI, so the stable JSTOR link stands in), and the
+  low-dimensional section cites Benjamini and Yekutieli 2001 for the dependence conditions of the
+  Benjamini–Hochberg procedure, all three entries new in both copies of the bibliography. The high and
+  the highest regime are three sentences each: the solvers select without controlling the FDR because
+  their stopping rules are tuned for prediction error, the T-Rex selector wraps them and supplies the
+  control they lack, and for strongly dependent variables T-Rex+DA restores the exchangeability its
+  guarantee rests on; the mechanics of dummies and calibration stay on page 3. The three regime
+  sections are "Low dimensionality", "High dimensionality" and "Highest dimensionality", as in the map.
+  The R stylesheet justifies the landing page's opening paragraphs and quote, which stand above its
+  first section. The page is "Data
+  dimensionality and FDR control" (short title "Dimensionality and FDR" in the panes), the title of
+  the low regime moved 15 percent of the plot width to the right, the high regime's 10 percent, the
+  biobank marker sits on the boundary of the high and the highest regime at p = 8e7 and n = 8e4, the
+  scale of the UK Biobank with millions of variants and about a hundred thousand participants, and
+  every axis title of the figures on the three surfaces starts with a
+  capital letter.
+
+#### The getting-started pages after the review
+
+- On all three surfaces the first paragraph follows Section II of the EUSIPCO 2026 paper in four
+  sentences without equations: the inputs and the random experiments in which the real variables compete
+  with computer-generated dummies that act as flagged nulls, the forward selection stopped at the T-th
+  dummy and the vote, the conservative estimate of the false discoveries and the calibration over
+  dummies, stopping time and voting level with its finite-sample guarantee for a broad class of solvers.
+  "Linear" is gone from the opening sentence, and the paragraph states the scope instead: the selector
+  applies to low- and high-dimensional designs and is tailored to the high-dimensional problem, the
+  scheme is not tied to the linear model and scales to millions of variables, while the library
+  currently covers the supervised linear model with a response vector and a design matrix. The name is
+  written out first, "Terminating-Random Experiments (T-Rex) selector", hyphenated as in the papers,
+  on page 1 and the landing pages. The sentence on the predecessor links the last release before the
+  rewrite, version 1.0.0 in the CRAN archive on the R page and version 0.6.18 on PyPI on the Python
+  page. The selector table says "Independent or modestly dependent variables", since the plain selector
+  holds up to an autocorrelation of about 0.7 in an AR(1) design. The
+  ruler exempts Doxygen `\image` lines, whose caption stays on the command line, and the checker runs
+  the same ruler over the guides, which are untracked until their commit and invisible to the ruler.
+  "The package currently has five groups of tools",
+  the memory-mapped bullet says that the algorithms are agnostic to the data representation and
+  process designs larger than the random-access memory (RAM) out of core, and the utilities bullet names
+  the selection metrics, normalizers, dummy distributions and threading functions in words. The table
+  section is "T-Rex variants of the library" with "Screen-T-Rex" as the page of the screening rows, and
+  the "Map of the pages" and "Links" sections are gone, since the landing page holds both and the left
+  pane the map. The R
+  page states "R (>= 4.3)", and the registry sentence of the R and Python pages carries a bracketed
+  "[package page]" link after "(CRAN)" and "(PyPI)", so the sentence names the registry and the bracket
+  leads to the package. The R stylesheet gives the section headings room above them (h1 44 px, h2 32
+  px, h3 26 px). The three stylesheets justify the paragraphs and list items of the page content with
+  automatic hyphenation (the R navigation script sets `lang="en"` on the page, which html_vignette
+  omits, so the hyphenator has a language). The search index is rebuilt (107 headings, all anchors
+  verified by the checker).
+
+#### Every page spells out its abbreviations
+
+- Each page of the three guides stands alone, so an abbreviation is written out at its first use on
+  that page. A mechanical pass over the sources (headings excepted, names such as T-LARS, R6 or the
+  solver classes accepted) found the gaps and the pages close them: "dependency-aware variant T-Rex+DA"
+  on page 2, the signal-to-noise ratio (SNR) and the target FDR (tFDR) named before the table of page 3
+  (and "signal-to-noise" hyphenated), the false discovery rate and proportion on pages 4, 6, 7 and 8 of
+  the R vignettes and page 8 of the other two guides, the singular value decomposition and "sparse
+  principal component selector" on page 12. "L2 norm" stays as notation, and "the ML regressions" on
+  page 13 stays, since the first paragraph of the ML methods page introduces the term. The checker
+  (`notes/handover_2026-11-07/tools/check_vignettes.py`) also verifies links, anchors, images,
+  bibliographies and citations of the rendered R pages.
+
+#### DOIs in every bibliography, an OpenMP page, and the regime map with the rule p = 1000 n
+
+- Twenty entries of `references.bib` gain their DOI, each resolved at Crossref and matched by title
+  (the six conference papers of the method family, LARS, the lasso and its dual, the elastic net, the
+  bridge, ridge, OMP, gradient pursuits, SLINK, Lance and Williams, SimHash, LSH, sparse projections,
+  graph kernels). Fu's title reads "Penalized Regressions" as published. Seven entries have no DOI to
+  find (JMLR, PMLR, Soviet Math. Dokl., the two French papers, the AFS article, EUSIPCO 2026). The R
+  and Python bibliographies printed DOIs already. Doxygen renders its citation list with its own
+  BibTeX style, which prints neither DOI nor URL, so `build_docs.sh` runs `tools/add_doi_links.py`
+  after Doxygen, which appends the DOI (or the URL) of every entry from `references.bib`.
+- Doxygen 1.18.0 as released dies at random with a bus error in `commentscanYYlex`, one run in three
+  on this guide. For a command without braces, `commentscan.l` tests `idx > 1` on the `npos` result of
+  `find('{')` and reads `yytext[-2]`, two bytes before the scanner buffer. Every Markdown page starts
+  with the generated `@page` command at the first byte of a fresh buffer, so the read happens on every
+  run and is fatal when malloc places the buffer at the first byte of a region behind reserved address
+  space, hence the fault addresses ending in `fffffe`. Upstream fixed it for 1.19.0 (commit 26e9087,
+  two weeks after the release, while issue #12326 had been closed as a Homebrew problem).
+  `cpp/docs/tools/doxygen-1.18.0-commentscan-npos.patch` holds that one-line fix, the local Doxygen
+  is rebuilt with it through a Homebrew tap, and `build_docs.sh` runs Doxygen once instead of retrying.
+- `OPENMP.md` at the repository root says how each package gets OpenMP on Windows, Linux and macOS,
+  how to check, and where R's rules are written. The Parallelism vignette cites R Installation and
+  Administration, Writing R Extensions, CRAN's macOS OpenMP page and that page, so its bibliography
+  carries the sources, and the left pane's Reference block and the overview link the page. The
+  no-copies pages cite the bindings their contract rests on: Rcpp and RcppEigen on the R page, NumPy
+  and pybind11 on the Python page, Eigen and Boost.Interprocess on all three.
+- The regime map draws the dashed boundary at p = 1000 n instead of p = 100 n, so the band of high
+  dimensionality holds its title clear of the diagonal and the third title stays inside the frame, and
+  the three dimensionality pages state the rule accordingly. The left pane of the R vignettes shows its
+  entries in the text colour with the current page in teal, as the C++ tree does.
+
+#### The C++ tree reads like the other panes, the regime map breathes, memory mapping credits its roots
+
+- The C++ navigation tree shows the pages with the short titles of the R pane and the Python
+  sidebar, hides the section entries under them, and draws the rule before the bibliography, all set
+  by the navigation script on the tree that Doxygen builds after the page loads. "Screening" reads
+  "Screen-T-Rex" in the page lists of the three guides.
+- The regime map names its regimes "Low, High and Highest dimensionality", keeps more room between
+  the third title and its keywords, and writes "financial factors" above its marker instead of across
+  the boundary. The script draws it into the three figure folders.
+- The memory-mapping pages credit Boost.Interprocess, through which the library maps a file, and the
+  R page the bigmemory package, on whose `big.matrix` objects the first Big T-Rex was written. A new
+  diagram (`tools/figures/memory_agnostic.py`) shows on all three pages that a design in memory and a
+  design in a file reach the same implementation through one mapped view. `references.bib` and its
+  copy in the vignettes gain the two entries.
+
+#### Framed figures with boxed legends, a search box for the R vignettes, one navigation standard
+
+- The figures of the three guides are fully framed (the matplotlib style turns the top and right
+  spines back on, with a 5% margin at the ends of the axes), the legends sit in white boxes, and a
+  legend shared by the panels of a figure stands outside them at the right. The TPR panel of the FDR
+  study keeps a margin above 1, so its line is no longer cut by the frame.
+- The top bar of the R vignettes carries a search box over the titles and headings of the fourteen
+  pages. The index lives in `vignette_nav.html` between two marker lines, written by the new
+  `tools/build_vignette_search_index.R` from the vignette sources with pandoc's rule for heading
+  anchors, so every hit links to its section. Headings only, which keeps the index at a few kilobytes
+  per page. NEWS names the box.
+- The current page is marked the way the C++ guide does on all three surfaces, teal, bold and a bar
+  at the left, without a background. Page entries of the sidebars carry short titles everywhere (the
+  Python toctree gets explicit short titles as the R pane has them), and long section entries wrap
+  instead of ending in an ellipsis in the C++ tree. The C++ title block gets more room, so the search
+  box no longer touches the first tree entry.
+- `AUTHORS.md` lists the members with their contact and the roles by package, which differ: for the
+  R package Jasin Machkour is the package and IP owner, Fabian Scheidt the main contributor, Simon
+  Tien a past contributor; for the Python package Arnau Vilella Pique and Fabian Scheidt are the
+  owners, Arnau Vilella Pique proposed the 0.x versions and Fabian Scheidt is the main contributor
+  and owner from 1.0.0 on; for the C++ library Fabian Scheidt is the IP owner, package owner and sole
+  contributor so far. Daniel P. Palomar and Michael Muma are IP owners of all three.
+
+#### Boxed, sharp and legended figures, and a rule in the sidebars
+
+- The ggplot2 figures of the R pages use theme_bw, so the panels are boxed, and the vignettes render
+  their figures at twice the resolution (fig.retina = 2), so the text is sharp on high-resolution
+  screens. Every figure of the three guides carries a legend: the two kinds of variables and the
+  voting threshold on page 3, the trial mean and the target line in the FDR study, the true support
+  and the other entries of the loadings on page 7, the dummy inclusions on page 9 and the CV curve on
+  page 10. The sidebars of the Python and the C++ guide draw a rule between the pages of the guide
+  and the look-ups, as the left pane of the R vignettes does.
+
+#### The remaining figures follow the pipeline and the guides say Bibliography
+
+- The R pages 3, 7 and 10 draw their figures with ggplot2 like page 9 (the relative occurrences with
+  the voting threshold, the FDR and TPR study, the two sparse loading vectors, the ridge CV curve with
+  the two choices), so base graphics are gone from the vignettes. The C++ examples of the same pages
+  write their figure data into `examples/output/`, and `make_figures.py` draws the four figures with
+  the style of the Python guide, so the C++ pages 3, 7 and 10 show what the R and Python pages show.
+  The literature list is called "Bibliography" on all three surfaces, in the closing section of the
+  thirteen vignettes, in the title of the Python bibliography page and in Doxygen's citation list,
+  while "Reference" stays the word for the classes and functions. The READMEs keep their "References"
+  headings.
+
+#### The T-solvers page draws the terminated path, the first figure of a pipeline for the three guides
+
+- Page 9 of the three guides shows the coefficient paths of one warm-started T-LARS run: a snapshot
+  at T_stop = 1 and the continuation to T_stop = 3 side by side, true predictors in teal, other
+  predictors grey, dummies red and dashed, a dotted line at every dummy inclusion and the entering
+  variable over each step, after the Part 5 figure of the Examples' T-LARS demo. The R page draws
+  with ggplot2 (new in Suggests), the Python page with matplotlib under `docs/guide/matplotlibrc`,
+  which gives every figure of the guide one style (brand colour cycle, no top and right spines, a
+  light grid, constrained layout, 120 dpi), and the C++ example writes the two snapshots into
+  `examples/output/`, from which `cpp/docs/figures/make_figures.py` draws the PNG with the same style.
+  `build_docs.sh` runs the script when a Python with matplotlib is found (`TREX_DOCS_PYTHON`, default
+  `python3`) and keeps the committed PNG otherwise. The figures of the Python pages 3 and 10 take the
+  cycle colours instead of hard-coded red and grey, and the ridge plot gets a legend. The dark block
+  of the R stylesheet addresses the code tokens as descendants of the code element, since pandoc wraps
+  every line in a span, so the earlier token colours never applied and the dark pages showed pandoc's
+  light palette; the dark tokens now use the palette furo uses. The brand in the C++ top bar is white
+  again (doxygen-awesome colours links with !important).
+
+#### The three guides share the running bar, centered page numbers and neutral headings
+
+- The R top bar with the brand, the guide's name and "Page n of 13" runs over the Python and C++
+  guides too, built by their navigation scripts, with the sidebars and the content starting below it
+  (narrow screens keep the themes' own headers). The position "n / 13" of every pager sits in the
+  center between the previous and next links on all three surfaces, and the bars' position reads in
+  the brand's teal. The R headings drop the teal and use the text colour like the other two guides.
+  The left pane of the R vignettes names its blocks "User guide" and "Reference", the latter with the
+  reference manual on CRAN, the help pages of the installed package (left out when the page is served
+  from CRAN) and the sources on GitHub, and the overview's Reference section lists the same. The C++
+  main page writes its three section headings as HTML, so Doxygen's tree no longer lists them as
+  pages next to the guide pages. The Python landing page is titled "The trexselector Python package"
+  like the R overview and the C++ main page, and the guides' names in the bars read "R package guide",
+  "Python package guide" and "C++ library guide".
+
+#### The landing pages cite the dependent-variables paper with its DOI
+
+- The C++ main page gave the article number and DOI of "High-dimensional false discovery rate control
+  for dependent variables" as 109982, which resolves to an unrelated paper, and the R overview and the
+  Python landing page had taken the line over. All three say 109990 now, as `references.bib`, the
+  DESCRIPTION, the CITATION file, the READMEs and the rendered reference blocks do. Every DOI in the
+  tree (nineteen, all from `references.bib`) was resolved at Crossref and matches its title, and the
+  arXiv identifier of the virtual-dummies paper matches too. The only other DOI-shaped string is the
+  example inside a comment of the vendored IEEE citation style.
+
+#### AUTHORS.md names Team T-Rex
+
+- `AUTHORS.md` at the repository root says who Team T-Rex is: the members with their roles as the
+  package metadata states them (the R DESCRIPTION, the Python pyproject) and their e-mail addresses,
+  the contributor to the R package, and the contact points, the discussions page of the GitHub
+  organization, the issue tracker, the organization and the website. The Links of the three landing
+  pages and of the READMEs point to it, and the Python landing page gains the two main articles and
+  the Links block that the R overview and the C++ main page carry.
+
+#### The three user guides open with an overview and number their pages
+
+- The R vignettes gain an overview, `TRexSelector.Rmd`, which `vignette("TRexSelector")` opens: the
+  package in one paragraph, the two main articles, the numbered list of the thirteen pages, the
+  reference pointers and the links, as the index pages of the Python and C++ guides have them. The
+  navigation header links the overview from the brand of the top bar, lists it above the pages in the
+  left pane and as the previous link of page 1, and the overview's own pager leads to page 1. The C++
+  pager gets the same previous link to the main page and a next link on the main page. The Python
+  guide numbers its toctree, so the sidebar and the previous/next links carry the page numbers 1 to
+  13, a script puts the position "n / 13" between the two links as the other two guides show it, the
+  heading stays without a number, and the bibliography moves to the Reference group.
+  The vignette stylesheet gains a block for a dark system appearance with the palette of the C++
+  guide's dark mode, so the R pages follow the reader's setting as the Python and C++ guides do (the
+  plots keep their white boxes). `_pkgdown.yml` lists the overview and the current numbering (it
+  still had twelve pages in the old order), and the READMEs of the two guides, the Python README and
+  the repository README count thirteen pages. The copyright line of the three guides carries the
+  year, "Copyright © 2026 Team T-Rex", and the notice at the head of the three LICENSE files follows
+  the form of the GPL's own
+  appendix, "Copyright (C) 2026 Team T-Rex". NEWS names the overview.
+
 ### 2026-11-07
+
+#### A vignette on FDR control and dimensionality opens the R series
+
+- The new vignette `v02-dimensionality.Rmd` follows the getting-started vignette. It states the variable
+  selection problem, defines the FDR and the TPR with Benjamini and Hochberg as the source, walks
+  through the three regimes (low-dimensional with n at least p, high-dimensional with p above n,
+  highest-dimensional with p far above n) and what each allows, shows them in one map of the (p, n)
+  plane with the diagonal p = n and the line p = 100 n, and runs the selector in a ten-trial study per
+  regime (n = 100, p = 50, 200 and 1,000): the FDR stays below the target in every regime while the TPR
+  falls with p. The former vignettes 02 to 12 are 03 to 13, the navigation list, the README's list and
+  the map of the first vignette follow, and NEWS names the vignette. The seeded dummy strategy was
+  tried for the third regime and taken out again, since it costs four to nine times the standard
+  strategy per run at this size on all three surfaces (3.6 to 3.8 s against 0.4 to 0.85 s), a
+  performance item for the library.
+
+#### The bibliography gains Benjamini and Hochberg 1995 and a script draws the regime map
+
+- `references.bib` and its copy in the R vignettes gain `benjamini1995fdr`, the 1995 paper that
+  introduced the false discovery rate, with the fields from the Crossref record. The map of the three
+  regimes that the new dimensionality page shows in all three guides is drawn by
+  `tools/figures/dimensionality_map.py` with matplotlib in the package colours, one hue from light to
+  dark for the regimes, the boundaries p = n and p = 100 n, and three typical settings as markers.
+
+#### The vignettes end with the copyright line
+
+- The navigation script of the vignettes appends "Copyright © Team T-Rex" under the previous/next links of
+  every page, styled like the pager, so the R vignettes close the way the Python and C++ guides do. NEWS
+  mentions the line.
+
+#### The READMEs quote the Eigen acknowledgement and the story names both regimes
+
+- The Eigen citation of the Acknowledgements section stands in a block quote in the four READMEs
+  (repository, C++, Python, R, the R Markdown knit), as the papers do, so the sentence about the library
+  and its dependencies reads on its own. The "Short Story" of the repository README says that the T-Rex
+  selector selects variables in low- and high-dimensional settings alike and is tailored to the
+  high-dimensional case, where the number of variables exceeds the number of observations.
+
+#### The C++ user guide: thirteen Doxygen pages with compiled examples
+
+- `cpp/docs/` holds the user guide of the C++ library with the content of the R vignettes and the Python
+  guide, page for page: getting started, FDR control and dimensionality, the T-Rex selector, T-Rex+DA,
+  T-Rex GVS, screening, T-Rex SPCA, T-Rex Tikhonov, the T-solvers, the ML methods, memory mapping,
+  working without copies and parallelism. The code on a page comes from an example program under
+  `examples/`, which CMake compiles
+  against the installed library and runs at build time (`build_docs.sh`), with the output of every
+  documented section captured into a text file (`doc_output.hpp`) and shown under the code through the
+  `\output` alias, so every output on a page is the output of the code above it. Doxygen 1.18 renders
+  the pages as subpages of the main page, the master bibliography through `\cite`, MathJax formulas, the
+  two figures, and the API reference of all headers with class diagrams (640 HTML pages, no warning),
+  in the doxygen-awesome theme (vendored under `vendor/`, MIT) with the package colours in `custom.css`.
+  The version in the header comes from the library's CMake project, the footer template adds
+  "Copyright © Team T-Rex" to every page, and a small script (`pages_nav.js`) appends previous/next
+  links with the position in the guide to every page, since Doxygen has none for pages. The tree's
+  synchronisation toggle is hidden, it was mistaken for a page navigation. The vendored theme is exempt
+  from the line ruler as a third-party file. The guide depends on the headers' comments, see the entry
+  below on their parameter documentation.
+
+#### The Python user guide: thirteen executed MyST-NB pages under Sphinx
+
+- `Python/trexselector/docs/` holds the user guide of the Python package: the thirteen R vignettes ported
+  one to one as MyST notebooks in Markdown form, whose cells Sphinx executes at build time
+  (`nb_execution_raise_on_error`, two threads, data generated with seeds, files in temporary folders),
+  the API reference in four pages from the docstrings (selectors, T-solvers, ML methods, utilities,
+  with `conf.py` hooks that shorten the pybind11 signatures and join the reference lists of the
+  docstrings), a site-wide References page from the master bibliography (`sphinxcontrib-bibtex`,
+  per-page bibliographies clash on shared keys), and the furo theme in the package colours. The landing
+  page links the C++ library, the R package on CRAN and its vignettes, the footer names Team T-Rex. The
+  toolchain is pinned in `requirements.txt`, the full build with the execution of all pages takes about
+  25 s.
+
+#### The header comments document the current signatures
+
+- Doxygen over `cpp/src` reported 232 warning lines, almost all `@param` entries of the T-solver
+  constructors that still described the positional parameters from before the `SolverOptions` struct
+  (normalize, intercept, verbose, scaling_mode), plus incomplete parameter lists in the SD family, the
+  clustering dispatcher, the elastic-net cross-validation, the data generators and the normalizer, a
+  few `#` and `<` sequences Doxygen read as link requests, two `@file` names that did not match their
+  files, and two `@enum` lines for enumerators that are not enums. All 45 headers are corrected in
+  their comments only (no code line changed), Doxygen reports no warning now, and the vendored copy of
+  the R package is re-synced (vendor check OK).
 
 #### The license headers and the citations name Team T-Rex
 

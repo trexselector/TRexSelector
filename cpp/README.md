@@ -46,10 +46,11 @@ OpenMP exists.*
 
 *The BLAS/LAPACK backend can be disabled at configure time with `-DTREX_USE_BLAS_LAPACK=OFF`.*
 
-The library builds on the Eigen linear algebra library: G. Guennebaud, B. Jacob et al., Eigen v3,
-<https://libeigen.gitlab.io/>, 2010. It also relies on cereal for serialization, on Boost.Interprocess for
-memory mapping and on OpenMP for the threads, with an optional BLAS/LAPACK backend. The R package binds the
-library through Rcpp and RcppEigen, the Python package through pybind11.
+The library builds on the Eigen linear algebra library. It also relies on cereal for serialization, on
+Boost.Interprocess for memory mapping and on OpenMP for the threads, with an optional BLAS/LAPACK backend.
+The R package binds the library through Rcpp and RcppEigen, the Python package through pybind11.
+
+> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
 
 ---
 
@@ -338,6 +339,7 @@ setting is a no-op and `get_max_threads()` returns 1.
 ## License
 
 GPL ≥ 3 — see [LICENSE](LICENSE) or the [GNU General Public License v3](https://www.gnu.org/licenses/gpl-3.0.html).
+The copyright holder is Team T-Rex, and [AUTHORS.md](../AUTHORS.md) names the members with their contact.
 
 ```text
 This program is free software: you can redistribute it and/or modify it under the

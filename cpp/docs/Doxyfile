@@ -1,0 +1,87 @@
+# Doxygen configuration of the C++ user guide and reference: Markdown pages under pages/ whose code comes
+# from the example programs under examples/, compiled and run by build_docs.sh, next to the API reference
+# of the library headers under ../src. Unlisted tags keep their Doxygen defaults.
+
+PROJECT_NAME           = "TRexSelector C++"
+PROJECT_NUMBER         = $(TREX_VERSION)
+PROJECT_BRIEF          = "Fast variable selection in high-dimensional settings with FDR control"
+OUTPUT_DIRECTORY       = _build
+OUTPUT_LANGUAGE        = English
+
+# Sources: the guide pages and the library headers.
+INPUT                  = pages ../src
+FILE_PATTERNS          = *.hpp *.md
+RECURSIVE              = YES
+EXCLUDE_SYMBOLS        = detail *::detail *::detail::*
+# The notes of the SD family inside the source tree are not guide pages.
+EXCLUDE_PATTERNS       = */src/*.md
+STRIP_FROM_PATH        = ../src
+STRIP_FROM_INC_PATH    = ../src
+USE_MDFILE_AS_MAINPAGE = pages/index.md
+IMAGE_PATH             = pages/figures
+
+# Example programs and their captured outputs.
+EXAMPLE_PATH           = examples examples/output
+EXAMPLE_PATTERNS       = *.cpp *.txt
+ALIASES               += "output{1}=\htmlonly<div class=\"doc-output\">\endhtmlonly^^\verbinclude \1^^\
+\htmlonly</div>\endhtmlonly"
+
+# Bibliography of the guide pages, the master bibliography of the repository.
+CITE_BIB_FILES         = ../../references.bib
+
+# Markdown and extraction.
+MARKDOWN_SUPPORT       = YES
+MARKDOWN_ID_STYLE      = GITHUB
+TOC_INCLUDE_HEADINGS   = 3
+AUTOLINK_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+TAB_SIZE               = 4
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+HIDE_SCOPE_NAMES       = YES
+HIDE_UNDOC_RELATIONS   = YES
+SORT_MEMBER_DOCS       = NO
+SHOW_USED_FILES        = NO
+SHOW_NAMESPACES        = YES
+SOURCE_BROWSER         = NO
+VERBATIM_HEADERS       = NO
+ALPHABETICAL_INDEX     = YES
+
+# Warnings.
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_LOGFILE           = _build/doxygen_warnings.log
+
+# HTML with the doxygen-awesome theme in its sidebar-only layout.
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HTML_FOOTER            = footer.html
+HTML_EXTRA_FILES       = pages_nav.js
+HTML_COLORSTYLE        = LIGHT
+HTML_EXTRA_STYLESHEET  = vendor/doxygen-awesome-css/doxygen-awesome.css \
+                         vendor/doxygen-awesome-css/doxygen-awesome-sidebar-only.css \
+                         custom.css
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+TREEVIEW_WIDTH         = 300
+SEARCHENGINE           = YES
+USE_MATHJAX            = YES
+MATHJAX_VERSION        = MathJax_3
+MATHJAX_FORMAT         = chtml
+GENERATE_LATEX         = NO
+
+# Class diagrams only; no call, include or directory graphs.
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+CLASS_GRAPH            = YES
+COLLABORATION_GRAPH    = NO
+INCLUDE_GRAPH          = NO
+INCLUDED_BY_GRAPH      = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+DIRECTORY_GRAPH        = NO

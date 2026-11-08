@@ -1,0 +1,195 @@
+/* Brand colours and notebook-like output blocks on top of doxygen-awesome. */
+
+html {
+    --primary-color: #336C68;
+    --primary-dark-color: #2a5955;
+    --primary-light-color: #6BB2AD;
+    --fragment-background: #f6f8fa;
+    --fragment-foreground: #24292f;
+    --fragment-lineheight: 1.45;
+    --code-background: #eef3f2;
+    --code-foreground: #24292f;
+    --side-nav-background: #fbfcfc;
+    --content-maxwidth: 1000px;
+}
+
+@media (prefers-color-scheme: dark) {
+    html:not(.light-mode) {
+        --primary-color: #6BB2AD;
+        --primary-dark-color: #8cc8c4;
+        --primary-light-color: #336C68;
+        --fragment-background: #161b22;
+        --fragment-foreground: #d0d7de;
+        --code-background: #1f2a29;
+        --code-foreground: #d0d7de;
+    }
+}
+
+/* Captured program output under a code snippet. */
+.doc-output pre.fragment,
+.doc-output div.fragment {
+    border-left: 4px solid var(--primary-color);
+    background: var(--page-background-color);
+    margin-top: -8px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+.doc-output pre.fragment::before,
+.doc-output div.fragment::before {
+    content: "output";
+    display: block;
+    font-family: var(--font-family);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--primary-color);
+    margin-bottom: 4px;
+}
+
+/* Previous and next page links at the end of a guide page (pages_nav.js): previous left, the
+   position in the center, next right. */
+.doc-pager {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    column-gap: 16px;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 12px;
+    border-top: 1px solid var(--separator-color);
+}
+
+.doc-pager a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.doc-pager a:hover {
+    text-decoration: underline;
+}
+
+.doc-pager .prev {
+    grid-column: 1;
+}
+
+.doc-pager .where {
+    grid-column: 2;
+    color: var(--page-secondary-foreground-color);
+    font-size: 12px;
+}
+
+.doc-pager .next {
+    grid-column: 3;
+    text-align: right;
+}
+
+/* The running top bar (pages_nav.js): brand, the guide's name and the page position, fixed over the
+   side navigation and the content, which start below it. The side-nav layout of doxygen-awesome
+   measures everything from --top-height, so the bar's 40px are added there. */
+@media screen and (min-width: 768px) {
+    html {
+        /* the bar, the project name, the brief on two lines and the search box, with room below */
+        --top-height: 200px;
+    }
+
+    #top {
+        padding-top: 40px;
+        box-sizing: border-box;
+    }
+
+    #doc-content {
+        margin-top: 40px;
+        padding-top: 40px;
+        height: calc(100vh - 31px - 40px) !important;
+    }
+
+    .trex-topbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 16px;
+        box-sizing: border-box;
+        background: #2C3E50;
+        color: #ecf0f1;
+        font-family: var(--font-family);
+        font-size: 13px;
+    }
+
+    /* doxygen-awesome colours every link with !important, so the brand needs it too */
+    .trex-topbar .brand,
+    .trex-topbar .brand:link,
+    .trex-topbar .brand:visited {
+        font-weight: bold;
+        font-size: 16px;
+        color: #fff !important;
+        margin-right: 12px;
+        text-decoration: none;
+    }
+
+    .trex-topbar .brand:hover {
+        color: #6BB2AD !important;
+        text-decoration: none;
+    }
+
+    .trex-topbar .sub {
+        color: #bdc3c7;
+    }
+
+    .trex-topbar .where {
+        margin-left: auto;
+        color: #6BB2AD;
+        font-weight: bold;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    .trex-topbar {
+        display: none;
+    }
+}
+
+/* The tree follows the page on its own; the synchronisation toggle only confuses. */
+#nav-sync {
+    display: none;
+}
+
+/* The tree as the R and Python guides have it (pages_nav.js sets the classes): the page entries carry
+   short titles, their section entries stay hidden, and a rule separates the pages from the look-ups
+   that start with the bibliography. */
+#nav-tree li.trex-page > ul.children_ul {
+    display: none !important;
+}
+
+#nav-tree li.trex-page > div.item span.arrow {
+    visibility: hidden;
+}
+
+#nav-tree li.trex-lookups {
+    border-top: 1px solid var(--separator-color);
+    margin-top: 8px;
+    padding-top: 8px;
+}
+
+/* Guide pages read better with a little more room. */
+div.contents p,
+div.contents li {
+    line-height: 1.55;
+}
+
+div.contents blockquote {
+    border-left: 4px solid var(--primary-light-color);
+    background: var(--code-background);
+}
+
+/* justified paragraphs and list items of the page content, hyphenated */
+div.contents p,
+div.contents li {
+    text-align: justify;
+    hyphens: auto;
+    -webkit-hyphens: auto;
+}
