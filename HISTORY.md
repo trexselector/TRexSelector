@@ -10,6 +10,23 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-08
 
+#### The repository is cited as software
+
+- GitHub's "Cite this repository" box offered the Signal Processing article of 2025, because
+  `CITATION.cff` carried it as `preferred-citation`, and GitHub shows that block instead of the
+  software whenever one exists. The block is gone, so the box now cites the software itself, "Team
+  T-Rex. (2026). TRexSelector: T-Rex Selector: High-Dimensional Variable Selection and FDR Control
+  (Version 1.0.1) [Computer software]", and the article leads the list of references with the other
+  method papers. The file also names the release date and the project website. The version stays the
+  one of the C++ library and the Python package, whose release tag is `v<version>`, while the R package
+  keeps its own version in DESCRIPTION and `citation("TRexSelector")` answers with the package entry.
+- The long title reads "High-Dimensional Variable Selection and FDR Control" everywhere now, without
+  the ampersand: in CITATION.cff, in the Title field of DESCRIPTION, and in the package entry of
+  `inst/CITATION`, which `tools/references/make_inst_citation.py` writes.
+- Regenerating `inst/CITATION` from the bibliography also brought the DOIs that `references.bib` gained
+  for six conference papers into the R entries, and the same six references of CITATION.cff carry
+  them now. Every method paper with a DOI names it in both files.
+
 #### The CRAN links take the canonical form
 
 - win-builder's incoming check of the 2.0.1 tarball (R-release, Status 1 NOTE) listed the link to the

@@ -98,13 +98,13 @@ def build():
     entries = parse_bib(BIB_PATH.read_text(encoding="utf-8"))
     version = package_version()
     pkg_text = ("Team T-Rex, \\\"TRexSelector: T-Rex Selector: High-Dimensional Variable "
-                f"Selection & FDR Control,\\\" 2026, R package version {version}. [Online]. "
+                f"Selection and FDR Control,\\\" 2026, R package version {version}. [Online]. "
                 "Available: https://github.com/trexselector/TRexSelector")
     head = f'''citHeader("To cite 'TRexSelector' in publications, please use the package entry and the
           paper of the method you used:")
 
 bibentry("Manual",
-  title       = "{{TRexSelector: T-Rex Selector: High-Dimensional Variable Selection & FDR Control}}",
+  title       = "{{TRexSelector: T-Rex Selector: High-Dimensional Variable Selection and FDR Control}}",
   author      = person(given = "Team T-Rex"),
   note        = "R package version {version}",
   year        = "2026",

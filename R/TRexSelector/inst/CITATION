@@ -2,12 +2,12 @@ citHeader("To cite 'TRexSelector' in publications, please use the package entry 
           paper of the method you used:")
 
 bibentry("Manual",
-  title       = "{TRexSelector: T-Rex Selector: High-Dimensional Variable Selection & FDR Control}",
+  title       = "{TRexSelector: T-Rex Selector: High-Dimensional Variable Selection and FDR Control}",
   author      = person(given = "Team T-Rex"),
   note        = "R package version 2.0.1",
   year        = "2026",
   url         = "https://github.com/trexselector/TRexSelector",
-  textVersion = "Team T-Rex, \"TRexSelector: T-Rex Selector: High-Dimensional Variable Selection & FDR Control,\" 2026, R package version 2.0.1. [Online]. Available: https://github.com/trexselector/TRexSelector"
+  textVersion = "Team T-Rex, \"TRexSelector: T-Rex Selector: High-Dimensional Variable Selection and FDR Control,\" 2026, R package version 2.0.1. [Online]. Available: https://github.com/trexselector/TRexSelector"
 )
 
 bibentry("Article",
@@ -44,7 +44,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. 30th Eur. Signal Process. Conf. (EUSIPCO)",
   pages       = "892-896",
   year        = "2022",
-  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"False Discovery Rate Control for Grouped Variable Selection in High-Dimensional Linear Models Using the T-Knock Filter,\" in Proc. 30th Eur. Signal Process. Conf. (EUSIPCO), 2022, pp. 892-896."
+  doi         = "10.23919/EUSIPCO55093.2022.9909883",
+  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"False Discovery Rate Control for Grouped Variable Selection in High-Dimensional Linear Models Using the T-Knock Filter,\" in Proc. 30th Eur. Signal Process. Conf. (EUSIPCO), 2022, pp. 892-896, doi: 10.23919/EUSIPCO55093.2022.9909883."
 )
 
 bibentry("InProceedings",
@@ -55,7 +56,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP)",
   pages       = "466-470",
   year        = "2023",
-  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"The Informed Elastic Net for Fast Grouped Variable Selection and FDR Control in Genomics Research,\" in Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP), 2023, pp. 466-470."
+  doi         = "10.1109/CAMSAP58249.2023.10403489",
+  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"The Informed Elastic Net for Fast Grouped Variable Selection and FDR Control in Genomics Research,\" in Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP), 2023, pp. 466-470, doi: 10.1109/CAMSAP58249.2023.10403489."
 )
 
 bibentry("InProceedings",
@@ -66,7 +68,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. 22nd IEEE Statist. Signal Process. Workshop (SSP)",
   pages       = "666-670",
   year        = "2023",
-  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"False Discovery Rate Control for Fast Screening of Large-Scale Genomics Biobanks,\" in Proc. 22nd IEEE Statist. Signal Process. Workshop (SSP), 2023, pp. 666-670."
+  doi         = "10.1109/SSP53291.2023.10207957",
+  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"False Discovery Rate Control for Fast Screening of Large-Scale Genomics Biobanks,\" in Proc. 22nd IEEE Statist. Signal Process. Workshop (SSP), 2023, pp. 666-670, doi: 10.1109/SSP53291.2023.10207957."
 )
 
 bibentry("InProceedings",
@@ -79,7 +82,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. IEEE 49th Int. Conf. Acoust., Speech, Signal Process. (ICASSP)",
   pages       = "9716-9720",
   year        = "2024",
-  textVersion = "J. Machkour, A. Breloy, M. Muma, D. P. Palomar, and F. Pascal, \"Sparse PCA with False Discovery Rate Controlled Variable Selection,\" in Proc. IEEE 49th Int. Conf. Acoust., Speech, Signal Process. (ICASSP), 2024, pp. 9716-9720."
+  doi         = "10.1109/ICASSP48485.2024.10448237",
+  textVersion = "J. Machkour, A. Breloy, M. Muma, D. P. Palomar, and F. Pascal, \"Sparse PCA with False Discovery Rate Controlled Variable Selection,\" in Proc. IEEE 49th Int. Conf. Acoust., Speech, Signal Process. (ICASSP), 2024, pp. 9716-9720, doi: 10.1109/ICASSP48485.2024.10448237."
 )
 
 bibentry("InProceedings",
@@ -90,7 +94,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP)",
   pages       = "116-120",
   year        = "2023",
-  textVersion = "F. Scheidt, J. Machkour, and M. Muma, \"Solving FDR-Controlled Sparse Regression Problems with Five Million Variables on a Laptop,\" in Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP), 2023, pp. 116-120."
+  doi         = "10.1109/CAMSAP58249.2023.10403478",
+  textVersion = "F. Scheidt, J. Machkour, and M. Muma, \"Solving FDR-Controlled Sparse Regression Problems with Five Million Variables on a Laptop,\" in Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP), 2023, pp. 116-120, doi: 10.1109/CAMSAP58249.2023.10403478."
 )
 
 bibentry("InProceedings",
@@ -133,7 +138,8 @@ bibentry("InProceedings",
   booktitle   = "Proc. Eur. Signal Process. Conf. (EUSIPCO)",
   pages       = "2662-2666",
   year        = "2024",
-  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"FDR-Controlled Sparse Index Tracking with Autoregressive Stock Dependency Models,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2024, pp. 2662-2666."
+  doi         = "10.23919/EUSIPCO63174.2024.10715329",
+  textVersion = "J. Machkour, M. Muma, and D. P. Palomar, \"FDR-Controlled Sparse Index Tracking with Autoregressive Stock Dependency Models,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2024, pp. 2662-2666, doi: 10.23919/EUSIPCO63174.2024.10715329."
 )
 
 citFooter("The library builds on Eigen: G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.")
