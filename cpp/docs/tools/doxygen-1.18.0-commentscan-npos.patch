@@ -1,0 +1,26 @@
+Doxygen 1.18.0 reads two bytes before the comment scanner's buffer for every command without
+braces: find('{') returns npos, the unsigned test idx > 1 passes, and yytext[idx-1] wraps to
+yytext[-2]. The read kills Doxygen with a bus error whenever malloc places the buffer at the first
+byte of a memory region. This is the upstream fix, doxygen/doxygen commit 26e9087 (in 1.19.0),
+for the 1.18.0 release sources. Apply in the source tree with: patch -p1 < <this file>
+
+--- a/src/commentscan.l
++++ b/src/commentscan.l
+@@ -994,7 +994,7 @@
+                                           DString fullMatch = yytext;
+                                           size_t idx = fullMatch.find('{');
+                                           /* handle `f{` command as special case */
+-                                          if ((idx > 1) && (yytext[idx-1] == 'f') && (yytext[idx-2] == '\\' || yytext[idx-2] =='@')) REJECT;
++                                          if ((idx != DString::npos) && (idx > 1) && (yytext[idx-1] == 'f') && (yytext[idx-2] == '\\' || yytext[idx-2] =='@')) REJECT;
+                                           size_t idxEnd = fullMatch.find('}',idx+1);
+                                           DString cmdName;
+                                           StringVector optList;
+@@ -2086,7 +2086,7 @@
+                                           DString fullMatch = yytext;
+                                           size_t idx = fullMatch.find('{');
+                                           /* handle `f{` command as special case */
+-                                          if ((idx > 1) && (yytext[idx-1] == 'f') && (yytext[idx-2] == '\\' || yytext[idx-2] =='@')) REJECT;
++                                          if ((idx != DString::npos) && (idx > 1) && (yytext[idx-1] == 'f') && (yytext[idx-2] == '\\' || yytext[idx-2] =='@')) REJECT;
+                                           size_t idxEnd = fullMatch.find("}",idx+1);
+                                           DString cmdName;
+                                           StringVector optList;
