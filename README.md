@@ -13,9 +13,10 @@ reproducibility crisis and derailing years of research and clinical effort [(Huf
 In finance, hundreds of studies claim to have found factors that explain stock returns, yet most of
 these findings are likely false [(Harvey, Liu, and Zhu, 2016)](https://doi.org/10.1093/rfs/hhv059).
 
-The T-Rex Selector performs high-dimensional variable selection while controlling the rate of false
-discoveries at a level you choose, with rigorous finite-sample guarantees, and fast and
-memory-efficient enough to run on millions of variables [(Machkour, Muma, and Palomar, 2025)](https://www.sciencedirect.com/science/article/pii/S016516842500009X).
+The T-Rex Selector selects variables in low- and high-dimensional settings alike, and it is tailored
+to the high-dimensional case, where the number of variables exceeds the number of observations. It
+controls the rate of false discoveries at a level you choose, with rigorous finite-sample guarantees,
+and it is fast and memory-efficient enough to run on millions of variables [(Machkour, Muma, and Palomar, 2025)](https://www.sciencedirect.com/science/article/pii/S016516842500009X).
 
 The algorithm works by generating random dummy variables that act as a calibration baseline:
 during each of *K* independent random experiments, a terminating solver traces solution paths
@@ -24,6 +25,10 @@ By comparing how often each real predictor is selected relative to the dummies a
 experiments, a voting threshold is derived that provably bounds the FDR.
 
 **Project website:** [trexselector.com](https://trexselector.com)
+
+**Team T-Rex:** [AUTHORS.md](AUTHORS.md) names the members with their contact and the discussions page.
+
+**Publications:** [PUBLICATIONS.md](PUBLICATIONS.md) lists every paper of the method family.
 
 ---
 
@@ -57,7 +62,7 @@ documentation:
   `trexselector`.
 * **R package** — [`R/TRexSelector/`](R/TRexSelector/), documented in
   [R/TRexSelector/README.md](R/TRexSelector/README.md): installation, quick start, and
-  the twelve vignettes. Distributed on CRAN as `TRexSelector`.
+  the thirteen vignettes. Distributed on CRAN as `TRexSelector`.
 
 ---
 
@@ -82,8 +87,9 @@ above is rendered from it as well, the two application papers of the opening sto
 
 ## Acknowledgements
 
-The library builds on the Eigen linear algebra library: G. Guennebaud, B. Jacob et al., Eigen v3,
-<https://libeigen.gitlab.io/>, 2010.
+The library builds on the Eigen linear algebra library.
+
+> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
 
 ---
 

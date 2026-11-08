@@ -6,9 +6,11 @@ Usage: python3 tools/check_line_length.py [--max 120] [--summary] [PATH ...]
 Exempt: binary and data files (images, CSV, RDS, RDA, BIN, PDF), generated files
 (the pybind11 stubs, the roxygen man pages, RcppExports, inst/CITATION, the
 vendored C++ copy of the R package, the Makevars written by bundle_for_cran.sh),
-third-party style files (CSL), Markdown table rows (a row cannot break), and
-lines that carry a URL or a DOI. Exit status 1 when a line is reported, so the
-script serves as a CI step.
+third-party files (the CSL style, the vendored Doxygen theme), patch files (their
+lines are verbatim), Markdown table rows (a row cannot break), Doxygen image
+lines (the caption stays on the command line), and lines that carry a URL or a
+DOI. Exit status 1
+when a line is reported, so the script serves as a CI step.
 """
 import argparse
 import re
@@ -16,7 +18,7 @@ import subprocess
 import sys
 
 EXEMPT_SUFFIXES = (".png", ".pdf", ".jpg", ".jpeg", ".svg", ".ico", ".bin", ".rds", ".rda",
-                   ".csv", ".tsv", ".pyi", ".Rd", ".csl", ".lock")
+                   ".csv", ".tsv", ".pyi", ".Rd", ".csl", ".lock", ".patch")
 EXEMPT_PATTERNS = (
     re.compile(r"(^|/)RcppExports\.(R|cpp)$"),
     re.compile(r"^R/TRexSelector/src/(ml_methods|trex_selector_methods|tsolvers|utils)/"),
@@ -24,9 +26,11 @@ EXEMPT_PATTERNS = (
     re.compile(r"^R/TRexSelector/configure$"),
     re.compile(r"^R/TRexSelector/inst/CITATION$"),
     re.compile(r"^\.clang-tidy$"),
+    re.compile(r"^cpp/docs/vendor/"),
 )
 URL_RE = re.compile(r"https?://|doi\.org/|doi: 10\.")
 TABLE_ROW_RE = re.compile(r"^\s*\|")
+IMAGE_LINE_RE = re.compile(r"^\s*\\image\b")
 
 
 def tracked_files(paths):
@@ -55,7 +59,8 @@ def main():
             with open(path, encoding="utf-8") as fh:
                 for number, line in enumerate(fh, 1):
                     text = line.rstrip("\n")
-                    if len(text) > args.max and not URL_RE.search(text) and not TABLE_ROW_RE.match(text):
+                    if (len(text) > args.max and not URL_RE.search(text) and not TABLE_ROW_RE.match(text)
+                            and not IMAGE_LINE_RE.match(text)):
                         hits.append((path, number, len(text)))
         except (UnicodeDecodeError, OSError):
             continue
