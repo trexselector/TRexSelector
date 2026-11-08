@@ -10,6 +10,17 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-08
 
+#### The CRAN links take the canonical form
+
+- win-builder's incoming check of the 2.0.1 tarball (R-release, Status 1 NOTE) listed the link to the
+  reference manual PDF in the vignettes' left pane and overview as a CRAN URL not in canonical form.
+  The two links now read `https://CRAN.R-project.org/package=TRexSelector/TRexSelector.pdf`, which CRAN
+  redirects to the PDF, and the Python and C++ landing pages link the R overview vignette through
+  `package=TRexSelector/vignettes/` the same way. The other parts of that NOTE are the two days since
+  2.0.0, the temporary maintainer of the uploaded copy, and 404s for AUTHORS.md, OPENMP.md and
+  PUBLICATIONS.md, which exist on GitHub only after the push. Tests and the fourteen vignettes passed
+  on win-builder, and the install log shows the OpenMP flag on every compile line under GCC 14.3.
+
 #### The four READMEs end with Citing and Bibliography
 
 - The root README folds its References and Acknowledgements sections into one "Bibliography" below

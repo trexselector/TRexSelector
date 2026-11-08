@@ -7,7 +7,7 @@ The Python package of the Terminating-Random Experiments (T-Rex) selector, with 
 [R package](https://CRAN.R-project.org/package=TRexSelector) binds the same library. This guide walks
 through the package with code that runs when it is built, so every output shown is the output of the
 code above it, and the API reference describes every class and function from its docstring. The
-[vignettes](https://cran.r-project.org/web/packages/TRexSelector/vignettes/TRexSelector.html) of the
+[vignettes](https://CRAN.R-project.org/package=TRexSelector/vignettes/TRexSelector.html) of the
 R package and the user guide of the C++ library present the same content page for page.
 
 The method family grows within a series of papers, among which the following three form the theoretical

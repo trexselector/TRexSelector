@@ -8,7 +8,7 @@ The C++ core library of the Terminating-Random Experiments (T-Rex) selector. The
 the library with example programs that are compiled against the installed library and run when the
 documentation is built, so every output shown is the output of the code above it, and the API reference
 describes every class and function from its header comments. The
-[vignettes](https://cran.r-project.org/web/packages/TRexSelector/vignettes/TRexSelector.html) of the
+[vignettes](https://CRAN.R-project.org/package=TRexSelector/vignettes/TRexSelector.html) of the
 R package and the user guide of the Python package present the same content page for page.
 
 The method family grows within a series of papers, among which the following three form the theoretical

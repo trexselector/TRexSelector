@@ -63,7 +63,7 @@ pages cite the literature, and every page ends with its bibliography. The vignet
 
 # Reference
 
-- The [reference manual](https://cran.r-project.org/web/packages/TRexSelector/TRexSelector.pdf) on CRAN
+- The [reference manual](https://CRAN.R-project.org/package=TRexSelector/TRexSelector.pdf) on CRAN
   collects the help pages of the classes and functions in one document.
 - `help(package = "TRexSelector")` lists the help pages of the installed package, and the left pane links
   them when the page is read from an installed package.
