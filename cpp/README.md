@@ -50,8 +50,6 @@ The library builds on the Eigen linear algebra library. It also relies on cereal
 Boost.Interprocess for memory mapping and on OpenMP for the threads, with an optional BLAS/LAPACK backend.
 The R package binds the library through Rcpp and RcppEigen, the Python package through pybind11.
 
-> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
-
 ---
 
 ## Installing the Dependencies
@@ -335,6 +333,33 @@ setting is a no-op and `get_max_threads()` returns 1.
   source tree directly via scikit-build-core — no separate library install is needed.
 * The R package ([R/TRexSelector](../R/TRexSelector/)) vendors a copy of `src/` at
   release time via `tools/bundle_for_cran.sh`, so the CRAN tarball is self-contained.
+
+## Citing
+
+[CITATION.cff](../CITATION.cff) at the repository root carries the citation metadata of the project.
+
+## Bibliography
+
+The papers at the theoretical core of the framework so far, and
+[PUBLICATIONS.md](../PUBLICATIONS.md) lists every paper of the method family:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
+         koka2026vdtrex -->
+* J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231, Art. no. 109894, 2025, [doi: 10.1016/j.sigpro.2025.109894](https://doi.org/10.1016/j.sigpro.2025.109894).
+* J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control for Dependent Variables," Signal Process., vol. 234, Art. no. 109990, 2025, [doi: 10.1016/j.sigpro.2025.109990](https://doi.org/10.1016/j.sigpro.2025.109990).
+* T. Koka, J. Machkour, D. P. Palomar, and M. Muma, "Virtual Dummies: Enabling Scalable FDR-Controlled Variable Selection via Sequential Sampling of Null Features," [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted to J. Mach. Learn. Res.).
+
+The software the library builds on, Eigen for the linear algebra, Boost.Interprocess for the memory
+mapping, cereal for the serialization and OpenMP for the threads, with an optional BLAS/LAPACK backend:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md guennebaud2010eigen boost2026libraries
+         grant2017cereal openmp2021spec -->
+* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
+* The Boost Community, Boost C++ Libraries, https://www.boost.org/, 2026.
+* W. S. Grant and R. Voorhies, cereal: A C++11 Library for Serialization, https://uscilab.github.io/cereal/, 2017.
+* OpenMP Architecture Review Board, OpenMP Application Programming Interface, Version 5.2, https://www.openmp.org/specifications/, 2021.
 
 ## License
 

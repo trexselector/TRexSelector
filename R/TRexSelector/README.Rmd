@@ -262,7 +262,7 @@ The help page of every selector, T-solver and ML class ends with the papers it b
 - Project website: <https://trexselector.com>
 - Repository of the C++ core and the R and Python packages: <https://github.com/trexselector/TRexSelector>
 - Examples in R, Python and C++: <https://github.com/trexselector/TRexSelector_Examples>
-- References of the method family: <https://github.com/trexselector/TRexSelector#references>
+- Publications of the method family: <https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md>
 - Bug reports: <https://github.com/trexselector/TRexSelector/issues>
 - Team T-Rex, the authors and their contact: <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
 
@@ -271,13 +271,38 @@ The help page of every selector, T-solver and ML class ends with the papers it b
 options(old_options)
 ```
 
-## Acknowledgements
+## Citing
 
-The package builds on the Eigen linear algebra library. It binds the C++ core through Rcpp and RcppEigen
-and relies on cereal (Rcereal) for serialization and on Boost.Interprocess (BH) for memory mapping, with
-OpenMP for the threads where the toolchain provides it.
+`citation("TRexSelector")` gives the package entry and the method papers, and
+[CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff) at the repository root carries
+the citation metadata of the project.
 
-> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
+## Bibliography
+
+The papers at the theoretical core of the framework so far, and
+[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md) lists every paper of the
+method family:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
+         koka2026vdtrex -->
+* J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231, Art. no. 109894, 2025, [doi: 10.1016/j.sigpro.2025.109894](https://doi.org/10.1016/j.sigpro.2025.109894).
+* J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control for Dependent Variables," Signal Process., vol. 234, Art. no. 109990, 2025, [doi: 10.1016/j.sigpro.2025.109990](https://doi.org/10.1016/j.sigpro.2025.109990).
+* T. Koka, J. Machkour, D. P. Palomar, and M. Muma, "Virtual Dummies: Enabling Scalable FDR-Controlled Variable Selection via Sequential Sampling of Null Features," [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted to J. Mach. Learn. Res.).
+
+The software the package builds on, Eigen for the linear algebra of the C++ core, Rcpp and RcppEigen for
+the bindings, the Boost headers of BH for the memory mapping, the cereal headers of Rcereal for the
+serialization and R6 for the classes, with OpenMP for the threads where the toolchain provides it:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md guennebaud2010eigen eddelbuettel2011rcpp
+         bates2013rcppeigen eddelbuettel2025bh wu2024rcereal chang2025r6 -->
+* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
+* D. Eddelbuettel and R. François, "Rcpp: Seamless R and C++ Integration," J. Stat. Softw., vol. 40, no. 8, pp. 1-18, 2011, [doi: 10.18637/jss.v040.i08](https://doi.org/10.18637/jss.v040.i08).
+* D. Bates and D. Eddelbuettel, "Fast and Elegant Numerical Linear Algebra Using the RcppEigen Package," J. Stat. Softw., vol. 52, no. 5, pp. 1-24, 2013, [doi: 10.18637/jss.v052.i05](https://doi.org/10.18637/jss.v052.i05).
+* D. Eddelbuettel, J. W. Emerson, and M. J. Kane, BH: Boost C++ Header Files, https://CRAN.R-project.org/package=BH, 2025, [doi: 10.32614/CRAN.package.BH](https://doi.org/10.32614/CRAN.package.BH).
+* W. Wu, Rcereal: Cereal Headers for R and C++ Serialization, https://CRAN.R-project.org/package=Rcereal, 2024, [doi: 10.32614/CRAN.package.Rcereal](https://doi.org/10.32614/CRAN.package.Rcereal).
+* W. Chang, R6: Encapsulated Classes with Reference Semantics, https://CRAN.R-project.org/package=R6, 2025, [doi: 10.32614/CRAN.package.R6](https://doi.org/10.32614/CRAN.package.R6).
 
 ## License
 

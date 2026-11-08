@@ -107,7 +107,11 @@ def _split_top_level(body):
 
 
 def format_author(name):
-    """'Surname, Given M.' or 'Given M. Surname' -> 'G. M. Surname'."""
+    """'Surname, Given M.' or 'Given M. Surname' -> 'G. M. Surname'; a corporate author written in
+    braces, {OpenMP Architecture Review Board}, stays as written."""
+    name = name.strip()
+    if name.startswith("{") and name.endswith("}"):
+        return latex_to_text(name[1:-1])
     name = latex_to_text(name)
     if name == "others":
         return "et al."

@@ -185,19 +185,38 @@ C++, and the R package's thirteen vignettes describe the methods in prose with t
 - Project website: <https://trexselector.com>
 - Repository of the C++ core and the R and Python packages: <https://github.com/trexselector/TRexSelector>
 - Examples in R, Python and C++: <https://github.com/trexselector/TRexSelector_Examples>
-- References of the method family: <https://github.com/trexselector/TRexSelector#references>
-- Citation metadata: [CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff) at the
-  repository root
+- Publications of the method family: <https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md>
 - Bug reports: <https://github.com/trexselector/TRexSelector/issues>
 - Team T-Rex, the authors and their contact: <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
 
-## Acknowledgements
+## Citing
 
-The library builds on the Eigen linear algebra library. It binds the C++ core through pybind11 and relies
-on cereal for serialization, on Boost.Interprocess for memory mapping and on OpenMP for the threads, with
-an optional BLAS/LAPACK backend.
+[CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff) at the repository root carries
+the citation metadata of the project.
 
-> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
+## Bibliography
+
+The papers at the theoretical core of the framework so far, and
+[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md) lists every paper of the
+method family:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
+         koka2026vdtrex -->
+* J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231, Art. no. 109894, 2025, [doi: 10.1016/j.sigpro.2025.109894](https://doi.org/10.1016/j.sigpro.2025.109894).
+* J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control for Dependent Variables," Signal Process., vol. 234, Art. no. 109990, 2025, [doi: 10.1016/j.sigpro.2025.109990](https://doi.org/10.1016/j.sigpro.2025.109990).
+* T. Koka, J. Machkour, D. P. Palomar, and M. Muma, "Virtual Dummies: Enabling Scalable FDR-Controlled Variable Selection via Sequential Sampling of Null Features," [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted to J. Mach. Learn. Res.).
+
+The software the package builds on, Eigen for the linear algebra of the C++ core, pybind11 for the
+bindings and NumPy for the arrays, with cereal for the serialization, Boost.Interprocess for the memory
+mapping and OpenMP for the threads inside the core:
+
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md guennebaud2010eigen jakob2017pybind11
+         harris2020numpy -->
+* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
+* W. Jakob, J. Rhinelander, and D. Moldovan, pybind11: Seamless Operability Between C++11 and Python, https://github.com/pybind/pybind11, 2017.
+* C. R. Harris, K. J. Millman, S. J. van der Walt et al., "Array Programming with NumPy," Nature, vol. 585, pp. 357-362, 2020, [doi: 10.1038/s41586-020-2649-2](https://doi.org/10.1038/s41586-020-2649-2).
 
 ## License
 

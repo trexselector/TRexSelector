@@ -66,7 +66,18 @@ documentation:
 
 ---
 
-## References
+## Citing
+
+[CITATION.cff](CITATION.cff) carries the citation metadata of the repository, and the R package answers
+`citation("TRexSelector")`. Every paper the class documentation credits is listed in
+[references.bib](references.bib), the master file from which the reference blocks of the C++, R and Python
+documentation are rendered with the scripts in [tools/references/](tools/references/). The bibliography
+below is rendered from it as well, and [PUBLICATIONS.md](PUBLICATIONS.md) lists every paper of the method
+family.
+
+## Bibliography
+
+The papers behind the opening story and the variants:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
@@ -77,19 +88,15 @@ documentation:
 * J. E. Huffman, "Examining the current standards for genetic discovery and replication in the era of mega-biobanks," Nat. Commun., vol. 9, no. 1, Art. no. 5054, 2018, [doi: 10.1038/s41467-018-07348-x](https://doi.org/10.1038/s41467-018-07348-x).
 * C. R. Harvey, Y. Liu, and H. Zhu, "… and the Cross-Section of Expected Returns," Rev. Financ. Stud., vol. 29, no. 1, pp. 5-68, 2016, [doi: 10.1093/rfs/hhv059](https://doi.org/10.1093/rfs/hhv059).
 
-## Citing
+The software the C++ core builds on:
 
-[CITATION.cff](CITATION.cff) carries the citation metadata of the repository, and the R package answers
-`citation("TRexSelector")`. Every paper the class documentation credits is listed in
-[references.bib](references.bib), the master file from which the reference blocks of the C++, R and Python
-documentation are rendered with the scripts in [tools/references/](tools/references/). The reference list
-above is rendered from it as well, the two application papers of the opening story included.
-
-## Acknowledgements
-
-The library builds on the Eigen linear algebra library.
-
-> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
+<!-- Rendered from references.bib:
+     python3 tools/references/render_references.py --format md guennebaud2010eigen boost2026libraries
+         grant2017cereal openmp2021spec -->
+* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
+* The Boost Community, Boost C++ Libraries, https://www.boost.org/, 2026.
+* W. S. Grant and R. Voorhies, cereal: A C++11 Library for Serialization, https://uscilab.github.io/cereal/, 2017.
+* OpenMP Architecture Review Board, OpenMP Application Programming Interface, Version 5.2, https://www.openmp.org/specifications/, 2021.
 
 ---
 

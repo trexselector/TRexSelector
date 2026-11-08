@@ -10,6 +10,20 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-08
 
+#### The four READMEs end with Citing and Bibliography
+
+- The root README folds its References and Acknowledgements sections into one "Bibliography" below
+  "Citing", the word the guides use for the literature list: first the papers behind the opening story
+  and the variants, then the software the C++ core builds on (Eigen, Boost, cereal, OpenMP), both
+  rendered from `references.bib` by `tools/references/render_references.py`, which now keeps a
+  corporate author written in braces as written instead of reducing it to initials. The R, Python and
+  C++ READMEs get the same pair in place of their Acknowledgements (the C++ README had its Eigen quote
+  under Dependencies): Citing with the route of that package, `citation()` or CITATION.cff, and
+  Bibliography with the three core papers and the package's own stack, Rcpp, RcppEigen, BH, Rcereal
+  and R6 for R, pybind11 and NumPy for Python, Boost, cereal and OpenMP for C++, Eigen on all. The
+  Links of the R and Python READMEs point at PUBLICATIONS.md instead of the former References anchor,
+  and the R README is knit.
+
 #### The method pages link the demos of the Examples repository
 
 - Pages 3 to 7 and 9 to 11 of the three guides end with an "Examples" section before the bibliography:
