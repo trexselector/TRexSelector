@@ -1,0 +1,38 @@
+# Style of the figures of the trexselector guide. matplotlib reads this file from the working
+# directory, and MyST-NB executes every page in this directory, so no page sets a style itself.
+# The C++ guide's figure script loads the same file.
+figure.figsize: 6.4, 3.8
+figure.dpi: 120
+figure.constrained_layout.use: True
+figure.facecolor: white
+savefig.facecolor: white
+savefig.dpi: 150
+
+font.size: 10
+axes.titlesize: 11
+axes.titleweight: bold
+axes.labelsize: 10
+xtick.labelsize: 9
+ytick.labelsize: 9
+legend.fontsize: 9
+legend.frameon: True
+legend.framealpha: 1.0
+legend.facecolor: white
+legend.edgecolor: 0.6
+legend.fancybox: False
+
+# fully framed axes with a 5% buffer at the ends
+axes.spines.top: True
+axes.spines.right: True
+axes.xmargin: 0.05
+axes.ymargin: 0.05
+axes.grid: True
+axes.axisbelow: True
+grid.color: d0d7de
+grid.linewidth: 0.6
+grid.alpha: 0.7
+
+# brand teal first, then a red for dummies and thresholds, amber, blue, light teal, grey
+axes.prop_cycle: cycler('color', ['336C68', 'D1495B', 'EDAE49', '30638E', '6BB2AD', '8D99AE'])
+lines.linewidth: 1.8
+lines.markersize: 5

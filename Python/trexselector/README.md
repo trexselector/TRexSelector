@@ -178,7 +178,7 @@ raise `ValueError`. A seeded run selects the same variables whatever the thread 
 The docstring of every class and function is the reference, reachable with `help(trexselector.TRexSelector)` and the
 other names, and the stub files of the package give the signatures to an editor. The
 [Examples repository](https://github.com/trexselector/TRexSelector_Examples) carries worked demos in Python, R and
-C++, and the R package's twelve vignettes describe the methods in prose with the same parameters.
+C++, and the R package's thirteen vignettes describe the methods in prose with the same parameters.
 
 ## Links
 
@@ -189,13 +189,15 @@ C++, and the R package's twelve vignettes describe the methods in prose with the
 - Citation metadata: [CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff) at the
   repository root
 - Bug reports: <https://github.com/trexselector/TRexSelector/issues>
+- Team T-Rex, the authors and their contact: <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
 
 ## Acknowledgements
 
-The library builds on the Eigen linear algebra library: G. Guennebaud, B. Jacob et al., Eigen v3,
-<https://libeigen.gitlab.io/>, 2010. It binds the C++ core through pybind11 and relies on cereal for
-serialization, on Boost.Interprocess for memory mapping and on OpenMP for the threads, with an optional
-BLAS/LAPACK backend.
+The library builds on the Eigen linear algebra library. It binds the C++ core through pybind11 and relies
+on cereal for serialization, on Boost.Interprocess for memory mapping and on OpenMP for the threads, with
+an optional BLAS/LAPACK backend.
+
+> G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
 
 ## License
 

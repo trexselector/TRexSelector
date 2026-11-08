@@ -1,0 +1,132 @@
+/* The trexselector site: a wider content column for the tables of the guide, tables and code as in the
+   R vignettes. */
+:root {
+  --content-width: 50em;
+}
+article table.docutils {
+  margin: 1em auto;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+article table.docutils th,
+article table.docutils td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--color-background-border);
+}
+article table.docutils thead {
+  border-bottom: 2px solid var(--color-brand-primary);
+}
+.cell_output pre {
+  border-left: 3px solid var(--color-brand-primary);
+}
+
+/* The current page as the C++ guide marks it: teal, bold, a bar at the left, no background. */
+.sidebar-tree .current-page > .reference {
+  color: var(--color-brand-primary);
+  font-weight: 600;
+  background: none;
+  box-shadow: inset 4px 0 0 var(--color-brand-primary);
+}
+.sidebar-tree .current-page > .reference:hover {
+  background: none;
+}
+
+/* A rule between the pages of the guide and the look-ups in the sidebar, as in the R vignettes. */
+.sidebar-tree > p.caption:not(:first-child) {
+  border-top: 1px solid var(--color-sidebar-background-border);
+  padding-top: 0.75rem;
+}
+
+/* The page numbers stay in the sidebar and the previous/next links, the heading goes without. */
+h1 .section-number {
+  display: none;
+}
+
+/* The previous link left, the position "n / N" (pages_nav.js) in the center, the next link right. */
+.related-pages {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 1rem;
+  align-items: center;
+}
+.related-pages a.prev-page {
+  grid-column: 1;
+  min-width: 0;
+}
+.related-pages .page-position {
+  grid-column: 2;
+  white-space: nowrap;
+  color: var(--color-foreground-secondary);
+  font-size: var(--font-size--small);
+}
+.related-pages a.next-page {
+  grid-column: 3;
+  min-width: 0;
+  justify-self: end;
+}
+
+/* The running top bar (pages_nav.js): brand, the guide's name and the page position, fixed over the
+   sidebars and the content, which start below it. Narrow screens keep furo's own mobile header. */
+@media (min-width: 63em) {
+  .page {
+    padding-top: 40px;
+  }
+  .sidebar-sticky,
+  .toc-sticky {
+    top: 40px;
+    height: calc(100vh - 40px);
+  }
+  :target {
+    scroll-margin-top: calc(40px + 1rem);
+  }
+  .back-to-top {
+    top: calc(40px + 1rem);
+  }
+  .trex-topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    background: #2C3E50;
+    color: #ecf0f1;
+    font-size: 13px;
+  }
+  .trex-topbar .brand,
+  .trex-topbar .brand:visited {
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+    margin-right: 12px;
+    text-decoration: none;
+  }
+  .trex-topbar .brand:hover {
+    color: #6BB2AD;
+  }
+  .trex-topbar .sub {
+    color: #bdc3c7;
+  }
+  .trex-topbar .where {
+    margin-left: auto;
+    color: #6BB2AD;
+    font-weight: bold;
+  }
+}
+@media (max-width: 63em) {
+  .trex-topbar {
+    display: none;
+  }
+}
+
+/* justified paragraphs and list items of the page content, hyphenated */
+article[role="main"] p,
+article[role="main"] li {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
