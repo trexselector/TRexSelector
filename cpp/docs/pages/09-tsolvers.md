@@ -152,3 +152,12 @@ correlations, the Cholesky factor, the coefficient path). `X` and `D` are borrow
 The last section removes the folder of the saved state.
 
 \snippet{trimleft} tsolvers.cpp cleanup
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of every T-solver and five performance
+studies, with their results and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/tsolvers/ad),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/tsolvers/ad) and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/tsolvers/ad).

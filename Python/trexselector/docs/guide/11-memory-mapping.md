@@ -155,3 +155,13 @@ import shutil
 del view, mm, ro, big, s, sel_map
 shutil.rmtree(workdir)
 ```
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of memory-mapped designs, with their results
+and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/memory_mapping/demo_memory_mapping),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/memory_mapping/demo_memory_mapping)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/memory_mapping/demo_memory_mapping).

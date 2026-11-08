@@ -137,3 +137,13 @@ print("TPP:", compute_tpp(ien.selected_indices, true_support))
 ```
 
 With the groups known and the penalty informed, the active groups enter complete.
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of T-Rex GVS on block designs of several
+kinds, with their results and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_gvs),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_gvs)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/trex_selector_methods/ad/trex_gvs).

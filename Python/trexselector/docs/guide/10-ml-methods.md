@@ -201,3 +201,12 @@ cut_tree(link_vars, num_orig_objs=p, num_clusters=5)[:6]
 
 `use_mmap=True` keeps the intermediate distances in memory-mapped files, and a memory-mapped `data`
 matrix is clustered in place.
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of the scalers, ridge and elastic-net
+cross-validation, PCA, SVD and clustering, with their results and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/ml_methods),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/ml_methods) and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/ml_methods).

@@ -210,3 +210,14 @@ A Monte Carlo study over three target levels. Each trial draws its own data and 
 
 The estimated FDR stays below the target at every level, 20 trials per level. The simulations of
 the T-Rex paper \cite machkour2025trex show the same over a far wider range of settings.
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of the T-Rex selector, from single runs over
+fixed and variable supports, the dummy strategies and distributions to memory-mapped designs and
+scalability, with their results and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_core),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_core)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/trex_selector_methods/ad/trex_core).

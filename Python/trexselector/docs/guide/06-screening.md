@@ -144,3 +144,13 @@ Both screening selectors accept a memory-mapped design (the `to_numpy()` view of
 `MemoryMappedMatrix`), which [the memory-mapping page](11-memory-mapping.md) describes. The
 combination of the screening and a mapped design is what solved sparse regression problems with five
 million variables on a laptop {cite}`scheidt2023bigtrex`.
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of Screen-T-Rex and the biobank screening,
+in memory and memory-mapped, with their results and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_screening),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_screening)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/trex_selector_methods/ad/trex_screening).

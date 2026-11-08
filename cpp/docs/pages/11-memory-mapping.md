@@ -75,3 +75,13 @@ read afterwards. For a design that fits comfortably in memory an Eigen matrix is
 paging happens. Mapped files are never read into the process heap by the library, so the memory
 footprint of a run is the library's working data, see `memoryBytes()` on the T-solvers. The example
 program removes its folder of mapped files at the end, after the mapped objects are gone.
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of memory-mapped designs, with their results
+and a README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/memory_mapping/demo_memory_mapping),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/memory_mapping/demo_memory_mapping)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/memory_mapping/demo_memory_mapping).

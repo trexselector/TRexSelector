@@ -10,6 +10,17 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-08
 
+#### The method pages link the demos of the Examples repository
+
+- Pages 3 to 7 and 9 to 11 of the three guides end with an "Examples" section before the bibliography:
+  the TRexSelector_Examples repository holds runnable demos and Monte Carlo studies of the page's
+  method, with their results and a README per demo, and the section links the demo folders of the
+  three surfaces on the main branch of that repository (the selectors under
+  `trex_selector_methods/ad/`, the T-solvers under `tsolvers/ad/`, the ML methods and the memory
+  mapping). So the guides stay the short walk-through and the comprehensive studies live where they
+  run. Pages 2, 8, 12 and 13 have no demo folder yet and keep no section. The search index follows
+  (114 headings).
+
 #### A publications page, the software the packages build on, and the documentation toolchain
 
 - `PUBLICATIONS.md` at the repository root lists every paper of the method family, journal articles,

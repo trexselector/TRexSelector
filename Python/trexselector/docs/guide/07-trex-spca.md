@@ -145,3 +145,13 @@ print("file restored:   ", np.allclose(X_map.to_numpy(), X))
 del mapped, X_map
 shutil.rmtree(workdir)
 ```
+
+## Examples
+
+The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
+repository holds runnable demos and Monte Carlo studies of T-Rex SPCA, with their results and a
+README per demo, in
+[R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_spca),
+[Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_spca)
+and
+[C++](https://github.com/trexselector/TRexSelector_Examples/tree/main/cpp/trex_selector_methods/ad/trex_spca).
