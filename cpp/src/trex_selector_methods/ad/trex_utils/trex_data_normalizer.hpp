@@ -119,6 +119,8 @@ struct NormalizationParams {
  *                source compatibility.
  * @param mode Column scaling convention (default: L2). ZSCORE divides by the
  *             sample SD (n-1) instead of the L2 norm; NONE leaves X as is.
+ * @param n_threads Thread budget of the column pass; the library's default
+ *                  budget unless given.
  *
  * @throws std::invalid_argument on a non-finite entry or a dead column.
  */
@@ -145,6 +147,8 @@ void centerAndL2NormalizeX(Eigen::Ref<Eigen::MatrixXd> X,
  * @param verbose If true, warn about zero-norm columns.
  * @param mode Column scaling convention (default: L2). ZSCORE divides by the
  *             sample SD (n-1) instead of the L2 norm; NONE is a no-op.
+ * @param n_threads Thread budget of the column pass; the library's default
+ *                  budget unless given.
  */
 void centerAndL2NormalizeMatrix(Eigen::Ref<Eigen::MatrixXd> M,
                                 double eps = std::numeric_limits<double>::epsilon(),
@@ -161,6 +165,8 @@ void centerAndL2NormalizeMatrix(Eigen::Ref<Eigen::MatrixXd> M,
  * @param X Matrix to denormalize (modified in-place).
  * @param params Normalization parameters (means and norms from a prior call to
  *               centerAndL2NormalizeX).
+ * @param n_threads Thread budget of the column pass; the library's default
+ *                  budget unless given.
  */
 void denormalizeX(Eigen::Ref<Eigen::MatrixXd> X,
                   const NormalizationParams& params,

@@ -80,10 +80,10 @@ public:
      * @param X Predictor matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (size n).
-     * @param normalize If true, columns are scaled to unit L2-norm.
-     * @param intercept If true, variables are centered.
-     * @param verbose If true, print detailed status and diagnostics.
-     * @param scaling_mode Column-scaling convention (L2 or z-score). Default L2.
+     * @param options Every other input (SolverOptions): the preprocessing flags
+     *        normalize (unit L2-norm columns), intercept (centering), verbose
+     *        (detailed status and diagnostics) and scaling_mode (L2 or
+     *        z-score, default L2), the tolerance and the tie-breaking.
      */
     TSTEPWISE_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                      Eigen::Map<Eigen::MatrixXd>& D,

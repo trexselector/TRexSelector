@@ -107,6 +107,8 @@ inline double compute_tpp(
  *
  * @param beta_hat Estimated regression coefficient vector (Map-compatible)
  * @param beta True regeression coefficient vector (Map-compatible)
+ * @param eps Magnitude threshold: a coefficient with |value| <= eps counts as zero
+ *            (default: machine epsilon)
  *
  * @return False discovery proportion (FDP)
  */

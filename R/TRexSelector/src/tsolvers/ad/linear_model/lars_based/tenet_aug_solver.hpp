@@ -218,18 +218,18 @@ public:
      * @param X          Predictor matrix (n × p).
      * @param D          Dummy matrix (n × L).
      * @param y          Response vector (n).
-     * @param lambda2    Ridge (L2) regularisation parameter (≥ 0).
-     * @param normalize  Forwarded to TLASSO_Solver: if true, columns of the
-     *                   augmented matrices are L2-normalised to unit norm.
-     *                   Default true.
-     * @param intercept  Forwarded to TLASSO_Solver: if true, columns and
-     *                   response are centred.  Default true.
-     * @param verbose    Forwarded to TLASSO_Solver.  Default false.
-     * @param scaling_mode Forwarded to the inner solver: L2 (unit-L2) or z-score
-     *                   column scaling.  Default L2.
-     * @param use_lars_inner If true, the inner forward-selection solver is a
-     *                   pure-LARS TLARS_Solver (never drops variables) instead of
-     *                   the default TLASSO_Solver. Diagnostic / R-parity option.
+     * @param options    Every other input (SolverOptions); this solver reads
+     *                   lambda2, the ridge (L2) regularisation parameter
+     *                   (≥ 0), the preprocessing flags forwarded to the inner
+     *                   TLASSO_Solver — normalize (columns of the augmented
+     *                   matrices L2-normalised to unit norm, default true),
+     *                   intercept (columns and response centred, default
+     *                   true), verbose (default false) and scaling_mode (L2
+     *                   or z-score column scaling, default L2) — and
+     *                   tenet_aug_use_lars: if true, the inner
+     *                   forward-selection solver is a pure-LARS TLARS_Solver
+     *                   (never drops variables) instead of the default
+     *                   TLASSO_Solver. Diagnostic / R-parity option.
      */
     TENETAug_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                     Eigen::Map<Eigen::MatrixXd>& D,

@@ -89,10 +89,11 @@ public:
      * @param X Original design matrix (n x p).
      * @param D Dummy design matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param normalize If true, each column of X is scaled to unit L2-norm.
-     * @param intercept If true, X and y are centered (intercept fitted).
-     * @param verbose If true, print status and diagnostics during execution.
-     * @param scaling_mode Column-scaling convention (L2 or z-score). Default L2.
+     * @param options Every other input (SolverOptions): the preprocessing flags
+     *        normalize (each column of X scaled to unit L2-norm), intercept
+     *        (X and y centered, intercept fitted), verbose (status and
+     *        diagnostics during execution) and scaling_mode (L2 or z-score,
+     *        default L2), the tolerance and the tie-breaking.
      */
     TSTAGEWISE_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                       Eigen::Map<Eigen::MatrixXd>& D,
@@ -148,7 +149,7 @@ public:
      *
      * @tparam Archive Cereal archive type.
      *
-     * @param ar Output/input archive object.
+     * @param archive Output/input archive object.
      */
     template<class Archive>
     void serialize(Archive& archive) {

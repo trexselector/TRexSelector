@@ -1,11 +1,11 @@
 // ===================================================================================
-// utils_cdiagnostics.hpp
+// utils_eval_cdiagnostics.hpp
 // ===================================================================================
 #ifndef UTILS_EVAL_CDIAGNOSTICS_HPP
 #define UTILS_EVAL_CDIAGNOSTICS_HPP
 // ===================================================================================
 /**
- * @file utils_cdiagnostics.hpp
+ * @file utils_eval_cdiagnostics.hpp
  *
  * @brief Console diagnostics utilities for console print outs and special print outs
  *        for evaluating path-based solver performance.

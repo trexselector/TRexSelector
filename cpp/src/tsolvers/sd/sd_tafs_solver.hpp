@@ -59,10 +59,21 @@ public:
     /**
      * @brief SD-TAFS over sparse balanced Rademacher dummies.
      *
+     * @param X     Predictor matrix (n x p), preprocessed to the solver
+     *              contract (centered, equal-norm columns); viewed, not copied.
+     * @param y     Centered response vector (n); copied.
      * @param rho_d Dummy non-zero fraction (2k ~= rho_d * n). Pass 0 to
      *              auto-calibrate k from the data via sd_calibration.
      * @param L_max Total dummy budget. Pass 0 for the auto budget:
      *              the calibration's L when rho_d == 0, else 2p.
+     * @param T_stop Early-stopping threshold T: the number of included
+     *              dummies at which the race ends; the materialized dummy
+     *              cache holds T_stop columns.
+     * @param intercept True when the data were centered, so one degree of
+     *              freedom goes to the intercept (effective n = n - 1).
+     *              Default true.
+     * @param seed  Seed of the dummy RNG; 0 (default) seeds from
+     *              std::random_device.
      * @param rho   AFS blending fraction in (0, 1]; 1 reduces to OMP.
      */
     SD_TAFS_Solver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::VectorXd>& y,

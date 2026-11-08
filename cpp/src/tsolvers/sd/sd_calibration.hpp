@@ -18,7 +18,7 @@
  *          budget L its reach is the (1 - 1/L) quantile of its null. For
  *          every candidate k this utility computes the exact ceiling, an MC
  *          estimate of that quantile, and the implied entry position
- *          m_k(L) = #null bars above the dummy reach = how many null reals
+ *          m_k(L) = \#null bars above the dummy reach = how many null reals
  *          must enter before the first dummy can win. The recommendation is
  *          the smallest k with m_k(L) <= m_tol.
  *
@@ -46,8 +46,8 @@ namespace trex::tsolvers::sd::calibration {
 struct Options {
     std::size_t L{0};             ///< dummy budget; 0 -> L_factor * p
     double L_factor{2.0};         ///< default budget multiple of p
-    std::size_t m_tol{1};         ///< max #nulls allowed before the first dummy win
-    std::size_t pilot_screen{20}; ///< #columns projected off y for the pilot residual
+    std::size_t m_tol{1};         ///< max \#nulls allowed before the first dummy win
+    std::size_t pilot_screen{20}; ///< \#columns projected off y for the pilot residual
     std::vector<std::size_t> k_grid{1, 3, 7, 15, 25, 50, 75};
     std::size_t mc_draws{2'000'000};
     uint64_t seed{123};
@@ -57,7 +57,7 @@ struct Row {
     std::size_t k{0};
     double ceiling{0.0};      ///< max possible dummy |corr| given the residual
     double q_L{0.0};          ///< MC (1 - 1/L) quantile, capped at the ceiling
-    std::size_t m_entry{0};   ///< #null bars above q_L
+    std::size_t m_entry{0};   ///< \#null bars above q_L
 };
 
 struct Result {

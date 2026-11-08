@@ -89,6 +89,8 @@ public:
     /** @brief Constructor for GenericLinkage class.
      *
      * @param data Eigen::matrix or map containing the variables to cluster.
+     * @param args Forwarded to the constructor of the distance updater
+     *        (e.g. use_mmap, verbose and n_threads of BlockTiledMatrixPolicy).
      */
     template <typename... PolicyArgs>
     GenericLinkage(const MatrixType& data, PolicyArgs&&... args)

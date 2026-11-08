@@ -50,7 +50,17 @@ private:
     void olsRefit();
 
 public:
+    /// @param X Predictor matrix (n x p), preprocessed to the solver contract
+    ///        (centered, equal-norm columns); viewed, not copied.
+    /// @param y Centered response vector (n); copied.
     /// @param L_max Total dummy budget; 0 selects the auto budget 2p.
+    /// @param T_stop Early-stopping threshold T: the number of included dummies
+    ///        at which the race ends.
+    /// @param intercept True when the data were centered, so one degree of
+    ///        freedom goes to the intercept (effective n = n - 1). Default true.
+    /// @param seed Seed of the dummy RNG; 0 (default) seeds from std::random_device.
+    /// @param policy Dummy-generation policy: OnDemand pool (default) or Geometric
+    ///        exact pair null (see SD2GenPolicy).
     SD2_TOMP_Solver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::VectorXd>& y,
                     std::size_t L_max, std::size_t T_stop, bool intercept = true,
                     uint64_t seed = 0,

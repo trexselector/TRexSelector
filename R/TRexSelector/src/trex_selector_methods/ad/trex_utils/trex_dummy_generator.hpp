@@ -172,6 +172,8 @@ public:
      *
      * @param num_dummies    Number of dummy columns.
      * @param experiment_id  Experiment index k.
+     * @param l_tag          The L step (num_dummies / p), the tag STANDARD
+     *                       uses for the same step.
      *
      * @return Normalized dummy matrix (n × num_dummies).
      */
@@ -439,7 +441,8 @@ public:
      *
      * @param K             Number of experiments.
      * @param num_dummies   Number of dummy columns per matrix.
-     * @param seed_factor   L-loop iteration factor for seed mixing (0 = none).
+     * @param l_tag         L-loop tag for seed mixing (0 = none, prefix-stable;
+     *                      L_iter for STANDARD).
      */
     void generateAndStore(std::size_t K,
                           std::size_t num_dummies,

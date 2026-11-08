@@ -331,8 +331,8 @@ protected:
      *      - Ordinary Screen-TRex result A_p(0.5, 1) with estimate α̂
      *      - Fallback T-REx selector result
      *
-     * @param result_ordinary Result from ordinary Screen-TRex.
-     * @param result_bootstrap Result from boostrap-CI Screen-TRex.
+     * @param sctrex_result_bootstrap Result from bootstrap-CI Screen-TRex.
+     * @param sctrex_result_ordinary Result from ordinary Screen-TRex.
      * @param y Phenotype vector.
      * @param phenotype_index Index of the phenotype being screened.
      *

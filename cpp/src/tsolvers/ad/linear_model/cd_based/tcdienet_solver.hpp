@@ -168,10 +168,10 @@ public:
      * @param D Dummy matrix (n x L) with L a multiple of p; dummy column j
      *        of each layer shares original variable j's group.
      * @param y Response vector (size n).
-     * @param lambda2 Group-mean (L2) penalty weight (>= 0).
      * @param groups 0-based contiguous group ids in [0, M-1], length p.
      * @param options Every other input (SolverOptions); this solver reads
-     *        lambda2 and group_penalty — MEAN (default, the canonical IEN
+     *        lambda2, the group-mean (L2) penalty weight (>= 0), and
+     *        group_penalty — MEAN (default, the canonical IEN
      *        group-sum penalty) or CENTERING, the within-group centering
      *        penalty K = blockdiag(I - J/p_m) with the same O(1) hook cost
      *        (see GroupPenaltyVariant) — plus the cd_* knobs. kappa_dummy

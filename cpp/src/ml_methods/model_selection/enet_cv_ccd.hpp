@@ -246,9 +246,18 @@ public:
      *        with the raw-X engine: the training fold is never gathered
      *        (used by enet_cv_ccd in low-memory mode).
      *
+     * @param X               Predictor matrix (n x p), all rows.
+     * @param y               Response vector (n), all rows.
      * @param mask  Length n, 1 for a training row, 0 for a held-out row. The
      *              column statistics, the response scaling and every dot
      *              product are taken over the training rows only.
+     * @param lambda_grid     Explicit @f$\lambda@f$ values (any order, > 0).
+     * @param alpha           Elastic-net mixing in [0,1]; 1 = lasso, 0 = ridge.
+     * @param standardize     Standardise columns to unit population SD.
+     * @param intercept       Fit an unpenalised intercept by centering X and y.
+     * @param use_strong_rule Enable the sequential strong rule.
+     * @param max_iter        Max CD sweeps per @f$\lambda@f$.
+     * @param tol             Convergence tolerance (standardised units).
      */
     void fit_masked(Eigen::Ref<const Eigen::MatrixXd>  X,
                     Eigen::Ref<const Eigen::VectorXd>  y,

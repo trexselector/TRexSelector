@@ -207,6 +207,8 @@ protected:
      * @brief Grow the active set by column @p winning_j (Cholesky append via
      * the materialized cache).
      *
+     * @param winning_j Global index of the entering column (j < p: real
+     *                  feature, j >= p: materialized dummy).
      * @param xty_out When non-null, receives x_new^T y (maintained by the
      *                refit solvers for their OLS solves; LARS passes null).
      *
@@ -233,12 +235,21 @@ public:
     /**
      * @brief Shared construction of the general-k family.
      *
+     * @param X     Predictor matrix (n x p), preprocessed to the solver
+     *              contract (centered, equal-norm columns); viewed, not copied.
+     * @param y     Centered response vector (n); copied.
      * @param rho_d Dummy non-zero fraction (2k ~= rho_d * n). Pass 0 to
      *              auto-calibrate k from the data via sd_calibration
      *              (pilot screen + MC; seconds at large p). The result is
      *              readable via getAutoCalibration().
      * @param L_max Total dummy budget. Pass 0 for the auto budget:
      *              the calibration's L when rho_d == 0, else 2p.
+     * @param T_stop Early-stopping threshold T: the number of included
+     *              dummies at which the race ends; the materialized dummy
+     *              cache holds T_stop columns.
+     * @param intercept True when the data were centered, so one degree of
+     *              freedom goes to the intercept (effective n = n - 1).
+     * @param seed  Seed of the dummy RNG; 0 seeds from std::random_device.
      */
     SDGeneralSolver_Base(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::VectorXd>& y,
                          double rho_d, std::size_t L_max, std::size_t T_stop,

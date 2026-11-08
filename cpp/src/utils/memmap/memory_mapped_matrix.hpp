@@ -32,8 +32,8 @@ namespace trex::utils::memmap {
 /**
  * @brief Access mode for memory-mapped files
  *
- * @enum ReadOnly: Open the file in read-only mode
- * @enum ReadWrite: Open the file in read-write mode
+ * - ReadOnly: Open the file in read-only mode
+ * - ReadWrite: Open the file in read-write mode
  */
 enum class AccessMode {
     ReadOnly,

@@ -111,6 +111,8 @@ public:
      *                  Stored in means_; reversed by restore().
      * @param normalize If true (default), columns are divided by their L2 norm after
      *                  centering. Stored in norms_; reversed by restore().
+     * @param n_threads Thread budget of the Eigen products in the preprocessing and
+     *                  in fit() (>= 1); the library's default budget unless given.
      *
      * @throws std::invalid_argument if M > min(n, p) or n <= 1.
      */

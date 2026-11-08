@@ -116,9 +116,11 @@ public:
      * @param X Design matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param normalize If true, each column of X and D is scaled to unit L2-norm.
-     * @param intercept If true, X, D, and y are centered (intercept fitted).
-     * @param verbose If true, print status and diagnostics during execution.
+     * @param options Every other input (SolverOptions): the preprocessing flags
+     *        normalize (each column of X and D scaled to unit L2-norm),
+     *        intercept (X, D and y centered, intercept fitted) and verbose
+     *        (status and diagnostics during execution), the tolerance and the
+     *        tie-breaking.
      */
     TACGP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,

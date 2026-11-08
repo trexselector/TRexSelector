@@ -107,12 +107,13 @@ public:
      * @param X Predictor matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (size n).
-     * @param lambda2 Quadratic (ridge) penalty weight (>= 0).
-     * @param normalize If true, columns are scaled to unit L2-norm. Default true.
-     * @param intercept If true, variables are centered. Default true.
-     * @param verbose If true, print detailed status and diagnostics. Default false.
-     * @param scaling_mode Column-scaling convention (L2 or z-score). Default L2.
-     * @param kappa_dummy Ridge weight of the dummy block. Default 1.0.
+     * @param options Every other input (SolverOptions); this solver reads
+     *        lambda2, the quadratic (ridge) penalty weight (>= 0), and
+     *        kappa_dummy, the ridge weight of the dummy block (default 1.0),
+     *        besides the preprocessing flags normalize (unit L2-norm columns,
+     *        default true), intercept (centering, default true), verbose
+     *        (detailed status and diagnostics, default false) and
+     *        scaling_mode (L2 or z-score, default L2).
      */
     TCDENET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,

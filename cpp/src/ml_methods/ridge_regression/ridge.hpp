@@ -56,6 +56,8 @@ public:
      * @param X The input data matrix (n_samples x n_features).
      * @param y The target vector (n_samples).
      * @param lambda The regularization parameter.
+     * @param n_threads Thread budget of the Eigen products of the solve (>= 1); the
+     *        library's default budget unless given.
      *
      * @return The coefficient vector (n_features).
      */

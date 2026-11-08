@@ -89,11 +89,12 @@ public:
      * @param X         Predictor matrix (n x p).
      * @param D         Dummy matrix (n x num_dummies).
      * @param y         Response vector (size n).
-     * @param lambda2   Ridge (L2) regularization parameter (>= 0).
-     * @param normalize If true, columns are scaled to unit L2-norm. Default true.
-     * @param intercept If true, variables are centered. Default true.
-     * @param verbose   If true, print detailed status. Default false.
-     * @param scaling_mode Column-scaling convention (L2 or z-score). Default L2.
+     * @param options   Every other input (SolverOptions); this solver reads
+     *                  lambda2, the ridge (L2) regularization parameter
+     *                  (>= 0), and the preprocessing flags normalize (unit
+     *                  L2-norm columns, default true), intercept (centering,
+     *                  default true), verbose (detailed status, default
+     *                  false) and scaling_mode (L2 or z-score, default L2).
      */
     TENET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,

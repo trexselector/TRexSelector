@@ -149,12 +149,13 @@ public:
      *                  lambda2 > 0; dummy column j of each layer shares
      *                  original variable j's group.
      * @param y         Response vector (size n).
-     * @param lambda2   Group-ridge (L2) regularization parameter (>= 0).
      * @param groups    0-based contiguous group ids in [0, M-1], length p.
-     * @param normalize If true, columns are scaled to unit L2-norm. Default true.
-     * @param intercept If true, variables are centered. Default true.
-     * @param verbose   If true, print detailed status. Default false.
-     * @param scaling_mode Column-scaling convention (L2 or z-score). Default L2.
+     * @param options   Every other input (SolverOptions); this solver reads
+     *                  lambda2, the group-ridge (L2) regularization parameter
+     *                  (>= 0), and the preprocessing flags normalize (unit
+     *                  L2-norm columns, default true), intercept (centering,
+     *                  default true), verbose (detailed status, default
+     *                  false) and scaling_mode (L2 or z-score, default L2).
      */
     TIENET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,

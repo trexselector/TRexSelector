@@ -45,7 +45,7 @@ namespace trex::ml_methods::clustering::hierarchical::agglomerative {
  * `Correlation_LSH_Approx` provides massive O(1) speedups (up to 250x) while
  * maintaining near-perfect accuracy (ARI ~ 1.0) for SLINK, UPGMA, and Complete Linkage.
  *
- * - AR(1) / Chain-like Data: If your variables represent spatial or temporal sequences
+ *  - AR(1) / Chain-like Data: If your variables represent spatial or temporal sequences
  * where correlation decays over distance (forming continuous "strings"),
  * DO NOT USE LSH. The random hyperplanes will slice the continuous gradient,
  * creating quantization noise that completely shatters the clusters (ARI ~ 0.0).

@@ -17,7 +17,7 @@
  *
  *  These helpers instead inspect IEEE 754 bit patterns directly via
  *  std::memcpy — well-defined type-punning in C++20 — and use only integer
- *  arithmetic. No <cmath> classification functions are needed.
+ *  arithmetic. No \<cmath\> classification functions are needed.
  *
  *  The bit test alone is NOT enough under -ffinite-math-only with a recent
  *  Clang (17+; GCC alike): every floating-point parameter and return value

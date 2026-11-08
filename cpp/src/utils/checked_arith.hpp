@@ -34,6 +34,8 @@ namespace trex::utils::checked_arith {
 /**
  * @brief a * b, or std::overflow_error when the product does not fit std::size_t.
  *
+ * @param a First factor.
+ * @param b Second factor.
  * @param context Name of the caller for the error message.
  */
 inline std::size_t checked_mul(std::size_t a, std::size_t b,
@@ -49,6 +51,9 @@ inline std::size_t checked_mul(std::size_t a, std::size_t b,
 /**
  * @brief rows * cols * elem_size with both products checked.
  *
+ * @param rows Number of rows.
+ * @param cols Number of columns.
+ * @param elem_size Size of one element in bytes.
  * @param context Name of the caller for the error message.
  */
 inline std::size_t checked_bytes(std::size_t rows, std::size_t cols,

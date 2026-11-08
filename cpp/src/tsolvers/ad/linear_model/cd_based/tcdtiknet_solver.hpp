@@ -134,14 +134,14 @@ public:
      * @param X Predictor matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (size n).
-     * @param lambda2 Quadratic penalty weight (>= 0).
      * @param tikhonov_matrix PSD Tikhonov matrix K = Gamma^T Gamma (p x p,
      *        sparse) applied to the real block on the standardized scale.
      *        Dense K should be split (diagonal + low-rank) before passing;
      *        per-column nnz drives the update cost.
      * @param options Every other input (SolverOptions); this solver reads
-     *        lambda2, kappa_dummy (ridge weight of the dummy block under
-     *        INDEPENDENT_RIDGE coupling; ignored when fold_dummies is true)
+     *        lambda2, the quadratic penalty weight (>= 0), kappa_dummy (ridge
+     *        weight of the dummy block under INDEPENDENT_RIDGE coupling;
+     *        ignored when fold_dummies is true)
      *        and fold_dummies — the dummy-coupling mode (see the file
      *        header): false (default) INDEPENDENT_RIDGE, dummies get a
      *        decoupled kappa_dummy * I ridge (preserves K = I ≡ TCDENET with

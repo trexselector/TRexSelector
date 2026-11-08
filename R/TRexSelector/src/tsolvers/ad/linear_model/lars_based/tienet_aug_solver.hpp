@@ -236,21 +236,22 @@ public:
      *                   column j of each layer shares original variable j's
      *                   group.
      * @param y          Response vector (n).
-     * @param lambda2    Group-ridge (L2) regularisation parameter (>= 0).
      * @param groups     0-based contiguous group ids in [0, M-1], length p.
-     * @param normalize  Rescale the DATA-block columns (unit L2 / unit SD per
-     *                   scaling_mode) before augmentation; for lambda2 == 0
-     *                   forwarded to the inner solver instead. Default true.
-     * @param intercept  Center the DATA-block columns and y before
-     *                   augmentation; for lambda2 == 0 forwarded to the
-     *                   inner solver instead. Default true.
-     * @param verbose    Forwarded to the inner solver. Default false.
-     * @param scaling_mode Column-scaling convention for the post-augmentation
-     *                   preprocessing (and the lambda2 == 0 inner solver).
-     *                   Default L2.
-     * @param use_lars_inner If true, the inner forward-selection solver is a
-     *                   pure-LARS TLARS_Solver (never drops variables) instead
-     *                   of the default TLASSO_Solver.
+     * @param options    Every other input (SolverOptions); this solver reads
+     *                   lambda2, the group-ridge (L2) regularisation parameter
+     *                   (>= 0), and the preprocessing flags: normalize
+     *                   rescales the DATA-block columns (unit L2 / unit SD per
+     *                   scaling_mode) before augmentation and intercept
+     *                   centers the DATA-block columns and y before
+     *                   augmentation (for lambda2 == 0 both are forwarded to
+     *                   the inner solver instead; default true), verbose is
+     *                   forwarded to the inner solver (default false),
+     *                   scaling_mode is the column-scaling convention of the
+     *                   post-augmentation preprocessing (and the lambda2 == 0
+     *                   inner solver; default L2), and tenet_aug_use_lars
+     *                   makes the inner forward-selection solver a pure-LARS
+     *                   TLARS_Solver (never drops variables) instead of the
+     *                   default TLASSO_Solver.
      *
      * @throws std::invalid_argument on lambda2 < 0, malformed groups, or
      *         D.cols() not a multiple of X.cols() (lambda2 > 0 only).

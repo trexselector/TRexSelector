@@ -242,6 +242,8 @@ public:
      * @param data The input data matrix (columns are objects to cluster).
      * @param use_mmap If true, the distance matrix is stored on disk using memory mapping.
      * @param verbose If true, emit backend-allocation log messages (default: true).
+     * @param n_threads Thread budget of the distance precomputation and the update passes
+     *        (>= 1); the library's default budget unless given.
      */
     BlockTiledMatrixPolicy(const MatrixType& data, bool use_mmap = false, bool verbose = true,
                            int n_threads = ::trex::utils::openmp::get_num_threads())

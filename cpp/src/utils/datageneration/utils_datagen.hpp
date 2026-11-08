@@ -576,6 +576,12 @@ public:
      * @param snr Desired signal-to-noise ratio (linear). Default is 1.0.
      * @param seed Base random seed for reproducibility (optional). Default is -1, which uses a
      * random seed from std::random_device.
+     * @param predictor_policy Policy object specifying the distribution for predictor generation.
+     *  Default is predictor_policy::Normal().
+     * @param noise_policy Policy object specifying the distribution for noise generation.
+     *  Default is noisegen::noise_policy::Normal().
+     * @param n_threads Thread budget of the generation; the library's default
+     *  budget (openmp::get_num_threads(), initially 1) unless given.
      */
     template <
         typename PredictorPolicy = predictor_policy::Normal,

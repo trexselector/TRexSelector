@@ -159,6 +159,11 @@ public:
      * @tparam Method              The linkage method requested by the user.
      *
      * @param data The data matrix (columns are objects to cluster).
+     * @param use_mmap If true, the distance matrix of the matrix-based engines is stored on
+     *        disk using memory mapping (default: false).
+     * @param verbose If true, emit backend-allocation log messages (default: true).
+     * @param n_threads Thread budget of the engine (>= 1); the library's default budget
+     *        unless given.
      * @return std::vector<MergeStep> The standard, chronologically sorted merge matrix.
      */
     template <typename MatrixType, typename DistancePolicyType, LinkageMethod Method>

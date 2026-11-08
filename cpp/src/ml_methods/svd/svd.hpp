@@ -71,6 +71,8 @@ public:
      *                           Randomized SVD path is considered. Default: 10,000.
      * @param block_size         Column-block width used in cache-friendly matrix products
      *                           inside the RedSVD and Gram SVD paths. Default: 1,024.
+     * @param n_threads          Thread budget of the Eigen products in the SVD paths (>= 1);
+     *                           the library's default budget unless given.
      */
     explicit SVDSolver(Eigen::Index min_dim_thresh = 10'000,
                        Eigen::Index block_size     = 1'024,

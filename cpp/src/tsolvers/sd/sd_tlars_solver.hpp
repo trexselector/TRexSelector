@@ -24,12 +24,23 @@ public:
     /**
      * @brief SD-TLARS over sparse balanced Rademacher dummies.
      *
+     * @param X     Predictor matrix (n x p), preprocessed to the solver
+     *              contract (centered, equal-norm columns); viewed, not copied.
+     * @param y     Centered response vector (n); copied.
      * @param rho_d Dummy non-zero fraction (2k ~= rho_d * n). Pass 0 to
      *              auto-calibrate k from the data via sd_calibration
      *              (pilot screen + MC; seconds at large p). The result is
      *              readable via getAutoCalibration().
      * @param L_max Total dummy budget. Pass 0 for the auto budget:
      *              the calibration's L when rho_d == 0, else 2p.
+     * @param T_stop Early-stopping threshold T: the number of included
+     *              dummies at which the race ends; the materialized dummy
+     *              cache holds T_stop columns.
+     * @param intercept True when the data were centered, so one degree of
+     *              freedom goes to the intercept (effective n = n - 1).
+     *              Default true.
+     * @param seed  Seed of the dummy RNG; 0 (default) seeds from
+     *              std::random_device.
      */
     SD_TLARS_Solver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::VectorXd>& y,
                     double rho_d, std::size_t L_max, std::size_t T_stop, bool intercept = true,

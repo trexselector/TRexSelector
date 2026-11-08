@@ -1,11 +1,11 @@
 // ===================================================================================
-// utils_eval_composite.hpp
+// utils_eval_composites.hpp
 // ===================================================================================
 #ifndef UTILS_EVAL_COMPOSITE_HPP
 #define UTILS_EVAL_COMPOSITE_HPP
 // ===================================================================================
 /**
- * @file utils_eval_composite.hpp
+ * @file utils_eval_composites.hpp
  *
  * @brief Composite evaluation utilities for console diagnostics.
  *

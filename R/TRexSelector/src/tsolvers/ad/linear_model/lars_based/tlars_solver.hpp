@@ -212,7 +212,7 @@ public:
     /**
      * @brief Convert enum to human-readable string for reporting/logging.
      *
-     * @param type The SolverTypeLarsBased enum value.
+     * Converts the solver's own SolverTypeLarsBased value (algo_type_).
      *
      * @return Static string name.
      */
@@ -377,7 +377,7 @@ protected:
      * @brief Update and record the solution path coefficients after each
      *        algorithmic step.
      *
-     * @param w_a Current equiangular direction weights (for actives).
+     * @param w_A Current equiangular direction weights (for actives).
      * @param gamma Step size to move along direction.
      */
     void updateBetaPath(const Eigen::Ref<const Eigen::VectorXd>& w_A, double gamma);

@@ -71,9 +71,10 @@ public:
      * @param X Map to the predictor matrix (n x p).
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
-     * @param normalize Whether to normalize the predictors.
-     * @param intercept Whether to include an intercept term.
-     * @param verbose Whether to enable verbose output.
+     * @param options Every other input (SolverOptions): the preprocessing flags
+     *        normalize (normalize the predictors), intercept (include an
+     *        intercept term) and verbose (verbose output), the tolerance and
+     *        the tie-breaking.
      */
     TOOLS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,

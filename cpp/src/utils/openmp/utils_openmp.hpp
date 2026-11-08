@@ -21,7 +21,7 @@
  * OpenMP capabilities.
  *
  * Usage: rather than including raw <omp.h>, include this header in your source files:
- * #include <utils/openmp/utils_openmp.hpp>
+ * \#include <utils/openmp/utils_openmp.hpp>
  *
  * Compiler flags:
  * - GCC/Clang: -fopenmp

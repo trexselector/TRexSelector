@@ -91,6 +91,8 @@ public:
      * @brief Constructor
      *
      * @param data Eigen matrix or map containing the variables to cluster.
+     * @param args Forwarded to the constructor of the distance policy
+     *        (e.g. use_mmap, verbose and n_threads).
      *
      * @note Clustering is done over columns (variables). Expected data shape is
      * (n_samples x n_features).
