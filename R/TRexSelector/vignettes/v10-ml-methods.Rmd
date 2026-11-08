@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -86,9 +86,20 @@ c(lambda_min = cv$cv_min(), lambda_1se = cv$cv_1se())
 
 ```{r ridge-plot}
 #| fig.cap: "Cross-validation error of the ridge penalty with the minimum and the one-standard-error choice."
-plot(cv$get_lambdas(), cv$get_cv_errors(), log = "x", type = "l", col = "#336C68", lwd = 2,
-     xlab = "lambda", ylab = "CV error")
-abline(v = c(cv$cv_min(), cv$cv_1se()), lty = c(1, 2), col = "red")
+library(ggplot2)
+curve <- data.frame(lambda = cv$get_lambdas(), error = cv$get_cv_errors())
+choice <- data.frame(lambda = c(cv$cv_min(), cv$cv_1se()), rule = c("minimum", "one standard error"))
+ggplot(curve, aes(lambda, error)) +
+  geom_line(aes(colour = "CV error, 5 folds"), linewidth = 0.9) +
+  geom_vline(data = choice, aes(xintercept = lambda, linetype = rule), colour = "#D1495B") +
+  scale_x_log10() +
+  scale_colour_manual(values = c("CV error, 5 folds" = "#336C68")) +
+  labs(x = "Lambda", y = "CV error", colour = NULL, linetype = NULL) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "inside", legend.position.inside = c(0.02, 0.98),
+        legend.justification = c(0, 1), legend.background = element_blank(),
+        legend.box.background = element_rect(fill = "white", colour = "grey60"),
+        legend.box.margin = margin(4, 6, 4, 6))
 ```
 
 `MLRidgeCV$new(low_memory = TRUE)` runs the dual (kernel) form on column blocks of `X` read in place,
@@ -187,4 +198,4 @@ matrix is clustered in place.
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

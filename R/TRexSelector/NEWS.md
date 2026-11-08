@@ -10,10 +10,14 @@ On Linux with R 4.6 or R-devel the package compiled without OpenMP, because `R C
 `SHLIB_OPENMP_CXXFLAGS` there. The configure script reads the flags from R's Makeconf instead, so those builds
 run their parallel regions again. The README is reorganised. It opens with a description of the method, gives
 an overview of the selectors, T-solvers, ML methods and utilities, and installs from CRAN first, as the
-getting-started vignette does. The twelve vignettes share a stylesheet and a navigation header, with a
-table of contents on the left that follows the scroll, the list of pages under it, and previous/next links
-at the end of every page. The package entry of `citation("TRexSelector")` names Team T-Rex as its author.
-Nothing else changes.
+getting-started vignette does. A new vignette, "Data dimensionality and FDR control", follows the getting-started
+vignette with the three regimes of the number of variables against the number of observations in one map,
+and an overview vignette, `vignette("TRexSelector")`, introduces the package and lists the pages. The
+overview and the thirteen pages share a stylesheet and a navigation header, with a table of contents on
+the left that follows the scroll, the list of pages under it, and previous/next links with the copyright
+line at the end of every page, a search box over the titles and headings of the pages in the top bar,
+and they follow a dark system appearance. The package entry of
+`citation("TRexSelector")` names Team T-Rex as its author. Nothing else changes.
 
 # TRexSelector 2.0.0
 

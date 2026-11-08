@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -124,10 +124,10 @@ profile$counts
 
 # Dummies for a structured penalty
 
-The FDR guarantee needs dummies that are exchangeable with the null variables under the penalty. Two
-defaults take care of that. `cluster_dummies = TRUE` draws the dummies as per-cluster coloured layers
-on a correlation clustering of the variables (`prior_groups`, or hierarchical clustering with
-`corr_max` and `hc_linkage`), and `fold_dummy_coupling = TRUE` lets every dummy join the
+The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables
+under the penalty. Two defaults take care of that. `cluster_dummies = TRUE` draws the dummies as
+per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical
+clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = TRUE` lets every dummy join the
 $\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling, available with TCDTIKNET). Both
 switches exist for validation runs. With $\boldsymbol K = \boldsymbol I$, independent dummies and the
 decoupled dummy block, the selector reduces to the plain elastic net.
@@ -181,4 +181,4 @@ pw$selected_indices
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -134,10 +134,13 @@ mean(unlist(trials))
 
 # Builds without OpenMP
 
-On Linux and Windows R supplies the OpenMP flags. CRAN's R for macOS has none, and the package then
-links the OpenMP runtime R ships with the header of Homebrew's libomp, or compiles single-threaded when no
-header is found. `TREX_OPENMP=no` at installation forces the single-threaded build. A single-threaded
-build selects the same variables, it only runs the experiments and the passes in sequence.
+On Linux and Windows R supplies the OpenMP flags [@rcore2026admin]. CRAN's R for macOS has none
+[@cran2026macopenmp], and the package then links the OpenMP runtime R ships with the header of
+Homebrew's libomp, or compiles single-threaded when no header is found. `TREX_OPENMP=no` at installation
+forces the single-threaded build. A single-threaded build selects the same variables, it only runs the
+experiments and the passes in sequence. What a package may rely on is stated in Writing R Extensions
+[@rcore2026exts], and the page "OpenMP on your platform" of the repository [@trex2026openmp] walks
+through the build on each platform.
 
 # The CRAN rule
 
@@ -155,4 +158,4 @@ trex_set_num_threads(old_threads)
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

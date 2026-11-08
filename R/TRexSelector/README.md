@@ -198,7 +198,7 @@ The seeded strategies store nothing and suit designs whose dummy
 matrices do not fit in memory, and they select exactly as their stored
 counterparts for the same seed. The dummies are standard Normal by
 default, and `trex_dummy_distribution()` offers the other laws. The
-vignette of the T-Rex selector, `vignette("v02-trex-selector")`,
+vignette of the T-Rex selector, `vignette("v03-trex-selector")`,
 describes every strategy and the seeds.
 
 ### T-solvers
@@ -253,30 +253,31 @@ methods for the session, which `trex_get_num_threads()` reads.
 `trex_get_max_threads()` reports the threads OpenMP can run on the
 machine and returns 1 without OpenMP (see Installation). A seeded run
 selects the same variables whatever the thread settings. The parallelism
-vignette, `vignette("v12-parallelism")`, explains which layer owns the
+vignette, `vignette("v13-parallelism")`, explains which layer owns the
 cores.
 
 ## Documentation
 
-The package has twelve vignettes, listed by
-`browseVignettes("TRexSelector")` and opened as
-`vignette("v02-trex-selector")`. An install from GitHub builds them with
-`build_vignettes = TRUE`, and their sources are in the [vignettes
+The package has an overview vignette, `vignette("TRexSelector")`, and
+thirteen pages, listed by `browseVignettes("TRexSelector")` and opened
+as `vignette("v03-trex-selector")`. An install from GitHub builds them
+with `build_vignettes = TRUE`, and their sources are in the [vignettes
 directory](https://github.com/trexselector/TRexSelector/tree/main/R/TRexSelector/vignettes)
 of the repository.
 
 1.  Getting started with TRexSelector
-2.  The T-Rex selector
-3.  T-Rex+DA: dependency-aware dummies
-4.  T-Rex GVS: grouped variable selection
-5.  Screening: Screen-T-Rex and the biobank screening
-6.  T-Rex SPCA: sparse principal components under FDR control
-7.  T-Rex Tikhonov: a general penalty matrix
-8.  The T-solvers
-9.  The ML methods
-10. Memory mapping: disk-backed designs
-11. Working without data copies
-12. Parallelism: who owns the cores
+2.  Data dimensionality and FDR control
+3.  The T-Rex selector
+4.  T-Rex+DA: dependency-aware dummies
+5.  T-Rex GVS: grouped variable selection
+6.  Screening: Screen-T-Rex and the biobank screening
+7.  T-Rex SPCA: sparse principal components under FDR control
+8.  T-Rex Tikhonov: a general penalty matrix
+9.  The T-solvers
+10. The ML methods
+11. Memory mapping: disk-backed designs
+12. Working without data copies
+13. Parallelism: who owns the cores
 
 The help page of every selector, T-solver and ML class ends with the
 papers it builds on, and `citation("TRexSelector")` lists the package
@@ -292,14 +293,18 @@ entry and the T-Rex method papers.
 - References of the method family:
   <https://github.com/trexselector/TRexSelector#references>
 - Bug reports: <https://github.com/trexselector/TRexSelector/issues>
+- Team T-Rex, the authors and their contact:
+  <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
 
 ## Acknowledgements
 
-The package builds on the Eigen linear algebra library: G. Guennebaud,
-B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010. It binds
-the C++ core through Rcpp and RcppEigen and relies on cereal (Rcereal)
-for serialization and on Boost.Interprocess (BH) for memory mapping,
-with OpenMP for the threads where the toolchain provides it.
+The package builds on the Eigen linear algebra library. It binds the C++
+core through Rcpp and RcppEigen and relies on cereal (Rcereal) for
+serialization and on Boost.Interprocess (BH) for memory mapping, with
+OpenMP for the threads where the toolchain provides it.
+
+> G. Guennebaud, B. Jacob et al., Eigen v3,
+> <https://libeigen.gitlab.io/>, 2010.
 
 ## License
 

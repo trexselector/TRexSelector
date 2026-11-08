@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -125,4 +125,4 @@ With the groups known and the penalty informed, the active groups enter complete
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

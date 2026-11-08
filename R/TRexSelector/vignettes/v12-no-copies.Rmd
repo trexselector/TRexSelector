@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -28,7 +28,10 @@ old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
 The backend works on the caller's data wherever possible. An R matrix is bound by its memory address,
 a memory-mapped file by its mapping, and the preprocessing a method needs is applied in place and undone
 afterwards. A design of several gigabytes is therefore held once, by R or by the file, and not a second
-time by the backend. This page states the contract that makes it safe.
+time by the backend. This page states the contract that makes it safe. The bindings hand the memory of
+an R matrix to the C++ core through Rcpp [@eddelbuettel2011rcpp] and RcppEigen [@bates2013rcppeigen],
+as an Eigen map [@guennebaud2010eigen] of the same buffer, and a memory-mapped file through
+Boost.Interprocess [@gaztanaga2008interprocess].
 
 # Pass double matrices
 
@@ -120,13 +123,13 @@ The ridge and elastic-net classes have a `low_memory` engine that avoids every a
 
 | Class | `low_memory = FALSE` | `low_memory = TRUE` |
 | --- | --- | --- |
-| `MLRidgeCV` | each fold gathers and standardizes its training rows and takes a thin SVD, about three to four copies of `X` in flight | the dual (kernel) form, $n \times n$ kernels accumulated from column blocks read in place, memory $O(n^2)$ |
+| `MLRidgeCV` | each fold gathers and standardizes its training rows and takes a thin singular value decomposition (SVD), about three to four copies of `X` in flight | the dual (kernel) form, $n \times n$ kernels accumulated from column blocks read in place, memory $O(n^2)$ |
 | `MLElasticNet` | coordinate descent on a centered and standardized working copy, one $n \times p$ matrix | coordinate descent on `X` itself, no allocation of the size of `X` |
 | `MLElasticNetCV` | one working copy per fit | every fold on `X` itself with a training mask |
 
 The two engines compute the same estimator on the same grid and agree to rounding. The selectors that
 tune $\lambda_2$ by cross-validation (GVS, SPCA, Tikhonov) use these engines, and the elastic-net tuner
-of the sparse PCA selector keeps its peak memory under 0.3 times the size of `X`.
+of the sparse principal component selector keeps its peak memory under 0.3 times the size of `X`.
 
 ```{r low-memory}
 cv_a <- MLRidgeCV$new()
@@ -149,4 +152,4 @@ r1$get_memory_bytes()
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

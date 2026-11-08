@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -30,6 +30,17 @@ memory. The C++ backend binds such a file exactly as it binds an R matrix, so ev
 T-solver, the scalers, the low-memory regression engines and the clustering accept one. That is how a
 sparse regression problem with five million variables was solved on a laptop [@scheidt2023bigtrex]. The
 file holds the matrix as raw doubles in column-major order, the layout of R and Eigen, without a header.
+
+The file is mapped through Boost.Interprocess [@gaztanaga2008interprocess], the library of the Boost
+C++ Libraries for memory-mapped files and shared memory. In R, the bigmemory package
+[@kane2013bigmemory] established disk-backed matrices for statistics, and the first Big T-Rex
+[@scheidt2023bigtrex] was written for its `big.matrix` objects. The library binds any buffer instead,
+mapped or not, so the selectors never see where the design lives, as Figure 1 shows.
+
+```{r agnostic, echo = FALSE, out.width = "90%"}
+#| fig.cap: "Figure 1: A design in memory and a design in a file reach the same implementation through one mapped view."
+knitr::include_graphics("figures/memory_agnostic.png")
+```
 
 # Creating and opening a mapped matrix
 
@@ -139,4 +150,4 @@ unlink(c(path, path2))
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

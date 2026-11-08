@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 # Vignettes build on at most two threads (the CRAN rule)
@@ -26,20 +26,27 @@ old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
 
 # What the package does
 
-The T-Rex selector (terminating-random experiments) selects variables in high-dimensional linear models
-while controlling the false discovery rate (FDR) at a target level chosen by the user, and it does so
-with a high true positive rate (TPR) [@machkour2025trex]. It runs $K$ random experiments. In each
-experiment the design matrix $\boldsymbol{X}$ is enlarged by random dummy variables, a forward selection
-solver walks its path and stops as soon as $T$ dummies have entered the model, and the active sets of
-the $K$ experiments are fused by a vote. A calibration over the number of dummies and the stopping time
-guarantees the FDR level.
+The Terminating-Random Experiments (T-Rex) selector selects variables while controlling the false
+discovery rate (FDR) at a target level chosen by the user, and it does so with a high true positive rate
+(TPR) [@machkour2025trex]. It applies to low- and high-dimensional designs and is tailored to the
+high-dimensional problem. It takes a design matrix $\boldsymbol{X}$ with $n$ observations of $p$
+variables, a response vector $\boldsymbol{y}$ and the target FDR, and runs $K$ random experiments in
+which the real variables compete with computer-generated dummy variables, random columns with finite
+mean and variance that act as flagged null variables. In every experiment the dummies are appended to
+the design, a forward selection solver walks its path and stops as soon as $T$ dummies have entered, and
+the share of experiments in which a variable was selected is its vote. Because a dummy enters as easily
+as a null variable, the included dummies give an estimate of the false discoveries, and a calibration
+over the number of dummies, the stopping time and the voting level selects as many variables as the FDR
+target allows, with a finite-sample guarantee that holds for a broad class of forward selection solvers.
+The scheme is not tied to the linear model and scales to millions of variables. The library currently
+covers the supervised linear model with a response vector and a design matrix.
 
 The R package is the R interface to the TRexSelector C++ library. The same library drives the Python
 package and the C++ software development kit, so the three surfaces select the same variables on the
 same data. Since version 2.0.0 it replaces the pure-R implementation of the 1.x releases under the same
-package name.
+package name [[version 1.0.0](https://CRAN.R-project.org/src/contrib/Archive/TRexSelector/TRexSelector_1.0.0.tar.gz)].
 
-The package has five groups of tools.
+The package currently has five groups of tools.
 
 - **T-Rex selectors.** The core `TRexSelector` and its variants for dependent variables
   (`TRexDASelector`), grouped variables (`TRexGVSSelector`), fast screening (`TRexScreeningSelector`,
@@ -49,14 +56,16 @@ The package has five groups of tools.
   experiments, available as classes of their own.
 - **Machine learning (ML) methods.** Scalers, ridge and elastic-net regression with cross-validation,
   singular value decomposition (SVD), PCA and hierarchical clustering.
-- **Memory-mapped matrices.** Disk-backed designs accepted everywhere a matrix is, so a design larger than
-  the memory of the machine can be processed.
-- **Utilities.** The metrics `trex_fdp()` and `trex_tpp()` with precision and recall, the design helpers
-  `trex_normalize_design()` and `trex_dummy_distribution()`, and the thread functions.
+- **Memory-mapped matrices.** Disk-backed designs are accepted everywhere a matrix is accepted. The
+  algorithms are agnostic to the data representation, so the library processes designs larger than the
+  random-access memory (RAM) of the machine out of core.
+- **Utilities.** The selection metrics (false discovery proportion, true positive proportion, precision
+  and recall), the normalizers, the dummy distributions, and the threading functions.
 
 # Installation
 
-The released package is on the Comprehensive R Archive Network (CRAN). Install it from an R session.
+The released package is on the Comprehensive R Archive Network (CRAN)
+[[package page](https://CRAN.R-project.org/package=TRexSelector)]. Install it from an R session.
 
 ```{r, eval = FALSE}
 install.packages("TRexSelector")
@@ -64,7 +73,7 @@ install.packages("TRexSelector")
 
 CRAN provides binaries for Windows and macOS. On Linux, and for every install from source, the package
 compiles its C++ backend, so a C++20 compiler is required (GCC 10, Clang 12, Apple Clang 14, Rtools on
-Windows, or newer) together with R 4.3 or newer.
+Windows, or newer) together with R (>= 4.3).
 
 The `main` branch of the repository carries the released sources, the version that is on CRAN, in the
 `R/TRexSelector/` subdirectory, and the development happens on the `dev_beyond` branch. Install the
@@ -81,6 +90,10 @@ from source (`install.packages("TRexSelector", type = "source")`) uses the `omp.
 libomp (`brew install libomp`) together with the OpenMP runtime that R itself ships. Without a header the
 package compiles single-threaded and `trex_get_max_threads()` returns 1. The parallelism page explains
 what the threads are used for.
+
+The package builds on Rcpp [@eddelbuettel2011rcpp] and RcppEigen [@bates2013rcppeigen] for the bindings,
+on the Boost headers of BH [@eddelbuettel2025bh] for the memory mapping, on the cereal headers of Rcereal
+[@wu2024rcereal] for the serialization, and on R6 [@chang2025r6] for its classes.
 
 # A first run
 
@@ -138,15 +151,15 @@ head(sel$voting_grid)
 round(sel$fdp_hat_mat[sel$T_stop, ], 3)
 ```
 
-# Choosing a selector and a solver
+# T-Rex variants of the library
 
 | Situation | Selector | Page |
 | --- | --- | --- |
-| Independent or weakly dependent variables | `TRexSelector` | T-Rex selector |
+| Independent or modestly dependent variables | `TRexSelector` | T-Rex selector |
 | Strongly dependent variables (autoregressive, equi-correlated, clustered) | `TRexDASelector` | T-Rex+DA |
 | Groups of correlated variables that should enter together | `TRexGVSSelector` | T-Rex GVS |
-| Very large $p$, a fast first pass before the full selector | `TRexScreeningSelector` | Screening |
-| Many phenotypes against one genotype matrix | `TRexBiobankScreeningSelector` | Screening |
+| Very large $p$, a fast first pass before the full selector | `TRexScreeningSelector` | Screen-T-Rex |
+| Many phenotypes against one genotype matrix | `TRexBiobankScreeningSelector` | Screen-T-Rex |
 | Sparse principal components | `TRexSPCASelector` | T-Rex SPCA |
 | A structured penalty (smoothness, graph Laplacian, groups) | `TRexTikhonovSelector` | T-Rex Tikhonov |
 
@@ -164,28 +177,6 @@ sel2$select()
 sel2$selected_indices
 ```
 
-# Map of the pages
-
-1. Getting started (this page).
-2. The T-Rex selector: the framework, the control parameters and the result fields.
-3. T-Rex+DA: dependency-aware dummies.
-4. T-Rex GVS: grouped variable selection with the elastic net and the informed elastic net.
-5. Screening: Screen-T-Rex and the biobank screening.
-6. T-Rex SPCA: sparse PCA under FDR control.
-7. T-Rex Tikhonov: a general penalty matrix.
-8. The T-solvers: the twenty solvers and their options.
-9. The ML methods: scalers, regressions, decompositions and clustering.
-10. Memory mapping: disk-backed designs.
-11. Working without data copies: the in-place contract.
-12. Parallelism: who owns the cores.
-
-# Links
-
-- Project website: <https://trexselector.com>
-- Repository of the C++ core and the R and Python packages: <https://github.com/trexselector/TRexSelector>
-- Examples in R, Python and C++: <https://github.com/trexselector/TRexSelector_Examples>
-- Bug reports: <https://github.com/trexselector/TRexSelector/issues>
-
 # Citing the package
 
 ```{r, eval = FALSE}
@@ -201,4 +192,4 @@ The methods are published in [@machkour2025trex] (T-Rex), [@machkour2025datrex] 
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

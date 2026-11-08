@@ -1,0 +1,153 @@
+---
+title: "Data dimensionality and FDR control"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    css: vignette_styles.css
+    includes:
+      before_body: vignette_nav.html
+bibliography: references.bib
+csl: ieee.csl
+link-citations: true
+vignette: >
+  %\VignetteIndexEntry{Data dimensionality and FDR control}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
+options(width = 80)
+library(TRexSelector)
+# Vignettes build on at most two threads (the CRAN rule)
+old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
+```
+
+# The variable selection problem
+
+A linear model relates a response $\boldsymbol{y} \in \mathbb{R}^n$ to a design
+$\boldsymbol{X} \in \mathbb{R}^{n \times p}$ with $n$ observations and $p$ variables,
+
+$$
+\boldsymbol{y} = \boldsymbol{X} \boldsymbol{\beta} + \boldsymbol{\varepsilon},
+$$
+
+and in the settings of these vignettes only a few coefficients of $\boldsymbol{\beta}$ differ from zero.
+The variables with a non-zero coefficient form the active set $\mathcal{A}$, the others are null
+variables. Variable selection returns an estimate $\widehat{\mathcal{A}}$ of the active set. A null
+variable in $\widehat{\mathcal{A}}$ is a false discovery, and an active variable missing from it is a
+missed discovery. Prediction is a different goal. A model can predict well with many null variables on
+board, while a selection with false discoveries sends a laboratory [@ioannidis2005false;
+@macarthur2012falsepositives; @uffelmann2021gwas; @tandyconnor2018dtc] or an investment team
+[@harvey2016crosssection] after effects that are not there.
+
+# FDR and TPR
+
+Let $1 \vee a = \max\{1, a\}$. The false discovery rate (FDR) and the true positive rate (TPR) of a
+selection procedure are
+
+$$
+\operatorname{FDR} = \mathbb{E}\left[\frac{|\widehat{\mathcal{A}} \setminus \mathcal{A}|}
+{1 \vee |\widehat{\mathcal{A}}|}\right],
+\qquad
+\operatorname{TPR} = \mathbb{E}\left[\frac{|\mathcal{A} \cap \widehat{\mathcal{A}}|}
+{1 \vee |\mathcal{A}|}\right].
+$$
+
+The quantities inside the expectations are the false discovery proportion (FDP) and the true positive
+proportion (TPP) of one selection, which `trex_fdp()` and `trex_tpp()` compute when the true support is
+known, as in a simulation. Benjamini and Hochberg introduced the FDR as the error rate for multiple
+hypothesis testing [@benjamini1995fdr], and Benjamini reviewed its origins and its first fifteen years
+in [@benjamini2010discovering]. The older family-wise error rate asks for no false discovery at all and
+loses power as the number of hypotheses grows [@holm1979sequential], while a target FDR of 0.1 says that
+among the selected variables at most ten percent are expected to be false, whether ten or ten thousand
+variables were screened. A good selection procedure keeps the FDR below the target and the TPR as high
+as possible.
+
+# Three regimes
+
+What a procedure can do depends on the number of variables relative to the number of observations.
+
+## Low dimensionality, $n \geq p$
+
+With at least as many observations as variables the least squares estimate exists, and every
+coefficient has a standard error, a test statistic and a p-value. Multiple testing is classical here.
+The Benjamini–Hochberg procedure on the $p$ p-values controls the FDR under the assumptions of the model
+and the dependence conditions of the procedure [@benjamini1995fdr; @benjamini2001dependency], and the
+T-Rex selector works here as well.
+
+## High dimensionality, $p > n$
+
+With more variables than observations the least squares estimate does not exist, because
+$\boldsymbol{X}^\top \boldsymbol{X}$ is singular, and the classical p-values go with it. Sparse path
+methods like the lasso [@tibshirani1996lasso] and least angle regression [@efron2004lars], and greedy
+pursuits like orthogonal matching pursuit, build a model one variable at a time and work for any $p$,
+but their stopping rules are tuned for prediction error, so they select without controlling the FDR.
+The T-Rex selector wraps these solvers in its random experiments and supplies the FDR control they lack,
+in finite samples and without p-values [@machkour2025trex], and for strongly dependent variables the
+dependency-aware variant T-Rex+DA restores the exchangeability its guarantee rests on
+[@machkour2025datrex].
+
+## Highest dimensionality, $p \gg n$
+
+In genomics a design has hundreds of thousands or millions of variables and up to a hundred thousand
+observations, and the method is the same while the computation is not. Each random experiment enlarges
+the design by $L \cdot p$ dummy columns, $K$ experiments run, and the design itself may not fit in
+memory. Screen-T-Rex runs the random experiments once as a fast first pass [@machkour2023screen],
+memory-mapped designs keep the data on disk [@scheidt2023bigtrex], the seeded dummy strategies store no
+dummy matrices, the greedy solvers are cheaper per step [@scheidt2026greedy], and the thread budgets of
+the package put the cores to work.
+
+# The regimes in one map
+
+```{r regimes-map, echo = FALSE, fig.cap = "Figure 1: The three regimes in the plane of p and n.", out.width = "85%"}
+knitr::include_graphics("figures/dimensionality_map.png")
+```
+
+The diagonal $p = n$ separates low from high dimensionality, and the dashed line $p = 1000\,n$ marks
+where the computation starts to dominate, a rule of thumb rather than a theorem. The markers show
+typical settings. The diagonal, not the size of $p$ alone, decides the regime. A biobank with twenty thousand
+participants and a hundred variables is a low-dimensional problem, while a laboratory study with sixty
+samples and two thousand genes is a high-dimensional one. Large samples with many variables sit near
+the diagonal and belong to either side, which is why the map replaces the four quadrants of small and
+large samples with few and many variables.
+
+# The T-Rex selector across the regimes
+
+The selector is defined for any $n$ and $p$. One data-generating process with five active variables of
+coefficient one at $n = 100$ and three values of $p$ walks through the regimes, ten trials per regime
+with ten random experiments each, every trial with its own data and dummies.
+
+```{r regimes}
+set.seed(7)
+n <- 100
+num_act <- 5
+trials <- 10
+true_support <- seq_len(num_act)
+for (p in c(50, 200, 1000)) {
+  fdr <- 0
+  tpr <- 0
+  for (trial in seq_len(trials)) {
+    X <- matrix(rnorm(n * p), n, p)
+    beta <- c(rep(1, num_act), rep(0, p - num_act))
+    y <- as.vector(X %*% beta + rnorm(n))
+    ctrl <- trex_control(K = 10)
+    sel <- TRexSelector$new(X, y, tFDR = 0.1, seed = 6 + trial, verbose = FALSE, control = ctrl)
+    sel$select()
+    fdr <- fdr + trex_fdp(sel$selected_indices, true_support) / trials
+    tpr <- tpr + trex_tpp(sel$selected_indices, true_support) / trials
+  }
+  cat(sprintf("p = %4d  n/p = %5.2f  FDR = %.2f  TPR = %.2f\n", p, n / p, fdr, tpr))
+}
+```
+
+The estimated FDR stays below the target in every regime, while the TPR falls as $p$ grows relative
+to $n$. Dimensionality costs power, not the control of the false discoveries. In the low-dimensional
+case the classical route exists next to the selector, and in the two others it does not.
+
+```{r teardown, include = FALSE}
+trex_set_num_threads(old_threads)
+```
+
+# Bibliography

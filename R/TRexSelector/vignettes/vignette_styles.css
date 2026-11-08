@@ -48,12 +48,13 @@ body {
     line-height: 18px;
     list-style: none;
   }
+  /* entries in the text colour, the active one in teal, as the C++ tree does */
   #TOC a {
-    color: #336C68;
+    color: #24292e;
     text-decoration: none;
   }
   #TOC a:hover {
-    color: #6BB2AD;
+    color: #336C68;
     text-decoration: underline;
   }
 
@@ -179,27 +180,41 @@ img {
 }
 
 h1 {
-  margin-top: 0;
+  margin-top: 44px;
   font-size: 35px;
   line-height: 40px;
-  color: #336C68;
 }
+
 h1.title {
-  color: #336C68;
+  margin-top: 0;
 }
 
 h2 {
   border-bottom: 4px solid #f7f7f7;
+  margin-top: 32px;
   padding-top: 10px;
   padding-bottom: 2px;
   font-size: 145%;
-  color: #6BB2AD;
 }
 
 h3 {
   border-bottom: 2px solid #f7f7f7;
+  margin-top: 26px;
   padding-top: 10px;
   font-size: 120%;
+}
+
+/* justified paragraphs and list items in the content, hyphenated (the page declares lang="en");
+   the overview keeps its opening paragraphs and quote above the first section */
+div.section p,
+div.section li,
+body > p,
+body > blockquote p,
+body > ol > li,
+body > ul > li {
+  text-align: justify;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 h4 {
@@ -248,19 +263,95 @@ body {
   color: #ecf0f1;
   font-size: 13px;
 }
-  .trex-topbar .brand {
+  .trex-topbar .brand,
+  .trex-topbar .brand:visited {
     font-weight: bold;
     font-size: 16px;
     color: #fff;
     margin-right: 12px;
+    text-decoration: none;
+  }
+  .trex-topbar .brand:hover {
+    color: #18BC9C;
   }
   .trex-topbar .sub {
     color: #bdc3c7;
   }
   .trex-topbar .where {
     margin-left: auto;
-    color: #18BC9C;
+    color: #6BB2AD;
     font-weight: bold;
+  }
+
+/* The search box of the top bar and its result list. */
+.trex-search {
+  position: relative;
+  margin: 0 0 0 24px;
+  flex: 0 1 240px;
+  min-width: 120px;
+}
+  .trex-search input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 8px;
+    border: 1px solid #4a5d70;
+    border-radius: 4px;
+    background: #3d5166;
+    color: #fff;
+    font-size: 13px;
+  }
+  .trex-search input::placeholder {
+    color: #aab4be;
+  }
+  .trex-search input:focus {
+    outline: none;
+    border-color: #6BB2AD;
+  }
+  .trex-search-results {
+    position: absolute;
+    top: 30px;
+    left: 0;
+    width: 380px;
+    max-width: 90vw;
+    max-height: 60vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 20;
+  }
+  .trex-search-results li {
+    list-style: none;
+    margin: 0;
+  }
+  .trex-search-results a {
+    display: block;
+    padding: 4px 10px;
+    color: #24292e;
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .trex-search-results a:hover {
+    background: #f6f8fa;
+    color: #24292e;
+  }
+  .trex-search-results .page {
+    display: inline-block;
+    min-width: 62px;
+    margin-right: 6px;
+    color: #336C68;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .trex-search-results .none {
+    padding: 4px 10px;
+    color: #6a737d;
+    font-size: 13px;
   }
 @media (min-width: 1100px) {
   #TOC {
@@ -275,40 +366,83 @@ body {
   font-size: 13px;
 }
   .trex-pane::before {
-    content: "Pages";
+    content: "User guide";
     display: block;
     font-weight: bold;
     font-size: 15px;
     margin: 0 0 4px 5px;
-    color: #336C68;
+    color: #57606a;
   }
   .trex-pane ol {
     list-style: none;
     margin: 0;
     padding: 0 0 0 5px;
   }
+  .trex-pane a.home {
+    margin-left: 5px;
+  }
+  .trex-pane a.home,
   .trex-pane li a {
     display: block;
     padding: 2px 4px;
-    color: #336C68;
+    color: #24292e;
     text-decoration: none;
     line-height: 18px;
   }
+  .trex-pane a.home:hover,
   .trex-pane li a:hover {
+    color: #336C68;
     text-decoration: underline;
   }
+  /* the current page as the C++ guide marks it: teal, bold, a bar at the left */
+  .trex-pane a.home.current,
   .trex-pane li.current a {
-    font-weight: bold;
-    background: #e6f1f0;
-    border-radius: 3px;
+    font-weight: 600;
+    color: #336C68;
+    border-left: 4px solid #336C68;
+    padding-left: 6px;
   }
   .trex-pane .n::after {
     content: ". ";
   }
 
+/* The reference block under the pages: the manual, the help pages, the sources. */
+.trex-reference {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #d0d7de;
+  font-size: 13px;
+}
+  .trex-reference::before {
+    content: "Reference";
+    display: block;
+    font-weight: bold;
+    font-size: 15px;
+    margin: 0 0 4px 5px;
+    color: #57606a;
+  }
+  #TOC .trex-reference ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 5px;
+  }
+  #TOC .trex-reference li a {
+    display: block;
+    padding: 2px 4px;
+    color: #24292e;
+    text-decoration: none;
+    line-height: 18px;
+  }
+  #TOC .trex-reference li a:hover {
+    color: #336C68;
+    text-decoration: underline;
+  }
+
+/* Previous link left, the position in the center, next link right. */
 .trex-pager {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 16px;
   align-items: center;
   margin-top: 36px;
   padding-top: 10px;
@@ -318,10 +452,27 @@ body {
   .trex-pager a {
     color: #336C68;
   }
+  .trex-pager .prev {
+    grid-column: 1;
+  }
   .trex-pager .where {
+    grid-column: 2;
     color: #6a737d;
     font-size: 12px;
   }
+  .trex-pager .next {
+    grid-column: 3;
+    text-align: right;
+  }
+
+.trex-footer {
+  margin-top: 28px;
+  padding: 10px 0 4px;
+  border-top: 1px solid #d0d7de;
+  color: #6a737d;
+  font-size: 12px;
+  text-align: center;
+}
 
 #TOC a.active {
   font-weight: bold;
@@ -342,3 +493,109 @@ code > span.ot { color: #007020; } /* OtherToken */
 code > span.al { color: #ff0000; font-weight: bold; } /* AlertToken */
 code > span.fu { color: #900; font-weight: bold; } /* Function calls */
 code > span.er { color: #a61717; background-color: #e3d2d2; } /* ErrorTok */
+
+/* A dark system appearance: the palette of the C++ guide's dark mode. The top bar
+   stays as it is, the plots keep their white boxes. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    background-color: #0d1117;
+    color: #d0d7de;
+  }
+  #TOC {
+    background-color: #161b22;
+    border-color: #30363d;
+  }
+  #TOC a, .trex-pane a.home, .trex-pane li a, #TOC .trex-reference li a {
+    color: #d0d7de;
+  }
+  #TOC .toctitle, .trex-pane::before, .trex-reference::before {
+    color: #8b949e;
+  }
+  .trex-pager a, #TOC a.active, .trex-pane a.home.current, .trex-pane li.current a {
+    color: #6BB2AD;
+  }
+  .trex-pane a.home.current, .trex-pane li.current a {
+    border-left-color: #6BB2AD;
+  }
+  #TOC a:hover, .trex-pane a.home:hover, .trex-pane li a:hover, #TOC .trex-reference li a:hover {
+    color: #8cc8c4;
+  }
+  .trex-search-results {
+    background: #161b22;
+    border-color: #30363d;
+  }
+  .trex-search-results a {
+    color: #d0d7de;
+  }
+  .trex-search-results a:hover {
+    background: #1f2a29;
+    color: #d0d7de;
+  }
+  .trex-pane, .trex-reference, .trex-pager, .trex-footer {
+    border-top-color: #30363d;
+  }
+  .trex-pager .where, .trex-footer {
+    color: #8b949e;
+  }
+  h2 {
+    border-bottom-color: #21262d;
+  }
+  h3, h4 {
+    border-bottom-color: #21262d;
+  }
+  h5, h6 {
+    border-bottom-color: #30363d;
+  }
+  a {
+    color: #58a6ff;
+  }
+  a:hover {
+    color: #79c0ff;
+  }
+  a:visited {
+    color: #bc8cff;
+  }
+  a:visited:hover {
+    color: #d2a8ff;
+  }
+  table {
+    border-color: #30363d;
+  }
+  table thead, table tr.even {
+    background-color: #161b22;
+  }
+  blockquote {
+    background-color: #161b22;
+    border-left-color: #30363d;
+  }
+  hr {
+    border-top-color: #484f58;
+  }
+  pre, code, pre:not([class]) {
+    background-color: #161b22;
+    color: #d0d7de;
+  }
+  pre {
+    border-color: #30363d;
+  }
+  img {
+    border-color: #30363d;
+  }
+  /* pandoc wraps every code line in a span, so the tokens are descendants of the
+     code element, not children; the palette is the one furo uses on dark pages */
+  pre code span.kw, pre code span.cf, pre code span.im { color: #6ab825; font-weight: bold; }
+  pre code span.dt { color: #6ab825; }
+  pre code span.dv, pre code span.bn, pre code span.fl { color: #6fa8dc; }
+  pre code span.st, pre code span.ch, pre code span.vs, pre code span.ss, pre code span.sc { color: #ed9d13; }
+  pre code span.co, pre code span.do, pre code span.an, pre code span.cv, pre code span.in {
+    color: #9a9a9a;
+    font-style: italic;
+  }
+  pre code span.ot, pre code span.op, pre code span.at { color: #d0d7de; }
+  pre code span.fu, pre code span.bu { color: #5e9bea; }
+  pre code span.va, pre code span.cn { color: #79c0ff; }
+  pre code span.al, pre code span.er { color: #ff6b6b; background-color: transparent; }
+}

@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -28,11 +28,11 @@ old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
 A genomics biobank holds hundreds of thousands of variables and hundreds of phenotypes. Running the full
 T-Rex calibration on every phenotype is costly, and for most phenotypes the answer is that nothing is
 selected. Screen-T-Rex [@machkour2023screen] is a single-pass version of the random experiments without
-the L-loop and the T-loop: $K$ experiments with $p$ dummies each, stopped at the first dummy, and an FDR
-estimate read off the vote. It reports an estimated FDR instead of controlling a target, so it is a fast
-first pass. The biobank screening wraps it in a decision rule per phenotype: when the estimated FDR of the
-screening falls into an acceptance window, the screening result is kept, otherwise the full T-Rex selector
-runs as a fallback.
+the L-loop and the T-loop: $K$ experiments with $p$ dummies each, stopped at the first dummy, and an
+estimate of the false discovery rate (FDR) read off the vote. It reports an estimated FDR instead of
+controlling a target, so it is a fast first pass. The biobank screening wraps it in a decision rule per
+phenotype: when the estimated FDR of the screening falls into an acceptance window, the screening result
+is kept, otherwise the full T-Rex selector runs as a fallback.
 
 # Screen-T-Rex
 
@@ -140,4 +140,4 @@ problems with five million variables on a laptop [@scheidt2023bigtrex].
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

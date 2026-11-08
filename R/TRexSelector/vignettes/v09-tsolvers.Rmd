@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -97,6 +97,71 @@ path_diag <- data.frame(lambda = solver$get_lambda(), rss = solver$get_rss(),
 round(head(path_diag, 5), 3)
 solver$restore()    # give X and D back before the next solver claims them
 ```
+
+# The path as a picture
+
+The coefficient paths of a terminated run show what the solver does. A predictor enters at a step and
+its coefficient grows from there, and a dummy that enters marks one of the `T_stop` crossings that end
+the path. One solver runs to `T_stop = 1`, keeps a snapshot of its path, and continues to `T_stop = 3`,
+so the second panel extends the first.
+
+```{r path-figure, fig.width = 9, fig.height = 3.6, out.width = "100%"}
+library(ggplot2)
+
+snapshot <- function(solver, label) {
+  path <- solver$get_beta_path()                            # (p + L) x (steps + 1)
+  entering <- abs(vapply(solver$get_actions(), function(a) a[1], numeric(1)))
+  moved <- which(rowSums(path != 0) > 0)
+  kind <- ifelse(moved > p, "dummy", ifelse(moved %in% true_support, "true predictor", "other predictor"))
+  lines <- data.frame(panel = label, variable = rep(moved, each = ncol(path)),
+                      step = rep(seq_len(ncol(path)) - 1, times = length(moved)),
+                      coefficient = as.vector(t(path[moved, , drop = FALSE])),
+                      kind = rep(kind, each = ncol(path)))
+  marks <- data.frame(panel = label, step = seq_along(entering), dummy = entering > p,
+                      label = ifelse(entering > p, paste0("D", entering - p), entering))
+  list(lines = lines, marks = marks)
+}
+
+s <- TLARS_Solver$new(X, D, y)
+s$execute_step(T_stop = 1)
+first <- snapshot(s, "T_stop = 1")
+s$execute_step(T_stop = 3)
+second <- snapshot(s, "T_stop = 3, continued")
+s$restore()
+
+lines <- rbind(first$lines, second$lines)
+marks <- rbind(first$marks, second$marks)
+lines$panel <- factor(lines$panel, levels = c("T_stop = 1", "T_stop = 3, continued"))
+marks$panel <- factor(marks$panel, levels = levels(lines$panel))
+inclusions <- marks[marks$dummy, ]
+inclusions$kind <- "dummy inclusion"
+kinds <- c("true predictor", "other predictor", "dummy", "dummy inclusion")
+ggplot(lines, aes(step, coefficient, group = variable, colour = kind, linetype = kind,
+                  linewidth = kind)) +
+  geom_vline(data = inclusions, aes(xintercept = step, colour = kind, linetype = kind,
+                                    linewidth = kind), inherit.aes = FALSE) +
+  geom_line() +
+  geom_text(data = marks, aes(x = step, y = Inf, label = label), inherit.aes = FALSE,
+            vjust = 1.4, size = 2.4, colour = "grey30") +
+  facet_wrap(~ panel, scales = "free_x") +
+  scale_colour_manual(values = c("true predictor" = "#336C68", "other predictor" = "grey45",
+                                 "dummy" = "#D1495B", "dummy inclusion" = "#D1495B"),
+                      breaks = kinds) +
+  scale_linetype_manual(values = c("true predictor" = "solid", "other predictor" = "solid",
+                                   "dummy" = "dashed", "dummy inclusion" = "dotted"),
+                        breaks = kinds) +
+  scale_linewidth_manual(values = c("true predictor" = 0.9, "other predictor" = 0.5,
+                                    "dummy" = 0.6, "dummy inclusion" = 0.4), breaks = kinds) +
+  labs(x = "Step", y = "Coefficient", colour = NULL, linetype = NULL, linewidth = NULL) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "right", panel.grid.minor = element_blank(),
+        legend.background = element_rect(fill = "white", colour = "grey60"))
+```
+
+The true predictors enter first and keep growing, further predictors follow with small coefficients,
+and the dummies end the path. The second panel repeats the first up to its last step and continues
+from there, because the continuation walks the stored path on. The label over each step names the
+variable that enters.
 
 # The options
 
@@ -223,4 +288,4 @@ invisible(sd$inverse_transform_inplace(D))
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

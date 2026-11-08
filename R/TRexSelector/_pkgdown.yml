@@ -24,24 +24,26 @@ articles:
 - title: Get started
   navbar: Get started
   contents:
+  - TRexSelector
   - v01-getting-started
-  - v02-trex-selector
+  - v02-dimensionality
+  - v03-trex-selector
 - title: The T-Rex selectors
   navbar: Selectors
   contents:
-  - v03-trex-da
-  - v04-trex-gvs
-  - v05-screening
-  - v06-trex-spca
-  - v07-trex-tikhonov
+  - v04-trex-da
+  - v05-trex-gvs
+  - v06-screening
+  - v07-trex-spca
+  - v08-trex-tikhonov
 - title: Solvers and methods
   navbar: Solvers and methods
   contents:
-  - v08-tsolvers
-  - v09-ml-methods
+  - v09-tsolvers
+  - v10-ml-methods
 - title: Memory and threads
   navbar: Memory and threads
   contents:
-  - v10-memory-mapping
-  - v11-no-copies
-  - v12-parallelism
+  - v11-memory-mapping
+  - v12-no-copies
+  - v13-parallelism

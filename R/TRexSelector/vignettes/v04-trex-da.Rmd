@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -25,14 +25,15 @@ old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
 
 # Why dependent variables need their own dummies
 
-The FDR guarantee of the T-Rex selector rests on the exchangeability of the null variables and the
-dummies along the solution path. Independent dummies are exchangeable with independent null variables.
-When the variables are strongly dependent, a null variable that is correlated with an active one enters
-the path earlier than an independent dummy would, so the dummies no longer mirror the nulls and the FDP
-estimate becomes anti-conservative. The dependency-aware T-Rex selector (T-Rex+DA) [@machkour2025datrex]
-restores the control by estimating the dependency structure and by deflating the vote within groups of
-dependent variables. It has been applied to sparse index tracking with autoregressive and
-nearest-neighbour stock dependency models [@machkour2025indextracking; @machkour2024ar1].
+The false discovery rate (FDR) guarantee of the T-Rex selector rests on the exchangeability of the null
+variables and the dummies along the solution path. Independent dummies are exchangeable with independent
+null variables. When the variables are strongly dependent, a null variable that is correlated with an
+active one enters the path earlier than an independent dummy would, so the dummies no longer mirror the
+nulls and the false discovery proportion (FDP) estimate becomes anti-conservative. The dependency-aware
+T-Rex selector (T-Rex+DA) [@machkour2025datrex] restores the control by estimating the dependency
+structure and by deflating the vote within groups of dependent variables. It has been applied to sparse
+index tracking with autoregressive and nearest-neighbour stock dependency models
+[@machkour2025indextracking; @machkour2024ar1].
 
 # An autoregressive design
 
@@ -146,4 +147,4 @@ greedy$selected_indices
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography

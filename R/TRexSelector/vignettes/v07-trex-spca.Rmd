@@ -17,7 +17,7 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.align = "center",
-                      fig.width = 6, fig.height = 4)
+                      fig.width = 6, fig.height = 4, fig.retina = 2)
 options(width = 80)
 library(TRexSelector)
 old_threads <- trex_set_num_threads(min(2L, trex_get_max_threads()))
@@ -30,8 +30,8 @@ contributes to every loading vector. Sparse PCA asks for loadings with few non-z
 component can be read as a small set of variables. The T-Rex sparse PCA (T-Rex SPCA)
 [@machkour2024spca] decides which variables enter a loading vector with the T-Rex selector. For each of
 the $M$ components, ordinary PCA gives the component as a response, the T-Rex selector selects the
-variables for it at the target FDR, and a sparse loading vector is assembled from the selected set. The
-selected set of every component is FDR-controlled.
+variables for it at the target false discovery rate (FDR), and a sparse loading vector is assembled
+from the selected set. The selected set of every component is FDR-controlled.
 
 # Data with two sparse factors
 
@@ -72,13 +72,25 @@ round(spca$adjusted_ev, 3)
 round(spca$cumulative_ev, 3)
 ```
 
-```{r loadings, fig.cap = "The two sparse loading vectors. The true supports are variables 1 to 10 and 31 to 40."}
-op <- par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
-for (m in 1:2) {
-  plot(spca$V[, m], type = "h", lwd = 2, col = "#336C68", xlab = "variable",
-       ylab = sprintf("loading %d", m))
-}
-par(op)
+```{r loadings}
+#| fig.width: 8.5
+#| fig.height: 3.2
+#| fig.cap: "The two sparse loading vectors. The true supports are variables 1 to 10 and 31 to 40."
+library(ggplot2)
+loadings <- data.frame(variable = rep(seq_len(p), 2), loading = c(spca$V[, 1], spca$V[, 2]),
+                       component = rep(c("loading 1", "loading 2"), each = p))
+on_support <- (loadings$component == "loading 1" & loadings$variable %in% 1:10) |
+  (loadings$component == "loading 2" & loadings$variable %in% 31:40)
+loadings$kind <- ifelse(on_support, "true support", "other")
+ggplot(loadings, aes(variable, loading, colour = kind)) +
+  geom_hline(yintercept = 0, linewidth = 0.3, colour = "grey40") +
+  geom_segment(aes(xend = variable, yend = 0), linewidth = 0.8) +
+  facet_wrap(~ component) +
+  scale_colour_manual(values = c("true support" = "#336C68", "other" = "#D1495B")) +
+  labs(x = "Variable", y = NULL, colour = NULL) +
+  theme_bw(base_size = 11) +
+  theme(legend.position = "right",
+        legend.background = element_rect(fill = "white", colour = "grey60"))
 ```
 
 Sparse components are not orthogonal in general, so the explained variance is adjusted for the
@@ -117,4 +129,4 @@ centered in the file during `select()` and restored.
 trex_set_num_threads(old_threads)
 ```
 
-# References
+# Bibliography
