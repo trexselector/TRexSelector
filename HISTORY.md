@@ -8,6 +8,40 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-09
+
+#### Bare URLs of the README bibliographies stand in angle brackets
+
+- The software entries of the README bibliographies named their home pages as bare URLs, which GitHub
+  links by itself while other Markdown renderers do not. `render_references.py --format md` now puts
+  a bare URL into angle brackets, so the Eigen, Boost, cereal, OpenMP, pybind11 and CRAN package
+  entries of the four READMEs read `<https://...>` and link everywhere. The blocks of the root, R,
+  Python and C++ READMEs were re-rendered, and the R package's README.md was knit from README.Rmd
+  again.
+- The root README wraps its long citation lines, says "for the same data and parameters" about the
+  results across languages and splits the Citing paragraph into one sentence per line. Its
+  Bibliography opens with "The papers behind the opening story:" and lists exactly those three, the
+  T-Rex paper, Huffman 2018 and Harvey, Liu and Zhu 2016; the dependency-aware paper and the
+  virtual-dummies preprint left the list, since the story does not cite them and the package READMEs
+  and PUBLICATIONS.md carry them. The folder links point at the folders without a trailing slash, the
+  form the Markdown link validator of VS Code accepts for every folder (with the slash it reported
+  two of them as missing); GitHub resolves both forms alike.
+- The R, Python and C++ READMEs open their Bibliography with "The three papers at the theoretical
+  core of the framework so far:", in the words of the landing pages, and their Citing sections gained
+  the pointer to PUBLICATIONS.md that the root README keeps there. The software lists of the four
+  READMEs open with a sentence of the form "The C++ core builds on the following software:".
+- The pipe tables of the C++, Python and R READMEs have aligned columns, and the lists of the three
+  READMEs use the asterisk throughout, as the root README does. That clears the editor's markdownlint
+  warnings for the two files that showed them (table column style, list marker style), about fifty
+  each. This file lost its two warnings as well: two member names with trailing underscores in the
+  T-MP block of 2026-07 stand in backticks, so they no longer read as emphasis markers, and the second
+  of two identical "R <-> Python binding parity" headings of 2026-07-08 names its subject, the
+  elastic-net model selection.
+- AUTHORS.md opens with "The software centered around the Terminating-Random Experiments (T-Rex)
+  selector, the TRexSelector C++ library and its R and Python packages, is developed by Team T-Rex.",
+  followed by where the team works and the copyright sentence. The e-mail routing bullet of the Contact
+  section is gone, since the Members table carries the addresses, and the table has aligned columns.
+
 ### 2026-11-08
 
 #### The repository is cited as software
@@ -1864,8 +1898,8 @@ release v1.0.0 and trexselector 1.0.0 on PyPI on 2026-11-07.
 - T-NCGMP line search is T-MP step for step (Locatello et al. 2017, Alg. 4 with
   L = 1) but ran without an active-set cap for 20 x (p + L) steps, so at T = 100
   in demo_ts_perf_01 it ended with about 106 selected variables against 54 for
-  T-MP. It now stops by T-MP's rules (effective_n_ distinct atoms,
-  8 x min(max_actives_, effective_n_) steps); the fully corrective variant keeps
+  T-MP. It now stops by T-MP's rules (`effective_n_` distinct atoms,
+  8 x min(`max_actives_`, `effective_n_`) steps); the fully corrective variant keeps
   T-OMP's. On the demo setup (100 runs, T up to 100) the line-search actions equal
   T-MP's in every run, the coefficients to 2e-14 (T-NCGMP divides the step by
   `||x_j||^2`, 1 up to rounding on normalized columns).
@@ -2613,7 +2647,7 @@ release v1.0.0 and trexselector 1.0.0 on PyPI on 2026-11-07.
   unaffected because `select()` releases the claim before the next selector
   is built.
 
-#### R <-> Python binding parity
+#### R <-> Python binding parity, elastic-net model selection
 
 - Elastic-net model selection is now exposed in BOTH languages: `ElasticNet`
   (glmnet-style coordinate-descent coefficient path, backed by `enet_gaussian`)

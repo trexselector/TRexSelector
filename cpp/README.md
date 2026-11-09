@@ -25,13 +25,13 @@ documentation comment of every class names the papers it builds on.
 
 ## Dependencies & Platform Compatibility
 
-| Library                                        | Role                                      | Version    | Required |
-|------------------------------------------------|-------------------------------------------|------------|----------|
-| [Eigen3](https://libeigen.gitlab.io/)          | Linear algebra                            | any recent | Yes      |
-| [Boost](https://www.boost.org)                 | Headers + iostreams (memory-mapped files) | ≥ 1.80     | Yes      |
-| [Cereal](https://uscilab.github.io/cereal)     | Serialization of solver state             | any recent | Yes      |
-| [OpenMP](https://www.openmp.org)               | Parallelisation of random experiments     | ≥ 3.1      | Optional |
-| BLAS / LAPACK                                  | Accelerated linear algebra backend        | —          | Optional |
+| Library                                    | Role                                      | Version    | Required |
+| ------------------------------------------ | ----------------------------------------- | ---------- | -------- |
+| [Eigen3](https://libeigen.gitlab.io/)      | Linear algebra                            | any recent | Yes      |
+| [Boost](https://www.boost.org)             | Headers + iostreams (memory-mapped files) | ≥ 1.80     | Yes      |
+| [Cereal](https://uscilab.github.io/cereal) | Serialization of solver state             | any recent | Yes      |
+| [OpenMP](https://www.openmp.org)           | Parallelisation of random experiments     | ≥ 3.1      | Optional |
+| BLAS / LAPACK                              | Accelerated linear algebra backend        | —          | Optional |
 
 *Without OpenMP the library builds single-threaded. CMake then reports "OpenMP not found:
 building single-threaded", and `omp_get_max_threads()` returns 1 through the stubs in
@@ -97,7 +97,7 @@ cmake --build --preset release-build
 Useful configure-time options:
 
 | Option                 | Default             | Effect                                                          |
-|------------------------|---------------------|-----------------------------------------------------------------|
+| ---------------------- | ------------------- | --------------------------------------------------------------- |
 | `TREX_USE_BLAS_LAPACK` | ON (OFF on Windows) | Route Eigen through a BLAS/LAPACK backend (Accelerate/OpenBLAS) |
 | `TREX_PORTABLE_BUILD`  | OFF                 | Disable `-march=native` for portable/wheel/CI builds            |
 | `TREX_BUILD_TESTS`     | ON                  | Build the GoogleTest executables                                |
@@ -182,12 +182,12 @@ cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/TRexSelector/cpp/install
 
 **Exported targets:**
 
-| Target                                | Contains                                                       |
-|---------------------------------------|----------------------------------------------------------------|
-| `TRexSelector::trex_selector_methods` | All selectors — links tsolvers, ml\_methods, utils             |
-| `TRexSelector::trex_tsolvers`         | T-algorithm solvers only                                       |
-| `TRexSelector::trex_ml_methods`       | Standardization, clustering, model selection                   |
-| `TRexSelector::trex_utils`            | Foundational utilities (memmap, serialization, OpenMP, Eigen)  |
+| Target                                | Contains                                                      |
+| ------------------------------------- | ------------------------------------------------------------- |
+| `TRexSelector::trex_selector_methods` | All selectors — links tsolvers, ml\_methods, utils            |
+| `TRexSelector::trex_tsolvers`         | T-algorithm solvers only                                      |
+| `TRexSelector::trex_ml_methods`       | Standardization, clustering, model selection                  |
+| `TRexSelector::trex_utils`            | Foundational utilities (memmap, serialization, OpenMP, Eigen) |
 
 All targets bring their transitive dependencies (Eigen3, Cereal, OpenMP, Boost, BLAS/LAPACK)
 with them — downstream projects do not need to call `find_package` for those individually.
@@ -207,15 +207,15 @@ names where the language allows it.
 The augmented-dummy family, `ad/`, is the T-Rex method family of the papers. Each selector takes its
 control struct, which carries the T-solver choice, the dummy settings and the thread budgets.
 
-| Selector | Task | Control |
-| --- | --- | --- |
-| `TRexSelector` | FDR-controlled variable selection, the T-Rex selector | `TRexControlParameter` |
-| `TRexDASelector` | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter` |
-| `TRexGVSSelector` | group variable selection (GVS), T-Rex GVS | `TRexGVSControlParameter` |
-| `ScreenTRexSelector` | FDR-controlled screening of many variables, Screen-T-Rex | `ScreenTRexControlParameter` |
-| `BiobankScreenTRex` | phenotype screening of genomic biobank designs | `BiobankScreenTRexControl` |
-| `TRexSPCA` | sparse principal component analysis (SPCA) under FDR control | `TRexSPCAControlParameter` |
-| `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix | `TRexTikhonovControlParameter` |
+| Selector               | Task                                                             | Control                        |
+| ---------------------- | ---------------------------------------------------------------- | ------------------------------ |
+| `TRexSelector`         | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
+| `TRexDASelector`       | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter`       |
+| `TRexGVSSelector`      | group variable selection (GVS), T-Rex GVS                        | `TRexGVSControlParameter`      |
+| `ScreenTRexSelector`   | FDR-controlled screening of many variables, Screen-T-Rex         | `ScreenTRexControlParameter`   |
+| `BiobankScreenTRex`    | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |
+| `TRexSPCA`             | sparse principal component analysis (SPCA) under FDR control     | `TRexSPCAControlParameter`     |
+| `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix                 | `TRexTikhonovControlParameter` |
 
 Two further families live next to it and are not bound in R or Python yet. The virtual-dummy family,
 `vd/`, holds `TRexVD` with its own solvers (`VD_LARS`, `VD_OMP`, `VD_AFS`, `VD_AFS_Logistic` under
@@ -231,13 +231,13 @@ dummies has entered its path. Twenty T-solvers derive from `TSolver_Base` in fou
 `SolverOptions` holds their options, and `TRexControlParameter::solver_type` picks the one a selector
 uses.
 
-- Least angle regression (LARS) based: `TLARS_Solver`, `TLASSO_Solver`, `TSTEPWISE_Solver`,
+* Least angle regression (LARS) based: `TLARS_Solver`, `TLASSO_Solver`, `TSTEPWISE_Solver`,
   `TSTAGEWISE_Solver`, `TENET_Solver`, `TENETAug_Solver`, `TIENET_Solver`, `TIENETAug_Solver` and
   `TIKNET_Solver`.
-- Matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver`
+* Matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver`
   and `TNCGMP_Solver`.
-- Adaptive forward stepwise: `TAFS_Solver`.
-- Coordinate descent (CD) based: `TCDLASSO_Solver`, from which `TCDENET_Solver`, `TCDIENET_Solver`
+* Adaptive forward stepwise: `TAFS_Solver`.
+* Coordinate descent (CD) based: `TCDLASSO_Solver`, from which `TCDENET_Solver`, `TCDIENET_Solver`
   and `TCDTIKNET_Solver` derive.
 
 ### ML methods (`src/ml_methods/`)
@@ -250,14 +250,14 @@ informed elastic-net and Tikhonov penalties (`model_selection/`), and `Agglomera
 
 ### Utilities (`src/utils/`)
 
-- `memmap/`: `MemoryMappedMatrix`, the disk-backed design the selectors and T-solvers read without a
+* `memmap/`: `MemoryMappedMatrix`, the disk-backed design the selectors and T-solvers read without a
   copy.
-- `eval_metrics/`: `compute_fdp()`, `compute_tpp()`, `compute_precision()` and `compute_recall()` on
+* `eval_metrics/`: `compute_fdp()`, `compute_tpp()`, `compute_precision()` and `compute_recall()` on
   index sets, their dense counterparts on coefficient vectors, and the true-positive, false-positive
   and false-negative counts.
-- `openmp/`: `set_num_threads()`, `get_num_threads()`, `get_max_threads()` and `threads_for()`, the
+* `openmp/`: `set_num_threads()`, `get_num_threads()`, `get_max_threads()` and `threads_for()`, the
   thread budget of every kernel, with stubs for builds without OpenMP (see Threads).
-- `datageneration/`: the dummy, design and noise generators. `serialization/`: the cereal adapters for
+* `datageneration/`: the dummy, design and noise generators. `serialization/`: the cereal adapters for
   Eigen types. `logging/` and `fp_classify/`: the logger and the floating-point classification.
 
 ---
@@ -268,14 +268,14 @@ The T-Rex selector calibrates the number of dummies in its L-loop. `lloop_strate
 `TRexControlParameter` says how the dummies of that loop are produced, in every selector that
 carries the control.
 
-| Strategy | Dummies | Storage |
-| --- | --- | --- |
-| `STANDARD` (default) | fresh matrices at every L step | K matrices |
-| `HCONCAT` | the same K matrices grow by p columns per L step | K matrices |
-| `SEEDED` | the draws of `STANDARD`, re-derived from the seed at every step | none |
-| `PERMUTATION` | permuted columns of the design | K matrices |
-| `PERMUTATION_SEEDED` | the permutation re-derived from the seed | none |
-| `SKIPL` | no L-loop, the cap `max_dummy_multiplier` is used directly | K matrices |
+| Strategy             | Dummies                                                         | Storage    |
+| -------------------- | --------------------------------------------------------------- | ---------- |
+| `STANDARD` (default) | fresh matrices at every L step                                  | K matrices |
+| `HCONCAT`            | the same K matrices grow by p columns per L step                | K matrices |
+| `SEEDED`             | the draws of `STANDARD`, re-derived from the seed at every step | none       |
+| `PERMUTATION`        | permuted columns of the design                                  | K matrices |
+| `PERMUTATION_SEEDED` | the permutation re-derived from the seed                        | none       |
+| `SKIPL`              | no L-loop, the cap `max_dummy_multiplier` is used directly      | K matrices |
 
 `STANDARD` draws fresh dummies at every step, the law of the T-Rex paper and the default on every
 surface. The seeded strategies store nothing and suit designs where K times L times p columns do
@@ -337,11 +337,12 @@ setting is a no-op and `get_max_threads()` returns 1.
 ## Citing
 
 [CITATION.cff](../CITATION.cff) at the repository root carries the citation metadata of the project.
+[PUBLICATIONS.md](../PUBLICATIONS.md) lists every paper of the method family, journal articles, conference papers,
+theses and preprints.
 
 ## Bibliography
 
-The papers at the theoretical core of the framework so far, and
-[PUBLICATIONS.md](../PUBLICATIONS.md) lists every paper of the method family:
+The three papers at the theoretical core of the framework so far:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
@@ -350,16 +351,17 @@ The papers at the theoretical core of the framework so far, and
 * J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control for Dependent Variables," Signal Process., vol. 234, Art. no. 109990, 2025, [doi: 10.1016/j.sigpro.2025.109990](https://doi.org/10.1016/j.sigpro.2025.109990).
 * T. Koka, J. Machkour, D. P. Palomar, and M. Muma, "Virtual Dummies: Enabling Scalable FDR-Controlled Variable Selection via Sequential Sampling of Null Features," [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted to J. Mach. Learn. Res.).
 
-The software the library builds on, Eigen for the linear algebra, Boost.Interprocess for the memory
-mapping, cereal for the serialization and OpenMP for the threads, with an optional BLAS/LAPACK backend:
+The library builds on the following software, Eigen for the linear algebra, Boost.Interprocess for the
+memory mapping, cereal for the serialization and OpenMP for the threads, with an optional BLAS/LAPACK
+backend:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md guennebaud2010eigen boost2026libraries
          grant2017cereal openmp2021spec -->
-* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
-* The Boost Community, Boost C++ Libraries, https://www.boost.org/, 2026.
-* W. S. Grant and R. Voorhies, cereal: A C++11 Library for Serialization, https://uscilab.github.io/cereal/, 2017.
-* OpenMP Architecture Review Board, OpenMP Application Programming Interface, Version 5.2, https://www.openmp.org/specifications/, 2021.
+* G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
+* The Boost Community, Boost C++ Libraries, <https://www.boost.org/>, 2026.
+* W. S. Grant and R. Voorhies, cereal: A C++11 Library for Serialization, <https://uscilab.github.io/cereal/>, 2017.
+* OpenMP Architecture Review Board, OpenMP Application Programming Interface, Version 5.2, <https://www.openmp.org/specifications/>, 2021.
 
 ## License
 

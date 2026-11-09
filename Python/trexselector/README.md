@@ -29,12 +29,12 @@ The released package is on the Python Package Index (PyPI). Install it into the 
 pip install trexselector
 ```
 
-- PyPI provides binary wheels for Linux (x86_64), macOS (arm64) and Windows (x86_64) for Python 3.10 to 3.15, so no
+* PyPI provides binary wheels for Linux (x86_64), macOS (arm64) and Windows (x86_64) for Python 3.10 to 3.15, so no
   compiler is needed there. NumPy ≥ 1.26 is installed alongside.
-- Every wheel bundles the OpenMP runtime of its platform, so the package runs on several threads out of the box.
+* Every wheel bundles the OpenMP runtime of its platform, so the package runs on several threads out of the box.
   `trexselector.utils.get_max_threads()` reports the threads available, which is also the check after an
   installation.
-- A build from source compiles the C++ backend. This needs a C++20 compiler, CMake ≥ 3.24 and the C++ dependencies
+* A build from source compiles the C++ backend. This needs a C++20 compiler, CMake ≥ 3.24 and the C++ dependencies
   Eigen3, Boost ≥ 1.80 and cereal, as the
   [C++ core README](https://github.com/trexselector/TRexSelector/blob/main/cpp/README.md) lists per platform. OpenMP
   is optional in that build and comes from the toolchain. On macOS the build picks Homebrew's LLVM when it is
@@ -104,28 +104,28 @@ Every selector of the next section follows the same pattern of construction, `se
 Seven selectors cover the T-Rex method family, all at the package root. Each takes a control object, which carries
 the T-solver choice, the dummy settings and the thread budgets, and returns a result object from `select()`.
 
-| Selector | Task | Control |
-| --- | --- | --- |
-| `TRexSelector` | FDR-controlled variable selection, the T-Rex selector | `TRexControlParameter` |
-| `TRexDASelector` | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter` |
-| `TRexGVSSelector` | group variable selection (GVS), T-Rex GVS | `TRexGVSControlParameter` |
-| `TRexScreeningSelector` | FDR-controlled screening of many variables, Screen-T-Rex | `ScreenTRexControlParameter` |
-| `TRexBiobankScreeningSelector` | phenotype screening of genomic biobank designs | `BiobankScreenTRexControl` |
-| `TRexSPCASelector` | sparse principal component analysis (SPCA) under FDR control | `TRexSPCAControlParameter` |
-| `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix | `TRexTikhonovControlParameter` |
+| Selector                       | Task                                                             | Control                        |
+| ------------------------------ | ---------------------------------------------------------------- | ------------------------------ |
+| `TRexSelector`                 | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
+| `TRexDASelector`               | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter`       |
+| `TRexGVSSelector`              | group variable selection (GVS), T-Rex GVS                        | `TRexGVSControlParameter`      |
+| `TRexScreeningSelector`        | FDR-controlled screening of many variables, Screen-T-Rex         | `ScreenTRexControlParameter`   |
+| `TRexBiobankScreeningSelector` | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |
+| `TRexSPCASelector`             | sparse principal component analysis (SPCA) under FDR control     | `TRexSPCAControlParameter`     |
+| `TRexTikhonovSelector`         | selection with a general Tikhonov penalty matrix                 | `TRexTikhonovControlParameter` |
 
 The selector runs K random experiments on a design of p variables, each experiment with its own dummy matrix, and
 its L-loop calibrates the number of dummies as a multiple L of p. The control object sets the strategy of that loop,
 `lloop_strategy`, with the `LLoopStrategy` enum.
 
-| Strategy | Dummies | Storage |
-| --- | --- | --- |
-| `STANDARD` (default) | fresh matrices at every L step, the law of the T-Rex paper | K matrices |
-| `HCONCAT` | the same K matrices grow by p columns per L step | K matrices |
-| `SEEDED` | the draws of `STANDARD`, re-derived from the seed at every step | none |
-| `PERMUTATION` | permuted columns of the design | K matrices |
-| `PERMUTATION_SEEDED` | the permutation re-derived from the seed | none |
-| `SKIPL` | no L-loop, the cap `max_dummy_multiplier` is used directly | K matrices |
+| Strategy             | Dummies                                                         | Storage    |
+| -------------------- | --------------------------------------------------------------- | ---------- |
+| `STANDARD` (default) | fresh matrices at every L step, the law of the T-Rex paper      | K matrices |
+| `HCONCAT`            | the same K matrices grow by p columns per L step                | K matrices |
+| `SEEDED`             | the draws of `STANDARD`, re-derived from the seed at every step | none       |
+| `PERMUTATION`        | permuted columns of the design                                  | K matrices |
+| `PERMUTATION_SEEDED` | the permutation re-derived from the seed                        | none       |
+| `SKIPL`              | no L-loop, the cap `max_dummy_multiplier` is used directly      | K matrices |
 
 The seeded strategies store nothing and suit designs whose dummy matrices do not fit in memory, and they select
 exactly as their stored counterparts for the same seed. The dummies are standard Normal by default, and
@@ -138,12 +138,12 @@ its path. Twenty T-solvers are available as classes of their own under `trexsele
 that are its submodules. `SolverOptions` holds their options, and `TRexControlParameter.solver_type` picks the one a
 selector uses, with the `SolverTypeForTRex` enum.
 
-- `lars_based`, least angle regression (LARS) based: `TLARS_Solver`, `TLASSO_Solver`, `TSTEPWISE_Solver`,
+* `lars_based`, least angle regression (LARS) based: `TLARS_Solver`, `TLASSO_Solver`, `TSTEPWISE_Solver`,
   `TSTAGEWISE_Solver`, `TENET_Solver`, `TENETAug_Solver`, `TIENET_Solver`, `TIENETAug_Solver` and `TIKNET_Solver`.
-- `omp_based`, matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver` and
+* `omp_based`, matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver` and
   `TNCGMP_Solver`.
-- `afs_based`, adaptive forward stepwise: `TAFS_Solver`.
-- `cd_based`, coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and
+* `afs_based`, adaptive forward stepwise: `TAFS_Solver`.
+* `cd_based`, coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and
   `TCDTIKNET_Solver`.
 
 ### ML methods
@@ -155,12 +155,12 @@ agglomerative clustering through `agglomerative_cluster()` and `cut_tree()` of `
 
 ### Utilities
 
-- Memory-mapped designs: `trexselector.utils.convert_to_memory_mapped()` writes an array to a memory-mapped file and
+* Memory-mapped designs: `trexselector.utils.convert_to_memory_mapped()` writes an array to a memory-mapped file and
   `MemoryMappedMatrix` opens such a file, which the selectors and T-solvers read without a copy.
-- Metrics in `trexselector.utils`: `compute_fdp()`, `compute_tpp()`, `compute_precision()` and `compute_recall()`
+* Metrics in `trexselector.utils`: `compute_fdp()`, `compute_tpp()`, `compute_precision()` and `compute_recall()`
   on index sets, `compute_fdp_dense()` and `compute_tpp_dense()` on coefficient vectors, and the counts
   `true_positives_count()`, `false_positives_count()` and `false_negatives_count()`.
-- Design helpers at the package root: `normalize_design()`, `gamma_to_k()`, `build_group_centering_k()` and
+* Design helpers at the package root: `normalize_design()`, `gamma_to_k()`, `build_group_centering_k()` and
   `tikhonov_lambda2_power_rule()`.
 
 ### Threads
@@ -182,23 +182,23 @@ C++, and the R package's thirteen vignettes describe the methods in prose with t
 
 ## Links
 
-- Project website: <https://trexselector.com>
-- Repository of the C++ core and the R and Python packages: <https://github.com/trexselector/TRexSelector>
-- Examples in R, Python and C++: <https://github.com/trexselector/TRexSelector_Examples>
-- Publications of the method family: <https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md>
-- Bug reports: <https://github.com/trexselector/TRexSelector/issues>
-- Team T-Rex, the authors and their contact: <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
+* Project website: <https://trexselector.com>
+* Repository of the C++ core and the R and Python packages: <https://github.com/trexselector/TRexSelector>
+* Examples in R, Python and C++: <https://github.com/trexselector/TRexSelector_Examples>
+* Publications of the method family: <https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md>
+* Bug reports: <https://github.com/trexselector/TRexSelector/issues>
+* Team T-Rex, the authors and their contact: <https://github.com/trexselector/TRexSelector/blob/main/AUTHORS.md>
 
 ## Citing
 
 [CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff) at the repository root carries
 the citation metadata of the project.
+[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md) lists every paper of the
+method family, journal articles, conference papers, theses and preprints.
 
 ## Bibliography
 
-The papers at the theoretical core of the framework so far, and
-[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md) lists every paper of the
-method family:
+The three papers at the theoretical core of the framework so far:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
@@ -207,15 +207,15 @@ method family:
 * J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control for Dependent Variables," Signal Process., vol. 234, Art. no. 109990, 2025, [doi: 10.1016/j.sigpro.2025.109990](https://doi.org/10.1016/j.sigpro.2025.109990).
 * T. Koka, J. Machkour, D. P. Palomar, and M. Muma, "Virtual Dummies: Enabling Scalable FDR-Controlled Variable Selection via Sequential Sampling of Null Features," [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted to J. Mach. Learn. Res.).
 
-The software the package builds on, Eigen for the linear algebra of the C++ core, pybind11 for the
-bindings and NumPy for the arrays, with cereal for the serialization, Boost.Interprocess for the memory
+The package builds on the following software, Eigen for the linear algebra of the C++ core, pybind11 for
+the bindings and NumPy for the arrays, with cereal for the serialization, Boost.Interprocess for the memory
 mapping and OpenMP for the threads inside the core:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md guennebaud2010eigen jakob2017pybind11
          harris2020numpy -->
-* G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
-* W. Jakob, J. Rhinelander, and D. Moldovan, pybind11: Seamless Operability Between C++11 and Python, https://github.com/pybind/pybind11, 2017.
+* G. Guennebaud, B. Jacob et al., Eigen v3, <https://libeigen.gitlab.io/>, 2010.
+* W. Jakob, J. Rhinelander, and D. Moldovan, pybind11: Seamless Operability Between C++11 and Python, <https://github.com/pybind/pybind11>, 2017.
 * C. R. Harris, K. J. Millman, S. J. van der Walt et al., "Array Programming with NumPy," Nature, vol. 585, pp. 357-362, 2020, [doi: 10.1038/s41586-020-2649-2](https://doi.org/10.1038/s41586-020-2649-2).
 
 ## License

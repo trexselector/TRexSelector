@@ -302,12 +302,13 @@ entry and the T-Rex method papers.
 papers, and
 [CITATION.cff](https://github.com/trexselector/TRexSelector/blob/main/CITATION.cff)
 at the repository root carries the citation metadata of the project.
+[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md)
+lists every paper of the method family, journal articles, conference
+papers, theses and preprints.
 
 ## Bibliography
 
-The papers at the theoretical core of the framework so far, and
-[PUBLICATIONS.md](https://github.com/trexselector/TRexSelector/blob/main/PUBLICATIONS.md)
-lists every paper of the method family:
+The three papers at the theoretical core of the framework so far:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md machkour2025trex machkour2025datrex
@@ -328,11 +329,11 @@ lists every paper of the method family:
   [arXiv:2604.07464](https://arxiv.org/abs/2604.07464), 2026 (Submitted
   to J. Mach. Learn. Res.).
 
-The software the package builds on, Eigen for the linear algebra of the
-C++ core, Rcpp and RcppEigen for the bindings, the Boost headers of BH
-for the memory mapping, the cereal headers of Rcereal for the
-serialization and R6 for the classes, with OpenMP for the threads where
-the toolchain provides it:
+The package builds on the following software, Eigen for the linear
+algebra of the C++ core, Rcpp and RcppEigen for the bindings, the Boost
+headers of BH for the memory mapping, the cereal headers of Rcereal for
+the serialization and R6 for the classes, with OpenMP for the threads
+where the toolchain provides it:
 
 <!-- Rendered from references.bib:
      python3 tools/references/render_references.py --format md guennebaud2010eigen eddelbuettel2011rcpp

@@ -213,15 +213,18 @@ def _lower_first(text):
 # (" * " lines, references indented by two more spaces, continuation by two
 # more), "r" the roxygen style, "pylit" C++ string literals for a pybind11
 # docstring, "py" an indented plain block, "md" one Markdown bullet per entry
-# with the DOI (or arXiv id) as a link, unwrapped (the README lists).
+# with the DOI (or arXiv id) as a link and bare URLs in angle brackets,
+# unwrapped (the README lists).
 _PREFIXES = {"plain": "", "cpp": " *   ", "r": "#' ", "py": "    ", "pylit": "        ", "md": "* "}
 
 _DOI_RE = re.compile(r"doi: (\S+?)(\.?)$")
 _ARXIV_RE = re.compile(r"arXiv:(\d{4}\.\d{4,5}(?:v\d+)?)")
+_URL_RE = re.compile(r"https?://[^\s,]+")
 
 
 def _markdown(line):
-    """Link the DOI or the arXiv id of a rendered line."""
+    """Link the DOI or the arXiv id of a rendered line; bare URLs go into angle brackets."""
+    line = _URL_RE.sub(lambda m: f"<{m.group(0)}>", line)
     line = _DOI_RE.sub(lambda m: f"[doi: {m.group(1)}](https://doi.org/{m.group(1)}){m.group(2)}", line)
     return _ARXIV_RE.sub(lambda m: f"[arXiv:{m.group(1)}](https://arxiv.org/abs/{m.group(1)})", line)
 
