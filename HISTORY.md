@@ -10,6 +10,15 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### PUBLICATIONS.md opens with one sentence
+
+- The page opens with "Every paper of the Terminating-Random Experiments (T-Rex) framework and its
+  extensions, newest first." and nothing else before the first part. The sentences on the
+  generating script, the two parts and the user guides are gone, since the headings say what the
+  parts hold, and an HTML comment at the top of the page, invisible when rendered, names the script
+  and says that edits go into the bibliography or the script. The template of
+  `tools/bib_to_publications.py` carries the sentence and the comment, so a run reproduces the page.
+
 #### The bibliography gains two papers and the pages of three more
 
 - `references.bib` gains two papers of the method family, both with fields from the local PDF and

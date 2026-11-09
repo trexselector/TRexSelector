@@ -1,10 +1,10 @@
 # Publications of the T-Rex method family
 
-Every paper of the Terminating-Random Experiments (T-Rex) framework and its extensions, newest
-first, generated from the T-Rex sections of `references.bib` by `tools/bib_to_publications.py`.
-The first part holds the real-valued framework the packages implement, the second part the papers
-that carry it to complex-valued data. The user guides of the R, Python and C++ packages cite the
-papers on the pages that use them.
+<!-- Generated from the T-Rex sections of references.bib by tools/bib_to_publications.py. A run
+     of the script reproduces this page, so edits go into the bibliography or the script. -->
+
+Every paper of the Terminating-Random Experiments (T-Rex) framework and its extensions,
+newest first.
 
 ## The real-valued framework
 
