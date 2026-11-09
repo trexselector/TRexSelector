@@ -10,6 +10,15 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The CRAN comments name the win-builder runs of the submitted sources
+
+- cran-comments.md names the win-builder runs of 2026-11-09 on the submitted sources, R-release 4.6.2
+  and R-devel r90850, in place of the runs of the day before. Both were Status 1 NOTE, the
+  incoming-feasibility NOTE alone, with the day count, the maintainer line of the test copy that routes
+  the result mails, and a connection timeout of win-builder towards the GNU site on the README's license
+  link, which is reachable and was not flagged on the two days before. The results paragraph says so in
+  two sentences, so the reviewer reads the timeout as what it is, and the link stays.
+
 #### The CRAN comments count four days
 
 - cran-comments.md reads "Days since last update: 4", the count of the upload on 2026-11-10. The number

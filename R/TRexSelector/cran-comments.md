@@ -31,8 +31,8 @@ dependencies on CRAN.
   builders: the compiled backend builds without a warning, while the 2.0.0 sources fail there on the
   same `std::ranges` call.
 * R-devel in a rocker/r-devel container (Debian, x86_64): `R CMD check --as-cran`.
-* win-builder, R-release (R 4.6.2) and R-devel (2026-11-08): `R CMD check --as-cran`, the vignettes
-  built there as well.
+* win-builder, R-release (R 4.6.2) and R-devel (2026-11-07 r90850), on the submitted sources:
+  `R CMD check --as-cran`, the vignettes built there as well.
 * The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` with the vignettes
   built and re-built on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on
   Ubuntu, and Windows with the daily R-devel snapshot.
@@ -41,7 +41,10 @@ dependencies on CRAN.
 
 0 errors | 0 warnings | 0 notes on macOS. win-builder (R-release and R-devel) reports the
 incoming-feasibility NOTE alone, "Days since last update: 4", which this patch release of the
-installation failure explains.
+installation failure explains. On win-builder that NOTE also listed the README's link to the GNU
+General Public License as a possibly invalid URL, with "Timeout was reached" as the message: a
+connection failure of that machine towards www.gnu.org at the time. The page is reachable and the
+link stays.
 
 Two NOTEs in the R-devel container, both from the container itself:
 
