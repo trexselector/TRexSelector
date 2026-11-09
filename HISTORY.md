@@ -10,6 +10,14 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### AUTHORS.md separates the former contributor from the members
+
+- The Members table lists the current team alone. A new section "Former contributors" after it names
+  Simon Tien with his contribution, contents of the R releases prior to 1.0.0, without an address, the
+  form other projects use for their emeritus lists, and the roles paragraph of the R package says the
+  same. DESCRIPTION keeps his contributor role but drops the student address, which no longer works; a
+  contributor's address is optional for CRAN.
+
 #### The linters follow the 120 ruler
 
 - `.lintr` at the repository root raises lintr's line length to 120, the ruler of the repository,

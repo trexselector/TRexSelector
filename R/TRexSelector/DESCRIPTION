@@ -16,7 +16,7 @@ Authors@R:
       # main contributors
       person(given = "Fabian", family = "Scheidt", email = "fabian.scheidt@tu-darmstadt.de", role = "aut"),
       # previous contributors
-      person(given = "Simon", family = "Tien", email = "simon.tien@stud.tu-darmstadt.de", role = "ctb"),
+      person(given = "Simon", family = "Tien", role = "ctb"),
       # IP owners
       person(given = c("Daniel", "P."), family = "Palomar", email = "daniel.p.palomar@gmail.com", role = "aut"),
       person(given = "Michael", family = "Muma", email = "michael.muma@tu-darmstadt.de", role = "aut")

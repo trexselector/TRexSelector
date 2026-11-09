@@ -7,14 +7,19 @@ notices of the library and the packages name the team, and so do the package ent
 
 ## Members
 
-| Name                    | Contact                           |
-| ----------------------- | --------------------------------- |
-| Jasin Machkour          | <jasin.machkour@tu-darmstadt.de>  |
-| Fabian Scheidt          | <fabian.scheidt@tu-darmstadt.de>  |
-| Arnau Vilella Pique     | <avp@connect.ust.hk>              |
-| Daniel P. Palomar       | <daniel.p.palomar@gmail.com>      |
-| Michael Muma            | <michael.muma@tu-darmstadt.de>    |
-| Simon Tien, past member | <simon.tien@stud.tu-darmstadt.de> |
+| Name                | Contact                          |
+| ------------------- | -------------------------------- |
+| Jasin Machkour      | <jasin.machkour@tu-darmstadt.de> |
+| Fabian Scheidt      | <fabian.scheidt@tu-darmstadt.de> |
+| Arnau Vilella Pique | <avp@connect.ust.hk>             |
+| Daniel P. Palomar   | <daniel.p.palomar@gmail.com>     |
+| Michael Muma        | <michael.muma@tu-darmstadt.de>   |
+
+## Former contributors
+
+| Name       | Contribution                                          |
+| ---------- | ----------------------------------------------------- |
+| Simon Tien | Contributed contents to the R releases prior to 1.0.0 |
 
 ## Roles by package
 
@@ -22,8 +27,8 @@ The roles differ between the three packages.
 
 - **R package TRexSelector.** Jasin Machkour is the package and IP owner, he proposed version 1.0.0 of
   the package. Fabian Scheidt is the main contributor, and further contributors may join. Simon Tien
-  contributed in the past and is listed as a past contributor. Daniel P. Palomar and Michael Muma are IP
-  owners.
+  contributed contents to the R releases prior to 1.0.0 and is credited as a contributor in DESCRIPTION.
+  Daniel P. Palomar and Michael Muma are IP owners.
 - **Python package trexselector.** Arnau Vilella Pique and Fabian Scheidt are the owners. Arnau Vilella
   Pique proposed the 0.x versions of the package. From version 1.0.0 on, Fabian Scheidt is the main
   contributor and owner. Daniel P. Palomar and Michael Muma are IP owners.
