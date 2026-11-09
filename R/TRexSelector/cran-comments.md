@@ -15,9 +15,13 @@ it, and the configure script relied on that query. It reads Makeconf directly no
 already did. The compiler warnings in the package's own sources that the check logs showed (an unused
 variable in the sequential build, three signed-unsigned comparisons in the R bindings) are gone. The
 README is reorganised, with an overview of the classes, and its installation section points to CRAN
-first, as the getting-started vignette does. The vignettes share a stylesheet and a navigation header.
-Nothing else changes in the package's code or interface. The package has no reverse dependencies on
-CRAN.
+first, as the getting-started vignette does. An overview vignette introduces the package and lists the
+pages, a new vignette on data dimensionality and FDR control follows the getting-started one, four
+pages carry figures, and the vignettes share a stylesheet and a navigation header with a search box.
+The Title field reads "T-Rex Selector: High-Dimensional Variable Selection and FDR Control" (the
+ampersand is written out), and the package entry of `citation("TRexSelector")` names Team T-Rex as
+its author. Nothing else changes in the package's code or interface. The package has no reverse
+dependencies on CRAN.
 
 ## Test environments
 
@@ -27,15 +31,16 @@ CRAN.
   builders: the compiled backend builds without a warning, while the 2.0.0 sources fail there on the
   same `std::ranges` call.
 * R-devel in a rocker/r-devel container (Debian, x86_64): `R CMD check --as-cran`.
-* win-builder, R-release (R 4.6.2) and R-devel (2026-11-06 r90845): `R CMD check --as-cran`.
-* The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` without vignettes
-  on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on Ubuntu, and
-  Windows with the daily R-devel snapshot.
+* win-builder, R-release (R 4.6.2) and R-devel (2026-11-08): `R CMD check --as-cran`, the vignettes
+  built there as well.
+* The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` with the vignettes
+  built and re-built on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on
+  Ubuntu, and Windows with the daily R-devel snapshot.
 
 ## R CMD check results
 
 0 errors | 0 warnings | 0 notes on macOS. win-builder (R-release and R-devel) reports the
-incoming-feasibility NOTE alone, "Days since last update: 1", which this patch release of the
+incoming-feasibility NOTE alone, "Days since last update: 3", which this patch release of the
 installation failure explains.
 
 Two NOTEs in the R-devel container, both from the container itself:

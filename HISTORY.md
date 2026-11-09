@@ -10,6 +10,18 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The release files of 2.0.1 catch up with the tree
+
+- NEWS.md names what the vignettes gained after its entry was written: the figures of four pages, the
+  ggplot2 plots of five, the links to the demos of the Examples repository on the method pages, and
+  the package title without the ampersand. cran-comments.md says the same in its summary and names the
+  overview vignette, the dimensionality page, the figures, the search box, the title and Team T-Rex.
+  Its test environments say that the Actions jobs build and re-build the vignettes and that
+  win-builder (R-release 4.6.2 and R-devel, 2026-11-08) built them as well, and the incoming NOTE it
+  explains reads "Days since last update: 3", the count of an upload on 2026-11-09. CITATION.cff names
+  2026-11-09 as the release day. The tarball built from this tree (366 entries, the fourteen vignettes
+  inside) passes `R CMD check --as-cran` locally with Status OK and 1,562 tests.
+
 #### AUTHORS.md separates the former contributor from the members
 
 - The Members table lists the current team alone. A new section "Former contributors" after it names

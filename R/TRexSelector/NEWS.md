@@ -16,8 +16,11 @@ and an overview vignette, `vignette("TRexSelector")`, introduces the package and
 overview and the thirteen pages share a stylesheet and a navigation header, with a table of contents on
 the left that follows the scroll, the list of pages under it, and previous/next links with the copyright
 line at the end of every page, a search box over the titles and headings of the pages in the top bar,
-and they follow a dark system appearance. The package entry of
-`citation("TRexSelector")` names Team T-Rex as its author. Nothing else changes.
+and they follow a dark system appearance. Four pages carry figures (the T-Rex framework and a design with
+dummies, the regime map, the memory model), five draw their results with ggplot2, and the method pages link
+the demos of the Examples repository. The package title reads "T-Rex Selector: High-Dimensional Variable
+Selection and FDR Control", and the package entry of `citation("TRexSelector")` names Team T-Rex as its
+author. Nothing else changes.
 
 # TRexSelector 2.0.0
 
