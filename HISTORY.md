@@ -10,6 +10,12 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The CRAN comments count four days
+
+- cran-comments.md reads "Days since last update: 4", the count of the upload on 2026-11-10. The number
+  stays in the text because it is what the reviewer sees in the incoming check, and the sentence
+  explains it.
+
 #### The release files of 2.0.1 catch up with the tree
 
 - NEWS.md names what the vignettes gained after its entry was written: the figures of four pages, the

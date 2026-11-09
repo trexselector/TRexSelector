@@ -40,7 +40,7 @@ dependencies on CRAN.
 ## R CMD check results
 
 0 errors | 0 warnings | 0 notes on macOS. win-builder (R-release and R-devel) reports the
-incoming-feasibility NOTE alone, "Days since last update: 3", which this patch release of the
+incoming-feasibility NOTE alone, "Days since last update: 4", which this patch release of the
 installation failure explains.
 
 Two NOTEs in the R-devel container, both from the container itself:
