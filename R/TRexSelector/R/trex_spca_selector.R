@@ -129,7 +129,7 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
     M_      = NULL,
     tFDR_   = NULL,
     seed_   = NULL,
-    verbose_= NULL,
+    verbose_ = NULL,
     ctrl    = NULL,
     result_ = NULL
   ),

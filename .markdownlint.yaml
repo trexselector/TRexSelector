@@ -1,0 +1,19 @@
+# markdownlint configuration of the repository (editors pick it up from the file's directory chain).
+# The repository ruler is 120 characters; table rows and code blocks are exempt from it. Tables keep
+# their columns aligned, lists use one marker per file, and <span> and <br> are the allowed HTML
+# elements. No trailing whitespace: the editor trims it on save, so a hard line break is <br>, never
+# two trailing spaces.
+default: true
+MD009:
+  br_spaces: 0
+MD013:
+  line_length: 120
+  code_blocks: false
+  tables: false
+MD033:
+  allowed_elements:
+    - span
+    - br
+MD052: false
+MD060:
+  style: aligned

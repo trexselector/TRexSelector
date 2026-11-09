@@ -121,10 +121,10 @@ void MemoryMappedMatrix<Scalar>::initialize() {
 
     // 2. Open the Mapping
     try {
-        boost::interprocess::mode_t b_mode = (mode_ == AccessMode::ReadOnly) 
-            ? boost::interprocess::read_only 
+        boost::interprocess::mode_t b_mode = (mode_ == AccessMode::ReadOnly)
+            ? boost::interprocess::read_only
             : boost::interprocess::read_write;
-            
+
         file_mapping_ = std::make_unique<boost::interprocess::file_mapping>(filename_.c_str(), b_mode);
         mapped_region_ = std::make_unique<boost::interprocess::mapped_region>(*file_mapping_, b_mode, 0,
             required_bytes);

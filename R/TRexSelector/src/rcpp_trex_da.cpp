@@ -14,10 +14,10 @@ extern void validate_core_solver_type(const TRexControlParameter& params);
 
 /**
  * @brief Parses an R list into a TRexDAControlParameter C++ struct.
- * 
+ *
  * Extracts dependency-aware specific configurations like da_method (BT, AR1,
  * EQUI, NN), correlation coefficients, and threshold levels.
- * 
+ *
  * @param control List of parameters passed from R.
  * @return Populated TRexDAControlParameter instance.
  */
@@ -35,7 +35,7 @@ TRexDAControlParameter parse_da_parameter(const Rcpp::List& control) {
 
     if (control.containsElementNamed("cor_coef")) params.cor_coef = control["cor_coef"];
     if (control.containsElementNamed("rho_thr_DA")) params.rho_thr_DA = control["rho_thr_DA"];
-    
+
     if (control.containsElementNamed("hc_grid_length")) {
         params.hc_grid_length =
             static_cast<std::size_t>(Rcpp::as<int>(control["hc_grid_length"]));

@@ -1,0 +1,13 @@
+linters: linters_with_defaults(
+    line_length_linter = line_length_linter(120L),
+    object_length_linter = object_length_linter(40L),
+    object_name_linter = NULL,
+    indentation_linter = NULL,
+    return_linter = NULL,
+    commented_code_linter = NULL
+  )
+exclusions: list(
+    "R/TRexSelector/R/RcppExports.R",
+    "R/TRexSelector/tests" = list(semicolon_linter = Inf, brace_linter = Inf)
+  )
+encoding: "UTF-8"

@@ -40,9 +40,9 @@ test_that("TRexScreeningSelector executes correctly with valid data", {
   # Assert result structure and logic
   res_indices <- selector$selected_indices
   res_T_stop <- selector$T_stop
-  
+
   expect_type(res_indices, "integer")
-  
+
   expect_type(res_T_stop, "integer")
 
   # Bounds check on output selected indices (1 <= index <= p)
@@ -66,9 +66,9 @@ test_that("TRexScreeningSelector behaves memory safe with memory mapping enabled
 
   res_indices <- selector$selected_indices
   res_T_stop <- selector$T_stop
-  
+
   expect_type(res_indices, "integer")
-  
+
 })
 
 
@@ -109,7 +109,7 @@ test_that("TrexScreeningSelector correctly executes confidence-interval based bo
   selector_boot$select()
 
   # Assert result structure includes Bootstrap diagnostics
-  
+
   expect_true(selector_boot$used_bootstrap)
   expect_type(selector_boot$confidence_level, "double")
 
@@ -138,10 +138,10 @@ test_that("TRexScreeningSelector handles concurrent execution properly (OpenMP)"
   selector_openmp$select()
   res_openmp_indices <- selector_openmp$selected_indices
   res_openmp_T_stop <- selector_openmp$T_stop
-  
+
 
   expect_type(res_openmp_indices, "integer")
-  
+
 })
 
 

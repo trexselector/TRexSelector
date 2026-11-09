@@ -10,6 +10,31 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The linters follow the 120 ruler
+
+- `.lintr` at the repository root raises lintr's line length to 120, the ruler of the repository,
+  and object names to 40 characters, excludes the generated `RcppExports.R`, and turns off four
+  linters that contradict the style of the package: object names (parameters such as `tFDR` and
+  `R_boot` follow the notation of the papers and the C++ core), indentation (continuation lines are
+  indented by a fixed step, not aligned to the opening parenthesis), explicit `return()` at the end
+  of a function, and commented code (a header comment lists the control functions). The editor's R
+  diagnostics for the package's R folder drop from 462 to none, after the one real finding, a missing
+  space in `verbose_ = NULL` of the SPCA selector, was fixed. The tests keep their compound lines
+  with semicolons and their one-line function bodies, so the semicolon and brace linters are
+  switched off for the tests folder, and their findings drop from 114 to none. lintr walks up the directories from
+  the linted file, so the file covers the R package and the R scripts under `tools/`, and it lies
+  outside the package, so it never enters the tarball.
+- `.markdownlint.yaml` at the root sets the line length to 120 outside tables and code blocks, keeps
+  tables column-aligned (MD060, style "aligned") and `<span>` as the only HTML element, and turns the
+  undefined-reference rule off, the configuration the editor settings carried so far. Configuration
+  files take precedence over the editor setting, which the extension has deprecated. The file also
+  forbids trailing whitespace (MD009 with no break spaces) and allows `<br>` next to `<span>`, because
+  the editor now trims trailing whitespace on save in Markdown as well, so a hard line break is
+  written as `<br>`, never as two trailing spaces. No tracked Markdown page used the two-space form,
+  only the license text of the R package, which stays verbatim. The thirteen lines with trailing
+  whitespace in the sources, seven in the screening test, three in the memory-mapped matrix source
+  and three in two Rcpp wrappers, are clean, and the vendored copy follows.
+
 #### OPENMP.md reads in shorter sentences
 
 - The opening paragraph lists the parallel regions after a colon and continues with one sentence per
