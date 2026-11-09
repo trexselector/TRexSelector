@@ -10,6 +10,14 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The vendored copy of the DA header is in sync again
+
+- The CI job "vendored sources in sync" failed on the bibliography commit: the reference block of
+  `trex_da.hpp` gained the pages of the index-tracking paper under `cpp/src`, while the vendored copy
+  under `R/TRexSelector/src` kept the old line. `bundle_for_cran.sh` synced the copy, and its
+  `--check` passes again. A change under `cpp/src`, even in a comment, needs the bundle script run
+  before the commit.
+
 #### PUBLICATIONS.md opens with one sentence
 
 - The page opens with "Every paper of the Terminating-Random Experiments (T-Rex) framework and its
