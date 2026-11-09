@@ -142,7 +142,7 @@ inline void bind_trex_da(py::module& m) {
         "  doi: 10.1016/j.sigpro.2025.109990.\n"
         "J. Machkour, D. P. Palomar, and M. Muma, \"FDR-Controlled Portfolio Optimization for\n"
         "  Sparse Financial Index Tracking,\" in Proc. IEEE Int. Conf. Acoust., Speech, Signal\n"
-        "  Process. (ICASSP), 2025, doi: 10.1109/ICASSP49660.2025.10890629.\n"
+        "  Process. (ICASSP), 2025, pp. 1-5, doi: 10.1109/ICASSP49660.2025.10890629.\n"
         "J. Machkour, M. Muma, and D. P. Palomar, \"FDR-Controlled Sparse Index Tracking with\n"
         "  Autoregressive Stock Dependency Models,\" in Proc. Eur. Signal Process. Conf.\n"
         "  (EUSIPCO), 2024, pp. 2662-2666.\n"

@@ -165,6 +165,8 @@ references:
       - family-names: Muma
         given-names: Michael
     collection-title: "Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP)"
+    start: 1
+    end: 5
     year: 2025
     doi: 10.1109/ICASSP49660.2025.10890629
   - type: conference-paper

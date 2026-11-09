@@ -10,6 +10,25 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### The bibliography gains two papers and the pages of three more
+
+- `references.bib` gains two papers of the method family, both with fields from the local PDF and
+  the Crossref record: Vilella, Machkour, Muma and Palomar, "Learning false discovery rate control
+  via model-based neural networks," ICASSP 2026, pp. 841-845, and Gargano, Machkour, Nardelli,
+  Scilingo and Muma, "Reproducible physiological features in affective computing: A preliminary
+  analysis on arousal modeling," MetroXRAINE 2025, pp. 605-610. PUBLICATIONS.md lists them, nineteen
+  entries now. They stay out of `inst/CITATION` and CITATION.cff, which name the papers behind the
+  implemented methods.
+- The file also names the pages of the three papers that lacked them: the EUSIPCO 2026 papers on
+  dummy-controlled Gaussian graph learning (pp. 1242-1246) and on FDR-controlled compressed
+  beamforming (pp. 2716-2720), read from the footers of the local proceedings PDFs, and the ICASSP
+  2025 paper on FDR-controlled index tracking (pp. 1-5) per the Crossref record. Everything rendered
+  from the bibliography follows: PUBLICATIONS.md, `inst/CITATION`, the reference block of the
+  dependency-aware selector in the C++ header, the roxygen block with its Rd page and the pybind11
+  docstring with its stub, and the index-tracking reference of CITATION.cff. The vignette copy of the
+  bibliography is the master file again; it had lacked the Huffman 2018 entry of the root README.
+  The EUSIPCO 2026 papers have no DOI yet, since the proceedings are not on IEEE Xplore so far.
+
 #### Bare URLs of the README bibliographies stand in angle brackets
 
 - The software entries of the README bibliographies named their home pages as bare URLs, which GitHub

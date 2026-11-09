@@ -20,12 +20,19 @@ papers on the pages that use them.
 ### Conference papers
 
 - H. Mehler, T. Koka, and M. Muma, "Dummy-controlled model selection for high-dimensional Gaussian
-  graph learning," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, 2026.
+  graph learning," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, pp. 1242–1246, 2026.
+- A. Vilella, J. Machkour, M. Muma, and D. P. Palomar, "Learning false discovery rate control via
+  model-based neural networks," in *Proc. IEEE Int. Conf. Acoust., Speech, Signal Process.
+  (ICASSP)*, pp. 841–845, 2026. (<https://doi.org/10.1109/ICASSP55912.2026.11463077>)
 - F. Scheidt and M. Muma, "Terminating greedy pursuits for high-dimensional false discovery rate
   control," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, pp. 2511–2515, 2026.
+- A. Gargano, J. Machkour, M. Nardelli, E. P. Scilingo, and M. Muma, "Reproducible physiological
+  features in affective computing: A preliminary analysis on arousal modeling," in *Proc. IEEE Int.
+  Conf. Metrol. eXtended Reality, Artif. Intell. Neural Eng. (MetroXRAINE)*, pp. 605–610, 2025.
+  (<https://doi.org/10.1109/METROXRAINE66377.2025.11339922>)
 - J. Machkour, D. P. Palomar, and M. Muma, "FDR-controlled portfolio optimization for sparse
   financial index tracking," in *Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP)*,
-  2025. (<https://doi.org/10.1109/ICASSP49660.2025.10890629>)
+  pp. 1–5, 2025. (<https://doi.org/10.1109/ICASSP49660.2025.10890629>)
 - T. Koka, J. Machkour, and M. Muma, "False discovery rate control for Gaussian graphical models via
   neighborhood screening," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, pp. 2482–2486, 2024.
   (<https://doi.org/10.23919/EUSIPCO63174.2024.10715414>)
@@ -67,7 +74,8 @@ papers on the pages that use them.
 ### Conference papers
 
 - C. Löser, M. Muma, and C. Hoog Antink, "FDR-controlled compressed beamforming for person
-  localization in emergency response radar," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, 2026.
+  localization in emergency response radar," in *Proc. Eur. Signal Process. Conf. (EUSIPCO)*, pp.
+  2716–2720, 2026.
 - F. Scheidt, J. Machkour, and M. Muma, "FDR control for complex-valued data with application in
   single snapshot multi-source detection and DOA estimation," in *Proc. IEEE Int. Conf. Acoust.,
   Speech, Signal Process. (ICASSP)*, pp. 1–5, 2025.

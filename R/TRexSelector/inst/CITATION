@@ -125,9 +125,10 @@ bibentry("InProceedings",
                    as.person("Daniel P. Palomar"),
                    as.person("Michael Muma")),
   booktitle   = "Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP)",
+  pages       = "1-5",
   year        = "2025",
   doi         = "10.1109/ICASSP49660.2025.10890629",
-  textVersion = "J. Machkour, D. P. Palomar, and M. Muma, \"FDR-Controlled Portfolio Optimization for Sparse Financial Index Tracking,\" in Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP), 2025, doi: 10.1109/ICASSP49660.2025.10890629."
+  textVersion = "J. Machkour, D. P. Palomar, and M. Muma, \"FDR-Controlled Portfolio Optimization for Sparse Financial Index Tracking,\" in Proc. IEEE Int. Conf. Acoust., Speech, Signal Process. (ICASSP), 2025, pp. 1-5, doi: 10.1109/ICASSP49660.2025.10890629."
 )
 
 bibentry("InProceedings",
