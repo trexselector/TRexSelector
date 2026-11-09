@@ -10,6 +10,12 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-09
 
+#### OPENMP.md reads in shorter sentences
+
+- The opening paragraph lists the parallel regions after a colon and continues with one sentence per
+  line. The CRAN rule sits in the R section as a subsection, since it concerns the R package alone,
+  and the table of the check has aligned columns, which clears the editor's table warnings.
+
 #### The vendored copy of the DA header is in sync again
 
 - The CI job "vendored sources in sync" failed on the bibliography commit: the reference block of
