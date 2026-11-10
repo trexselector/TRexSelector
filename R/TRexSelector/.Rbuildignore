@@ -13,3 +13,4 @@
 ^\.DS_Store$
 ^\.clangd$
 ^_pkgdown\.yml$
+^pkgdown$

@@ -1,6 +1,18 @@
-url: https://github.com/trexselector/TRexSelector
+url: https://trexselector.github.io/TRexSelector/r/
 template:
   bootstrap: 5
+  light-switch: true
+  # KaTeX, because MathJax loses autoloaded commands such as \boldsymbol in pkgdown >= 2.1.2 (r-lib/pkgdown#3037)
+  math-rendering: katex
+  bslib:
+    primary: "#336C68"
+
+footer:
+  structure:
+    left: copyright
+    right: built_with
+  components:
+    copyright: Copyright © 2026 Team T-Rex
 
 reference:
 - title: T-Rex selectors and controls

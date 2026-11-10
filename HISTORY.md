@@ -10,6 +10,19 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-10
 
+#### The R package carries the setup of its pkgdown site
+
+- `_pkgdown.yml` prepares the R part of the documentation site at
+  <https://trexselector.github.io/TRexSelector/r/> with the site URL in place of the repository URL,
+  Bootstrap 5 with the light switch, the teal #336C68 of the other guides, the footer "Copyright © 2026
+  Team T-Rex" and KaTeX for the formulas. MathJax stays out for now, because pkgdown >= 2.1.2 assigns
+  `window.MathJax` after the MathJax script and loses the autoloaded commands such as `\boldsymbol`,
+  reported as r-lib/pkgdown#3037, and a comment next to the setting says so. pkgdown/extra.js adds the
+  page position and the previous/next links of the vignettes to the guide pages. pkgdown/extra.css
+  styles them, keeps the white background of the figures in dark mode, where pkgdown inverts them, and
+  sets the teal links of the dark theme. .Rbuildignore excludes pkgdown/, so CRAN, `vignette()` and
+  RStudio keep the designed vignettes. DESCRIPTION gains the site URL once the site is live.
+
 #### The Python guide encrypts its kernel connection and keeps the property texts
 
 - Since ipykernel 7.4 every notebook of the Sphinx build logs "Kernel is running over TCP without

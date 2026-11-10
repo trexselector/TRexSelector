@@ -1,0 +1,44 @@
+/* Page position and pager of the guide pages (pkgdown/extra.js), in the style of the vignettes. */
+.trex-where {
+  margin-bottom: 0.25rem;
+  color: var(--bs-secondary-color);
+  font-size: 0.85rem;
+}
+
+/* Previous link left, the position in the center, next link right. */
+.trex-pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  column-gap: 16px;
+  align-items: center;
+  margin-top: 36px;
+  padding-top: 10px;
+  border-top: 1px solid var(--bs-border-color);
+  font-size: 0.9rem;
+}
+.trex-pager .prev {
+  grid-column: 1;
+}
+.trex-pager .where {
+  grid-column: 2;
+  color: var(--bs-secondary-color);
+  font-size: 0.8rem;
+}
+.trex-pager .next {
+  grid-column: 3;
+  text-align: right;
+}
+
+/* Figures keep their white background in dark mode: pkgdown inverts R plots there, which turns the
+   white panels black and shifts the colours. The selectors match pkgdown's own rule. */
+[data-bs-theme="dark"] img.r-plt,
+[data-bs-theme="dark"] pre .r-plt.img img,
+[data-bs-theme="dark"] .cell-output-display img {
+  filter: none;
+}
+
+/* The teal of the other guides in dark mode. */
+[data-bs-theme="dark"] {
+  --bs-link-color-rgb: 107, 178, 173;
+  --bs-link-hover-color-rgb: 140, 200, 196;
+}
