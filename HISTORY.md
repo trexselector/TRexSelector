@@ -8,6 +8,19 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-10
+
+#### A CRAN check script replaces the build chain, and two debugging leftovers leave
+
+- R/TRexSelector/tools/cran_check.sh runs the checks before a CRAN upload in one go. It runs the vendor
+  check, `R CMD build` and `R CMD check --as-cran` with the remote part of the incoming check off and
+  CRAN's timing thresholds at 2.5, prints the size and the SHA-256 checksum of the tarball, writes into a
+  dated folder under the gitignored notes/cran_upload/ and ends with a done line. It replaces
+  build_chain.sh, which built and checked without the vendor check and the thresholds, and which nothing
+  referenced. Python/trexselector/run_lldb.sh, an lldb wrapper around a test script that no longer
+  exists, and R/TRexSelector/tools/debug.R, a devtools loader that the VS Code launch configurations do
+  not use, are archived outside the repository.
+
 ### 2026-11-09
 
 #### The CRAN comments name the win-builder runs of the submitted sources
