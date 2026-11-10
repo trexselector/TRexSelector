@@ -10,6 +10,17 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-10
 
+#### The Python guide encrypts its kernel connection and keeps the property texts
+
+- Since ipykernel 7.4 every notebook of the Sphinx build logs "Kernel is running over TCP without
+  encryption". docs/conf.py lets the nbclient kernel manager provision CurveZMQ keys
+  (`transport_encryption` "auto"), because MyST-NB has no option for it. "auto" keeps plain TCP for a
+  kernelspec without Curve support, and the hook applies only when pyzmq has Curve. requirements.txt pins
+  jupyter-client 8.10.0, the version that provides the setting. The docstring hook of the API pages gains
+  two fixes. napoleon read a leading "Label: text" of 57 properties as a type and a description, so these
+  properties keep their docstring as written, and the pybind11 overload lists such as
+  `1. f(self: T, ...) -> R` show as code without self, which also removes the warning about `**kwargs`.
+
 #### A CRAN check script replaces the build chain, and two debugging leftovers leave
 
 - R/TRexSelector/tools/cran_check.sh runs the checks before a CRAN upload in one go. It runs the vendor

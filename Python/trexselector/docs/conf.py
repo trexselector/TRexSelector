@@ -2,7 +2,11 @@
 build time, next to the API reference from the docstrings of the installed package."""
 
 import importlib.metadata
+import inspect
 import re
+
+import nbclient.client
+import zmq
 
 project = "trexselector"
 author = "Team T-Rex"
@@ -27,6 +31,18 @@ nb_execution_timeout = 600
 nb_execution_raise_on_error = True
 myst_enable_extensions = ["dollarmath", "colon_fence", "deflist"]
 myst_heading_anchors = 3
+
+# ipykernel >= 7.4 warns that the kernel talks plain TCP; let the kernel manager provision CurveZMQ keys.
+# MyST-NB has no option for it, and "auto" keeps plain TCP for a kernelspec without Curve support.
+if zmq.has("curve"):
+    _create_kernel_manager = nbclient.client.NotebookClient.create_kernel_manager
+
+    def _create_encrypted_kernel_manager(self):
+        km = _create_kernel_manager(self)
+        km.transport_encryption = "auto"
+        return km
+
+    nbclient.client.NotebookClient.create_kernel_manager = _create_encrypted_kernel_manager
 
 exclude_patterns = ["_build", "README.md", "**/.ipynb_checkpoints"]
 
@@ -135,15 +151,25 @@ def _reflow_references(lines):
 
 
 _ABS = re.compile(r"\|([A-Za-z_][A-Za-z0-9_]*)\|")
+_OVERLOAD = re.compile(r"^(\d+)\. (\w+\(.*\) -> .*)$")
 
 
 def _process_docstring(app, what, name, obj, options, lines):
-    # pybind11 repeats the signature as the first docstring line of overloaded or wrapped callables;
+    # napoleon reads a leading "Label: text" of a property as "type: description"; no property of the
+    # package declares its type that way, so the property keeps its docstring as written
+    if what == "property" and any(line.startswith(":type: ") for line in lines):
+        lines[:] = (inspect.getdoc(obj) or "").splitlines()
+    # pybind11 repeats the signature as the first docstring line of overloaded or wrapped callables and
+    # lists the overloads as "1. f(self: T, ...) -> R", shown here as code without self;
     # |A| in a docstring is an absolute value, not a reStructuredText substitution
     for i, line in enumerate(lines):
         if "typing.Annotated" in line or "trexselector._core" in line or "Supports" in line:
             lines[i] = _shorten(line)
-        if "|" in lines[i]:
+        overload = _OVERLOAD.match(lines[i])
+        if overload:
+            signature = re.sub(r"\(self(: [^,)]*)?(, )?", "(", overload.group(2))
+            lines[i] = f"{overload.group(1)}. ``{signature}``"
+        elif "|" in lines[i]:
             lines[i] = _ABS.sub(r"\\|\1\\|", lines[i])
     lines[:] = _reflow_references(lines)
 

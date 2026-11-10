@@ -8,3 +8,5 @@ sphinxcontrib-bibtex==2.7.0
 pybtex==0.26.1
 matplotlib==3.11.2
 ipykernel==7.4.0
+# 8.10 provisions the CurveZMQ keys of the kernel (transport_encryption, set in conf.py)
+jupyter-client==8.10.0
