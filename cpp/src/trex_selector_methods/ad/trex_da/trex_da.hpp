@@ -119,8 +119,9 @@ struct TRexDAControlParameter {
     DAMethod method = DAMethod::BT;
 
     /** @brief Correlation coefficient for AR1/EQUI.
-     *  AUTO_ESTIMATE_CORRELATION = auto-estimate from X. Both methods use the
-     *  magnitude of a supplied coefficient.
+     *  AUTO_ESTIMATE_CORRELATION (-2.0) = auto-estimate from X. Both methods
+     *  use the magnitude of a supplied coefficient. A supplied value outside
+     *  [-1, 1] gives a warning and is replaced by the estimate.
      *
      *  @note Auto-estimation details: for EQUI, the mean of all pairwise
      *  Pearson correlations (identical to the R reference). For AR1, the
@@ -582,6 +583,12 @@ protected:
     // ============================================================
     // Correlation Estimation Helpers
     // ============================================================
+
+    /** @brief Whether the coefficient is estimated: `cor_coef` is the
+     *  sentinel AUTO_ESTIMATE_CORRELATION, or it lies outside [-1, 1], which
+     *  also prints a warning.
+     */
+    bool estimatesCorrelation() const;
 
     /** @brief Estimate AR(1) coefficient from X via row-wise Yule-Walker. */
     double estimateAR1Correlation() const;

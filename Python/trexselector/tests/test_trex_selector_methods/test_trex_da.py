@@ -160,6 +160,33 @@ def test_da_ar1_uses_coefficient_magnitude(signal_data, fast_control):
     assert neg.cor_coef == pytest.approx(-0.5)
 
 
+@pytest.mark.parametrize("method", [trexselector.DAMethod.AR1, trexselector.DAMethod.EQUI])
+def test_da_unusable_coefficient_is_estimated(signal_data, fast_control, method, capfd):
+    """A cor_coef outside [-1, 1] is replaced by the estimate, with a warning on stderr."""
+    X, y, n, p = signal_data
+
+    def run(cor_coef):
+        da_ctrl = trexselector.TRexDAControlParameter()
+        da_ctrl.method = method
+        da_ctrl.cor_coef = cor_coef
+        sel = trexselector.TRexDASelector(X.copy(order="F"), y.copy(), da_control=da_ctrl,
+                                          trex_control=fast_control, seed=7, verbose=False)
+        capfd.readouterr()
+        coefficient = sel.select().cor_coef
+        return coefficient, capfd.readouterr().err
+
+    estimated, warning = run(-2.0)
+    assert "cor_coef" not in warning
+    for unusable in (-1.5, 1.5, -2.5, float("nan")):
+        coefficient, warning = run(unusable)
+        assert coefficient == pytest.approx(estimated)
+        assert "cor_coef" in warning
+
+    coefficient, warning = run(-0.5)
+    assert coefficient == pytest.approx(-0.5)
+    assert "cor_coef" not in warning
+
+
 def test_da_ar1_rejects_unit_threshold(signal_data):
     """AR1 takes thresholds in [0, 1): at 1 the window holds no neighbor. EQUI accepts 1."""
     X, y, n, p = signal_data

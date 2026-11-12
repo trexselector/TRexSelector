@@ -89,15 +89,19 @@ enum.
 | --- | --- | --- |
 | `BT` (default) | binary tree: hierarchical clustering of the variables at correlation thresholds, the threshold is calibrated on a grid | `hc_linkage`, `hc_grid_length` |
 | `NN` | nearest neighbours: a correlation-threshold sweep of the same form | `hc_grid_length` |
-| `AR1` | first-order autoregressive dummies | `cor_coef` (estimated when `-2`) |
-| `EQUI` | equi-correlated dummies | `cor_coef`, `rho_thr_DA` |
+| `AR1` | first-order autoregressive: a variable is compared with its neighbours inside a window | `cor_coef` (estimated when `-2`), `rho_thr_DA` |
+| `EQUI` | equi-correlated: a variable is compared with all other variables | `cor_coef` (estimated when `-2`), `rho_thr_DA` |
 
 The binary tree method clusters the variables by correlation distance with the linkage `hc_linkage`
 (`LinkageMethod.Single` by default), evaluates the FDP estimate at `hc_grid_length` correlation
 thresholds (the default `0` lets the core take $\min(20, p)$ points) and keeps the threshold
-`rho_thresh`. The autoregressive and equi-correlated methods draw dummies with the dependency of the
-data. `cor_coef = -2` estimates the coefficient from the data and `rho_thr_DA` is the correlation
-below which the equi-correlated model is skipped.
+`rho_thresh`. The autoregressive and equi-correlated methods draw the same independent dummies as the
+other methods and penalize the relative occurrences. The autoregressive method compares a variable
+with the neighbours inside a window, which holds the lags whose correlation `abs(cor_coef)**lag`
+reaches `rho_thr_DA`, a threshold in $[0, 1)$. The equi-correlated method compares a variable with all
+other variables and is skipped when `abs(cor_coef)` does not exceed `rho_thr_DA`. Both methods use the
+magnitude of the coefficient. Setting `cor_coef` to `-2` estimates the coefficient from the data, and
+any other value outside $[-1, 1]$ gives a warning and is replaced by the estimate.
 
 ```{code-cell} python
 ar1_ctrl = tsn.TRexDAControlParameter()

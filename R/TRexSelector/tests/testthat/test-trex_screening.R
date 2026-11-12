@@ -87,6 +87,88 @@ test_that("TRexScreeningSelector correctly guards against invalid parameters", {
         verbose = FALSE),
     "Unknown ScreenTRexMethod:"
   )
+
+  # rho_thr_DA is checked at construction: [0, 1], and [0, 1) for TREX_DA_AR1
+  guard <- function(...) {
+    TRexScreeningSelector$new(X, y, screen_control = trex_screen_control(...), verbose = FALSE)
+  }
+  expect_error(guard(trex_method = "TREX_DA_EQUI", rho_thr_DA = -0.5), "rho_thr_DA")
+  expect_error(guard(trex_method = "TREX_DA_EQUI", rho_thr_DA = 1.5), "rho_thr_DA")
+  expect_error(guard(trex_method = "TREX", rho_thr_DA = 1.5), "rho_thr_DA")
+  expect_error(guard(trex_method = "TREX_DA_AR1", rho_thr_DA = 1), "rho_thr_DA")
+
+  # TREX_DA_BLOCK_EQUI takes between 1 and p blocks
+  expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = 0), "n_blocks")
+  expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = -3), "n_blocks")
+  expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = p + 1), "n_blocks")
+})
+
+
+
+test_that("TRexScreeningSelector replaces a cor_coef outside [-1, 1] by the estimate with a warning", {
+
+  set.seed(42)
+  n <- 60
+  p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 8] * -4 + X[, 16] * 3 + rnorm(n)
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(trex_method, cor_coef) {
+    screen_control <- trex_screen_control(trex_method = trex_method, cor_coef = cor_coef)
+    selector <- TRexScreeningSelector$new(X + 0, y, seed = 7, verbose = FALSE,
+                                          screen_control = screen_control, control = trex_control(K = 5))
+    warning_text <- capture.output(selector$select(), type = "message")
+    list(cor_coef = selector$estimated_correlation, warning_text = paste(warning_text, collapse = " "))
+  }
+
+  for (trex_method in c("TREX_DA_AR1", "TREX_DA_EQUI", "TREX_DA_BLOCK_EQUI")) {
+    estimated <- run(trex_method, -2)
+    expect_false(grepl("cor_coef", estimated$warning_text), label = paste(trex_method, "sentinel is silent"))
+
+    for (unusable in c(-1.5, 1.5, -2.5)) {
+      replaced <- run(trex_method, unusable)
+      expect_equal(replaced$cor_coef, estimated$cor_coef, label = paste(trex_method, unusable, "estimate"))
+      expect_match(replaced$warning_text, "cor_coef", label = paste(trex_method, unusable, "warning"))
+    }
+
+    supplied <- run(trex_method, -0.5)
+    expect_equal(supplied$cor_coef, -0.5)
+    expect_false(grepl("cor_coef", supplied$warning_text))
+  }
+})
+
+
+
+test_that("TRexScreeningSelector TREX_DA_AR1 handles the edges of its window", {
+
+  set.seed(42)
+  n <- 60
+  p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 8] * -4 + X[, 16] * 3 + rnorm(n)
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(cor_coef, rho_thr_DA) {
+    screen_control <- trex_screen_control(trex_method = "TREX_DA_AR1", cor_coef = cor_coef,
+                                          rho_thr_DA = rho_thr_DA)
+    selector <- TRexScreeningSelector$new(X + 0, y, seed = 7, verbose = FALSE,
+                                          screen_control = screen_control, control = trex_control(K = 10))
+    selector$select()
+    selector
+  }
+
+  # The window follows abs(cor_coef)
+  neg <- run(-0.5, 0.02)
+  pos <- run(0.5, 0.02)
+  expect_identical(neg$selected_var, pos$selected_var)
+  expect_equal(neg$phi_mat, pos$phi_mat)
+
+  # A zero threshold is the full window, as a coefficient of magnitude 1 gives it
+  full <- run(0.5, 0)
+  unit <- run(1, 0.02)
+  expect_true(all(is.finite(full$phi_mat)))
+  expect_equal(full$phi_mat, unit$phi_mat)
 })
 
 

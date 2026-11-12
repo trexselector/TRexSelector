@@ -251,7 +251,8 @@ trex_control <- function(solver = "TLARS",
 #'   (default: "BT"). "NN" is a nearest-neighbour correlation-threshold sweep
 #'   (BT-style) over a rho grid of length \code{hc_grid_length}.
 #' @param cor_coef Correlation coefficient for AR1/EQUI. -2.0 triggers auto-estimation
-#'   (default: -2.0). Both methods use the magnitude of a supplied coefficient.
+#'   (default: -2.0). Both methods use the magnitude of a supplied coefficient. Any other
+#'   value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.
 #' @param rho_thr_DA Correlation threshold of the AR1 and EQUI methods (default: 0.02).
 #'   AR1: the window around a variable holds the lags whose correlation
 #'   \code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. EQUI: the
@@ -457,6 +458,16 @@ trex_gvs_control <- function(gvs_type = "EN",
 #' @param ci_grid_step Grid step size for confidence-interval calculations (default: 0.001).
 #' @param trex_method Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
 #'   "TREX_DA_BLOCK_EQUI" (default: "TREX").
+#' @param cor_coef Correlation coefficient of the dependency-aware variants. -2.0 triggers
+#'   auto-estimation (default: -2.0). The variants use the magnitude of a supplied coefficient.
+#'   Any other value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.
+#' @param rho_thr_DA Correlation threshold of the dependency-aware variants (default: 0.02).
+#'   "TREX_DA_AR1": the window around a variable holds the lags whose correlation
+#'   \code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. "TREX_DA_EQUI" and
+#'   "TREX_DA_BLOCK_EQUI": the correction is skipped when \code{abs(cor_coef)} does not exceed
+#'   the threshold, range \code{[0, 1]}.
+#' @param n_blocks Number of blocks of "TREX_DA_BLOCK_EQUI", between 1 and the number of
+#'   variables (default: 5).
 #'
 #' @return A named list for use in TRexScreeningSelector or TRexBiobankScreeningSelector.
 #'
@@ -469,12 +480,18 @@ trex_gvs_control <- function(gvs_type = "EN",
 trex_screen_control <- function(use_bootstrap_CI = FALSE,
                                 R_boot = 1000,
                                 ci_grid_step = 0.001,
-                                trex_method = "TREX") {
+                                trex_method = "TREX",
+                                cor_coef = -2.0,
+                                rho_thr_DA = 0.02,
+                                n_blocks = 5) {
   list(
     use_bootstrap_CI = use_bootstrap_CI,
     R_boot           = R_boot,
     ci_grid_step     = ci_grid_step,
-    trex_method      = trex_method
+    trex_method      = trex_method,
+    cor_coef         = cor_coef,
+    rho_thr_DA       = rho_thr_DA,
+    n_blocks         = n_blocks
   )
 }
 

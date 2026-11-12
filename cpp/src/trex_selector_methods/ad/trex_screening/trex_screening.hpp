@@ -66,15 +66,25 @@ struct ScreenTRexControlParameter {
     /** @brief Screen-TRex variant to use (default: TREX). */
     ScreenTRexMethod trex_method = ScreenTRexMethod::TREX;
 
-    /** @brief Correlation threshold for DA variants (default: 0.02). */
+    /** @brief Correlation threshold of the dependency-aware variants (default: 0.02).
+     *  TREX_DA_AR1: the window around a variable holds the lags whose
+     *  correlation |cor_coef|^lag reaches the threshold, range [0, 1).
+     *  TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when
+     *  |cor_coef| does not exceed the threshold, range [0, 1].
+     */
     double rho_thr_DA = 0.02;
 
     /** @brief Manually specified correlation coefficient.
-     *  AUTO_ESTIMATE_CORRELATION (−2.0) triggers automatic estimation.
+     *  AUTO_ESTIMATE_CORRELATION (−2.0) triggers automatic estimation. The
+     *  dependency-aware variants use the magnitude of a supplied coefficient.
+     *  A supplied value outside [−1, 1] gives a warning and is replaced by
+     *  the estimate.
      */
     double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
 
-    /** @brief Number of blocks for block-equicorrelated DA variant (default: 5). */
+    /** @brief Number of blocks for block-equicorrelated DA variant (default: 5).
+     *  TREX_DA_BLOCK_EQUI takes values between 1 and the number of variables.
+     */
     std::size_t n_blocks = 5;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
@@ -442,6 +452,17 @@ protected:
      *         SKIPL, which describe L-loop growth).
      */
     void validateScreenTRexStrategy() const;
+
+    /**
+     * @brief Check the parameters of the dependency-aware variants.
+     *
+     * `rho_thr_DA` must be in [0, 1], and in [0, 1) for TREX_DA_AR1, whose
+     * window has no lag left at a threshold of 1. `n_blocks` must be in
+     * [1, p] for TREX_DA_BLOCK_EQUI.
+     *
+     * @throws std::invalid_argument on a value outside its range.
+     */
+    void validateScreenDAParameters() const;
 
 };
 

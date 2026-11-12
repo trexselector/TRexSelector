@@ -9,7 +9,9 @@
 #include <Eigen/Dense>
 
 // std includes
+#include <limits>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // project trex includes
@@ -75,6 +77,136 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidLLoopStrategy) {
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::HCONCAT;
     EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params),
                  std::invalid_argument);
+}
+
+
+/** @brief `rho_thr_DA` is checked at construction: [0, 1], and [0, 1) for
+ *  TREX_DA_AR1, whose window has no lag left at a threshold of 1. */
+TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidRhoThreshold) {
+    ScreenTRexControlParameter screen_params;
+
+    for (const double bad : {-0.1, 1.5, std::numeric_limits<double>::quiet_NaN()}) {
+        screen_params.rho_thr_DA = bad;
+        for (const auto method : {ScreenTRexMethod::TREX, ScreenTRexMethod::TREX_DA_AR1,
+                                  ScreenTRexMethod::TREX_DA_EQUI}) {
+            screen_params.trex_method = method;
+            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+        }
+    }
+
+    screen_params.rho_thr_DA = 1.0;
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
+    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+}
+
+
+/** @brief TREX_DA_BLOCK_EQUI takes between 1 and p blocks. The other
+ *  variants do not read `n_blocks`. */
+TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
+    ScreenTRexControlParameter screen_params;
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+
+    for (const std::size_t bad : {std::size_t{0}, std::size_t{21}}) {  // p = 20
+        screen_params.n_blocks = bad;
+        EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+    }
+    for (const std::size_t good : {std::size_t{1}, std::size_t{20}}) {
+        screen_params.n_blocks = good;
+        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    }
+
+    screen_params.n_blocks = 0;
+    screen_params.trex_method = ScreenTRexMethod::TREX;
+    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+}
+
+
+/** @brief TREX_DA_AR1 at the edges of its window: a zero threshold is the
+ *  full window, and a negative coefficient gives the window of its magnitude. */
+TEST(TRexScreeningWindowTest, Method_DA_AR1_WindowEdges) {
+    const Eigen::Index n = 60;
+    const Eigen::Index p = 30;
+    std::srand(11);
+    const Eigen::MatrixXd X0 = Eigen::MatrixXd::Random(n, p);
+    const Eigen::VectorXd y0 =
+        3.0 * X0.col(0) - 2.0 * X0.col(7) + 2.5 * X0.col(15) + 0.1 * Eigen::VectorXd::Random(n);
+
+    auto run = [&](double cor_coef, double rho_thr_DA) {
+        Eigen::MatrixXd X = X0;
+        Eigen::VectorXd y = y0;
+        Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+
+        ScreenTRexControlParameter screen_params;
+        screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+        screen_params.cor_coef = cor_coef;
+        screen_params.rho_thr_DA = rho_thr_DA;
+        screen_params.trex_ctrl.K = 10;
+
+        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        return selector.select();
+    };
+
+    // The window follows |cor_coef|.
+    const auto pos = run(0.5, 0.02);
+    const auto neg = run(-0.5, 0.02);
+    EXPECT_EQ(pos.selected_var, neg.selected_var);
+    EXPECT_TRUE(pos.Phi_mat.isApprox(neg.Phi_mat));
+
+    // A zero threshold is the full window: the run completes with finite
+    // values and equals the run with a coefficient of magnitude 1.
+    const auto full = run(0.5, 0.0);
+    const auto unit = run(1.0, 0.02);
+    EXPECT_TRUE(full.Phi_mat.allFinite());
+    EXPECT_EQ(full.selected_var, unit.selected_var);
+    EXPECT_TRUE(full.Phi_mat.isApprox(unit.Phi_mat));
+}
+
+
+/** @brief A supplied coefficient outside [-1, 1] is replaced by the estimate,
+ *  with a warning. A coefficient inside the range is used as supplied. */
+TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
+    std::srand(17);
+    const Eigen::MatrixXd X0 = Eigen::MatrixXd::Random(60, 30);
+    const Eigen::VectorXd y0 = 3.0 * X0.col(0) - 2.0 * X0.col(7) + 0.1 * Eigen::VectorXd::Random(60);
+
+    auto coefficient = [&](ScreenTRexMethod method, double cor_coef, std::string& warning) {
+        Eigen::MatrixXd X = X0;
+        Eigen::VectorXd y = y0;
+        Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+
+        ScreenTRexControlParameter screen_params;
+        screen_params.trex_method = method;
+        screen_params.cor_coef = cor_coef;
+        screen_params.trex_ctrl.K = 5;
+
+        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        testing::internal::CaptureStderr();
+        selector.select();
+        warning = testing::internal::GetCapturedStderr();
+        return selector.getScreenResult().estimated_correlation;
+    };
+
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const auto method : {ScreenTRexMethod::TREX_DA_AR1, ScreenTRexMethod::TREX_DA_EQUI,
+                              ScreenTRexMethod::TREX_DA_BLOCK_EQUI}) {
+        std::string warning;
+        const double estimated = coefficient(method, AUTO_ESTIMATE_CORRELATION, warning);
+        EXPECT_TRUE(warning.empty()) << "The sentinel requests the estimate without a warning.";
+
+        for (const double unusable : {-1.5, 1.5, -2.5, nan}) {
+            EXPECT_DOUBLE_EQ(coefficient(method, unusable, warning), estimated);
+            EXPECT_NE(warning.find("cor_coef"), std::string::npos);
+        }
+
+        EXPECT_DOUBLE_EQ(coefficient(method, -0.5, warning), -0.5);
+        EXPECT_TRUE(warning.empty());
+    }
 }
 
 

@@ -10,6 +10,36 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The dependency-aware selector and the screening selector share one AR(1) window
+
+- The half-width of the AR(1) window, ceil(log(`rho_thr_DA`) / log(|`cor_coef`|)), is one function now.
+  `ar1HalfWidth()` lives in the new header trex_utils/trex_da_window.hpp, and `TRexDASelector` (AR1)
+  and `ScreenTRexSelector` (TREX_DA_AR1) both call it. It uses the magnitude of the coefficient, returns
+  1 for a zero coefficient and the full window for a zero threshold or a coefficient of magnitude 1,
+  never exceeds p, and rejects a threshold outside [0, 1) and inputs that are not numbers. The screening
+  selector had a copy of its own, which converted the half-width to an integer without a check.
+  `rho_thr_DA = 0` therefore converted infinity, which is undefined behaviour, and a negative threshold
+  gave NaN.
+- A supplied `cor_coef` outside [-1, 1] gives a warning and is replaced by the estimate, in both
+  selectors and for every dependency-aware method. Only the value -2 requested the estimate before,
+  and a value such as -1.5 was taken as a coefficient and led to the full window. The value -2 still
+  requests the estimate without a warning. `isCorrelationCoefficient()` in the same header holds the rule.
+- The screening selector checks its dependency-aware parameters at construction. `rho_thr_DA` lies in
+  [0, 1] and in [0, 1) for TREX_DA_AR1, and `n_blocks` lies between 1 and p for TREX_DA_BLOCK_EQUI,
+  where 0 divided by zero. `TRexDASelector` rejects a threshold that is not a number as well.
+- `trex_screen_control()` of the R package gains `cor_coef`, `rho_thr_DA` and `n_blocks`. C++ and Python
+  could set them before and R could not. The defaults are the C++ defaults, so existing calls keep their
+  results.
+- The help of `cor_coef`, `rho_thr_DA` and `n_blocks` describes the methods in C++, R and Python. The
+  Python text of `cor_coef` claimed an estimate for values of -1 and below and now says that setting
+  the parameter to -2 estimates it from the data. The guide pages 04 of the three surfaces describe the
+  AR1 and EQUI methods as a penalty on the relative occurrences with independent dummies, where they
+  spoke of dependent dummies, and name `rho_thr_DA` for both methods and the rule for `cor_coef`.
+- The equi-correlated variants are unchanged. A probe of the screening variants on independent, AR(1)
+  and equi-correlated designs gives the same output before and after the shared window (nine cells of
+  100 runs). The new tests of the checks fail on the code before the change. C++ tests 705 of 705,
+  R tests 1,624, Python tests 645, and the install smoke test finds the new header.
+
 #### The help page of the R package lists the authors of DESCRIPTION again
 
 - man/TRexSelector-package.Rd was last generated on 2026-11-05 and kept an author block that

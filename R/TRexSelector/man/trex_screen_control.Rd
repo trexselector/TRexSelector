@@ -8,7 +8,10 @@ trex_screen_control(
   use_bootstrap_CI = FALSE,
   R_boot = 1000,
   ci_grid_step = 0.001,
-  trex_method = "TREX"
+  trex_method = "TREX",
+  cor_coef = -2,
+  rho_thr_DA = 0.02,
+  n_blocks = 5
 )
 }
 \arguments{
@@ -21,6 +24,19 @@ trex_screen_control(
 
 \item{trex_method}{Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
 "TREX_DA_BLOCK_EQUI" (default: "TREX").}
+
+\item{cor_coef}{Correlation coefficient of the dependency-aware variants. -2.0 triggers
+auto-estimation (default: -2.0). The variants use the magnitude of a supplied coefficient.
+Any other value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.}
+
+\item{rho_thr_DA}{Correlation threshold of the dependency-aware variants (default: 0.02).
+"TREX_DA_AR1": the window around a variable holds the lags whose correlation
+\code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. "TREX_DA_EQUI" and
+"TREX_DA_BLOCK_EQUI": the correction is skipped when \code{abs(cor_coef)} does not exceed
+the threshold, range \code{[0, 1]}.}
+
+\item{n_blocks}{Number of blocks of "TREX_DA_BLOCK_EQUI", between 1 and the number of
+variables (default: 5).}
 }
 \value{
 A named list for use in TRexScreeningSelector or TRexBiobankScreeningSelector.

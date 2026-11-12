@@ -10,12 +10,16 @@
 
 // std includes
 #include <cmath>
+#include <limits>
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 // project trex includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <trex_selector_methods/ad/trex_da/trex_da.hpp>
+#include <trex_selector_methods/ad/trex_utils/trex_da_window.hpp>
 
 // project utils includes
 #include <utils/datageneration/utils_datagen.hpp>
@@ -31,6 +35,7 @@ using namespace trex::trex_selector_methods::ad::trex_core;
 using namespace trex::utils::datageneration::datagen;
 namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace disp = trex::trex_selector_methods::ad::utils::solver_dispatch;
+namespace dw = trex::trex_selector_methods::ad::utils::da_window;
 
 // ========================================================================================
 
@@ -494,6 +499,73 @@ TEST(TRexDATest, Setup_AR1WindowFollowsCoefficientMagnitude) {
     EXPECT_EQ(half_width(-1.0, 0.02), p);
     EXPECT_EQ(half_width(0.999999, 0.02), p);    // wider than the design
     EXPECT_GE(half_width(0.5, 0.999), 1U);       // never an empty window
+}
+
+/** @brief A supplied coefficient outside [-1, 1] is replaced by the estimate,
+ *  with a warning. A coefficient inside the range is used as supplied. */
+TEST(TRexDATest, Setup_UnusableCoefficientIsEstimated) {
+    Eigen::MatrixXd X = Eigen::MatrixXd::Random(40, 30);
+    Eigen::VectorXd y = Eigen::VectorXd::Random(40);
+
+    auto coefficient = [&](DAMethod method, double cor_coef, std::string& warning) {
+        Eigen::MatrixXd X_run = X;
+        Eigen::VectorXd y_run = y;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
+
+        TRexDAControlParameter da_ctrl;
+        da_ctrl.method = method;
+        da_ctrl.cor_coef = cor_coef;
+
+        TRexDASelectorProbe trex(X_map, y_map, 0.1, da_ctrl, 42, false);
+        testing::internal::CaptureStderr();
+        trex.setupDA();
+        warning = testing::internal::GetCapturedStderr();
+        return trex.da_setup_.cor_coef;
+    };
+
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const auto method : {DAMethod::AR1, DAMethod::EQUI}) {
+        std::string warning;
+        const double estimated = coefficient(method, AUTO_ESTIMATE_CORRELATION, warning);
+        EXPECT_TRUE(warning.empty()) << "The sentinel requests the estimate without a warning.";
+
+        for (const double unusable : {-1.5, 1.5, -2.5, nan}) {
+            EXPECT_DOUBLE_EQ(coefficient(method, unusable, warning), estimated);
+            EXPECT_NE(warning.find("cor_coef"), std::string::npos);
+        }
+
+        for (const double usable : {-1.0, -0.5, 0.0, 1.0}) {
+            EXPECT_DOUBLE_EQ(coefficient(method, usable, warning), usable);
+            EXPECT_TRUE(warning.empty());
+        }
+    }
+}
+
+
+/** @brief The shared AR(1) half-width: formula, limits and rejected inputs. */
+TEST(TRexDAWindowTest, AR1HalfWidth_FormulaLimitsAndRejections) {
+    const std::size_t p = 40;
+
+    // ceil(log(0.02) / log(0.5)) = 6, ceil(log(0.5) / log(0.7)) = 2
+    EXPECT_EQ(dw::ar1HalfWidth(0.5, 0.02, p), 6U);
+    EXPECT_EQ(dw::ar1HalfWidth(-0.5, 0.02, p), 6U);
+    EXPECT_EQ(dw::ar1HalfWidth(0.7, 0.5, p), 2U);
+
+    // Limits: at least 1, at most p
+    EXPECT_EQ(dw::ar1HalfWidth(0.0, 0.02, p), 1U);
+    EXPECT_EQ(dw::ar1HalfWidth(1e-300, 0.999, p), 1U);
+    EXPECT_EQ(dw::ar1HalfWidth(0.5, 0.0, p), p);
+    EXPECT_EQ(dw::ar1HalfWidth(1.0, 0.02, p), p);
+    EXPECT_EQ(dw::ar1HalfWidth(-3.0, 0.02, p), p);
+    EXPECT_EQ(dw::ar1HalfWidth(0.999999, 0.02, p), p);
+
+    // Rejected: a threshold outside [0, 1) and inputs that are not numbers
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    EXPECT_THROW(dw::ar1HalfWidth(0.5, 1.0, p), std::invalid_argument);
+    EXPECT_THROW(dw::ar1HalfWidth(0.5, -0.1, p), std::invalid_argument);
+    EXPECT_THROW(dw::ar1HalfWidth(0.5, nan, p), std::invalid_argument);
+    EXPECT_THROW(dw::ar1HalfWidth(nan, 0.02, p), std::invalid_argument);
 }
 
 // ========================================================================================

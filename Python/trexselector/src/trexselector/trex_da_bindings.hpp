@@ -104,7 +104,8 @@ inline void bind_trex_da(py::module& m) {
         .def(py::init<>())
         .def_readwrite("method", &TRexDAControlParameter::method, "The data augmentation method to use.")
         .def_readwrite("cor_coef", &TRexDAControlParameter::cor_coef, "Correlation coefficient of the AR1 and EQUI "
-            "methods; -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient.")
+            "methods; setting the parameter to -2 estimates it from the data. Both methods use the magnitude of a "
+            "supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.")
         .def_readwrite("rho_thr_DA", &TRexDAControlParameter::rho_thr_DA, "Correlation threshold of the AR1 and "
             "EQUI methods (default 0.02). AR1: the window around a variable holds the lags whose correlation "
             "abs(cor_coef)**lag reaches the threshold, range [0, 1). EQUI: the correction is skipped when "

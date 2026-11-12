@@ -1179,7 +1179,7 @@ class ScreenTRexControlParameter:
     @property
     def cor_coef(self) -> float:
         """
-        Fixed correlation coefficient for AR1 or equicorrelated structure. Estimated automatically if <= -1. Only applies for TREX_DA_AR1 and TREX_DA_EQUI.
+        Correlation coefficient of the dependency-aware variants; setting the parameter to -2 estimates it from the data. The variants use the magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.
         """
     @cor_coef.setter
     def cor_coef(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1187,7 +1187,7 @@ class ScreenTRexControlParameter:
     @property
     def n_blocks(self) -> int:
         """
-        Number of equicorrelated blocks. Only applies for TREX_DA_BLOCK_EQUI.
+        Number of blocks of TREX_DA_BLOCK_EQUI, between 1 and the number of variables (default 5).
         """
     @n_blocks.setter
     def n_blocks(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1195,7 +1195,7 @@ class ScreenTRexControlParameter:
     @property
     def rho_thr_DA(self) -> float:
         """
-        Correlation threshold passed to the inner DA step. Only applies for TREX_DA_AR1 and TREX_DA_EQUI.
+        Correlation threshold of the dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
         """
     @rho_thr_DA.setter
     def rho_thr_DA(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1753,7 +1753,7 @@ class TRexDAControlParameter:
     @property
     def cor_coef(self) -> float:
         """
-        Correlation coefficient of the AR1 and EQUI methods; -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient.
+        Correlation coefficient of the AR1 and EQUI methods; setting the parameter to -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.
         """
     @cor_coef.setter
     def cor_coef(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:

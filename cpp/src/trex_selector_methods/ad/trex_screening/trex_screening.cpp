@@ -22,6 +22,12 @@
 // Header
 #include <trex_selector_methods/ad/trex_screening/trex_screening.hpp>
 
+// AR(1) window shared with the dependency-aware selector
+#include <trex_selector_methods/ad/trex_utils/trex_da_window.hpp>
+
+// Warning stream
+#include <utils/logging/logger.hpp>
+
 // ===================================================================================
 
 namespace trex::trex_selector_methods::ad::trex_screening {
@@ -30,6 +36,7 @@ namespace trex::trex_selector_methods::ad::trex_screening {
 namespace tc       = trex::trex_selector_methods::ad::trex_core;
 namespace dn       = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace er       = trex::trex_selector_methods::ad::utils::experiment_runner;
+namespace dw       = trex::trex_selector_methods::ad::utils::da_window;
 namespace dummygen = trex::utils::datageneration::dummygen;
 
 // ===================================================================================
@@ -66,6 +73,7 @@ ScreenTRexSelector::ScreenTRexSelector(
     trex_screen_ctrl_(trex_screen_ctrl)
 {
     validateScreenTRexStrategy();
+    validateScreenDAParameters();
 }
 
 
@@ -102,6 +110,34 @@ void ScreenTRexSelector::validateScreenTRexStrategy() const {
                 "screening does not have: it runs a single pass at L = p, "
                 "T = 1). Got lloop_strategy = "
                 + std::to_string(static_cast<int>(trex_ctrl_.lloop_strategy)));
+    }
+}
+
+
+void ScreenTRexSelector::validateScreenDAParameters() const {
+    const double rho_thr = trex_screen_ctrl_.rho_thr_DA;
+
+    // Written so that a NaN fails the check as well.
+    if (!(rho_thr >= 0.0 && rho_thr <= 1.0)) {
+        throw std::invalid_argument(
+            "ScreenTRexSelector: rho_thr_DA must be in [0, 1]. Got: " +
+            std::to_string(rho_thr));
+    }
+
+    // TREX_DA_AR1: a threshold of 1 leaves no lag for the window.
+    if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_AR1 && rho_thr >= 1.0) {
+        throw std::invalid_argument(
+            "ScreenTRexSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1. Got: " +
+            std::to_string(rho_thr));
+    }
+
+    // TREX_DA_BLOCK_EQUI: the block sizes divide p by n_blocks.
+    const std::size_t n_blocks = trex_screen_ctrl_.n_blocks;
+    if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_BLOCK_EQUI &&
+        (n_blocks < 1 || n_blocks > p_)) {
+        throw std::invalid_argument(
+            "ScreenTRexSelector: n_blocks must be in [1, p] for TREX_DA_BLOCK_EQUI. Got: " +
+            std::to_string(n_blocks) + " with p = " + std::to_string(p_));
     }
 }
 
@@ -509,9 +545,18 @@ std::pair<double, double> ScreenTRexSelector::calculateBootstrapCI(
 
 void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
 
-    // Use supplied correlation or estimate it
+    // Use the supplied correlation, or estimate it when the sentinel is set
+    // or the supplied value is not a correlation coefficient.
     double rho = trex_screen_ctrl_.cor_coef;
-    if (rho == tc::AUTO_ESTIMATE_CORRELATION) {
+    bool estimate = (rho == tc::AUTO_ESTIMATE_CORRELATION);
+    if (!estimate && !dw::isCorrelationCoefficient(rho)) {
+        TREX_WARN("[ScreenTRexSelector Warning] cor_coef = " << rho
+            << " is not a correlation coefficient in [-1, 1]. The coefficient is "
+               "estimated from the data instead (set cor_coef to -2 to request the "
+               "estimate).");
+        estimate = true;
+    }
+    if (estimate) {
         switch (trex_screen_ctrl_.trex_method) {
             case ScreenTRexMethod::TREX_DA_AR1:
                 rho = estimateAR1Correlation();
@@ -639,13 +684,12 @@ Eigen::VectorXd ScreenTRexSelector::computeDA_AR1_Delta(
     double rho
 ) const {
     /*
-        Window size κ = ⌈log(ρ_thr_DA) / log(ρ)⌉.
-        For each j:
+        Window half-width κ = ⌈log(ρ_thr_DA) / log(|ρ|)⌉, from the function
+        shared with TRexDASelector. For each j:
             DA_delta[j] = 2 − min_{k ∈ [j−κ, j+κ], k≠j} |Phi[j] − Phi[k]|
     */
-    const double valid_rho = std::min(0.999, std::max(0.001, std::abs(rho)));
-    const int kap = std::max(1, static_cast<int>(
-        std::ceil(std::log(trex_screen_ctrl_.rho_thr_DA) / std::log(valid_rho))));
+    const auto kap = static_cast<long>(
+        dw::ar1HalfWidth(rho, trex_screen_ctrl_.rho_thr_DA, p_));
 
     if (verbose_) {
         printProgress("DA-AR1: window size κ = " + std::to_string(kap));

@@ -252,6 +252,41 @@ test_that("TRexDASelector AR1 uses the magnitude of a supplied cor_coef", {
 
 
 
+test_that("TRexDASelector replaces a cor_coef outside [-1, 1] by the estimate with a warning", {
+
+  set.seed(42)
+  n <- 60
+  p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 2] * -4 + X[, 3] * 3 + rnorm(n)
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(da_method, cor_coef) {
+    selector <- TRexDASelector$new(X + 0, y, tFDR = 0.1, seed = 7, verbose = FALSE,
+                                   da_control = trex_da_control(da_method = da_method, cor_coef = cor_coef),
+                                   control = trex_control(K = 5))
+    warning_text <- capture.output(selector$select(), type = "message")
+    list(cor_coef = selector$cor_coef, warning_text = paste(warning_text, collapse = " "))
+  }
+
+  for (da_method in c("AR1", "EQUI")) {
+    estimated <- run(da_method, -2)
+    expect_false(grepl("cor_coef", estimated$warning_text), label = paste(da_method, "sentinel is silent"))
+
+    for (unusable in c(-1.5, 1.5, -2.5)) {
+      replaced <- run(da_method, unusable)
+      expect_equal(replaced$cor_coef, estimated$cor_coef, label = paste(da_method, unusable, "estimate"))
+      expect_match(replaced$warning_text, "cor_coef", label = paste(da_method, unusable, "warning"))
+    }
+
+    supplied <- run(da_method, -0.5)
+    expect_equal(supplied$cor_coef, -0.5)
+    expect_false(grepl("cor_coef", supplied$warning_text))
+  }
+})
+
+
+
 test_that("TRexDASelector handles concurrent execution properly (OpenMP with DA)", {
 
   set.seed(42)

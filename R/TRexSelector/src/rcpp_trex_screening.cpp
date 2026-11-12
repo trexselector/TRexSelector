@@ -16,8 +16,9 @@ extern void validate_core_solver_type(const TRexControlParameter& params);
 /**
  * @brief Parses an R list into a ScreenTRexControlParameter C++ struct.
  *
- * Configures bootstrap iterations, confidence thresholds, and the base
- * T-Rex methodology mapped to the Screen-TRex variant.
+ * Configures bootstrap iterations, confidence thresholds, the base T-Rex
+ * methodology mapped to the Screen-TRex variant and the parameters of the
+ * dependency-aware variants.
  *
  * @param control List of parameters passed from R.
  * @return Populated ScreenTRexControlParameter instance.
@@ -48,6 +49,21 @@ ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control) {
         } else {
             Rcpp::stop("Unknown ScreenTRexMethod: " + method);
         }
+    }
+
+    if (control.containsElementNamed("cor_coef")) {
+        params.cor_coef = control["cor_coef"];
+    }
+    if (control.containsElementNamed("rho_thr_DA")) {
+        params.rho_thr_DA = control["rho_thr_DA"];
+    }
+    if (control.containsElementNamed("n_blocks")) {
+        // Checked before the conversion: a negative count would wrap around.
+        const int n_blocks = control["n_blocks"];
+        if (n_blocks < 1) {
+            Rcpp::stop("n_blocks must be at least 1. Got: " + std::to_string(n_blocks));
+        }
+        params.n_blocks = static_cast<std::size_t>(n_blocks);
     }
 
     return params;

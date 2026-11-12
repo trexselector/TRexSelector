@@ -21,6 +21,12 @@
 // DA-TRex header
 #include <trex_selector_methods/ad/trex_da/trex_da.hpp>
 
+// AR(1) window shared with the screening selector
+#include <trex_selector_methods/ad/trex_utils/trex_da_window.hpp>
+
+// Warning stream
+#include <utils/logging/logger.hpp>
+
 // ===================================================================================
 
 namespace trex::trex_selector_methods::ad::trex_da {
@@ -29,6 +35,7 @@ namespace trex::trex_selector_methods::ad::trex_da {
 namespace tc  = trex::trex_selector_methods::ad::trex_core;
 namespace dn  = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace er  = trex::trex_selector_methods::ad::utils::experiment_runner;
+namespace dw  = trex::trex_selector_methods::ad::utils::da_window;
 namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
 
 
@@ -85,7 +92,8 @@ void TRexDASelector::validateDAParameters() const {
         }
     }
 
-    if (trex_da_ctrl_.rho_thr_DA < 0.0 || trex_da_ctrl_.rho_thr_DA > 1.0) {
+    // Written so that a NaN fails the check as well.
+    if (!(trex_da_ctrl_.rho_thr_DA >= 0.0 && trex_da_ctrl_.rho_thr_DA <= 1.0)) {
         throw std::invalid_argument(
             "rho_thr_DA must be in [0, 1]. Got: " +
             std::to_string(trex_da_ctrl_.rho_thr_DA));
@@ -697,33 +705,16 @@ void TRexDASelector::setupDA_AR1() {
     da_setup_.rho_grid_len = 0;
     da_setup_.kap = 0;
 
-    // Estimate AR(1) coefficient if not supplied
-    if (trex_da_ctrl_.cor_coef == tc::AUTO_ESTIMATE_CORRELATION) {
+    // Estimate AR(1) coefficient if not supplied or not usable
+    if (estimatesCorrelation()) {
         da_setup_.cor_coef = estimateAR1Correlation();
     } else {
         da_setup_.cor_coef = trex_da_ctrl_.cor_coef;
     }
 
-    // Compute window half-width: kap = ceil(log(rho_thr_DA) / log(|cor_coef|)).
-    // The autocorrelation |cor_coef|^lag decays with the magnitude, so a
-    // negative coefficient gives the window of its absolute value.
-    const double rho_abs = std::abs(da_setup_.cor_coef);
-    if (rho_abs > 0.0 && rho_abs < 1.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
-        const double half_width =
-            std::ceil(std::log(trex_da_ctrl_.rho_thr_DA) / std::log(rho_abs));
-        // A window wider than the design is the full window.
-        da_setup_.kap = half_width < static_cast<double>(p_)
-            ? static_cast<std::size_t>(half_width) : p_;
-    } else if (rho_abs == 0.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
-        // Limit of the formula as |cor_coef| -> 0+ (the log ratio tends to 0+,
-        // so ceil gives 1): minimal +/-1 window, NOT the full-window fallback
-        // (uncorrelated predictors need no wide deflation window).
-        da_setup_.kap = 1;
-    } else {
-        // |cor_coef| >= 1 (perfect correlation) or rho_thr_DA == 0 (every lag
-        // exceeds the threshold): full window.
-        da_setup_.kap = p_;
-    }
+    // Window half-width kap = ceil(log(rho_thr_DA) / log(|cor_coef|)), from the
+    // function shared with the screening selector.
+    da_setup_.kap = dw::ar1HalfWidth(da_setup_.cor_coef, trex_da_ctrl_.rho_thr_DA, p_);
 
     if (verbose_) {
         printProgress(
@@ -743,8 +734,8 @@ void TRexDASelector::setupDA_EQUI() {
     da_setup_.rho_grid_len = 0;
     da_setup_.kap = 0;
 
-    // Estimate equicorrelation if not supplied
-    if (trex_da_ctrl_.cor_coef == tc::AUTO_ESTIMATE_CORRELATION) {
+    // Estimate equicorrelation if not supplied or not usable
+    if (estimatesCorrelation()) {
         da_setup_.cor_coef = estimateEquiCorrelation();
     } else {
         da_setup_.cor_coef = trex_da_ctrl_.cor_coef;
@@ -756,6 +747,23 @@ void TRexDASelector::setupDA_EQUI() {
             " (threshold = " + std::to_string(trex_da_ctrl_.rho_thr_DA) + ")"
         );
     }
+}
+
+
+// ===================================================================================
+// Correlation: supplied or estimated
+// ===================================================================================
+
+bool TRexDASelector::estimatesCorrelation() const {
+    const double supplied = trex_da_ctrl_.cor_coef;
+    if (supplied == tc::AUTO_ESTIMATE_CORRELATION) { return true; }
+    if (dw::isCorrelationCoefficient(supplied)) { return false; }
+
+    TREX_WARN("[TRexDASelector Warning] cor_coef = " << supplied
+        << " is not a correlation coefficient in [-1, 1]. The coefficient is "
+           "estimated from the data instead (set cor_coef to -2 to request the "
+           "estimate).");
+    return true;
 }
 
 

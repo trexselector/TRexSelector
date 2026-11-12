@@ -101,6 +101,7 @@ target_sources(trex_selector_methods PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_tikhonov/tik_lambda2_power_rule.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_cluster_dummies.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_cluster_hac.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_da_window.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_data_normalizer.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_dummy_generator.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/ad/trex_utils/trex_experiment_runner.hpp

@@ -19,7 +19,8 @@ trex_da_control(
 (BT-style) over a rho grid of length \code{hc_grid_length}.}
 
 \item{cor_coef}{Correlation coefficient for AR1/EQUI. -2.0 triggers auto-estimation
-(default: -2.0). Both methods use the magnitude of a supplied coefficient.}
+(default: -2.0). Both methods use the magnitude of a supplied coefficient. Any other
+value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.}
 
 \item{rho_thr_DA}{Correlation threshold of the AR1 and EQUI methods (default: 0.02).
 AR1: the window around a variable holds the lags whose correlation

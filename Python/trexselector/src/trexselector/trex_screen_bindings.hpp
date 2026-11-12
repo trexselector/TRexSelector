@@ -101,14 +101,17 @@ inline void bind_trex_screen(py::module& m) {
             "confidence-interval grid.")
         .def_readwrite("trex_method", &ScreenTRexControlParameter::trex_method, "Screening method variant to use (see "
             "ScreenTRexMethod).")
-        .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold passed to the "
-            "inner DA step. Only applies for TREX_DA_AR1 and TREX_DA_EQUI.")
-        .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Fixed correlation coefficient for AR1 "
-            "or "
-            "equicorrelated structure. Estimated automatically if <= -1. Only applies for TREX_DA_AR1 and "
-                "TREX_DA_EQUI.")
-        .def_readwrite("n_blocks",   &ScreenTRexControlParameter::n_blocks,   "Number of equicorrelated blocks. Only "
-            "applies for TREX_DA_BLOCK_EQUI.")
+        .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold of the "
+            "dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags "
+            "whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_EQUI and "
+            "TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range "
+            "[0, 1].")
+        .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Correlation coefficient of the "
+            "dependency-aware variants; setting the parameter to -2 estimates it from the data. The variants use the "
+            "magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced "
+            "by the estimate.")
+        .def_readwrite("n_blocks",   &ScreenTRexControlParameter::n_blocks,   "Number of blocks of "
+            "TREX_DA_BLOCK_EQUI, between 1 and the number of variables (default 5).")
         .def_readwrite("trex_ctrl",  &ScreenTRexControlParameter::trex_ctrl,  "Nested base T-Rex algorithmic control "
             "parameters (overridden by the separate trex_control argument to TRexScreeningSelector).");
 
