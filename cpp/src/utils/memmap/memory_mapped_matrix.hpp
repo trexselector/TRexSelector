@@ -45,6 +45,14 @@ enum class AccessMode {
  * @brief Memory-mapped matrix using Boost.Iostreams
  *
  * @details This class provides a memory-mapped matrix interface using Boost.Iostreams.
+ *
+ *  A file serves one writer at a time. Several selectors or T-solvers that
+ *  standardize the file in place must not run on one file at the same time,
+ *  neither through a second object in one process nor in several processes.
+ *  Each would change the data the other works on, and the results come out
+ *  wrong. To use one design in several processes at once, pre-normalize it,
+ *  open the file ReadOnly and run every selector under ScalingMode::NONE.
+ *
  * @tparam Scalar The scalar type of the matrix elements
  *         (e.g., float, double, std::complex<double>).
  *
@@ -95,11 +103,37 @@ public:
     // Public Methods
     // =================================================
 
-    /** @brief Get Eigen::Map view (column-major) */
+    /** @brief Get Eigen::Map view (column-major) for writing.
+     *  Refused for a file opened ReadOnly. */
     MapType getMap();
 
     /** @brief Get const Eigen::Map view (column-major) */
     ConstMapType getMap() const;
+
+    /**
+     * @brief Get an Eigen::Map view for code that only reads the matrix.
+     *
+     * @details The view has the writable Eigen::Map type that the selectors
+     *  and solvers take, and it is handed out for a file opened ReadOnly as
+     *  well. A write through it into such a file ends the process, so only
+     *  code that writes nothing into the matrix may use it: a selector
+     *  under ScalingMode::NONE, a T-solver with normalize and intercept off.
+     */
+    MapType getReaderMap();
+
+    /**
+     * @brief Get the view for code that states whether it writes the matrix.
+     *
+     * @param writes True if the code writes into the matrix.
+     *
+     * @return getMap() for a writer, getReaderMap() otherwise.
+     *
+     * @throws std::runtime_error for a writer on a file opened ReadOnly.
+     */
+    MapType getMapFor(bool writes);
+
+    /** @brief Access mode the file was opened with */
+    AccessMode mode() const { return mode_; }
 
     // Raw Pointers
     /** @brief Get raw pointer to data */

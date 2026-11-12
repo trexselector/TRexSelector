@@ -25,11 +25,19 @@ class TCDENET_Solver:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
         Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.lambda2 (diagonal ridge), options.kappa_dummy and the cd_* knobs.
         
-        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views (a Fortran-ordered float64 array is shared, a C-ordered one is copied first), keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy).
+        X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
+        
+        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views, keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy). A READER also accepts X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly (Fortran-contiguous float64, zero-copy); a WRITER raises ValueError for them.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], D: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
+        """
+        Initializes the solver on X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Both must be Fortran-contiguous float64 arrays and are accessed zero-copy. A solver with normalize=True or intercept=True standardizes X and D in place, which needs writable arrays. With normalize=False and intercept=False it only reads them and accepts arrays that are not writable. Otherwise ValueError is raised.
         """
     def clearWarnings(self) -> None:
         """
@@ -220,11 +228,19 @@ class TCDIENET_Solver:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], groups: typing.Annotated[numpy.typing.ArrayLike, numpy.int32, "[m, 1]"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
         Initializes the solver via zero-copy views of X, D and y with a 0-based group id per original variable (`groups`, length p); every other input comes from `options` (SolverOptions). Reads options.lambda2, options.group_penalty (MEAN or CENTERING) and the cd_* knobs.
         
-        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views (a Fortran-ordered float64 array is shared, a C-ordered one is copied first), keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy).
+        X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
+        
+        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views, keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy). A READER also accepts X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly (Fortran-contiguous float64, zero-copy); a WRITER raises ValueError for them.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], D: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], groups: typing.Annotated[numpy.typing.ArrayLike, numpy.int32, "[m, 1]"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
+        """
+        Initializes the solver on X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Both must be Fortran-contiguous float64 arrays and are accessed zero-copy. A solver with normalize=True or intercept=True standardizes X and D in place, which needs writable arrays. With normalize=False and intercept=False it only reads them and accepts arrays that are not writable. Otherwise ValueError is raised.
         """
     def clearWarnings(self) -> None:
         """
@@ -422,11 +438,19 @@ class TCDLASSO_Solver:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
         Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Exact penalized-lasso minimizers per dummy crossing; reads the options.cd_* knobs.
         
-        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views (a Fortran-ordered float64 array is shared, a C-ordered one is copied first), keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy).
+        X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
+        
+        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views, keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy). A READER also accepts X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly (Fortran-contiguous float64, zero-copy); a WRITER raises ValueError for them.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], D: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
+        """
+        Initializes the solver on X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Both must be Fortran-contiguous float64 arrays and are accessed zero-copy. A solver with normalize=True or intercept=True standardizes X and D in place, which needs writable arrays. With normalize=False and intercept=False it only reads them and accepts arrays that are not writable. Otherwise ValueError is raised.
         """
     def clearWarnings(self) -> None:
         """
@@ -618,11 +642,19 @@ class TCDTIKNET_Solver:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tikhonov_K: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
         Initializes the solver via zero-copy views of X, D and y with the p x p PSD Tikhonov matrix K (a dense array; converted to sparse internally); every other input comes from `options` (SolverOptions). Reads options.lambda2, options.kappa_dummy, options.fold_dummies and the cd_* knobs.
         
-        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views (a Fortran-ordered float64 array is shared, a C-ordered one is copied first), keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy).
+        X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
+        
+        In-place contract: with normalize=True or intercept=True the solver is a WRITER. It centers/scales the columns of X and D IN PLACE through the views, keeps the statistics itself and holds a claim on both buffers until restore() or destruction, both of which write X and D back (restore() is idempotent and must be given the same arrays); constructing a second writer (T-solver or T-Rex selector) on a claimed buffer raises RuntimeError, because a second in-place transformation moves the data by rounding. With normalize=False and intercept=False the solver is a READER: it runs as constructed and never touches the buffers. A pipeline with several solvers on one buffer should pre-scale once in front (LpNormScaler) and construct the solvers as readers; a solver resumed with load() is a reader that expects the buffers in the saved state. y is never written (the solver centers an internal copy). A READER also accepts X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly (Fortran-contiguous float64, zero-copy); a WRITER raises ValueError for them.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], D: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tikhonov_K: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
+        """
+        Initializes the solver on X and D that are not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Both must be Fortran-contiguous float64 arrays and are accessed zero-copy. A solver with normalize=True or intercept=True standardizes X and D in place, which needs writable arrays. With normalize=False and intercept=False it only reads them and accepts arrays that are not writable. Otherwise ValueError is raised.
         """
     def clearWarnings(self) -> None:
         """

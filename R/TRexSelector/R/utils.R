@@ -126,10 +126,26 @@ mem_matrix_from <- function(mat, filename) {
 #'
 #' @description S3 object wrapping an external pointer to a Cpp MemoryMappedMatrix.
 #'
+#' @details A file serves one writer at a time. Do not run several selectors
+#'   or T-solvers that standardize the file in place on one file at the same
+#'   time, neither through a second handle in one session nor in several
+#'   processes. Each would change the data the other works on, and the
+#'   results come out wrong. To use one design in several processes at once,
+#'   pre-normalize it with \code{\link{trex_normalize_design}}, open the file
+#'   in 'readonly' mode and run every selector with
+#'   \code{scaling_mode = "NONE"}.
+#'
 #' @param filename Path to binary mmap file
 #' @param rows Number of rows
 #' @param cols Number of columns
-#' @param mode Access mode: 'readonly' or 'readwrite' (default)
+#' @param mode Access mode: 'readonly' or 'readwrite' (default). Code that
+#'   writes into the matrix needs 'readwrite': a selector that standardizes
+#'   the design in place and restores it (\code{scaling_mode} \code{"L2"}
+#'   or \code{"ZSCORE"}), a T-solver with \code{normalize} or
+#'   \code{intercept} on, \code{TRexSPCASelector} and the in-place
+#'   scalers. Code that only reads accepts 'readonly' as well: a selector
+#'   under \code{scaling_mode = "NONE"}, a T-solver with \code{normalize}
+#'   and \code{intercept} off, and the fits that say so.
 #'
 #' @return Object of classes \code{MemoryMappedMatrix} and \code{mmap_matrix} (S3 XPtr wrapper)
 #'

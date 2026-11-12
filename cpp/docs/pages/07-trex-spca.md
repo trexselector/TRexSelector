@@ -80,7 +80,8 @@ T-Rex SPCA is defined on the elastic net, and `gvs_ctrl.gvs_type = GVSType::IEN`
 
 `X` may be the `getMap()` view of a MemoryMappedMatrix opened in `AccessMode::ReadWrite` (see
 \ref memory_mapping "the memory-mapping page"). It is centered in the file during `select()` and
-restored. Assigning a matrix to the map writes it into the file.
+restored. The centering happens under every scaling mode, so a file opened in
+`AccessMode::ReadOnly` does not serve. Assigning a matrix to the map writes it into the file.
 
 \snippet{trimleft} trex_spca.cpp mmap
 \output{trex_spca.mmap.txt}

@@ -202,7 +202,9 @@ public:
      * @brief Constructor for multiple phenotype screening.
      *
      * @param X Design matrix (n x p)
-     * @param Y Phenotype matrix (n x q)
+     * @param Y Phenotype matrix (n x q). Only read, one column at a time, so
+     *          its memory may be read-only, for example a memory-mapped file
+     *          opened ReadOnly (MemoryMappedMatrix::getReaderMap()).
      * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
      * @param seed Random seed for reproducibility (default: -1, random).
      *             Phenotype i (0-based) runs with seed + i, so the phenotypes

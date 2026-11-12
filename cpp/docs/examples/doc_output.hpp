@@ -2,10 +2,34 @@
 // Redirects std::cout into one text file per documented section, so that the
 // guide pages can show the output of an example next to its code.
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
+
+/**
+ * @brief Break a long message into lines at word boundaries, for the output
+ *        boxes of the guide pages.
+ *
+ * @param text  Message on one line.
+ * @param width Largest line length.
+ *
+ * @return The message with line breaks.
+ */
+inline std::string wrapped(const std::string& text, std::size_t width = 90) {
+    std::istringstream words(text);
+    std::string word, line, out;
+    while (words >> word) {
+        if (!line.empty() && line.size() + 1 + word.size() > width) {
+            out += line + '\n';
+            line.clear();
+        }
+        line += (line.empty() ? "" : " ") + word;
+    }
+    return out + line;
+}
 
 /**
  * @brief Section-wise capture of std::cout for the documentation examples.

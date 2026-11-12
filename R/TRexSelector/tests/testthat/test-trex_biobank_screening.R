@@ -20,7 +20,7 @@ test_that("TRexBiobankScreeningSelector instantiation and data types work", {
   # Invalid type for Y
   expect_error(
     TRexBiobankScreeningSelector$new(X, "invalid", verbose = FALSE),
-    "Response evaluation Y must be either a numeric vector or a numeric matrix"
+    "Response evaluation Y must be a numeric vector, a numeric matrix or an mmap_matrix"
   )
 
   # Dimension mismatch 1D
@@ -255,6 +255,48 @@ test_that("TRexBiobankScreeningSelector on a readwrite mmap_matrix equals the in
   b <- TRexBiobankScreeningSelector$new(rw, y, tFDR = 0.2, seed = 9, verbose = FALSE); b$select()
   expect_identical(b$selected_indices, a$selected_indices)
   expect_equal(as.matrix(rw), X0, tolerance = 1e-12)
+})
+
+
+test_that("TRexBiobankScreeningSelector takes a memory-mapped Y and only reads it", {
+  set.seed(73)
+  n <- 80; p <- 40; q <- 4
+  X <- matrix(rnorm(n * p), n, p)
+  Y <- sapply(seq_len(q), function(k) 4 * X[, k] - 3 * X[, k + 10] + rnorm(n))
+  fx <- tempfile(fileext = ".bin")
+  fy <- tempfile(fileext = ".bin")
+  on.exit(unlink(c(fx, fy)), add = TRUE)
+  mx <- mem_matrix_from(X, fx)
+  my <- mem_matrix_from(Y, fy)
+  ro <- mem_matrix(fy, rows = n, cols = q, mode = "readonly")
+  md5 <- unname(tools::md5sum(fy))
+  X0 <- X + 0
+
+  run <- function(design, response) {
+    TRexBiobankScreeningSelector$new(design, response, tFDR = 0.2, seed = 9, verbose = FALSE,
+                                     screen_control = trex_screen_control(R_boot = 100),
+                                     control = trex_control(K = 10))$select()
+  }
+  expected <- run(X + 0, Y)
+  expect_length(expected, q)
+
+  # Y in a file, in either mode, with X in memory and with X in a file
+  for (res in list(run(X + 0, my), run(X + 0, ro), run(mx, ro))) {
+    expect_length(res, q)
+    for (k in seq_len(q)) {
+      expect_identical(res[[k]]$selected_indices, expected[[k]]$selected_indices)
+      expect_identical(res[[k]]$method_used, expected[[k]]$method_used)
+    }
+  }
+
+  # The file of Y is as it was, and the file of X is restored
+  expect_identical(as.matrix(ro), Y)
+  expect_identical(unname(tools::md5sum(fy)), md5)
+  expect_equal(as.matrix(mx), X0, tolerance = 1e-12)
+
+  expect_error(TRexBiobankScreeningSelector$new(X + 0, "Y"), "numeric matrix or an mmap_matrix")
+  short <- mem_matrix_from(Y[-1, ], tempfile(fileext = ".bin"))
+  expect_error(TRexBiobankScreeningSelector$new(X + 0, short), "Dimension mismatch")
 })
 
 

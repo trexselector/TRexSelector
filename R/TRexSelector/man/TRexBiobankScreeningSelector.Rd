@@ -88,10 +88,16 @@ Other T-Rex selectors and controls:
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Feature matrix (n x p), or an \code{mmap_matrix} opened
-\code{"readwrite"} (mapped directly, no copy; the screening's inner
-selectors normalize it in place per call and restore it).}
-      \item{\code{Y}}{Response vector (1D) or matrix (2D).}
+      \item{\code{X}}{Feature matrix (n x p) in memory, or an \code{mmap_matrix},
+the handle of a memory-mapped file. Both are bound without a copy.
+The inner selectors standardize a memory-mapped design in place per
+call and restore it, which needs \code{"readwrite"} mode. Under
+\code{scaling_mode = "NONE"} they write nothing and
+\code{"readonly"} mode suffices.}
+      \item{\code{Y}}{Response vector (1D) or matrix (2D). The matrix is in memory
+or an \code{mmap_matrix}, the handle of a memory-mapped file, and is
+bound without a copy. It is only read, so \code{"readonly"} mode
+suffices for it.}
       \item{\code{tFDR}}{Target FDR level (default: 0.1).}
       \item{\code{seed}}{Random seed (default: -1). Phenotype \code{k} (the \code{k}-th column of
 \code{Y}) runs with \code{seed + k - 1}, so the phenotypes draw independent dummies and

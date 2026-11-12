@@ -15,6 +15,8 @@
 // std includes
 #include <filesystem>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <cereal/archives/portable_binary.hpp>
 
 // ========================================================================================
@@ -151,6 +153,42 @@ TEST(MemMapTest, SafeDeletion) {
     EXPECT_FALSE(ec) << "File removal failed with error: " << ec.message();
     EXPECT_TRUE(removed) << "File was not correctly removed, it may still be locked.";
     EXPECT_FALSE(std::filesystem::exists(temp_file));
+}
+
+
+
+/** @brief A memory-mapped file opened ReadOnly refuses the writable view and
+ *  hands out the reader view. getMapFor() picks the view from the caller's
+ *  statement. */
+TEST(MemMapTest, ReadOnlyFileHandsOutAReaderMap) {
+    using trex::utils::memmap::AccessMode;
+    using trex::utils::memmap::MemoryMappedMatrix;
+    const std::string temp_file = "test_memory_mapped_reader_map.bin";
+    std::filesystem::remove(temp_file);
+    const Eigen::Index rows = 6;
+    const Eigen::Index cols = 3;
+
+    {
+        MemoryMappedMatrix<double> writer(temp_file, rows, cols, AccessMode::ReadWrite);
+        EXPECT_EQ(writer.mode(), AccessMode::ReadWrite);
+        writer.getMapFor(true).setConstant(2.5);
+        writer.getMapFor(true)(1, 2) = -7.0;
+        EXPECT_DOUBLE_EQ(writer.getReaderMap()(1, 2), -7.0);
+    }
+    {
+        MemoryMappedMatrix<double> reader(temp_file, rows, cols, AccessMode::ReadOnly);
+        EXPECT_EQ(reader.mode(), AccessMode::ReadOnly);
+
+        EXPECT_THROW(reader.getMap(), std::runtime_error);
+        EXPECT_THROW(reader.getMapFor(true), std::runtime_error);
+
+        const Eigen::Map<Eigen::MatrixXd> view = reader.getReaderMap();
+        EXPECT_DOUBLE_EQ(view(0, 0), 2.5);
+        EXPECT_DOUBLE_EQ(view(1, 2), -7.0);
+        EXPECT_DOUBLE_EQ(reader.getMapFor(false)(rows - 1, cols - 1), 2.5);
+    }
+
+    std::filesystem::remove(temp_file);
 }
 
 // =========================================================================================

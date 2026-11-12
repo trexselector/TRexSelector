@@ -143,7 +143,7 @@ XPtr<RTRexScreeningSelector> trex_screening_mmap_create(
     TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
     validate_core_solver_type(trex_control);
     // Pin the mmap holder and y until the finalizer has run (see above).
-    return XPtr<RTRexScreeningSelector>(new RTRexScreeningSelector(X_ptr->getMap(),
+    return XPtr<RTRexScreeningSelector>(new RTRexScreeningSelector(mapped_design_for(*X_ptr, trex_control),
                                         y_map, screen_control, trex_control, seed, verbose),
                                         true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }

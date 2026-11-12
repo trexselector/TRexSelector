@@ -22,7 +22,7 @@ from trexselector.tsolvers.ad.omp_based import (
 )
 from trexselector.tsolvers.ad.afs_based import TAFS_Solver
 from trexselector.tsolvers.ad import SolverOptions
-from trexselector.tsolvers.ad.lars_based import TIENET_Solver, TIKNET_Solver
+from trexselector.tsolvers.ad.lars_based import TIENET_Solver, TIENETAug_Solver, TIKNET_Solver
 from trexselector.tsolvers.ad.cd_based import (
     TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver)
 
@@ -514,3 +514,112 @@ def test_tikhonov_solvers_take_a_dense_k(solver_data):
     del tik
     with pytest.raises(ValueError):
         TIKNET_Solver(X, D, y, -np.eye(p), SolverOptions(lambda2=0.5))
+
+
+# ---------------------------------------------------------------------------
+# A solver works on the caller's memory and never on a copy
+# ---------------------------------------------------------------------------
+
+def test_solver_refuses_an_array_it_cannot_share(solver_data):
+    X, D, y, n, p = solver_data
+    with pytest.raises(TypeError):
+        TLARS_Solver(np.ascontiguousarray(X), D, y)      # C order, the default layout of NumPy
+    with pytest.raises(TypeError):
+        TLARS_Solver(X, np.ascontiguousarray(D), y)
+    with pytest.raises(TypeError):
+        TLARS_Solver(X.astype(np.float32), D, y)         # another type
+    # One explicit conversion, shared from there on.
+    solver = TLARS_Solver(np.asfortranarray(np.ascontiguousarray(X)), D, y)
+    solver.executeStep(2, True)
+
+
+# ---------------------------------------------------------------------------
+# X and D that are not writable: readers take them, writers refuse them
+# ---------------------------------------------------------------------------
+
+def _unit_columns(M):
+    M = M - M.mean(axis=0)
+    return np.asfortranarray(M / np.linalg.norm(M, axis=0))
+
+
+@pytest.fixture
+def readonly_solver_data(solver_data, tmp_path):
+    """Pre-scaled X and D in files that are opened read-only."""
+    from trexselector.utils import AccessMode, MemoryMappedMatrix, numpy_to_memmap
+    X, D, y, n, p = solver_data
+    Xs, Ds, yc = _unit_columns(X), _unit_columns(D), y - y.mean()
+    x_file, d_file = str(tmp_path / "X.bin"), str(tmp_path / "D.bin")
+    numpy_to_memmap(x_file, Xs)
+    numpy_to_memmap(d_file, Ds)
+    X_view = MemoryMappedMatrix(x_file, n, p, AccessMode.ReadOnly).to_numpy()
+    D_view = MemoryMappedMatrix(d_file, n, D.shape[1], AccessMode.ReadOnly).to_numpy()
+    return Xs, Ds, yc, X_view, D_view
+
+
+def test_reader_runs_on_readonly_views(readonly_solver_data):
+    Xs, Ds, yc, X_view, D_view = readonly_solver_data
+    reader = SolverOptions(normalize=False, intercept=False)
+    assert not X_view.flags.writeable and not D_view.flags.writeable
+
+    ref = TLARS_Solver(Xs.copy(order="F"), Ds.copy(order="F"), yc, reader)
+    ref.executeStep(3, True)
+    solver = TLARS_Solver(X_view, D_view, yc, reader)
+    solver.executeStep(3, True)
+    np.testing.assert_array_equal(solver.getBeta(), ref.getBeta())
+
+    # One of the two may be an ordinary writable array.
+    mixed = TLARS_Solver(X_view, Ds.copy(order="F"), yc, reader)
+    mixed.executeStep(3, True)
+    np.testing.assert_array_equal(mixed.getBeta(), ref.getBeta())
+
+    # The files are as they were.
+    np.testing.assert_array_equal(X_view, Xs)
+    np.testing.assert_array_equal(D_view, Ds)
+
+
+def test_writer_refuses_readonly_views(readonly_solver_data):
+    Xs, Ds, yc, X_view, D_view = readonly_solver_data
+    # The message names the way out.
+    with pytest.raises(ValueError, match="X is not writable.*normalize=False and intercept=False"):
+        TLARS_Solver(X_view, D_view, yc, SolverOptions())
+    with pytest.raises(ValueError, match="not writable"):
+        TLARS_Solver(X_view, D_view, yc, SolverOptions(normalize=False))
+    with pytest.raises(ValueError, match="not writable"):
+        TLARS_Solver(X_view, D_view, yc, SolverOptions(intercept=False))
+    with pytest.raises(ValueError, match="D is not writable"):
+        TLARS_Solver(Xs.copy(order="F"), D_view, yc, SolverOptions())
+    np.testing.assert_array_equal(X_view, Xs)
+    np.testing.assert_array_equal(D_view, Ds)
+
+
+def test_every_solver_class_reads_readonly_views(readonly_solver_data):
+    Xs, Ds, yc, X_view, D_view = readonly_solver_data
+    p = Xs.shape[1]
+    reader = SolverOptions(normalize=False, intercept=False)
+    ridge = SolverOptions(normalize=False, intercept=False, lambda2=0.5)
+    groups, K = _groups_for(p), _group_mean_k(p)
+    solvers = [
+        TLASSO_Solver(X_view, D_view, yc, reader),
+        TSTEPWISE_Solver(X_view, D_view, yc, reader),
+        TSTAGEWISE_Solver(X_view, D_view, yc, reader),
+        TENET_Solver(X_view, D_view, yc, ridge),
+        TENETAug_Solver(X_view, D_view, yc, ridge),
+        TIENET_Solver(X_view, D_view, yc, groups, ridge),
+        TIENETAug_Solver(X_view, D_view, yc, groups, ridge),
+        TIKNET_Solver(X_view, D_view, yc, K, ridge),
+        TOMP_Solver(X_view, D_view, yc, reader),
+        TGP_Solver(X_view, D_view, yc, reader),
+        TACGP_Solver(X_view, D_view, yc, reader),
+        TMP_Solver(X_view, D_view, yc, reader),
+        TOOLS_Solver(X_view, D_view, yc, reader),
+        TNCGMP_Solver(X_view, D_view, yc, reader),
+        TAFS_Solver(X_view, D_view, yc, reader),
+        TCDLASSO_Solver(X_view, D_view, yc, reader),
+        TCDENET_Solver(X_view, D_view, yc, ridge),
+        TCDIENET_Solver(X_view, D_view, yc, groups, ridge),
+        TCDTIKNET_Solver(X_view, D_view, yc, K, ridge),
+    ]
+    for solver in solvers:
+        solver.executeStep(2, True)
+    np.testing.assert_array_equal(X_view, Xs)
+    np.testing.assert_array_equal(D_view, Ds)

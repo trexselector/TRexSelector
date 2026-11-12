@@ -1338,8 +1338,8 @@ NULL
 
 #' @title Create TLARS_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1351,8 +1351,8 @@ tsolver_lars_create <- function(X, D, y, options) {
 
 #' @title Create TLASSO_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1364,8 +1364,8 @@ tsolver_tlasso_create <- function(X, D, y, options) {
 
 #' @title Create TSTEPWISE_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1377,8 +1377,8 @@ tsolver_tstepwise_create <- function(X, D, y, options) {
 
 #' @title Create TSTAGEWISE_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1390,8 +1390,8 @@ tsolver_tstagewise_create <- function(X, D, y, options) {
 
 #' @title Create TENET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1403,8 +1403,8 @@ tsolver_tenet_create <- function(X, D, y, options) {
 
 #' @title Create TENETAug_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1416,8 +1416,8 @@ tsolver_tenet_aug_create <- function(X, D, y, options) {
 
 #' @title Create TIENETAug_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param groups 1-based group ids, one per predictor
 #' @param options List from tsolver_options()
@@ -1430,8 +1430,8 @@ tsolver_tienet_aug_create <- function(X, D, y, groups, options) {
 
 #' @title Create TIENET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param groups 1-based group ids, one per predictor
 #' @param options List from tsolver_options()
@@ -1444,8 +1444,8 @@ tsolver_tienet_create <- function(X, D, y, groups, options) {
 
 #' @title Create TIKNET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
 #' @param options List from tsolver_options()
@@ -1458,8 +1458,8 @@ tsolver_tiknet_create <- function(X, D, y, tikhonov_K, options) {
 
 #' @title Create TOMP_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1471,8 +1471,8 @@ tsolver_omp_create <- function(X, D, y, options) {
 
 #' @title Create TGP_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1484,8 +1484,8 @@ tsolver_tgp_create <- function(X, D, y, options) {
 
 #' @title Create TACGP_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1497,8 +1497,8 @@ tsolver_tacgp_create <- function(X, D, y, options) {
 
 #' @title Create TMP_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1510,8 +1510,8 @@ tsolver_tmp_create <- function(X, D, y, options) {
 
 #' @title Create TOOLS_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1523,8 +1523,8 @@ tsolver_tools_create <- function(X, D, y, options) {
 
 #' @title Create TNCGMP_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1536,8 +1536,8 @@ tsolver_tncgmp_create <- function(X, D, y, options) {
 
 #' @title Create TAFS_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1549,8 +1549,8 @@ tsolver_tafs_create <- function(X, D, y, options) {
 
 #' @title Create TCDLASSO_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1562,8 +1562,8 @@ tsolver_tcdlasso_create <- function(X, D, y, options) {
 
 #' @title Create TCDENET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param options List from tsolver_options()
 #'
@@ -1575,8 +1575,8 @@ tsolver_tcdenet_create <- function(X, D, y, options) {
 
 #' @title Create TCDIENET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param groups 1-based group ids, one per predictor
 #' @param options List from tsolver_options()
@@ -1589,8 +1589,8 @@ tsolver_tcdienet_create <- function(X, D, y, groups, options) {
 
 #' @title Create TCDTIKNET_Solver
 #'
-#' @param X Design matrix
-#' @param D Dummy matrix
+#' @param X Design matrix or mmap_matrix
+#' @param D Dummy matrix or mmap_matrix
 #' @param y Response vector
 #' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
 #' @param options List from tsolver_options()
@@ -1599,271 +1599,6 @@ tsolver_tcdienet_create <- function(X, D, y, groups, options) {
 #' @noRd
 tsolver_tcdtiknet_create <- function(X, D, y, tikhonov_K, options) {
     .Call(`_TRexSelector_tsolver_tcdtiknet_create`, X, D, y, tikhonov_K, options)
-}
-
-#' @title Create TLARS_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_lars_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_lars_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TLASSO_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tlasso_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tlasso_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TSTEPWISE_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tstepwise_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tstepwise_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TSTAGEWISE_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tstagewise_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tstagewise_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TENET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tenet_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tenet_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TENETAug_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tenet_aug_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tenet_aug_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TIENETAug_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param groups 1-based group ids, one per predictor
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tienet_aug_mmap_create <- function(X_ptr, D, y, groups, options) {
-    .Call(`_TRexSelector_tsolver_tienet_aug_mmap_create`, X_ptr, D, y, groups, options)
-}
-
-#' @title Create TIENET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param groups 1-based group ids, one per predictor
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tienet_mmap_create <- function(X_ptr, D, y, groups, options) {
-    .Call(`_TRexSelector_tsolver_tienet_mmap_create`, X_ptr, D, y, groups, options)
-}
-
-#' @title Create TIKNET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tiknet_mmap_create <- function(X_ptr, D, y, tikhonov_K, options) {
-    .Call(`_TRexSelector_tsolver_tiknet_mmap_create`, X_ptr, D, y, tikhonov_K, options)
-}
-
-#' @title Create TOMP_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_omp_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_omp_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TGP_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tgp_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tgp_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TACGP_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tacgp_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tacgp_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TMP_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tmp_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tmp_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TOOLS_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tools_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tools_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TNCGMP_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tncgmp_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tncgmp_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TAFS_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tafs_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tafs_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TCDLASSO_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdlasso_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tcdlasso_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TCDENET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdenet_mmap_create <- function(X_ptr, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tcdenet_mmap_create`, X_ptr, D, y, options)
-}
-
-#' @title Create TCDIENET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param groups 1-based group ids, one per predictor
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdienet_mmap_create <- function(X_ptr, D, y, groups, options) {
-    .Call(`_TRexSelector_tsolver_tcdienet_mmap_create`, X_ptr, D, y, groups, options)
-}
-
-#' @title Create TCDTIKNET_Solver (memory-mapped X)
-#'
-#' @param X_ptr XPtr to a MemoryMappedMatrix
-#' @param D Dummy matrix
-#' @param y Response vector
-#' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdtiknet_mmap_create <- function(X_ptr, D, y, tikhonov_K, options) {
-    .Call(`_TRexSelector_tsolver_tcdtiknet_mmap_create`, X_ptr, D, y, tikhonov_K, options)
 }
 
 #' @title Execute Step in TSolver

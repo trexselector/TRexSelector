@@ -123,7 +123,8 @@ round(thr$cumulative_ev, 3)
 # Memory-mapped data
 
 `X` may be a memory-mapped matrix opened in `"readwrite"` mode (see the memory-mapping page). It is
-centered in the file during `select()` and restored.
+centered in the file during `select()` and restored. The centering happens under every scaling mode,
+so a file opened in `"readonly"` mode is refused.
 
 # Examples
 

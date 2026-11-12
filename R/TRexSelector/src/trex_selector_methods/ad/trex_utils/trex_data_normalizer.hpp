@@ -64,6 +64,19 @@ enum class ScalingMode {
     NONE
 };
 
+/**
+ * @brief Whether a selector with this scaling mode writes into the design.
+ *
+ * L2 and ZSCORE standardize X in place and restore it at the end. NONE
+ * leaves X untouched, so the design may then live in read-only memory, for
+ * example in a memory-mapped file opened ReadOnly.
+ *
+ * @param mode Scaling mode of the selector.
+ *
+ * @return True for every mode but NONE.
+ */
+inline bool writesDesign(ScalingMode mode) noexcept { return mode != ScalingMode::NONE; }
+
 // =================================================================================
 
 /**

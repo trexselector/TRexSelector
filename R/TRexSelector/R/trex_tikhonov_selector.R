@@ -56,7 +56,11 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
   public = list(
     #' @description Create a new TRexTikhonovSelector object.
     #'
-    #' @param X Feature matrix or MemoryMappedMatrix.
+    #' @param X Feature matrix in memory, or an \code{mmap_matrix}, the handle
+    #'   of a memory-mapped file. Both are bound without a copy. The selector
+    #'   standardizes a memory-mapped design in place and restores it, which
+    #'   needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
+    #'   writes nothing and \code{"readonly"} mode suffices.
     #' @param y Response vector.
     #' @param tFDR Target FDR level (default: 0.1).
     #' @param seed Random seed (default: -1).

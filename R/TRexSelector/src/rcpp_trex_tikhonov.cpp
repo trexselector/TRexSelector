@@ -268,7 +268,7 @@ XPtr<RTRexTikhonovSelector> trex_tikhonov_mmap_create(
         parse_control_parameter(trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexTikhonovSelector>(
-        new RTRexTikhonovSelector(X_ptr->getMap(), y_map, tFDR, tik_control,
+        new RTRexTikhonovSelector(mapped_design_for(*X_ptr, trex_control), y_map, tFDR, tik_control,
                                   trex_control, seed, verbose),
         true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }

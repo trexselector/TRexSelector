@@ -21,6 +21,9 @@
 #include <trex_selector_methods/ad/trex_utils/trex_solver_dispatch.hpp>
 #include <utils/datageneration/utils_dummygen.hpp>
 
+// binding helpers
+#include "design_views.hpp"
+
 // std includes
 #include <numbers>
 
@@ -28,6 +31,27 @@
 
 namespace py = pybind11;
 using namespace trex::trex_selector_methods::ad::trex_core;
+
+// =====================================================================================
+
+/**
+ * @brief Design of a selector from an array that is taken as it is.
+ *
+ * @param X            Design array, typically not writable.
+ * @param trex_control Control parameters that hold the scaling mode.
+ *
+ * @return Reference to the array's buffer.
+ *
+ * @throws py::value_error under a scaling mode that writes into a design
+ *         that is not writable.
+ */
+inline Eigen::Ref<Eigen::MatrixXd> selector_design_ref(
+    const DesignArray& X,
+    const TRexControlParameter& trex_control
+) {
+    namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
+    return reader_design_map(X, dn::writesDesign(trex_control.scaling_mode), "X", kSelectorDesignRule);
+}
 
 // =====================================================================================
 // Core Class Mapping Wrapper
@@ -83,6 +107,23 @@ public:
             *X_map_, *y_map_, tFDR, trex_control, seed, verbose
         );
     }
+
+    /**
+     * @brief Zero-copy constructor on a design that is not writable.
+     *
+     * Accepted under ScalingMode::NONE, where the selector writes nothing
+     * into the design, and refused under L2 and ZSCORE.
+     *
+     * @param X Design array, taken as it is (n × p).
+     */
+    PyTRexSelector(
+        const DesignArray& X,
+        Eigen::Ref<Eigen::VectorXd> y,
+        double tFDR,
+        const TRexControlParameter& trex_control,
+        int seed,
+        bool verbose
+    ) : PyTRexSelector(selector_design_ref(X, trex_control), y, tFDR, trex_control, seed, verbose) {}
 
     /**
      * @brief Execute the full selection algorithm.
@@ -417,7 +458,9 @@ inline void bind_trex_core(py::module& m_tsm) {
             "selected solver.")
         .def_readwrite("scaling_mode",        &TRexControlParameter::scaling_mode,        "Working-design convention: "
             "L2 (default) or ZSCORE center X and y and scale X; NONE leaves X and y as supplied (user-managed; dummies "
-            "keep the unit-L2 standard). Non-finite entries and dead columns are rejected in every mode (ValueError).")
+            "keep the unit-L2 standard). Non-finite entries and dead columns are rejected in every mode (ValueError). "
+            "L2 and ZSCORE standardize X in place and restore it, so X must be writable. NONE writes nothing into X, "
+            "so an array that is not writable serves (the view of a ReadOnly MemoryMappedMatrix).")
         .def_readwrite("dummy_distribution",  &TRexControlParameter::dummy_distribution,  "Distribution used to "
             "generate dummy variables.");
 
@@ -459,6 +502,13 @@ inline void bind_trex_core(py::module& m_tsm) {
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the selector. X and y are accessed zero-copy via Eigen::Map.")
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexControlParameter&,
+            int, bool>(),
+             py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
+             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("seed") = -1, py::arg("verbose") = true,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             kReaderSelectorDoc.c_str())
         .def("getNumDummies", &PyTRexSelector::getNumDummies,
              "Number of dummies used by the last select() (the L-loop's calibration).")
         .def("restore", &PyTRexSelector::restore,

@@ -1115,13 +1115,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_biobank_screening_2d_create
-XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix Y, Rcpp::List biobank_control_list, Rcpp::List screen_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
+XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_create(Rcpp::NumericMatrix X, SEXP Y, Rcpp::List biobank_control_list, Rcpp::List screen_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
 RcppExport SEXP _TRexSelector_trex_biobank_screening_2d_create(SEXP XSEXP, SEXP YSEXP, SEXP biobank_control_listSEXP, SEXP screen_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type Y(YSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type biobank_control_list(biobank_control_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type screen_control_list(screen_control_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
@@ -1149,13 +1149,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_biobank_screening_2d_mmap_create
-XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_mmap_create(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix Y, Rcpp::List biobank_control_list, Rcpp::List screen_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
+XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_mmap_create(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, SEXP Y, Rcpp::List biobank_control_list, Rcpp::List screen_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
 RcppExport SEXP _TRexSelector_trex_biobank_screening_2d_mmap_create(SEXP X_ptrSEXP, SEXP YSEXP, SEXP biobank_control_listSEXP, SEXP screen_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type Y(YSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type Y(YSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type biobank_control_list(biobank_control_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type screen_control_list(screen_control_listSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
@@ -1982,13 +1982,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_lars_create
-XPtr<TSolverRcpp> tsolver_lars_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_lars_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_lars_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_lars_create(X, D, y, options));
@@ -1996,13 +1996,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tlasso_create
-XPtr<TSolverRcpp> tsolver_tlasso_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tlasso_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tlasso_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tlasso_create(X, D, y, options));
@@ -2010,13 +2010,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tstepwise_create
-XPtr<TSolverRcpp> tsolver_tstepwise_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tstepwise_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tstepwise_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tstepwise_create(X, D, y, options));
@@ -2024,13 +2024,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tstagewise_create
-XPtr<TSolverRcpp> tsolver_tstagewise_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tstagewise_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tstagewise_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tstagewise_create(X, D, y, options));
@@ -2038,13 +2038,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tenet_create
-XPtr<TSolverRcpp> tsolver_tenet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tenet_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tenet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tenet_create(X, D, y, options));
@@ -2052,13 +2052,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tenet_aug_create
-XPtr<TSolverRcpp> tsolver_tenet_aug_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tenet_aug_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tenet_aug_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tenet_aug_create(X, D, y, options));
@@ -2066,13 +2066,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tienet_aug_create
-XPtr<TSolverRcpp> tsolver_tienet_aug_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tienet_aug_create(SEXP X, SEXP D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tienet_aug_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
@@ -2081,13 +2081,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tienet_create
-XPtr<TSolverRcpp> tsolver_tienet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tienet_create(SEXP X, SEXP D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tienet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
@@ -2096,13 +2096,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tiknet_create
-XPtr<TSolverRcpp> tsolver_tiknet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tiknet_create(SEXP X, SEXP D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tiknet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP tikhonov_KSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< SEXP >::type tikhonov_K(tikhonov_KSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
@@ -2111,13 +2111,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_omp_create
-XPtr<TSolverRcpp> tsolver_omp_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_omp_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_omp_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_omp_create(X, D, y, options));
@@ -2125,13 +2125,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tgp_create
-XPtr<TSolverRcpp> tsolver_tgp_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tgp_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tgp_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tgp_create(X, D, y, options));
@@ -2139,13 +2139,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tacgp_create
-XPtr<TSolverRcpp> tsolver_tacgp_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tacgp_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tacgp_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tacgp_create(X, D, y, options));
@@ -2153,13 +2153,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tmp_create
-XPtr<TSolverRcpp> tsolver_tmp_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tmp_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tmp_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tmp_create(X, D, y, options));
@@ -2167,13 +2167,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tools_create
-XPtr<TSolverRcpp> tsolver_tools_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tools_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tools_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tools_create(X, D, y, options));
@@ -2181,13 +2181,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tncgmp_create
-XPtr<TSolverRcpp> tsolver_tncgmp_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tncgmp_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tncgmp_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tncgmp_create(X, D, y, options));
@@ -2195,13 +2195,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tafs_create
-XPtr<TSolverRcpp> tsolver_tafs_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tafs_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tafs_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tafs_create(X, D, y, options));
@@ -2209,13 +2209,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tcdlasso_create
-XPtr<TSolverRcpp> tsolver_tcdlasso_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tcdlasso_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tcdlasso_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tcdlasso_create(X, D, y, options));
@@ -2223,13 +2223,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tcdenet_create
-XPtr<TSolverRcpp> tsolver_tcdenet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tcdenet_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tcdenet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tcdenet_create(X, D, y, options));
@@ -2237,13 +2237,13 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tcdienet_create
-XPtr<TSolverRcpp> tsolver_tcdienet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tcdienet_create(SEXP X, SEXP D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tcdienet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
@@ -2252,302 +2252,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // tsolver_tcdtiknet_create
-XPtr<TSolverRcpp> tsolver_tcdtiknet_create(Rcpp::NumericMatrix X, Rcpp::NumericMatrix D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
+XPtr<TSolverRcpp> tsolver_tcdtiknet_create(SEXP X, SEXP D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
 RcppExport SEXP _TRexSelector_tsolver_tcdtiknet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP tikhonov_KSEXP, SEXP optionsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< SEXP >::type tikhonov_K(tikhonov_KSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tcdtiknet_create(X, D, y, tikhonov_K, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_lars_mmap_create
-XPtr<TSolverRcpp> tsolver_lars_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_lars_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_lars_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tlasso_mmap_create
-XPtr<TSolverRcpp> tsolver_tlasso_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tlasso_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tlasso_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tstepwise_mmap_create
-XPtr<TSolverRcpp> tsolver_tstepwise_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tstepwise_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tstepwise_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tstagewise_mmap_create
-XPtr<TSolverRcpp> tsolver_tstagewise_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tstagewise_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tstagewise_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tenet_mmap_create
-XPtr<TSolverRcpp> tsolver_tenet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tenet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tenet_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tenet_aug_mmap_create
-XPtr<TSolverRcpp> tsolver_tenet_aug_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tenet_aug_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tenet_aug_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tienet_aug_mmap_create
-XPtr<TSolverRcpp> tsolver_tienet_aug_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tienet_aug_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tienet_aug_mmap_create(X_ptr, D, y, groups, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tienet_mmap_create
-XPtr<TSolverRcpp> tsolver_tienet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tienet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tienet_mmap_create(X_ptr, D, y, groups, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tiknet_mmap_create
-XPtr<TSolverRcpp> tsolver_tiknet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tiknet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP tikhonov_KSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< SEXP >::type tikhonov_K(tikhonov_KSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tiknet_mmap_create(X_ptr, D, y, tikhonov_K, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_omp_mmap_create
-XPtr<TSolverRcpp> tsolver_omp_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_omp_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_omp_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tgp_mmap_create
-XPtr<TSolverRcpp> tsolver_tgp_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tgp_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tgp_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tacgp_mmap_create
-XPtr<TSolverRcpp> tsolver_tacgp_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tacgp_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tacgp_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tmp_mmap_create
-XPtr<TSolverRcpp> tsolver_tmp_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tmp_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tmp_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tools_mmap_create
-XPtr<TSolverRcpp> tsolver_tools_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tools_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tools_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tncgmp_mmap_create
-XPtr<TSolverRcpp> tsolver_tncgmp_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tncgmp_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tncgmp_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tafs_mmap_create
-XPtr<TSolverRcpp> tsolver_tafs_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tafs_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tafs_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdlasso_mmap_create
-XPtr<TSolverRcpp> tsolver_tcdlasso_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdlasso_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdlasso_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdenet_mmap_create
-XPtr<TSolverRcpp> tsolver_tcdenet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdenet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdenet_mmap_create(X_ptr, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdienet_mmap_create
-XPtr<TSolverRcpp> tsolver_tcdienet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdienet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdienet_mmap_create(X_ptr, D, y, groups, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdtiknet_mmap_create
-XPtr<TSolverRcpp> tsolver_tcdtiknet_mmap_create(XPtr<MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericMatrix D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdtiknet_mmap_create(SEXP X_ptrSEXP, SEXP DSEXP, SEXP ySEXP, SEXP tikhonov_KSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< SEXP >::type tikhonov_K(tikhonov_KSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdtiknet_mmap_create(X_ptr, D, y, tikhonov_K, options));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3608,26 +3323,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_TRexSelector_tsolver_tcdenet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdenet_create, 4},
     {"_TRexSelector_tsolver_tcdienet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdienet_create, 5},
     {"_TRexSelector_tsolver_tcdtiknet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdtiknet_create, 5},
-    {"_TRexSelector_tsolver_lars_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_lars_mmap_create, 4},
-    {"_TRexSelector_tsolver_tlasso_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tlasso_mmap_create, 4},
-    {"_TRexSelector_tsolver_tstepwise_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tstepwise_mmap_create, 4},
-    {"_TRexSelector_tsolver_tstagewise_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tstagewise_mmap_create, 4},
-    {"_TRexSelector_tsolver_tenet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tenet_mmap_create, 4},
-    {"_TRexSelector_tsolver_tenet_aug_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tenet_aug_mmap_create, 4},
-    {"_TRexSelector_tsolver_tienet_aug_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tienet_aug_mmap_create, 5},
-    {"_TRexSelector_tsolver_tienet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tienet_mmap_create, 5},
-    {"_TRexSelector_tsolver_tiknet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tiknet_mmap_create, 5},
-    {"_TRexSelector_tsolver_omp_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_omp_mmap_create, 4},
-    {"_TRexSelector_tsolver_tgp_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tgp_mmap_create, 4},
-    {"_TRexSelector_tsolver_tacgp_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tacgp_mmap_create, 4},
-    {"_TRexSelector_tsolver_tmp_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tmp_mmap_create, 4},
-    {"_TRexSelector_tsolver_tools_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tools_mmap_create, 4},
-    {"_TRexSelector_tsolver_tncgmp_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tncgmp_mmap_create, 4},
-    {"_TRexSelector_tsolver_tafs_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tafs_mmap_create, 4},
-    {"_TRexSelector_tsolver_tcdlasso_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tcdlasso_mmap_create, 4},
-    {"_TRexSelector_tsolver_tcdenet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tcdenet_mmap_create, 4},
-    {"_TRexSelector_tsolver_tcdienet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tcdienet_mmap_create, 5},
-    {"_TRexSelector_tsolver_tcdtiknet_mmap_create", (DL_FUNC) &_TRexSelector_tsolver_tcdtiknet_mmap_create, 5},
     {"_TRexSelector_tsolver_execute_step", (DL_FUNC) &_TRexSelector_tsolver_execute_step, 3},
     {"_TRexSelector_tsolver_get_beta", (DL_FUNC) &_TRexSelector_tsolver_get_beta, 2},
     {"_TRexSelector_tsolver_get_cp", (DL_FUNC) &_TRexSelector_tsolver_get_cp, 1},

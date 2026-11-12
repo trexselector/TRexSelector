@@ -158,7 +158,8 @@ tsolver_options <- function(normalize = TRUE,
 #' @section In-place preprocessing (the writer/reader contract):
 #' The solver works on the caller's memory without copying: the R matrices
 #' \code{X} and \code{D} (double storage; an integer matrix is coerced first,
-#' which is a copy) or the memory-mapped file behind an \code{mmap_matrix}.
+#' which is a copy) or the memory-mapped file behind an \code{mmap_matrix},
+#' which either of the two may be.
 #' With \code{normalize = TRUE} or \code{intercept = TRUE} in
 #' \code{\link{tsolver_options}} the solver is a \emph{writer}: it centers /
 #' scales the columns of \code{X} and \code{D} in place (the change is
@@ -169,15 +170,19 @@ tsolver_options <- function(normalize = TRUE,
 #' T-Rex selector) on a claimed matrix is an error, because a second
 #' in-place transformation moves the data by rounding. With both
 #' \code{FALSE} the solver is a \emph{reader}: it runs as constructed and
-#' never writes. A pipeline with several solvers on one matrix pre-scales
+#' never writes, so it accepts an \code{mmap_matrix} open in
+#' \code{"readonly"} mode for \code{X} and for \code{D}, which a writer
+#' refuses. A pipeline with several solvers on one matrix pre-scales
 #' once in front ([MLLpNormScaler]) and constructs readers. \code{$load()}
 #' expects \code{X} and \code{D} in the state they were saved in: load into
 #' a reader on pre-scaled data, or into a writer constructed with the same
 #' options on the same data (it keeps the duty to write back). \code{y} is
 #' never written (the solver centers an internal copy).
 #'
-#' @field X Numeric matrix of predictors, or an \code{mmap_matrix}.
-#' @field D Numeric matrix of dummies.
+#' @field X Numeric matrix of predictors in memory, or an \code{mmap_matrix}
+#'   (the handle of a memory-mapped file).
+#' @field D Numeric matrix of dummies in memory, or an \code{mmap_matrix}
+#'   (the handle of a memory-mapped file).
 #' @field y Numeric response vector.
 #' @field ptr External pointer to the underlying Cpp \code{TSolver_Base} object.
 #' @examples
@@ -195,20 +200,27 @@ TSolver_Base <- R6::R6Class(
     #' @description
     #' Validate and store data fields. Called by every subclass \code{initialize}.
     #' Not intended for direct instantiation. The stored \code{X} and \code{D}
-    #' are the matrices the C++ solver maps (no copy for double storage).
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' are the matrices or memory-mapped files the C++ solver binds (no copy
+    #' for double storage).
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     initialize = function(X, D, y) {
-      is_mmap <- inherits(X, "mmap_matrix")
-      if (!is.matrix(X) && !is_mmap) {
+      x_mmap <- inherits(X, "mmap_matrix")
+      d_mmap <- inherits(D, "mmap_matrix")
+      if (!is.matrix(X) && !x_mmap) {
         stop("Input X must be a numeric matrix or mmap_matrix.")
       }
-      if (!is.matrix(D) || !is.numeric(y)) {
-        stop("Inputs D must be a matrix, and y must be numeric.")
+      if (!is.matrix(D) && !d_mmap) {
+        stop("Input D must be a numeric matrix or mmap_matrix.")
       }
-      self$X <- if (is_mmap) X else .as_double_matrix(X)
-      self$D <- .as_double_matrix(D, arg = "D")
+      if (!is.numeric(y)) {
+        stop("Input y must be numeric.")
+      }
+      self$X <- if (x_mmap) X else .as_double_matrix(X)
+      self$D <- if (d_mmap) D else .as_double_matrix(D, arg = "D")
       self$y <- .as_double_vector(as.vector(y))
     },
 
@@ -509,18 +521,16 @@ TLARS_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TLARS_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_lars_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_lars_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_lars_create(self$X, self$D, self$y, options)
     },
 
     #' @description Get the regularization (lambda) path.
@@ -584,18 +594,16 @@ TLASSO_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TLASSO_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tlasso_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tlasso_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tlasso_create(self$X, self$D, self$y, options)
     },
 
     #' @description Get the number of coefficient removals.
@@ -650,18 +658,16 @@ TSTEPWISE_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TSTEPWISE_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tstepwise_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tstepwise_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tstepwise_create(self$X, self$D, self$y, options)
     },
 
     #' @description Get the regularization (lambda) path.
@@ -708,19 +714,17 @@ TENET_Solver <- R6::R6Class(
   public = list(
     #' @description Create a new \code{TENET_Solver}.
     #'
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{lambda2}, the L2 (ridge) penalty (>= 0; the
     #'   default 0 is the plain lasso path).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tenet_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tenet_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tenet_create(self$X, self$D, self$y, options)
     },
 
     #' @description Get the number of coefficient removals.
@@ -794,8 +798,10 @@ TENETAug_Solver <- R6::R6Class(
   public = list(
     #' @description Create a new \code{TENETAug_Solver}.
     #'
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{lambda2} (the ridge penalty, >= 0) and
@@ -803,11 +809,7 @@ TENETAug_Solver <- R6::R6Class(
     #'   solver that never drops variables).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tenet_aug_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tenet_aug_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tenet_aug_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -858,8 +860,10 @@ TIENETAug_Solver <- R6::R6Class(
   public = list(
     #' @description Create a new \code{TIENETAug_Solver}.
     #'
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param groups Integer vector of 1-based group ids, one per predictor
     #'   column of \code{X} (contiguous ids starting at 1).
@@ -870,13 +874,8 @@ TIENETAug_Solver <- R6::R6Class(
     initialize = function(X, D, y, groups, options = tsolver_options()) {
       super$initialize(X, D, y)
       groups <- as.integer(groups)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tienet_aug_mmap_create(self$X, self$D, self$y,
-                                                   groups, options)
-      } else {
-        self$ptr <- tsolver_tienet_aug_create(self$X, self$D, self$y,
-                                              groups, options)
-      }
+      self$ptr <- tsolver_tienet_aug_create(self$X, self$D, self$y,
+                                            groups, options)
     },
 
     #' @description Get the group-ridge penalty lambda2 used.
@@ -938,18 +937,16 @@ TSTAGEWISE_Solver <- R6::R6Class(
   public = list(
     #' @description Create a new \code{TSTAGEWISE_Solver}.
     #'
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tstagewise_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tstagewise_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tstagewise_create(self$X, self$D, self$y, options)
     },
 
     #' @description Get the number of coefficient removals.
@@ -1014,18 +1011,16 @@ TOMP_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TOMP_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_omp_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_omp_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_omp_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1062,18 +1057,16 @@ TGP_Solver <- R6::R6Class(
   public = list(
     #' @description Create a new \code{TGP_Solver}.
     #'
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tgp_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tgp_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tgp_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1109,18 +1102,16 @@ TACGP_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TACGP_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tacgp_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tacgp_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tacgp_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1156,18 +1147,16 @@ TMP_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TMP_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tmp_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tmp_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tmp_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1207,18 +1196,16 @@ TOOLS_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TOOLS_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}} (default:
     #'   \code{tsolver_options()}).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tools_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tools_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tools_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1258,19 +1245,17 @@ TNCGMP_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TNCGMP_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{ncgmp_variant}: \code{"line_search"} (default)
     #'   or \code{"fully_corrective"}.
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tncgmp_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tncgmp_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tncgmp_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1312,19 +1297,17 @@ TAFS_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TAFS_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{rho_afs}, the shrinkage parameter in (0, 1]
     #'   (default 1: forward stepwise).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tafs_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tafs_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tafs_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1378,8 +1361,10 @@ TIENET_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TIENET_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies (a multiple of \code{ncol(X)}
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
+    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
     #'   columns when \code{lambda2 > 0}: one group-aligned layer per p).
     #' @param y Numeric response vector.
     #' @param groups Integer vector of 1-based group ids, one per predictor
@@ -1389,11 +1374,7 @@ TIENET_Solver <- R6::R6Class(
     initialize = function(X, D, y, groups, options = tsolver_options()) {
       super$initialize(X, D, y)
       groups <- as.integer(groups)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tienet_mmap_create(self$X, self$D, self$y, groups, options)
-      } else {
-        self$ptr <- tsolver_tienet_create(self$X, self$D, self$y, groups, options)
-      }
+      self$ptr <- tsolver_tienet_create(self$X, self$D, self$y, groups, options)
     },
 
     #' @description Get the regularization (lambda) path.
@@ -1467,8 +1448,10 @@ TIKNET_Solver <- R6::R6Class(
   inherit = TSolver_Base,
   public = list(
     #' @description Create a new \code{TIKNET_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies (a multiple of \code{ncol(X)}
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
+    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
     #'   columns when \code{lambda2 > 0}: FOLDED layered convention).
     #' @param y Numeric response vector.
     #' @param tikhonov_K p x p PSD Tikhonov matrix: a
@@ -1478,11 +1461,7 @@ TIKNET_Solver <- R6::R6Class(
     initialize = function(X, D, y, tikhonov_K, options = tsolver_options()) {
       super$initialize(X, D, y)
       tikhonov_K <- .as_tikhonov_k(tikhonov_K)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tiknet_mmap_create(self$X, self$D, self$y, tikhonov_K, options)
-      } else {
-        self$ptr <- tsolver_tiknet_create(self$X, self$D, self$y, tikhonov_K, options)
-      }
+      self$ptr <- tsolver_tiknet_create(self$X, self$D, self$y, tikhonov_K, options)
     },
 
     #' @description Get the regularization (lambda) path.
@@ -1614,18 +1593,16 @@ TCDLASSO_Solver <- R6::R6Class(
   inherit = TCDSolver_Base,
   public = list(
     #' @description Create a new \code{TCDLASSO_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads the \code{cd_*} knobs.
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tcdlasso_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tcdlasso_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tcdlasso_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1671,19 +1648,17 @@ TCDENET_Solver <- R6::R6Class(
   inherit = TCDSolver_Base,
   public = list(
     #' @description Create a new \code{TCDENET_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies.
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{lambda2}, \code{kappa_dummy} and the \code{cd_*}
     #'   knobs.
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tcdenet_mmap_create(self$X, self$D, self$y, options)
-      } else {
-        self$ptr <- tsolver_tcdenet_create(self$X, self$D, self$y, options)
-      }
+      self$ptr <- tsolver_tcdenet_create(self$X, self$D, self$y, options)
     }
   )
 )
@@ -1736,8 +1711,10 @@ TCDIENET_Solver <- R6::R6Class(
   inherit = TCDSolver_Base,
   public = list(
     #' @description Create a new \code{TCDIENET_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies (a multiple of \code{ncol(X)}
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
+    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
     #'   columns: one group-aligned layer per p).
     #' @param y Numeric response vector.
     #' @param groups Integer vector of 1-based group ids, one per predictor
@@ -1748,11 +1725,7 @@ TCDIENET_Solver <- R6::R6Class(
     initialize = function(X, D, y, groups, options = tsolver_options()) {
       super$initialize(X, D, y)
       groups <- as.integer(groups)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tcdienet_mmap_create(self$X, self$D, self$y, groups, options)
-      } else {
-        self$ptr <- tsolver_tcdienet_create(self$X, self$D, self$y, groups, options)
-      }
+      self$ptr <- tsolver_tcdienet_create(self$X, self$D, self$y, groups, options)
     },
 
     #' @description Get the group ids (1-based, one per predictor).
@@ -1815,8 +1788,10 @@ TCDTIKNET_Solver <- R6::R6Class(
   inherit = TCDSolver_Base,
   public = list(
     #' @description Create a new \code{TCDTIKNET_Solver}.
-    #' @param X Numeric matrix of predictors, or \code{mmap_matrix}.
-    #' @param D Numeric matrix of dummies (a multiple of \code{ncol(X)}
+    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
+    #'   (the handle of a memory-mapped file).
+    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
+    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
     #'   columns when \code{fold_dummies = TRUE}).
     #' @param y Numeric response vector.
     #' @param tikhonov_K p x p PSD Tikhonov matrix: a
@@ -1827,11 +1802,7 @@ TCDTIKNET_Solver <- R6::R6Class(
     initialize = function(X, D, y, tikhonov_K, options = tsolver_options()) {
       super$initialize(X, D, y)
       tikhonov_K <- .as_tikhonov_k(tikhonov_K)
-      if (inherits(self$X, "mmap_matrix")) {
-        self$ptr <- tsolver_tcdtiknet_mmap_create(self$X, self$D, self$y, tikhonov_K, options)
-      } else {
-        self$ptr <- tsolver_tcdtiknet_create(self$X, self$D, self$y, tikhonov_K, options)
-      }
+      self$ptr <- tsolver_tcdtiknet_create(self$X, self$D, self$y, tikhonov_K, options)
     },
 
     #' @description Is the FOLDED dummy coupling active?

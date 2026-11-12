@@ -44,8 +44,8 @@ solvers a penalty matrix `tikhonov_K`.
 ## One terminated path
 
 The data are drawn with a fixed seed. `X` and `D` are Fortran-ordered float64 arrays, which the
-solvers share without a copy (a C-ordered array is copied first, so an in-place transformation would
-not reach the caller's array).
+solvers share without a copy. A C-ordered array, the default layout of NumPy, is refused with a
+`TypeError`, and `np.asfortranarray()` converts it once.
 
 ```{code-cell} python
 import numpy as np

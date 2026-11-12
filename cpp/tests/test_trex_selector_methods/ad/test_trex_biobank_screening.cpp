@@ -9,14 +9,17 @@
 #include <Eigen/Dense>
 
 // std includes
+#include <filesystem>
 #include <limits>
 #include <random>
 #include <stdexcept>
+#include <string>
 
 // project trex includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <trex_selector_methods/ad/trex_screening/trex_screening.hpp>
 #include <trex_selector_methods/ad/trex_screening/trex_biobank_screening.hpp>
+#include <utils/memmap/memory_mapped_matrix.hpp>
 
 // ===================================================================================
 
@@ -231,6 +234,65 @@ TEST_F(TRexBiobankScreeningTest, Execution_FallbackLogicActivation) {
     // Verify Algorithm 1 dumped us into the full T-Rex calculation tree
     EXPECT_EQ(result.method_used, "T-Rex (fallback)");
     EXPECT_TRUE(result.used_fallback_trex);
+}
+
+
+
+/** @brief The response matrix Y is only read, so it may live in a
+ *  memory-mapped file opened ReadOnly: the results equal those of the run
+ *  on Y in memory and the file is as it was. */
+TEST(TRexBiobankScreeningMemoryMappedTest, Execution_ReadsAReadOnlyMemoryMappedY) {
+    namespace mm = trex::utils::memmap;
+    namespace fs = std::filesystem;
+    std::mt19937 rng(17);
+    std::normal_distribution<double> N01(0.0, 1.0);
+    const Eigen::Index n = 80;
+    const Eigen::Index p = 40;
+    const Eigen::Index q = 4;
+    Eigen::MatrixXd X(n, p);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(rng); }
+    }
+    Eigen::MatrixXd Y(n, q);
+    for (Eigen::Index k = 0; k < q; ++k) {
+        for (Eigen::Index i = 0; i < n; ++i) { Y(i, k) = 4.0 * X(i, k) - 3.0 * X(i, k + 10) + N01(rng); }
+    }
+
+    BiobankScreenTRexControl control;
+    control.trex_screen_ctrl.R_boot = 100;
+    control.trex_screen_ctrl.trex_ctrl.K = 10;
+    const int seed = 5;
+
+    // The reference: Y in memory
+    Eigen::MatrixXd X_memory = X;
+    Eigen::MatrixXd Y_memory = Y;
+    Eigen::Map<Eigen::MatrixXd> X_memory_map(X_memory.data(), n, p);
+    Eigen::Map<Eigen::MatrixXd> Y_memory_map(Y_memory.data(), n, q);
+    BiobankScreenTRex reference(X_memory_map, Y_memory_map, control, seed, false);
+    const auto expected = reference.screenPhenotypes();
+
+    const std::string file = (fs::path(::testing::TempDir()) / "biobank_readonly_Y.bin").string();
+    fs::remove(file);
+    {
+        mm::MemoryMappedMatrix<double> writer(file, n, q, mm::AccessMode::ReadWrite);
+        writer.getMap() = Y;
+    }
+    {
+        mm::MemoryMappedMatrix<double> mapped(file, n, q, mm::AccessMode::ReadOnly);
+        auto Y_map = mapped.getReaderMap();
+        Eigen::MatrixXd X_run = X;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), n, p);
+        BiobankScreenTRex selector(X_map, Y_map, control, seed, false);
+        const auto results = selector.screenPhenotypes();
+
+        ASSERT_EQ(results.size(), expected.size());
+        for (std::size_t k = 0; k < results.size(); ++k) {
+            EXPECT_EQ(results[k].selected_indices, expected[k].selected_indices) << "phenotype " << k;
+            EXPECT_EQ(results[k].method_used, expected[k].method_used) << "phenotype " << k;
+        }
+        EXPECT_TRUE(mapped.getReaderMap() == Y);
+    }
+    fs::remove(file);
 }
 
 // ===================================================================================

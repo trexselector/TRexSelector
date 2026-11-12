@@ -93,9 +93,9 @@ max(abs(as.numeric(big[, 3]) - rnorm(n)))
 
 # Selectors on a mapped design
 
-The selectors take the handle where they take `X`. The file must be open in `"readwrite"` mode,
-because the selector centers and scales the design in place and restores it when `select()` returns
-(the page on working without data copies has the contract).
+The selectors take the handle where they take `X`. A selector centers and scales the design in place
+and restores it when `select()` returns, so the file must be open in `"readwrite"` mode (the page on
+working without data copies has the contract).
 
 ```{r select}
 beta <- c(rep(1.5, 4), rep(0, p - 4))
@@ -115,10 +115,47 @@ The same holds for `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector`,
 `trex_control(use_memory_mapping = TRUE)` additionally keeps the dummy matrices of the random
 experiments in mapped files, for the case where $K \cdot L \cdot p$ dummy columns do not fit either.
 
+One file serves one selector at a time. Do not run several selectors on the same file at the same
+time under `"L2"` or `"ZSCORE"`, neither through a second handle in one session nor in several
+processes. Each of them rewrites the file while it runs, so it would standardize data that another
+one has already changed, and the selections come out wrong. The same holds for T-solvers with
+`normalize = TRUE` or `intercept = TRUE`. The next section shows how several processes use one
+design at once.
+
+## A read-only file
+
+The default mode `"readwrite"` serves every use and is the one the examples of this guide work
+with. A file opened in `"readonly"` mode serves where nothing is written into it. For the selectors
+that is `scaling_mode = "NONE"`, under which a selector takes the design as supplied. The file then holds the
+design the selector works on, centered and scaled beforehand, and `trex_normalize_design()` applies
+exactly the preprocessing of the selector. Under `"L2"` and `"ZSCORE"` a read-only file is refused
+with an error that names this way out. Several processes can share one read-only file, because none
+of them writes into it.
+
+```{r readonly}
+pre <- trex_normalize_design(X, y)
+path_pre <- tempfile(fileext = ".bin")
+invisible(mem_matrix_from(pre$X, path_pre))
+pre_ro <- mem_matrix(path_pre, rows = n, cols = p, mode = "readonly")
+sel_ro <- TRexSelector$new(pre_ro, pre$y, tFDR = 0.1, seed = 3, verbose = FALSE,
+                           control = trex_control(K = 10, scaling_mode = "NONE"))
+sel_ro$select()
+identical(sel_ro$selected_indices, sel_mem$selected_indices)
+tryCatch(TRexSelector$new(pre_ro, pre$y, verbose = FALSE),
+         error = function(e) cat(strwrap(paste("error:", conditionMessage(e)), 90), sep = "\n"))
+```
+
+`TRexSPCASelector` centers the design in every run, so it needs `"readwrite"` mode under every scaling
+mode.
+
 # T-solvers and ML methods
 
-A T-solver binds the mapped `X` as it binds a matrix, the scalers transform the file in place, the
-low-memory engines of the regressions read it in place, and the clustering accepts it as `data`.
+A T-solver binds a memory-mapped `X` and a memory-mapped `D` as it binds a matrix in memory, the
+scalers transform the file in place, the low-memory engines of the regressions read it in place, and
+the clustering accepts it as `data`. The access mode follows the same rule as for the selectors. A T-solver with
+`normalize = TRUE` or `intercept = TRUE` and the scalers write into the file and need `"readwrite"`
+mode, while a T-solver with both options off and the fits of the regressions only read it and take a
+`"readonly"` file, for `X` and for `D`.
 
 ```{r solver}
 D <- matrix(rnorm(n * p), n, p)
@@ -144,9 +181,9 @@ Mapped files are never read into R's heap by the backend, so the memory footprin
 backend's working data, see `get_memory_bytes()` on the T-solvers.
 
 ```{r cleanup, include = FALSE}
-rm(mm, ro, big, s)
+rm(mm, ro, big, s, pre_ro, sel_ro)
 invisible(gc())
-unlink(c(path, path2))
+unlink(c(path, path2, path_pre))
 trex_set_num_threads(old_threads)
 ```
 

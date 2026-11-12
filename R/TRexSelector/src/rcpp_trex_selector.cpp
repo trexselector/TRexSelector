@@ -351,7 +351,7 @@ XPtr<RTRexSelector> trex_selector_mmap_create(
     TRexControlParameter control = parse_control_parameter(control_list);
     validate_core_solver_type(control);
     // Pin the mmap holder and y until the finalizer has run (see above).
-    return XPtr<RTRexSelector>(new RTRexSelector(X_ptr->getMap(), y_map, tFDR,
+    return XPtr<RTRexSelector>(new RTRexSelector(mapped_design_for(*X_ptr, control), y_map, tFDR,
                                control, seed, verbose),
                                true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }

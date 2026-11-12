@@ -127,6 +127,13 @@ pages it needs and the file keeps the data, so the working set of a run is the b
 buffers, never a copy of the design. The accessor `to_numpy()` of the handle is a view of the
 mapping as well, and element access reads from the file, so no accessor copies the design either.
 
+A file opened in `ReadOnly` mode cannot be written and its view is an array that is not writable, so
+it serves exactly the code that only reads. That is a selector under `ScalingMode.NONE`, which takes
+the design as supplied, a T-solver that is a reader, and the fits of the regressions. A selector
+under `ScalingMode.L2` or `ScalingMode.ZSCORE`, a writer among the T-solvers, the in-place scalers
+and `TRexSPCASelector` write into the design, so they refuse such a view with an error and need
+`ReadWrite` mode.
+
 ## The low-memory engines
 
 The ridge and elastic-net classes have a `low_memory` engine that avoids every allocation of the

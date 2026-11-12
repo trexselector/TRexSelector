@@ -21,6 +21,7 @@
 
 // trex_spca include
 #include <trex_selector_methods/ad/trex_spca/trex_spca.hpp>
+#include "design_views.hpp"
 
 // =====================================================================================
 
@@ -61,6 +62,26 @@ public:
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(), X.rows(), X.cols());
         selector_ = std::make_unique<TRexSPCA>(*X_map_, M, tFDR, ctrl, seed, verbose);
     }
+
+    /**
+     * @brief Constructor on a design that is not writable: always refused,
+     *        because the selector centers the design in every run.
+     *
+     * @param X Design array, taken as it is (n × p).
+     */
+    PyTRexSPCASelector(
+        const DesignArray& X,
+        Eigen::Index M,
+        double tFDR,
+        const TRexSPCAControlParameter& ctrl,
+        int seed,
+        bool verbose
+    ) : PyTRexSPCASelector(
+            Eigen::Ref<Eigen::MatrixXd>(reader_design_map(
+                X, true, "X",
+                "TRexSPCASelector centers the design in place and restores it on return, which "
+                "needs a writable array.")),
+            M, tFDR, ctrl, seed, verbose) {}
 
     /** @brief Run T-Rex Sparse PCA selection. */
     void select() {
@@ -169,6 +190,17 @@ inline void bind_trex_spca(py::module& m) {
              py::arg("verbose") = false,
              py::keep_alive<1, 2>(),
              "Construct the SPCA selector. X is accessed zero-copy via Eigen::Map.")
+        .def(py::init<const DesignArray&, Eigen::Index, double,
+                      const TRexSPCAControlParameter&, int, bool>(),
+             py::arg("X").noconvert(),
+             py::arg("M"),
+             py::arg("tFDR"),
+             py::arg("ctrl")    = TRexSPCAControlParameter(),
+             py::arg("seed")    = -1,
+             py::arg("verbose") = false,
+             py::keep_alive<1, 2>(),
+             "A design that is not writable is refused with ValueError: the selector centers the "
+             "design in place and restores it on return, whatever the scaling mode.")
         .def("select",    &PyTRexSPCASelector::select,
              "Run T-Rex Sparse PCA selection.")
         .def("getResult", &PyTRexSPCASelector::getResult,

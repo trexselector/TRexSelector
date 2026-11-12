@@ -58,6 +58,19 @@ class MemoryMappedMatrix:
     and written in place on disk, and to_numpy() gives a zero-copy view for the out-of-core
     paths.
     
+    AccessMode.ReadWrite (the default) serves every use. The view of a file opened with
+    AccessMode.ReadOnly is not writable, so it is accepted where nothing is written into the
+    matrix (a selector under ScalingMode.NONE, a T-solver with normalize=False and
+    intercept=False, the fits that only read) and refused with ValueError or TypeError
+    everywhere else.
+    
+    A file serves one writer at a time. Do not run several selectors or T-solvers that
+    standardize the file in place on one file at the same time, neither through a second
+    handle in one process nor in several processes. Each would change the data the other
+    works on, and the results come out wrong. To use one design in several processes at
+    once, pre-normalize it with normalize_design(), open the file with AccessMode.ReadOnly
+    and run every selector under ScalingMode.NONE.
+    
     References
     ----------
     F. Scheidt, J. Machkour, and M. Muma, "Solving FDR-Controlled Sparse Regression Problems
@@ -88,7 +101,7 @@ class MemoryMappedMatrix:
         ...
     def to_numpy(self) -> numpy.typing.NDArray[numpy.float64]:
         """
-        Returns a zero-copy NumPy array view of the memory-mapped matrix.
+        Returns a zero-copy NumPy array view of the memory-mapped matrix. The view of a file opened with AccessMode.ReadOnly is not writable.
         """
     def write_block(self, row_start: typing.SupportsInt | typing.SupportsIndex, row_count: typing.SupportsInt | typing.SupportsIndex, col_start: typing.SupportsInt | typing.SupportsIndex, col_count: typing.SupportsInt | typing.SupportsIndex, values: typing.Annotated[numpy.typing.ArrayLike, numpy.float64]) -> None:
         """

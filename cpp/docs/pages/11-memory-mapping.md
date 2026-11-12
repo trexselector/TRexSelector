@@ -46,9 +46,9 @@ column-major order, so writing one column after another with an output stream pr
 
 ## Selectors on a mapped design
 
-The selectors take the map of the handle where they take `X`. The file must be open in
-`AccessMode::ReadWrite`, because the selector centers and scales the design in place and restores it
-when `select()` returns (the page \ref no_copies "Working without data copies" has the contract).
+The selectors take the `Eigen::Map` of the handle where they take `X`. A selector centers and scales
+the design in place and restores it when `select()` returns, so the file must be open in
+`AccessMode::ReadWrite` (the page \ref no_copies "Working without data copies" has the contract).
 
 \snippet{trimleft} memory_mapping.cpp select
 \output{memory_mapping.select.txt}
@@ -59,10 +59,40 @@ dummy matrices of the random experiments in mapped files under the library's tem
 (`trex::utils::get_global_temp_dir()`, which `set_global_temp_dir()` moves), for the case where
 \f$K \cdot L \cdot p\f$ dummy columns do not fit either.
 
+One file serves one selector at a time. Do not run several selectors on the same file at the same
+time under `ScalingMode::L2` or `ScalingMode::ZSCORE`, neither through a second handle in one
+process nor in several processes. Each of them rewrites the file while it runs, so it would
+standardize data that another one has already changed, and the selections come out wrong. The same
+holds for T-solvers with `normalize = true` or `intercept = true`. The next section shows how
+several processes use one design at once.
+
+### A read-only file
+
+The default mode `AccessMode::ReadWrite` serves every use and is the one the examples of this guide
+work with. A file opened in `AccessMode::ReadOnly` serves where nothing is written into it. For the
+selectors that is `ScalingMode::NONE`, under which a selector takes the design as supplied. The file then
+holds the design the selector works on, centered and scaled beforehand, and `centerY()` with
+`centerAndL2NormalizeX()` applies exactly the preprocessing of the selector. `getMap()` of a
+read-only handle throws, because its `Eigen::Map` can be written. `getMapFor(writes)` picks the
+`Eigen::Map` from what the caller states, `getMap()` for a writer and `getReaderMap()` for a reader,
+and `writesDesign()` answers the question for a scaling mode. Several processes can share one read-only file, because
+none of them writes into it.
+
+\snippet{trimleft} memory_mapping.cpp readonly
+\output{memory_mapping.readonly.txt}
+
+TRexSPCA centers the design in every run, so it needs `AccessMode::ReadWrite` under every scaling
+mode.
+
 ## T-solvers and ML methods
 
-A T-solver binds the mapped `X` as it binds a matrix, the scalers transform the file in place, the
-low-memory engines of the regressions read it in place, and the clustering accepts it as data.
+A T-solver binds a memory-mapped `X` and a memory-mapped `D` as it binds a matrix in memory, the
+scalers transform the file in place, the low-memory engines of the regressions read it in place, and
+the clustering accepts it as data. The access mode follows the same rule as for the selectors. A
+T-solver with `normalize = true` or `intercept = true` and the scalers write into the file and need
+`AccessMode::ReadWrite`, while a T-solver with both options off and the fits of the regressions only
+read it and take a read-only file, for `X` and for `D`.
+`SolverOptions::writesDesign()` tells the two kinds of solver apart.
 
 \snippet{trimleft} memory_mapping.cpp solver
 \output{memory_mapping.solver.txt}

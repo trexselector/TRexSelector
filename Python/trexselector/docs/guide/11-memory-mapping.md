@@ -96,9 +96,9 @@ print(np.max(np.abs(big.to_numpy()[:, 2] - np.random.default_rng(1000 + 2).stand
 
 ## Selectors on a mapped design
 
-The selectors take the view of the handle where they take `X`. The file must be open in `ReadWrite`
-mode, because the selector centers and scales the design in place and restores it when `select()`
-returns (the page on [working without data copies](12-no-copies.md) has the contract).
+The selectors take the view of the handle where they take `X`. A selector centers and scales the
+design in place and restores it when `select()` returns, so the file must be open in `ReadWrite`
+mode (the page on [working without data copies](12-no-copies.md) has the contract).
 
 ```{code-cell} python
 beta = np.r_[np.full(4, 1.5), np.zeros(p - 4)]
@@ -118,10 +118,55 @@ The same holds for `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector`,
 `TRexControlParameter.use_memory_mapping = True` additionally keeps the dummy matrices of the random
 experiments in mapped files, for the case where $K \cdot L \cdot p$ dummy columns do not fit either.
 
+One file serves one selector at a time. Do not run several selectors on the same file at the same
+time under `ScalingMode.L2` or `ScalingMode.ZSCORE`, neither through a second handle in one process
+nor in several processes. Each of them rewrites the file while it runs, so it would standardize data
+that another one has already changed, and the selections come out wrong. The same holds for
+T-solvers with `normalize=True` or `intercept=True`. The next section shows how several processes
+use one design at once.
+
+### A read-only file
+
+The default mode `ReadWrite` serves every use and is the one the examples of this guide work with.
+The view of a file opened in `ReadOnly` mode is an array that is not writable, and it serves where
+nothing is written into it. For the selectors that is `ScalingMode.NONE`, under which a selector
+takes the design as supplied. The file then holds the design the selector works on, centered and
+scaled beforehand, and `normalize_design()` applies exactly the preprocessing of the selector. Under
+`ScalingMode.L2` and `ScalingMode.ZSCORE` the view is refused with an error that names this way out.
+The rule reads the write flag of the array, so it holds for every array that is not writable.
+Several processes can share one read-only file, because none of them writes into it.
+
+```{code-cell} python
+import textwrap
+
+pre = tsn.normalize_design(X, y)
+path_pre = os.path.join(workdir, "design_pre.bin")
+numpy_to_memmap(path_pre, pre["X"])
+pre_view = MemoryMappedMatrix(path_pre, n, p, AccessMode.ReadOnly).to_numpy()
+print(pre_view.flags.writeable)
+none = tsn.TRexControlParameter()
+none.K = 10
+none.scaling_mode = tsn.ScalingMode.NONE
+sel_ro = tsn.TRexSelector(pre_view, pre["y"], tFDR=0.1, trex_control=none, seed=3, verbose=False)
+sel_ro.select()
+print(list(sel_ro.selected_indices) == list(sel_mem.selected_indices))
+try:
+    tsn.TRexSelector(pre_view, pre["y"], trex_control=ctrl, verbose=False)
+except ValueError as e:
+    print(textwrap.fill(f"error: {e}", 90))
+```
+
+`TRexSPCASelector` centers the design in every run, so it needs a writable view under every scaling
+mode.
+
 ## T-solvers and ML methods
 
-A T-solver binds the mapped `X` as it binds an array, the scalers transform the file in place, the
-low-memory engines of the regressions read it in place, and the clustering accepts it as data.
+A T-solver binds a memory-mapped `X` and a memory-mapped `D` as it binds an array in memory, the
+scalers transform the file in place, the low-memory engines of the regressions read it in place, and
+the clustering accepts it as data. The access mode follows the same rule as for the selectors. A
+T-solver with `normalize=True` or `intercept=True` and the scalers write into the file and need
+`ReadWrite` mode, while a T-solver with both options off and the fits of the regressions only read
+it and take the view of a `ReadOnly` file, for `X` and for `D`.
 
 ```{code-cell} python
 from trexselector.tsolvers.ad.lars_based import TLARS_Solver
@@ -152,7 +197,7 @@ footprint of a run is the backend's working data, see `getMemoryBytes()` on the 
 ```{code-cell} python
 :tags: [remove-cell]
 import shutil
-del view, mm, ro, big, s, sel_map
+del view, mm, ro, big, s, sel_map, pre_view, sel_ro
 shutil.rmtree(workdir)
 ```
 

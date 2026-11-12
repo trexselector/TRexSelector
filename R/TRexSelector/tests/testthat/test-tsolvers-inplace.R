@@ -171,3 +171,117 @@ test_that("a memory-mapped X is preprocessed in the file and restored there", {
   s$restore()
   expect_equal(as.matrix(mm), X0, tolerance = 1e-12)
 })
+
+
+test_that("a memory-mapped D is preprocessed in the file and restored there", {
+  fx <- tempfile(fileext = ".bin")
+  fd <- tempfile(fileext = ".bin")
+  on.exit(unlink(c(fx, fd)), add = TRUE)
+  X0 <- X + 0; D0 <- D + 0
+  mx <- mem_matrix_from(X, fx)
+  md <- mem_matrix_from(D, fd)
+
+  s <- TLARS_Solver$new(mx, md, y, options = writer)
+  Df <- as.matrix(md)
+  expect_false(isTRUE(all.equal(Df, D0)))        # the file was written in place
+  expect_equal(colMeans(Df), rep(0, d), tolerance = 1e-12)
+  expect_equal(sqrt(colSums(Df^2)), rep(1, d), tolerance = 1e-12)
+  expect_identical(D, D0)                         # the R matrix is untouched
+
+  # The run on the two files equals the run in memory
+  ref <- TLARS_Solver$new(X + 0, D + 0, y, options = writer)
+  ref$execute_step(T_stop = 3)
+  s$execute_step(T_stop = 3)
+  expect_identical(s$get_beta(), ref$get_beta())
+  ref$restore()
+
+  # The file of D is claimed like a matrix
+  expect_error(TLARS_Solver$new(X + 0, md, y, options = writer), "already held")
+
+  s$restore()
+  expect_equal(as.matrix(mx), X0, tolerance = 1e-12)
+  expect_equal(as.matrix(md), D0, tolerance = 1e-12)
+
+  # Either of the two may be the memory-mapped one
+  only_d <- TLARS_Solver$new(X + 0, md, y, options = writer)
+  only_d$execute_step(T_stop = 3)
+  expect_identical(only_d$get_beta(), ref$get_beta())
+  only_d$restore()
+  expect_equal(as.matrix(md), D0, tolerance = 1e-12)
+
+  expect_error(TLARS_Solver$new(X, "D", y), "Input D must be a numeric matrix or mmap_matrix")
+})
+
+
+test_that("a reader runs on readonly files for X and D and a writer is refused", {
+  fx <- tempfile(fileext = ".bin")
+  fd <- tempfile(fileext = ".bin")
+  on.exit(unlink(c(fx, fd)), add = TRUE)
+  unit_columns <- function(M) {
+    M <- sweep(M, 2, colMeans(M))
+    sweep(M, 2, sqrt(colSums(M^2)), "/")
+  }
+  Xs <- unit_columns(X)
+  Ds <- unit_columns(D)
+  yc <- y - mean(y)
+  mem_matrix_from(Xs, fx)
+  mem_matrix_from(Ds, fd)
+  ro <- mem_matrix(fx, rows = n, cols = p, mode = "readonly")
+  rod <- mem_matrix(fd, rows = n, cols = d, mode = "readonly")
+  md5 <- unname(tools::md5sum(c(fx, fd)))
+
+  # A writer standardizes the files in place. The message names the way out.
+  expect_error(TLARS_Solver$new(ro, rod, yc, options = writer),
+               "ReadOnly mode.*normalize and intercept off")
+  expect_error(TLARS_Solver$new(ro, Ds + 0, yc, options = tsolver_options(normalize = FALSE)),
+               "ReadOnly")
+  expect_error(TLARS_Solver$new(ro, Ds + 0, yc, options = tsolver_options(intercept = FALSE)),
+               "ReadOnly")
+  expect_error(TLARS_Solver$new(Xs + 0, rod, yc, options = writer), "ReadOnly")
+
+  # A reader equals the run in memory, with one or both of X and D in a file
+  ref <- TLARS_Solver$new(Xs + 0, Ds + 0, yc, options = reader)
+  ref$execute_step(T_stop = 3)
+  for (make in list(function() TLARS_Solver$new(ro, rod, yc, options = reader),
+                    function() TLARS_Solver$new(ro, Ds + 0, yc, options = reader),
+                    function() TLARS_Solver$new(Xs + 0, rod, yc, options = reader))) {
+    s <- make()
+    s$execute_step(T_stop = 3)
+    expect_identical(s$get_beta(), ref$get_beta())
+    s$restore()   # a reader has nothing to write back
+  }
+
+  # Every solver class takes the two files as a reader
+  groups <- rep(1:4, each = 2)
+  K <- diag(p)
+  readers <- list(
+    function() TLASSO_Solver$new(ro, rod, yc, options = reader),
+    function() TSTEPWISE_Solver$new(ro, rod, yc, options = reader),
+    function() TSTAGEWISE_Solver$new(ro, rod, yc, options = reader),
+    function() TENET_Solver$new(ro, rod, yc, options = reader),
+    function() TENETAug_Solver$new(ro, rod, yc, options = reader),
+    function() TIENET_Solver$new(ro, rod, yc, groups, options = reader),
+    function() TIENETAug_Solver$new(ro, rod, yc, groups, options = reader),
+    function() TIKNET_Solver$new(ro, rod, yc, K, options = reader),
+    function() TOMP_Solver$new(ro, rod, yc, options = reader),
+    function() TGP_Solver$new(ro, rod, yc, options = reader),
+    function() TACGP_Solver$new(ro, rod, yc, options = reader),
+    function() TMP_Solver$new(ro, rod, yc, options = reader),
+    function() TOOLS_Solver$new(ro, rod, yc, options = reader),
+    function() TNCGMP_Solver$new(ro, rod, yc, options = reader),
+    function() TAFS_Solver$new(ro, rod, yc, options = reader),
+    function() TCDLASSO_Solver$new(ro, rod, yc, options = reader),
+    function() TCDENET_Solver$new(ro, rod, yc, options = reader),
+    function() TCDIENET_Solver$new(ro, rod, yc, groups, options = reader),
+    function() TCDTIKNET_Solver$new(ro, rod, yc, K, options = reader)
+  )
+  for (make in readers) {
+    solver <- make()
+    expect_no_error(solver$execute_step(T_stop = 2))
+  }
+
+  # The files are as they were
+  expect_identical(as.matrix(ro), Xs)
+  expect_identical(as.matrix(rod), Ds)
+  expect_identical(unname(tools::md5sum(c(fx, fd))), md5)
+})

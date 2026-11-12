@@ -182,8 +182,8 @@ XPtr<RTRexGVSSelector> trex_gvs_mmap_create(
     TRexGVSControlParameter gvs_control = parse_gvs_parameter(gvs_control_list);
     TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
-    return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(X_ptr->getMap(), y_map, tFDR, gvs_control, trex_control, seed,
-        verbose),
+    return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(mapped_design_for(*X_ptr, trex_control), y_map, tFDR,
+        gvs_control, trex_control, seed, verbose),
                                   true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }
 

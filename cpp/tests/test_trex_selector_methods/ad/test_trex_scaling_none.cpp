@@ -33,6 +33,7 @@
 
 // std includes
 #include <cmath>
+#include <filesystem>
 #include <limits>
 #include <numbers>
 #include <random>
@@ -48,6 +49,7 @@
 
 // project utils includes
 #include <utils/datageneration/utils_datagen.hpp>
+#include <utils/memmap/memory_mapped_matrix.hpp>
 #include <utils/fp_classify/fp_classify.hpp>
 
 // ========================================================================================
@@ -543,6 +545,87 @@ TEST(ScalingNone, DaNoneOnPrenormalizedDesignEqualsL2OnRawDesign) {
     EXPECT_EQ(l2.T_stop, none.T_stop);
     EXPECT_TRUE(l2.selected_var == none.selected_var);
     EXPECT_TRUE(l2.phi_prime == none.phi_prime) << "Phi_prime differs bitwise";
+}
+
+
+
+/** @brief Under NONE a selector writes nothing into the design, so the design
+ *  may be a memory-mapped file opened ReadOnly: the run equals the in-memory
+ *  run and leaves the file as it was. A scaling mode that standardizes in
+ *  place is refused for such a file. */
+TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
+    namespace mm = trex::utils::memmap;
+    namespace fs = std::filesystem;
+
+    auto pre = syntheticDesign(300, 60);
+    dn::NormalizationParams params;
+    dn::centerY(pre.y, params);
+    dn::centerAndL2NormalizeX(pre.X, params, 1e-6, false, dn::ScalingMode::L2);
+    const Eigen::MatrixXd design = pre.X;
+
+    const std::string file = (fs::path(::testing::TempDir()) / "trex_readonly_design.bin").string();
+    fs::remove(file);
+    {
+        mm::MemoryMappedMatrix<double> writer(file, design.rows(), design.cols(), mm::AccessMode::ReadWrite);
+        writer.getMap() = design;
+    }
+
+    // The in-memory reference
+    Eigen::MatrixXd X_memory = design;
+    Eigen::VectorXd y_memory = pre.y;
+    const SelectorRun reference = runSelector(X_memory, y_memory, dn::ScalingMode::NONE, 0.2, 11, 20);
+
+    {
+        mm::MemoryMappedMatrix<double> mapped(file, design.rows(), design.cols(), mm::AccessMode::ReadOnly);
+
+        // The refusal: L2 and ZSCORE standardize the design in place.
+        EXPECT_THROW(mapped.getMapFor(dn::writesDesign(dn::ScalingMode::L2)), std::runtime_error);
+        EXPECT_THROW(mapped.getMapFor(dn::writesDesign(dn::ScalingMode::ZSCORE)), std::runtime_error);
+
+        // The base selector
+        {
+            auto X_map = mapped.getMapFor(dn::writesDesign(dn::ScalingMode::NONE));
+            Eigen::VectorXd y = pre.y;
+            Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+            TRexControlParameter ctrl;
+            ctrl.K = 20;
+            ctrl.max_dummy_multiplier = 2;
+            ctrl.scaling_mode = dn::ScalingMode::NONE;
+            TRexSelector sel(X_map, y_map, 0.2, ctrl, 11, false);
+            const auto res = sel.select();
+            EXPECT_TRUE(res.selected_var == reference.selected_var);
+            EXPECT_TRUE(sel.getPhiPrime() == reference.phi_prime);
+            EXPECT_EQ(sel.getTStop(), reference.T_stop);
+        }
+
+        // A dependency-aware selector and a grouped selector complete as well.
+        {
+            auto X_map = mapped.getMapFor(false);
+            Eigen::VectorXd y = pre.y;
+            Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+            trex::trex_selector_methods::ad::trex_da::TRexDAControlParameter ctrl;
+            ctrl.method = trex::trex_selector_methods::ad::trex_da::DAMethod::AR1;
+            ctrl.trex_ctrl.K = 10;
+            ctrl.trex_ctrl.scaling_mode = dn::ScalingMode::NONE;
+            trex::trex_selector_methods::ad::trex_da::TRexDASelector sel(X_map, y_map, 0.2, ctrl, 11, false);
+            EXPECT_NO_THROW(sel.select());
+        }
+        {
+            auto X_map = mapped.getMapFor(false);
+            Eigen::VectorXd y = pre.y;
+            Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+            trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter ctrl;
+            ctrl.trex_ctrl.K = 10;
+            ctrl.trex_ctrl.scaling_mode = dn::ScalingMode::NONE;
+            trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector sel(X_map, y_map, 0.2, ctrl, 11, false);
+            EXPECT_NO_THROW(sel.select());
+        }
+
+        // The file is as it was.
+        EXPECT_TRUE(mapped.getReaderMap() == design);
+    }
+
+    fs::remove(file);
 }
 
 } // namespace trex::test::trex_selector_methods::scaling_none

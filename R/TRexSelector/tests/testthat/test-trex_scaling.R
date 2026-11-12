@@ -122,3 +122,99 @@ test_that("non-finite entries and dead columns are rejected in every mode", {
                                 control = trex_control(K = 3, scaling_mode = "NONE")),
                "column 4 .*NONE")
 })
+
+
+# ---------------------------------------------------------------------------------------
+# A memory-mapped design in "readonly" mode
+# ---------------------------------------------------------------------------------------
+
+# A pre-normalized design, written to a file and reopened read-only
+readonly_design <- function(file, n = 120, p = 40) {
+  d <- planted_design(n = n, p = p)
+  pre <- trex_normalize_design(d$X, d$y)
+  mem_matrix_from(pre$X, file)
+  list(X = pre$X, y = pre$y, p = p,
+       ro = mem_matrix(file, rows = n, cols = p, mode = "readonly"))
+}
+
+
+test_that("a readonly mmap_matrix serves every selector under NONE", {
+  f <- tempfile(fileext = ".bin")
+  on.exit(unlink(f), add = TRUE)
+  d <- readonly_design(f)
+  md5 <- unname(tools::md5sum(f))
+  none <- trex_control(K = 10, scaling_mode = "NONE")
+
+  # The run on the file equals the run in memory
+  ref <- TRexSelector$new(d$X + 0, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)
+  ref$select()
+  sel <- TRexSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)
+  sel$select()
+  expect_identical(sel$selected_var, ref$selected_var)
+  expect_identical(sel$phi_prime, ref$phi_prime)
+  expect_true(any(ref$selected_var))
+
+  expect_no_error(
+    TRexDASelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)$select()
+  )
+  expect_no_error(
+    TRexGVSSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)$select()
+  )
+  expect_no_error(
+    TRexTikhonovSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                             tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5),
+                             control = none)$select()
+  )
+  expect_no_error(
+    TRexScreeningSelector$new(d$ro, d$y, seed = 11, verbose = FALSE, control = none)$select()
+  )
+  expect_no_error(
+    TRexBiobankScreeningSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                                     control = none)$select()
+  )
+  Y <- cbind(d$y, rev(d$y))
+  expect_no_error(
+    TRexBiobankScreeningSelector$new(d$ro, Y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                                     control = none)$select()
+  )
+
+  # The file is as it was
+  expect_identical(as.matrix(d$ro), d$X)
+  expect_identical(unname(tools::md5sum(f)), md5)
+})
+
+
+test_that("a readonly mmap_matrix is refused where the design is written", {
+  f <- tempfile(fileext = ".bin")
+  on.exit(unlink(f), add = TRUE)
+  d <- readonly_design(f)
+  md5 <- unname(tools::md5sum(f))
+
+  # L2 and ZSCORE standardize the design in place. The message names the way out.
+  for (mode in c("L2", "ZSCORE")) {
+    ctrl <- trex_control(K = 10, scaling_mode = mode)
+    expect_error(TRexSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl),
+                 "ReadOnly mode.*scaling mode NONE")
+    expect_error(TRexDASelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")
+    expect_error(TRexGVSSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")
+    expect_error(
+      TRexTikhonovSelector$new(d$ro, d$y, verbose = FALSE,
+                               tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5),
+                               control = ctrl),
+      "ReadOnly"
+    )
+    expect_error(TRexScreeningSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")
+    expect_error(TRexBiobankScreeningSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl),
+                 "ReadOnly")
+    expect_error(
+      TRexBiobankScreeningSelector$new(d$ro, cbind(d$y, d$y), verbose = FALSE, control = ctrl),
+      "ReadOnly"
+    )
+  }
+
+  # The sparse PCA selector centers the design in every run
+  spca <- TRexSPCASelector$new(d$ro, M = 2, tFDR = 0.2, seed = 5, verbose = FALSE)
+  expect_error(spca$select(), "readwrite")
+
+  expect_identical(unname(tools::md5sum(f)), md5)
+})

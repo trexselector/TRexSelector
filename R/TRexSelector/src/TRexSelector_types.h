@@ -61,8 +61,8 @@
 // written: the solver centers an internal copy.
 
 struct TSolverRcpp {
-    Eigen::Map<Eigen::MatrixXd>  X_map_;    // view over the R matrix or the mmap file
-    Eigen::Map<Eigen::MatrixXd>  D_map_;    // view over the R matrix
+    Eigen::Map<Eigen::MatrixXd>  X_map_;    // view of the R matrix or of the memory-mapped file
+    Eigen::Map<Eigen::MatrixXd>  D_map_;    // view of the R matrix or of the memory-mapped file
     Eigen::Map<Eigen::VectorXd>  y_map_;    // view over the R vector (never written)
     trex::tsolvers::ad::TSolver_Base* solver_;   // the concrete solver (owned)
 

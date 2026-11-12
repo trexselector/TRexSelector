@@ -146,8 +146,9 @@ audited. For a single phenotype `select()` returns one record instead of a list.
 # Large designs
 
 Both screening selectors accept a memory-mapped design (`mem_matrix()`), which the memory-mapping page
-describes. The combination of the screening and a mapped design is what solved sparse regression
-problems with five million variables on a laptop [@scheidt2023bigtrex].
+describes, and the biobank screening a memory-mapped response matrix `Y`, which it only reads. The
+combination of the screening and a memory-mapped design is what solved sparse regression problems
+with five million variables on a laptop [@scheidt2023bigtrex].
 
 # Examples
 

@@ -81,6 +81,11 @@ struct SolverOptions {
      *  pre-centered. Default true. */
     bool intercept = true;
 
+    /** @brief Whether a solver with these options writes into X and D: it
+     *  preprocesses them in place when normalize or intercept is on (a
+     *  writer). With both off it only reads them (a reader). */
+    bool writesDesign() const noexcept { return normalize || intercept; }
+
     /** @brief The caller centered X, D and y (intercept = false on centered
      *  data, as in the T-Rex selectors). The centered columns span at most
      *  n - 1 dimensions, so the solver counts the intercept as with

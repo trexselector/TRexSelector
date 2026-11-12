@@ -101,6 +101,25 @@ public:
         );
     }
 
+    /**
+     * @brief Zero-copy constructor on a design that is not writable.
+     *
+     * Accepted under ScalingMode::NONE, where the selector writes nothing
+     * into the design, and refused under L2 and ZSCORE.
+     *
+     * @param X Design array, taken as it is (n × p).
+     */
+    PyTRexTikhonovSelector(
+        const DesignArray& X,
+        Eigen::Ref<Eigen::VectorXd> y,
+        double tFDR,
+        const tik::TRexTikhonovControlParameter& tik_control,
+        const TRexControlParameter& trex_control,
+        int seed,
+        bool verbose
+    ) : PyTRexTikhonovSelector(selector_design_ref(X, trex_control), y, tFDR, tik_control, trex_control,
+                               seed, verbose) {}
+
     /** @brief lambda_2 used by the last select() (solver scale); -1 before select(). */
     double getLambda2Used() const {
         return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
@@ -376,6 +395,14 @@ inline void bind_trex_tikhonov(py::module& m) {
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map.")
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double,
+                      const tik::TRexTikhonovControlParameter&, const TRexControlParameter&, int, bool>(),
+             py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
+             py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
+             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("seed") = -1, py::arg("verbose") = true,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             kReaderSelectorDoc.c_str())
         .def("getLambda2Used", &PyTRexTikhonovSelector::getLambda2Used, "lambda_2 used by the last select() (solver "
             "scale); -1 before select().")
         .def("getLambda2CVDiagnostics", &PyTRexTikhonovSelector::getLambda2CVDiagnostics, "Return the lambda_2 tuner "

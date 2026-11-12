@@ -210,6 +210,11 @@ Rcpp::List trex_spca_select_mmap(
     int seed,
     bool verbose
 ) {
+    // The selector centers the design in every run, whatever the scaling mode.
+    if (X_ptr->mode() == trex::utils::memmap::AccessMode::ReadOnly) {
+        Rcpp::stop("TRexSPCASelector centers the design in place and restores it on return, "
+                   "so an mmap_matrix must be open in \"readwrite\" mode.");
+    }
     auto X_map = X_ptr->getMap();
     return spca_select_on_map(X_map, M, tFDR, spca_ctrl_list, seed, verbose);
 }

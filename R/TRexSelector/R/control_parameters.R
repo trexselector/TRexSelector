@@ -132,7 +132,10 @@
 #'   unit-L2-commensurate (a warning names columns whose L2 norm leaves
 #'   \[0.25, 4\]). Non-finite entries and dead columns (constant under
 #'   \code{"L2"} / \code{"ZSCORE"}, all-zero under \code{"NONE"}) are
-#'   rejected in every mode with the column named.
+#'   rejected in every mode with the column named. \code{"L2"} and
+#'   \code{"ZSCORE"} standardize the design in place and restore it, so a
+#'   memory-mapped design must be open in \code{"readwrite"} mode; under
+#'   \code{"NONE"} nothing is written and \code{"readonly"} mode suffices.
 #'
 #' @return A named list suitable for passing to TRex selector constructors.
 #'

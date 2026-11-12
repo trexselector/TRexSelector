@@ -116,6 +116,12 @@ pages it needs and the file keeps the data, so the working set of a run is the b
 never a copy of the design. The R-level accessors (`[` and `as.matrix()`) do copy the requested block
 into R memory, by design.
 
+A file opened in `"readonly"` mode cannot be written, so it serves exactly the code that only reads.
+That is a selector under `scaling_mode = "NONE"`, which takes the design as supplied, a T-solver that
+is a reader, and the fits of the regressions. A selector under `"L2"` or `"ZSCORE"`, a writer among the
+T-solvers, the in-place scalers and `TRexSPCASelector` write into the design, so they refuse a
+read-only file with an error and need `"readwrite"` mode.
+
 # The low-memory engines
 
 The ridge and elastic-net classes have a `low_memory` engine that avoids every allocation of the size of

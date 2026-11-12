@@ -10,6 +10,61 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### A read-only memory-mapped design serves where nothing is written into it
+
+- `MemoryMappedMatrix::getMap()` refuses a file opened read-only, and every binding of a selector and
+  of a T-solver took its `Eigen::Map` through it. A read-only file therefore served no selector and no
+  T-solver, although a selector under `ScalingMode::NONE` and a T-solver with `normalize` and
+  `intercept` off never write into the design. In Python `to_numpy()` raised for such a file, so its
+  data could not be viewed at all.
+- The library now states what writes, in one place per family. `data_normalizer::writesDesign()` is true
+  for the scaling modes L2 and ZSCORE, and `SolverOptions::writesDesign()` is true with `normalize` or
+  `intercept` on. `MemoryMappedMatrix` gains `getReaderMap()` for code that only reads, `getMapFor(writes)`
+  that picks the map from that statement, and `mode()`. `getMap()` keeps its refusal, and its message
+  now says why and names the way out.
+- R takes the map of every selector and of all 20 T-solvers through `getMapFor()`, so an `mmap_matrix`
+  in `"readonly"` mode is accepted exactly where nothing is written. `TRexSPCASelector` centers the
+  design in every run and refuses it with a message of its own.
+- `X` and `D` reach a T-solver as an `Eigen::Map`, a view without a copy, in the three languages. The
+  view refers to a matrix in memory or to a memory-mapped file. In R the dummy matrix `D` could only
+  be a matrix in memory, while `X` could be either. `D` may now be a memory-mapped file as well, as
+  in Python and C++. One creator per solver takes either kind for both arguments, and the 20 creators
+  for a memory-mapped `X` are gone.
+- The same gap is closed for the response matrix `Y` of the biobank screening, which R took as a
+  matrix in memory only. `Y` may now be a memory-mapped file in R as well. The selector only reads
+  `Y`, one column at a time, so a file opened read-only serves under every scaling mode, and Python
+  accepts a `Y` that is not writable.
+- Python keeps its idiom, the `to_numpy()` view. The view of a read-only file is an array that is not
+  writable, and every selector and T-solver has a second constructor that takes a Fortran-contiguous
+  float64 array as it is, without a copy. It accepts an array that is not writable where nothing is
+  written and raises `ValueError` with the rule everywhere else, where such an array met a `TypeError`
+  without an explanation before. The rule reads the write flag, so it holds for every such array, for
+  `X` and for `D` of a T-solver.
+- An audit ran before the bindings changed, because a write into a memory-mapped file opened
+  read-only ends the process instead of raising an error. It runs every case in a child process on a
+  design in write-protected memory. 203 cases complete without a write: all solver types of the
+  selector on a small and a wide design, the dependency-aware methods, the grouped selector with
+  every solver and every rule for lambda_2, the Tikhonov selector with every rule, both solvers and
+  both dummy mechanisms, the screening variants with the bootstrap, twelve phenotypes of the biobank
+  screening with its fallback, the response matrix of the biobank screening, and each of the 20
+  T-solvers as a reader. The three controls that must write are killed.
+- The help of the design argument, of the scaling mode, of `mem_matrix()` and of the solver contract
+  states the rule in C++, R and Python. The guide pages 11 of the three surfaces gain a section with a
+  run on a read-only file, and the pages 07 and 12 state the rule.
+- The help of the memory-mapped matrix and the guide pages 11 warn that one file serves one writer at
+  a time. Several selectors or T-solvers that standardize one file in place at the same time, through
+  a second handle or in several processes, change each other's data and return wrong selections. The
+  library itself never does this, and the claim on a buffer refuses a second writer on one matrix or
+  handle in one process. To use one design in several processes at once, the design is pre-normalized,
+  opened read-only and selected from under `NONE`.
+- The Python T-solvers refuse an array they cannot share, for example a C-ordered array, the default
+  layout of NumPy, with a `TypeError`. Their docstring and guide page 09 said such an array is copied
+  first. Both now state the refusal and name `numpy.asfortranarray()`, and a test pins it.
+- The tests use real files opened read-only on the three surfaces. A run on the file equals the run in
+  memory, every selector and every solver class completes, the writers are refused, and the file is
+  unchanged afterwards. A writer on a memory-mapped `D` standardizes the file in place, claims it and
+  restores it. C++ tests 715 of 715, R tests 1,833, Python tests 677.
+
 #### The result of the biobank screening says what its FDR level is
 
 - `estimated_FDR` of a biobank result holds the estimate of the accepted screening variant, or, for a

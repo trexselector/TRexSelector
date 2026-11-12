@@ -55,6 +55,24 @@ def test_memmap_readonly_mode(tmp_path):
     assert mmap_ro.cols() == 3
 
 
+def test_memmap_readonly_view_is_not_writable(tmp_path):
+    X = np.arange(12.0, dtype=np.float64).reshape(4, 3)
+    filename = str(tmp_path / "readonly_view.bin")
+    writable = numpy_to_memmap(filename, X).to_numpy()
+    assert writable.flags.writeable
+
+    view = MemoryMappedMatrix(filename, 4, 3, AccessMode.ReadOnly).to_numpy()
+    assert view.flags.f_contiguous
+    assert not view.flags.writeable
+    np.testing.assert_array_equal(view, X)
+    # NumPy refuses to write through the view, and the flag cannot be set again.
+    with pytest.raises(ValueError):
+        view[0, 0] = 5.0
+    with pytest.raises(ValueError):
+        view.setflags(write=True)
+    assert not view[:, 1:].flags.writeable
+
+
 def test_numpy_to_memmap_rejects_1d(tmp_path):
     with pytest.raises(Exception):
         numpy_to_memmap(str(tmp_path / "bad.bin"), np.array([1.0, 2.0]))

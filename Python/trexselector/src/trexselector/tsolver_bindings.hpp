@@ -45,6 +45,9 @@
 #include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
 #include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 
+// binding helpers
+#include "design_views.hpp"
+
 // =====================================================================================
 
 namespace py = pybind11;
@@ -360,9 +363,11 @@ public:
  *        TSolver_Base::restore()).
  */
 inline const std::string kInPlaceContractDoc =
+    "\n\nX and D are Fortran-ordered float64 arrays, which the solver shares without "
+    "a copy. An array of another layout or type is refused with TypeError, and "
+    "numpy.asfortranarray() converts it once."
     "\n\nIn-place contract: with normalize=True or intercept=True the solver is a "
-    "WRITER. It centers/scales the columns of X and D IN PLACE through the views "
-    "(a Fortran-ordered float64 array is shared, a C-ordered one is copied first), "
+    "WRITER. It centers/scales the columns of X and D IN PLACE through the views, "
     "keeps the statistics itself and holds a claim on both buffers until restore() "
     "or destruction, both of which write X and D back (restore() is idempotent and "
     "must be given the same arrays); constructing a second writer (T-solver or "
@@ -372,7 +377,26 @@ inline const std::string kInPlaceContractDoc =
     "touches the buffers. A pipeline with several solvers on one buffer should "
     "pre-scale once in front (LpNormScaler) and construct the solvers as readers; a "
     "solver resumed with load() is a reader that expects the buffers in the saved "
-    "state. y is never written (the solver centers an internal copy).";
+    "state. y is never written (the solver centers an internal copy). A READER "
+    "also accepts X and D that are not writable, for example the to_numpy() view "
+    "of a MemoryMappedMatrix opened with AccessMode.ReadOnly (Fortran-contiguous "
+    "float64, zero-copy); a WRITER raises ValueError for them.";
+
+/** @brief Docstring of the solver constructors that take X and D as they are. */
+inline const std::string kReaderSolverDoc =
+    "Initializes the solver on X and D that are not writable, for example the to_numpy() view "
+    "of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Both must be Fortran-contiguous "
+    "float64 arrays and are accessed zero-copy. " + kSolverDesignRule +
+    " Otherwise ValueError is raised.";
+
+/** @brief X or D of a solver from an array that is taken as it is. */
+inline Eigen::Ref<Eigen::MatrixXd> solver_design_ref(
+    const DesignArray& M,
+    const trex::tsolvers::ad::SolverOptions& options,
+    const char* name
+) {
+    return reader_design_map(M, options.writesDesign(), name, kSolverDesignRule);
+}
 
 
 /**
@@ -512,6 +536,15 @@ py::class_<PySolverWrapper<Solver>> bind_standard_tsolver(py::module& m, const s
              py::arg("options") = SolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
+    cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
+                        const SolverOptions& options) {
+                 return std::make_unique<PySolverWrapper<Solver>>(
+                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, options);
+             }),
+             py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"),
+             py::arg("options") = SolverOptions{},
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
+             kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
     return cls;
 }
@@ -538,6 +571,16 @@ py::class_<PySolverWrapper<Solver>> bind_groups_tsolver(py::module& m, const std
              py::arg("options") = SolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
+    cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
+                        const Eigen::VectorXi& groups, const SolverOptions& options) {
+                 return std::make_unique<PySolverWrapper<Solver>>(
+                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, groups,
+                     options);
+             }),
+             py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
+             py::arg("options") = SolverOptions{},
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
+             kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
     return cls;
 }
@@ -570,6 +613,16 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
              py::arg("options") = SolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
+    cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
+                        const Eigen::MatrixXd& tikhonov_K, const SolverOptions& options) {
+                 const Eigen::SparseMatrix<double> K = tikhonov_K.sparseView();
+                 return std::make_unique<PySolverWrapper<Solver>>(
+                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, K, options);
+             }),
+             py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("tikhonov_K"),
+             py::arg("options") = SolverOptions{},
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
+             kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
     return cls;
 }
@@ -887,6 +940,17 @@ inline void bind_tsolvers_module(py::module& m) {
              ("Initializes the augmented-LASSO Informed Elastic Net solver with a 0-based group"
               " id per original variable (`groups`, length p); reads options.lambda2 (the"
               " group-ridge penalty) and options.tenet_aug_use_lars." + kInPlaceContractDoc).c_str());
+    cls_tienet_aug.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
+                                   const Eigen::VectorXi& groups,
+                                   const trex::tsolvers::ad::SolverOptions& options) {
+                 return std::make_unique<PySolverWrapper<TIENETAug_Solver>>(
+                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, groups,
+                     options);
+             }),
+             py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
+             py::arg("options") = trex::tsolvers::ad::SolverOptions{},
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
+             kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<TIENETAug_Solver>(cls_tienet_aug);
     cls_tienet_aug
         .def("getLambda2", &PySolverWrapper<TIENETAug_Solver>::getLambda2,

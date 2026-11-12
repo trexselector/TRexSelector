@@ -108,7 +108,11 @@ empty selection reports 1.}
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Feature matrix or MemoryMappedMatrix.}
+      \item{\code{X}}{Feature matrix in memory, or an \code{mmap_matrix}, the handle
+of a memory-mapped file. Both are bound without a copy. The selector
+standardizes a memory-mapped design in place and restores it, which
+needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
+writes nothing and \code{"readonly"} mode suffices.}
       \item{\code{y}}{Response vector.}
       \item{\code{seed}}{Random seed (default: -1).}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}

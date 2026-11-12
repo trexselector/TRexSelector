@@ -124,7 +124,8 @@ print("cumulative_ev:", np.round(thr.cumulative_ev, 3))
 
 `X` may be the `to_numpy()` view of a `MemoryMappedMatrix` opened in `AccessMode.ReadWrite` (see
 [the memory-mapping page](11-memory-mapping.md)). It is centered in the file during `select()` and
-restored. `convert_to_memory_mapped()` writes an array to such a file.
+restored. The centering happens under every scaling mode, so the view of a file opened in
+`AccessMode.ReadOnly` is refused. `convert_to_memory_mapped()` writes an array to such a file.
 
 ```{code-cell} python
 import os

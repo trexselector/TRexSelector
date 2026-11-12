@@ -37,10 +37,16 @@
 TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
   public = list(
     #' @description Create a new TRexBiobankScreeningSelector object.
-    #' @param X Feature matrix (n x p), or an \code{mmap_matrix} opened
-    #'   \code{"readwrite"} (mapped directly, no copy; the screening's inner
-    #'   selectors normalize it in place per call and restore it).
-    #' @param Y Response vector (1D) or matrix (2D).
+    #' @param X Feature matrix (n x p) in memory, or an \code{mmap_matrix},
+    #'   the handle of a memory-mapped file. Both are bound without a copy.
+    #'   The inner selectors standardize a memory-mapped design in place per
+    #'   call and restore it, which needs \code{"readwrite"} mode. Under
+    #'   \code{scaling_mode = "NONE"} they write nothing and
+    #'   \code{"readonly"} mode suffices.
+    #' @param Y Response vector (1D) or matrix (2D). The matrix is in memory
+    #'   or an \code{mmap_matrix}, the handle of a memory-mapped file, and is
+    #'   bound without a copy. It is only read, so \code{"readonly"} mode
+    #'   suffices for it.
     #' @param tFDR Target FDR level (default: 0.1).
     #' @param seed Random seed (default: -1). Phenotype \code{k} (the \code{k}-th column of
     #'   \code{Y}) runs with \code{seed + k - 1}, so the phenotypes draw independent dummies and
@@ -66,13 +72,15 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
       screen_control$lloop_strategy <- "STANDARD"
       control$lloop_strategy <- "STANDARD"
 
-      if (!is.numeric(Y)) {
-        stop("Response evaluation Y must be either a numeric vector or a numeric matrix.")
+      y_mmap <- inherits(Y, "mmap_matrix")
+      if (!is.numeric(Y) && !y_mmap) {
+        stop("Response evaluation Y must be a numeric vector, a numeric matrix or an mmap_matrix.")
       }
 
-      # A memory-mapped X is mapped directly ("readwrite": the screening's
-      # inner selectors normalize it in place per call and restore it); an R
-      # matrix is bound zero-copy in double storage.
+      # A memory-mapped X is bound directly. The inner selectors normalize
+      # it in place per call and restore it ("readwrite"), except under
+      # scaling_mode = "NONE", where they only read it. An R matrix is bound
+      # zero-copy in double storage.
       is_mmap <- inherits(X, "mmap_matrix")
       if (!is_mmap) X <- .as_double_matrix(X)
       n_x <- if (is_mmap) dim(X)[1] else nrow(X)
@@ -89,9 +97,10 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
           trex_biobank_screening_1d_create(
             X, Y, biobank_control_list, screen_control, control, seed, verbose)
         }
-      } else if (is.matrix(Y)) {
-        if (n_x != nrow(Y)) stop("Dimension mismatch: nrow(X) != nrow(Y)")
-        Y <- .as_double_matrix(Y)
+      } else if (is.matrix(Y) || y_mmap) {
+        n_y <- if (y_mmap) dim(Y)[1] else nrow(Y)
+        if (n_x != n_y) stop("Dimension mismatch: nrow(X) != nrow(Y)")
+        if (!y_mmap) Y <- .as_double_matrix(Y)
         private$refs <- list(X = X, Y = Y)
         private$is_multi <- TRUE
         private$ptr <- if (is_mmap) {
@@ -102,7 +111,7 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
             X, Y, biobank_control_list, screen_control, control, seed, verbose)
         }
       } else {
-        stop("Response evaluation Y must be either a numeric vector or a numeric matrix.")
+        stop("Response evaluation Y must be a numeric vector, a numeric matrix or an mmap_matrix.")
       }
     },
 

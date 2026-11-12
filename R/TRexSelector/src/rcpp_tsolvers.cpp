@@ -53,9 +53,26 @@ using namespace trex::tsolvers::ad::linear_model::cd_based;
 // owns the solver; RcppExports.cpp instantiates the XPtr finalizer from the
 // same definition. See the header for the in-place contract.
 
-/** @brief Map an R double matrix without copying. */
-static Eigen::Map<Eigen::MatrixXd> map_of(Rcpp::NumericMatrix& m) {
-    return {m.begin(), m.nrow(), m.ncol()};
+/**
+ * @brief Eigen::Map of X or D of a solver, without a copy.
+ *
+ * @param m    R double matrix (in memory) or mmap_matrix (the handle of a
+ *             memory-mapped file).
+ * @param opts Solver options. A writer needs a memory-mapped file opened
+ *             "readwrite", a reader takes one opened "readonly" as well.
+ * @param name Argument name for the message.
+ *
+ * @return Eigen::Map of the R matrix or of the memory-mapped file.
+ */
+static Eigen::Map<Eigen::MatrixXd> design_map_of(SEXP m, const SolverOptions& opts, const char* name) {
+    if (Rf_inherits(m, "mmap_matrix")) {
+        XPtr<MemoryMappedMatrix<double>> ptr(m);
+        return ptr->getMapFor(opts.writesDesign());
+    }
+    if (!Rf_isMatrix(m) || TYPEOF(m) != REALSXP) {
+        stop(std::string(name) + " must be a double matrix or an mmap_matrix.");
+    }
+    return {REAL(m), Rf_nrows(m), Rf_ncols(m)};
 }
 
 /** @brief Map an R double vector without copying. */
@@ -144,13 +161,13 @@ static Eigen::SparseMatrix<double> tsolver_as_sparse_matrix(SEXP m) {
 }
 
 // ==============================================================================
-// Instance creators (in-memory X)
+// Instance creators (X and D: an R matrix in memory or a memory-mapped file)
 // ==============================================================================
 
 //' @title Create TLARS_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -158,13 +175,14 @@ static Eigen::SparseMatrix<double> tsolver_as_sparse_matrix(SEXP m) {
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_lars_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TLARS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -174,8 +192,8 @@ XPtr<TSolverRcpp> tsolver_lars_create(
 
 //' @title Create TLASSO_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -183,13 +201,14 @@ XPtr<TSolverRcpp> tsolver_lars_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tlasso_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -199,8 +218,8 @@ XPtr<TSolverRcpp> tsolver_tlasso_create(
 
 //' @title Create TSTEPWISE_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -208,13 +227,14 @@ XPtr<TSolverRcpp> tsolver_tlasso_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tstepwise_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TSTEPWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -224,8 +244,8 @@ XPtr<TSolverRcpp> tsolver_tstepwise_create(
 
 //' @title Create TSTAGEWISE_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -233,13 +253,14 @@ XPtr<TSolverRcpp> tsolver_tstepwise_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tstagewise_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TSTAGEWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -249,8 +270,8 @@ XPtr<TSolverRcpp> tsolver_tstagewise_create(
 
 //' @title Create TENET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -258,13 +279,14 @@ XPtr<TSolverRcpp> tsolver_tstagewise_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tenet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -274,8 +296,8 @@ XPtr<TSolverRcpp> tsolver_tenet_create(
 
 //' @title Create TENETAug_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -283,13 +305,14 @@ XPtr<TSolverRcpp> tsolver_tenet_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tenet_aug_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -299,8 +322,8 @@ XPtr<TSolverRcpp> tsolver_tenet_aug_create(
 
 //' @title Create TIENETAug_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param groups 1-based group ids, one per predictor
 //' @param options List from tsolver_options()
@@ -309,14 +332,15 @@ XPtr<TSolverRcpp> tsolver_tenet_aug_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tienet_aug_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     IntegerVector groups,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TIENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -326,8 +350,8 @@ XPtr<TSolverRcpp> tsolver_tienet_aug_create(
 
 //' @title Create TIENET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param groups 1-based group ids, one per predictor
 //' @param options List from tsolver_options()
@@ -336,14 +360,15 @@ XPtr<TSolverRcpp> tsolver_tienet_aug_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tienet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     IntegerVector groups,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -353,8 +378,8 @@ XPtr<TSolverRcpp> tsolver_tienet_create(
 
 //' @title Create TIKNET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
 //' @param options List from tsolver_options()
@@ -363,14 +388,15 @@ XPtr<TSolverRcpp> tsolver_tienet_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tiknet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     SEXP tikhonov_K,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -380,8 +406,8 @@ XPtr<TSolverRcpp> tsolver_tiknet_create(
 
 //' @title Create TOMP_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -389,13 +415,14 @@ XPtr<TSolverRcpp> tsolver_tiknet_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_omp_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TOMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -405,8 +432,8 @@ XPtr<TSolverRcpp> tsolver_omp_create(
 
 //' @title Create TGP_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -414,13 +441,14 @@ XPtr<TSolverRcpp> tsolver_omp_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tgp_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -430,8 +458,8 @@ XPtr<TSolverRcpp> tsolver_tgp_create(
 
 //' @title Create TACGP_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -439,13 +467,14 @@ XPtr<TSolverRcpp> tsolver_tgp_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tacgp_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TACGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -455,8 +484,8 @@ XPtr<TSolverRcpp> tsolver_tacgp_create(
 
 //' @title Create TMP_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -464,13 +493,14 @@ XPtr<TSolverRcpp> tsolver_tacgp_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tmp_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -480,8 +510,8 @@ XPtr<TSolverRcpp> tsolver_tmp_create(
 
 //' @title Create TOOLS_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -489,13 +519,14 @@ XPtr<TSolverRcpp> tsolver_tmp_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tools_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TOOLS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -505,8 +536,8 @@ XPtr<TSolverRcpp> tsolver_tools_create(
 
 //' @title Create TNCGMP_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -514,13 +545,14 @@ XPtr<TSolverRcpp> tsolver_tools_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tncgmp_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TNCGMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -530,8 +562,8 @@ XPtr<TSolverRcpp> tsolver_tncgmp_create(
 
 //' @title Create TAFS_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -539,13 +571,14 @@ XPtr<TSolverRcpp> tsolver_tncgmp_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tafs_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TAFS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -555,8 +588,8 @@ XPtr<TSolverRcpp> tsolver_tafs_create(
 
 //' @title Create TCDLASSO_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -564,13 +597,14 @@ XPtr<TSolverRcpp> tsolver_tafs_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tcdlasso_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TCDLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -580,8 +614,8 @@ XPtr<TSolverRcpp> tsolver_tcdlasso_create(
 
 //' @title Create TCDENET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param options List from tsolver_options()
 //'
@@ -589,13 +623,14 @@ XPtr<TSolverRcpp> tsolver_tcdlasso_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tcdenet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TCDENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -605,8 +640,8 @@ XPtr<TSolverRcpp> tsolver_tcdenet_create(
 
 //' @title Create TCDIENET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param groups 1-based group ids, one per predictor
 //' @param options List from tsolver_options()
@@ -615,14 +650,15 @@ XPtr<TSolverRcpp> tsolver_tcdenet_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tcdienet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     IntegerVector groups,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TCDIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
@@ -632,8 +668,8 @@ XPtr<TSolverRcpp> tsolver_tcdienet_create(
 
 //' @title Create TCDTIKNET_Solver
 //'
-//' @param X Design matrix
-//' @param D Dummy matrix
+//' @param X Design matrix or mmap_matrix
+//' @param D Dummy matrix or mmap_matrix
 //' @param y Response vector
 //' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
 //' @param options List from tsolver_options()
@@ -642,554 +678,20 @@ XPtr<TSolverRcpp> tsolver_tcdienet_create(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<TSolverRcpp> tsolver_tcdtiknet_create(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericMatrix D,
+    SEXP X,
+    SEXP D,
     Rcpp::NumericVector y,
     SEXP tikhonov_K,
     Rcpp::List options
 ) {
     const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(map_of(X), map_of(D), map_of(y));
+    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
+                                           map_of(y));
     h->solver_ = new TCDTIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
-}
-
-// ==============================================================================
-// Instance creators (memory-mapped X)
-// ==============================================================================
-
-//' @title Create TLARS_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_lars_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TLARS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TLASSO_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tlasso_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TSTEPWISE_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tstepwise_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TSTEPWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TSTAGEWISE_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tstagewise_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TSTAGEWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TENET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tenet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TENETAug_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tenet_aug_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TIENETAug_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param groups 1-based group ids, one per predictor
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tienet_aug_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    IntegerVector groups,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TIENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TIENET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param groups 1-based group ids, one per predictor
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tienet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    IntegerVector groups,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TIKNET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tiknet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    SEXP tikhonov_K,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TOMP_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_omp_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TOMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TGP_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tgp_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TACGP_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tacgp_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TACGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TMP_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tmp_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TOOLS_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tools_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TOOLS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TNCGMP_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tncgmp_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TNCGMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-
-//' @title Create TAFS_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tafs_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TAFS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TCDLASSO_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdlasso_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TCDLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TCDENET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdenet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TCDENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TCDIENET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param groups 1-based group ids, one per predictor
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdienet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    IntegerVector groups,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TCDIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
-}
-
-//' @title Create TCDTIKNET_Solver (memory-mapped X)
-//'
-//' @param X_ptr XPtr to a MemoryMappedMatrix
-//' @param D Dummy matrix
-//' @param y Response vector
-//' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdtiknet_mmap_create(
-    XPtr<MemoryMappedMatrix<double>> X_ptr, // NOLINT(performance-unnecessary-value-param)
-    Rcpp::NumericMatrix D,
-    Rcpp::NumericVector y,
-    SEXP tikhonov_K,
-    Rcpp::List options
-) {
-    auto X_map = X_ptr->getMap();
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(X_map, map_of(D), map_of(y));
-    h->solver_ = new TCDTIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
-    // The protection slot pins the mmap holder, D and y until the finalizer
-    // has run (a writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X_ptr, D, y));
 }
 
 // ==============================================================================

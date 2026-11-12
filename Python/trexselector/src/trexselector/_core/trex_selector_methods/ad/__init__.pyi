@@ -1605,6 +1605,26 @@ class TRexBiobankScreeningSelector:
         """
         Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy. Phenotype i (0-based) runs with seed + i, so the phenotypes draw independent dummies and a single phenotype is reproduced by a single-phenotype run with that seed.
         """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
+        """
+        Single phenotype (1-D y). Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], Y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
+        """
+        Multiple phenotypes (2-D Y). Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
+        """
+    @typing.overload
+    def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], Y: numpy.typing.NDArray[numpy.float64], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
+        """
+        Multiple phenotypes (2-D Y) with a response matrix that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Y must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector only reads Y.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], Y: numpy.typing.NDArray[numpy.float64], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
+        """
+        Multiple phenotypes (2-D Y) with X and Y that are not writable. The selector only reads Y. Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
+        """
     def screenPhenotype(self) -> BiobankScreenTRexResult:
         """
         Run screening for the single loaded phenotype.
@@ -1686,7 +1706,7 @@ class TRexControlParameter:
     @property
     def scaling_mode(self) -> ScalingMode:
         """
-        Working-design convention: L2 (default) or ZSCORE center X and y and scale X; NONE leaves X and y as supplied (user-managed; dummies keep the unit-L2 standard). Non-finite entries and dead columns are rejected in every mode (ValueError).
+        Working-design convention: L2 (default) or ZSCORE center X and y and scale X; NONE leaves X and y as supplied (user-managed; dummies keep the unit-L2 standard). Non-finite entries and dead columns are rejected in every mode (ValueError). L2 and ZSCORE standardize X in place and restore it, so X must be writable. NONE writes nothing into X, so an array that is not writable serves (the view of a ReadOnly MemoryMappedMatrix).
         """
     @scaling_mode.setter
     def scaling_mode(self, arg0: ScalingMode) -> None:
@@ -1830,9 +1850,15 @@ class TRexDASelector(TRexSelector):
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, da_control: TRexDAControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct the DA selector. X and y are accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, da_control: TRexDAControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+        """
+        Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
     def getDAResult(self) -> DASelectionResult:
         """
@@ -1990,9 +2016,15 @@ class TRexGVSSelector(TRexSelector):
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+        """
+        Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
     def getGVSResult(self) -> GVSSelectionResult:
         """
@@ -2099,9 +2131,15 @@ class TRexSPCASelector:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], M: typing.SupportsInt | typing.SupportsIndex, tFDR: typing.SupportsFloat | typing.SupportsIndex, ctrl: TRexSPCAControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
         """
         Construct the SPCA selector. X is accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], M: typing.SupportsInt | typing.SupportsIndex, tFDR: typing.SupportsFloat | typing.SupportsIndex, ctrl: TRexSPCAControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
+        """
+        A design that is not writable is refused with ValueError: the selector centers the design in place and restores it on return, whatever the scaling mode.
         """
     def getResult(self) -> TRexSPCAResult:
         """
@@ -2124,9 +2162,15 @@ class TRexScreeningSelector(TRexSelector):
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], screen_control: ScreenTRexControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct the screening selector. X and y are accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], screen_control: ScreenTRexControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+        """
+        Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
     def getScreenResult(self) -> ScreenTRexSelectionResult:
         """
@@ -2142,9 +2186,15 @@ class TRexSelector:
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct the selector. X and y are accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+        """
+        Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
     def getDummyMultiplierL(self) -> int:
         """
@@ -2456,9 +2506,15 @@ class TRexTikhonovSelector(TRexSelector):
       Fast High-Dimensional Variable Selection with False Discovery Rate Control," Signal
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
+    @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map.
+        """
+    @typing.overload
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+        """
+        Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
     def getLambda2CVDiagnostics(self) -> Lambda2CVDiagnostics:
         """

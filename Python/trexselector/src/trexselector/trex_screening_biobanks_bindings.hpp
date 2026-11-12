@@ -18,12 +18,30 @@
 
 // trex includes
 #include <trex_selector_methods/ad/trex_screening/trex_biobank_screening.hpp>
+#include "trex_core_bindings.hpp"
 
 // =====================================================================================
 
 namespace py = pybind11;
 using namespace trex::trex_selector_methods::ad::trex_screening;
 using namespace trex::trex_selector_methods::ad::trex_biobank_screening;
+
+// =====================================================================================
+
+/**
+ * @brief Response matrix Y from an array that is taken as it is.
+ *
+ * The selector only reads Y, so an array that is not writable serves. An
+ * array that is not two-dimensional is left to the next overload.
+ *
+ * @param Y Response array, typically not writable.
+ *
+ * @return Reference to the array's buffer.
+ */
+inline Eigen::Ref<Eigen::MatrixXd> response_ref(const DesignArray& Y) {
+    if (Y.ndim() != 2) { throw py::reference_cast_error(); }
+    return reader_design_map(Y, false, "Y", "");
+}
 
 // =====================================================================================
 
@@ -97,6 +115,55 @@ public:
             *X_map_, *Y_map_2d_, bio_ctrl, seed, verbose
         );
     }
+
+    /**
+     * @brief Zero-copy constructors on a design that is not writable.
+     *
+     * Accepted under ScalingMode::NONE, where the inner selectors write
+     * nothing into the design, and refused under L2 and ZSCORE.
+     *
+     * @param X Design array, taken as it is (n × p).
+     */
+    PyBiobankScreenTRex(
+        const DesignArray& X,
+        Eigen::Ref<Eigen::VectorXd> y,
+        const BiobankScreenTRexControl& bio_ctrl,
+        int seed,
+        bool verbose
+    ) : PyBiobankScreenTRex(selector_design_ref(X, bio_ctrl.trex_screen_ctrl.trex_ctrl), y, bio_ctrl, seed,
+                            verbose) {}
+
+    PyBiobankScreenTRex(
+        const DesignArray& X,
+        Eigen::Ref<Eigen::MatrixXd> Y,
+        const BiobankScreenTRexControl& bio_ctrl,
+        int seed,
+        bool verbose
+    ) : PyBiobankScreenTRex(selector_design_ref(X, bio_ctrl.trex_screen_ctrl.trex_ctrl), Y, bio_ctrl, seed,
+                            verbose) {}
+
+    /**
+     * @brief Zero-copy constructors on a response matrix that is not
+     *        writable. The selector only reads Y.
+     *
+     * @param Y Response array, taken as it is (n × q).
+     */
+    PyBiobankScreenTRex(
+        Eigen::Ref<Eigen::MatrixXd> X,
+        const DesignArray& Y,
+        const BiobankScreenTRexControl& bio_ctrl,
+        int seed,
+        bool verbose
+    ) : PyBiobankScreenTRex(X, response_ref(Y), bio_ctrl, seed, verbose) {}
+
+    PyBiobankScreenTRex(
+        const DesignArray& X,
+        const DesignArray& Y,
+        const BiobankScreenTRexControl& bio_ctrl,
+        int seed,
+        bool verbose
+    ) : PyBiobankScreenTRex(selector_design_ref(X, bio_ctrl.trex_screen_ctrl.trex_ctrl), response_ref(Y),
+                            bio_ctrl, seed, verbose) {}
 
 
     /**
@@ -196,6 +263,36 @@ inline void bind_trex_screening_biobanks(py::module& m) {
              "Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy. Phenotype i (0-based) "
              "runs with seed + i, so the phenotypes draw independent dummies and a single phenotype is reproduced "
              "by a single-phenotype run with that seed.")
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, const BiobankScreenTRexControl&, int,
+            bool>(),
+             py::arg("X").noconvert(), py::arg("y"),
+             py::arg("bio_ctrl") = BiobankScreenTRexControl(),
+             py::arg("seed") = -1, py::arg("verbose") = false,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             ("Single phenotype (1-D y). " + kReaderSelectorDoc).c_str())
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::MatrixXd>, const BiobankScreenTRexControl&, int,
+            bool>(),
+             py::arg("X").noconvert(), py::arg("Y"),
+             py::arg("bio_ctrl") = BiobankScreenTRexControl(),
+             py::arg("seed") = -1, py::arg("verbose") = false,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             ("Multiple phenotypes (2-D Y). " + kReaderSelectorDoc).c_str())
+        .def(py::init<Eigen::Ref<Eigen::MatrixXd>, const DesignArray&, const BiobankScreenTRexControl&, int,
+            bool>(),
+             py::arg("X"), py::arg("Y").noconvert(),
+             py::arg("bio_ctrl") = BiobankScreenTRexControl(),
+             py::arg("seed") = -1, py::arg("verbose") = false,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             "Multiple phenotypes (2-D Y) with a response matrix that is not writable, for example the "
+             "to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. Y must be a "
+             "Fortran-contiguous float64 array and is accessed zero-copy. The selector only reads Y.")
+        .def(py::init<const DesignArray&, const DesignArray&, const BiobankScreenTRexControl&, int, bool>(),
+             py::arg("X").noconvert(), py::arg("Y").noconvert(),
+             py::arg("bio_ctrl") = BiobankScreenTRexControl(),
+             py::arg("seed") = -1, py::arg("verbose") = false,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             ("Multiple phenotypes (2-D Y) with X and Y that are not writable. The selector only reads Y. " +
+              kReaderSelectorDoc).c_str())
         .def("screenPhenotype", &PyBiobankScreenTRex::screenPhenotype, py::call_guard<py::gil_scoped_release>(), "Run "
             "screening for the single loaded phenotype.")
         .def("screenPhenotypes", &PyBiobankScreenTRex::screenPhenotypes, py::call_guard<py::gil_scoped_release>(),

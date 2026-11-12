@@ -13,7 +13,8 @@ rather than this class directly.
 
 The solver works on the caller's memory without copying: the R matrices
 \code{X} and \code{D} (double storage; an integer matrix is coerced first,
-which is a copy) or the memory-mapped file behind an \code{mmap_matrix}.
+which is a copy) or the memory-mapped file behind an \code{mmap_matrix},
+which either of the two may be.
 With \code{normalize = TRUE} or \code{intercept = TRUE} in
 \code{\link{tsolver_options}} the solver is a \emph{writer}: it centers /
 scales the columns of \code{X} and \code{D} in place (the change is
@@ -24,7 +25,9 @@ fitted path stays available); constructing a second writer (T-solver or
 T-Rex selector) on a claimed matrix is an error, because a second
 in-place transformation moves the data by rounding. With both
 \code{FALSE} the solver is a \emph{reader}: it runs as constructed and
-never writes. A pipeline with several solvers on one matrix pre-scales
+never writes, so it accepts an \code{mmap_matrix} open in
+\code{"readonly"} mode for \code{X} and for \code{D}, which a writer
+refuses. A pipeline with several solvers on one matrix pre-scales
 once in front (\link{MLLpNormScaler}) and constructs readers. \code{$load()}
 expects \code{X} and \code{D} in the state they were saved in: load into
 a reader on pre-scaled data, or into a writer constructed with the same
@@ -40,9 +43,11 @@ never written (the solver centers an internal copy).
 \section{Public fields}{
   \if{html}{\out{<div class="r6-fields">}}
   \describe{
-    \item{\code{X}}{Numeric matrix of predictors, or an \code{mmap_matrix}.}
+    \item{\code{X}}{Numeric matrix of predictors in memory, or an \code{mmap_matrix}
+(the handle of a memory-mapped file).}
 
-    \item{\code{D}}{Numeric matrix of dummies.}
+    \item{\code{D}}{Numeric matrix of dummies in memory, or an \code{mmap_matrix}
+(the handle of a memory-mapped file).}
 
     \item{\code{y}}{Numeric response vector.}
 
@@ -95,7 +100,8 @@ never written (the solver centers an internal copy).
 \subsection{\code{TSolver_Base$new()}}{
   Validate and store data fields. Called by every subclass \code{initialize}.
 Not intended for direct instantiation. The stored \code{X} and \code{D}
-are the matrices the C++ solver maps (no copy for double storage).
+are the matrices or memory-mapped files the C++ solver binds (no copy
+for double storage).
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TSolver_Base$new(X, D, y)}
@@ -104,8 +110,10 @@ are the matrices the C++ solver maps (no copy for double storage).
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Numeric matrix of predictors, or \code{mmap_matrix}.}
-      \item{\code{D}}{Numeric matrix of dummies.}
+      \item{\code{X}}{Numeric matrix of predictors in memory, or \code{mmap_matrix}
+(the handle of a memory-mapped file).}
+      \item{\code{D}}{Numeric matrix of dummies in memory, or \code{mmap_matrix}
+(the handle of a memory-mapped file).}
       \item{\code{y}}{Numeric response vector.}
     }
     \if{html}{\out{</div>}}

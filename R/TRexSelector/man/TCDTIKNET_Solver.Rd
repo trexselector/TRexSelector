@@ -135,8 +135,10 @@ Other T-solvers:
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Numeric matrix of predictors, or \code{mmap_matrix}.}
-      \item{\code{D}}{Numeric matrix of dummies (a multiple of \code{ncol(X)}
+      \item{\code{X}}{Numeric matrix of predictors in memory, or \code{mmap_matrix}
+(the handle of a memory-mapped file).}
+      \item{\code{D}}{Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
+handle of a memory-mapped file (a multiple of \code{ncol(X)}
 columns when \code{fold_dummies = TRUE}).}
       \item{\code{y}}{Numeric response vector.}
       \item{\code{tikhonov_K}}{p x p PSD Tikhonov matrix: a

@@ -263,7 +263,10 @@ struct TRexControlParameter {
      *  unit-L2-commensurate; a design pre-normalized with
      *  data_normalizer::centerAndL2NormalizeX / centerY selects under NONE
      *  exactly what the raw design selects under L2. Non-finite entries and
-     *  dead columns are rejected in every mode (std::invalid_argument). */
+     *  dead columns are rejected in every mode (std::invalid_argument). L2
+     *  and ZSCORE standardize X in place and restore it, so a memory-mapped
+     *  X needs AccessMode::ReadWrite. NONE writes nothing into X, so
+     *  AccessMode::ReadOnly serves (data_normalizer::writesDesign()). */
     dn::ScalingMode scaling_mode = dn::ScalingMode::L2;
 
 };

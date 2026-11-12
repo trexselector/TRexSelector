@@ -125,8 +125,10 @@ Other T-solvers:
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Numeric matrix of predictors, or \code{mmap_matrix}.}
-      \item{\code{D}}{Numeric matrix of dummies.}
+      \item{\code{X}}{Numeric matrix of predictors in memory, or \code{mmap_matrix}
+(the handle of a memory-mapped file).}
+      \item{\code{D}}{Numeric matrix of dummies in memory, or \code{mmap_matrix}
+(the handle of a memory-mapped file).}
       \item{\code{y}}{Numeric response vector.}
       \item{\code{groups}}{Integer vector of 1-based group ids, one per predictor
 column of \code{X} (contiguous ids starting at 1).}

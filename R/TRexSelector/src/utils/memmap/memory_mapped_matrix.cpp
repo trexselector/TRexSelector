@@ -170,9 +170,28 @@ void MemoryMappedMatrix<Scalar>::applyAccessHints() {
 template<typename Scalar>
 typename MemoryMappedMatrix<Scalar>::MapType MemoryMappedMatrix<Scalar>::getMap() {
     if (mode_ == AccessMode::ReadOnly) {
-        throw std::runtime_error("Cannot return mutable Eigen::Map in ReadOnly mode");
+        throw std::runtime_error(
+            "Cannot return mutable Eigen::Map in ReadOnly mode. A selector that "
+            "standardizes the design in place, a T-solver with normalize or "
+            "intercept on and every other writer need the file opened in "
+            "ReadWrite mode. Code that writes nothing into the matrix (a "
+            "selector under scaling mode NONE, a T-solver with normalize and "
+            "intercept off) can read a file opened in ReadOnly mode.");
     }
     return MapType(reinterpret_cast<Scalar*>(mapped_region_->get_address()), rows_, cols_);
+}
+
+template<typename Scalar>
+typename MemoryMappedMatrix<Scalar>::MapType MemoryMappedMatrix<Scalar>::getReaderMap() {
+    // The address of a region opened ReadOnly is const: the caller reads only.
+    return MapType(
+        const_cast<Scalar*>(reinterpret_cast<const Scalar*>(mapped_region_->get_address())),
+        rows_, cols_);
+}
+
+template<typename Scalar>
+typename MemoryMappedMatrix<Scalar>::MapType MemoryMappedMatrix<Scalar>::getMapFor(bool writes) {
+    return writes ? getMap() : getReaderMap();
 }
 
 template<typename Scalar>

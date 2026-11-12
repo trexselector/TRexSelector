@@ -15,6 +15,7 @@
 #include <Eigen/Dense>
 
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
+#include <trex_selector_methods/ad/trex_utils/trex_data_normalizer.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
 #include <ml_methods/scaler_methods/z_score_scaler.hpp>
 #include <ml_methods/model_selection/enet_cv_ccd.hpp>
@@ -27,6 +28,7 @@ using trex::ml_methods::scaler_methods::ZScoreScaler;
 using trex::ml_methods::model_selection::enet_gaussian;
 using trex::utils::memmap::AccessMode;
 using MappedMatrix = trex::utils::memmap::MemoryMappedMatrix<double>;
+namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace fs = std::filesystem;
 //! [includes]
 
@@ -110,6 +112,36 @@ void run(DocSections& doc, const fs::path& workdir) {
     std::cout << (sel_mem.getSelectedIndices() == sel_map.getSelectedIndices()) << '\n';
     std::cout << (view - X).cwiseAbs().maxCoeff() << '\n';   // the original values are back
     //! [select]
+
+    doc.begin("readonly");
+    //! [readonly]
+    // The design the selector works on: centered columns of unit L2 norm and a centered y
+    dn::NormalizationParams params;
+    Eigen::MatrixXd X_pre = X;
+    Eigen::VectorXd y_pre = y;
+    dn::centerY(y_pre, params);
+    dn::centerAndL2NormalizeX(X_pre, params);
+    const std::string path_pre = (workdir / "design_pre.bin").string();
+    {
+        MappedMatrix writer(path_pre, n, p, AccessMode::ReadWrite);
+        writer.getMap() = X_pre;
+    }
+
+    MappedMatrix pre_ro(path_pre, n, p, AccessMode::ReadOnly);
+    Eigen::Map<Eigen::VectorXd> y_pre_map(y_pre.data(), n);
+    TRexControlParameter none = ctrl;
+    none.scaling_mode = dn::ScalingMode::NONE;
+
+    auto reader_view = pre_ro.getMapFor(dn::writesDesign(none.scaling_mode));   // reads only
+    TRexSelector sel_ro(reader_view, y_pre_map, 0.1, none, 3, false);
+    sel_ro.select();
+    std::cout << (sel_ro.getSelectedIndices() == sel_mem.getSelectedIndices()) << '\n';
+    try {
+        pre_ro.getMapFor(dn::writesDesign(ctrl.scaling_mode));   // L2 writes into the design
+    } catch (const std::runtime_error& e) {
+        std::cout << wrapped(std::string("error: ") + e.what()) << '\n';
+    }
+    //! [readonly]
 
     doc.begin("solver");
     //! [solver]

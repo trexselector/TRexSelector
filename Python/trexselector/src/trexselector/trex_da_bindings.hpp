@@ -71,6 +71,25 @@ public:
     }
 
     /**
+     * @brief Zero-copy constructor on a design that is not writable.
+     *
+     * Accepted under ScalingMode::NONE, where the selector writes nothing
+     * into the design, and refused under L2 and ZSCORE.
+     *
+     * @param X Design array, taken as it is (n × p).
+     */
+    PyTRexDASelector(
+        const DesignArray& X,
+        Eigen::Ref<Eigen::VectorXd> y,
+        double tFDR,
+        const TRexDAControlParameter& da_control,
+        const TRexControlParameter& trex_control,
+        int seed,
+        bool verbose
+    ) : PyTRexDASelector(selector_design_ref(X, trex_control), y, tFDR, da_control, trex_control, seed,
+                         verbose) {}
+
+    /**
      * @brief Get the complete DA selection result.
      */
     const TRexDASelector::DASelectionResult& getDAResult() const {
@@ -162,6 +181,14 @@ inline void bind_trex_da(py::module& m) {
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the DA selector. X and y are accessed zero-copy via Eigen::Map.")
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexDAControlParameter&,
+            const TRexControlParameter&, int, bool>(),
+             py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
+             py::arg("da_control") = TRexDAControlParameter(),
+             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("seed") = -1, py::arg("verbose") = true,
+             py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
+             kReaderSelectorDoc.c_str())
         .def("getDAResult", &PyTRexDASelector::getDAResult, "Fetch the detailed DA selection result.");
 }
 // =====================================================================================

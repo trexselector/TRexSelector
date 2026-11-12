@@ -48,6 +48,19 @@ inline void bind_utils_module(py::module& m) {
         "and written in place on disk, and to_numpy() gives a zero-copy view for the out-of-core\n"
         "paths.\n"
         "\n"
+        "AccessMode.ReadWrite (the default) serves every use. The view of a file opened with\n"
+        "AccessMode.ReadOnly is not writable, so it is accepted where nothing is written into the\n"
+        "matrix (a selector under ScalingMode.NONE, a T-solver with normalize=False and\n"
+        "intercept=False, the fits that only read) and refused with ValueError or TypeError\n"
+        "everywhere else.\n"
+        "\n"
+        "A file serves one writer at a time. Do not run several selectors or T-solvers that\n"
+        "standardize the file in place on one file at the same time, neither through a second\n"
+        "handle in one process nor in several processes. Each would change the data the other\n"
+        "works on, and the results come out wrong. To use one design in several processes at\n"
+        "once, pre-normalize it with normalize_design(), open the file with AccessMode.ReadOnly\n"
+        "and run every selector under ScalingMode.NONE.\n"
+        "\n"
         "References\n"
         "----------\n"
         "F. Scheidt, J. Machkour, and M. Muma, \"Solving FDR-Controlled Sparse Regression Problems\n"
@@ -99,15 +112,21 @@ inline void bind_utils_module(py::module& m) {
 
         // Expose zero-copy numpy array mapped to the memory
         .def("to_numpy", [](MemoryMappedMatrix<double>& mmap_mat) -> py::array_t<double> {
-            auto map = mmap_mat.getMap();
+            const bool read_only = mmap_mat.mode() == AccessMode::ReadOnly;
+            auto map = mmap_mat.getMapFor(!read_only);
             // Create a NumPy array sharing the buffer, with Fortran (column-major) strides
-            return py::array_t<double>(
+            py::array_t<double> view(
                 {map.rows(), map.cols()},                        // shape
                 {sizeof(double), map.rows() * sizeof(double)}, // strides (column-major)
                 map.data(),                                                // pointer to data
                 py::cast(&mmap_mat)                                // base object to tied lifecycle
             );
-        }, "Returns a zero-copy NumPy array view of the memory-mapped matrix.")
+            // The view of a file opened ReadOnly is not writable: NumPy refuses
+            // to write through it and the bindings that write refuse the view.
+            if (read_only) { view.attr("setflags")(py::arg("write") = false); }
+            return view;
+        }, "Returns a zero-copy NumPy array view of the memory-mapped matrix. The view of a file "
+           "opened with AccessMode.ReadOnly is not writable.")
 
         // Element access (Eigen-like interface): mmap[row, col]
         .def("__getitem__",

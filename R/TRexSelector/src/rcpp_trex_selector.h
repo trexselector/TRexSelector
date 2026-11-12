@@ -19,11 +19,36 @@
 
 // TRex includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
+#include <utils/memmap/memory_mapped_matrix.hpp>
 
 // ==============================================================================
 
 // Namespace usage for convenience
 using namespace trex::trex_selector_methods::ad::trex_core;
+
+// ==============================================================================
+
+/**
+ * @brief Eigen::Map of a memory-mapped design for a selector.
+ *
+ * Under ScalingMode::NONE a selector writes nothing into the design, so a
+ * file opened ReadOnly serves. L2 and ZSCORE standardize the design in place
+ * and restore it, which needs a file opened ReadWrite.
+ *
+ * @param X       Memory-mapped design.
+ * @param control Control parameters that hold the scaling mode.
+ *
+ * @return Eigen::Map of the memory-mapped design.
+ *
+ * @throws std::runtime_error for a file opened ReadOnly under L2 or ZSCORE.
+ */
+inline Eigen::Map<Eigen::MatrixXd> mapped_design_for(
+    trex::utils::memmap::MemoryMappedMatrix<double>& X,
+    const TRexControlParameter& control
+) {
+    namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
+    return X.getMapFor(dn::writesDesign(control.scaling_mode));
+}
 
 // ==============================================================================
 

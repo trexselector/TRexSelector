@@ -78,6 +78,13 @@ class TRexSelector:
     Python wrapper for the C++ TRexSelector.
 
     This class performs FDR-controlled variable selection using the T-Rex selector.
+
+    X is used without a copy when it is a Fortran-contiguous float64 array, for
+    example the ``to_numpy()`` view of a ``MemoryMappedMatrix``. The selector
+    standardizes X in place and restores it, so X must be writable. Under
+    ``ScalingMode.NONE`` it writes nothing into X and accepts an array that is not
+    writable, for example the view of a file opened with ``AccessMode.ReadOnly``.
+    The selectors derived from this class follow the same rule.
     """
 
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
@@ -482,6 +489,12 @@ class TRexBiobankScreeningSelector:
 
     Dispatches to screenPhenotype() for a single 1-D response vector
     or screenPhenotypes() for a m-D response matrix.
+
+    The inner selectors standardize X in place and restore it, so X must be
+    writable. Under ``ScalingMode.NONE`` they write nothing into X and accept an
+    array that is not writable, for example the ``to_numpy()`` view of a
+    ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``. A response
+    matrix Y is only read, so it may be such an array under every scaling mode.
     """
 
     def __init__(self, X: np.ndarray, Y,
@@ -536,7 +549,10 @@ class TRexSPCASelector:
         ----------
         X : ndarray, shape (n, p)
             Design matrix. Stored by reference; centered in-place during
-            ``select()`` and restored on return.
+            ``select()`` and restored on return. The centering happens under
+            every scaling mode, so an array that is not writable (the view of
+            a ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``)
+            raises ``ValueError`` in ``select()``.
         spca_ctrl : TRexSPCAControlParameter, optional
             Algorithmic control. Defaults to ``TRexSPCAControlParameter()``.
             ``gvs_ctrl.gvs_type`` must stay ``GVSType.EN`` (the default):
