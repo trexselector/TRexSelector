@@ -35,6 +35,28 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
   (1,562). A consumer of the installed static libraries saves and reloads the augmented solver and a
   solver behind a base pointer with both archives.
 
+#### The Rcpp bindings of the R package compile as one unit
+
+- `bundle_for_cran.sh` writes src/rcpp_bindings_unit.cpp. The generated file includes the twelve binding
+  sources at the top of src/, the eleven `rcpp_*.cpp` files and RcppExports.cpp last, and its object
+  takes their place in OBJECTS, so the package compiles 37 objects where it compiled 48. The binding
+  sources read the same Rcpp, Eigen and selector headers, which the compiler now reads once.
+  `--check` compares the unit with the binding sources that exist, so a new binding file without a rerun
+  of the script fails the vendor check. `Rcpp::compileAttributes()` writes the same RcppExports files
+  with the unit in place. The comment on the debug symbols in the generated Makevars no longer counts
+  the translation units. The IntelliSense target of cpp/CMakeLists.txt leaves the unit out.
+- Measured on macOS with Apple clang 17, one file at a time as CRAN compiles, the install takes 5:01
+  before, 3:32 with the registration in the sources and 2:55 with the unit on top. Under clang 14 the
+  unit adds little to the 351 CPU seconds (344 with both). The unit is the largest single compile there
+  with 58 seconds and 1.9 GiB. Compiled for Windows with a MinGW-w64 cross compiler it has 3,158
+  sections of the 32,767 a COFF object can hold, so `-Wa,-mbig-obj` is not needed. `R CMD check --as-cran`
+  of the tarball ends with Status OK on macOS (R 4.6), with an install of 174 seconds. Under R-devel
+  with GCC 16.2 in the container it ends with the two NOTEs of the container itself, and the install
+  takes 493 seconds where the 2.0.1 tarball took 13 minutes.
+- A change in one binding source recompiles the whole unit. An incremental `R CMD INSTALL` inside the
+  tree does not notice such a change, because make knows the unit and not the files it includes.
+  tools/install.sh removes the objects first and stays the way to reinstall.
+
 ### 2026-11-10
 
 #### The R package carries the setup of its pkgdown site
