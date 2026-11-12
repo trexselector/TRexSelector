@@ -11,13 +11,9 @@ Description: Variable selection for regression and classification in high-dimens
  replaces the pure-R implementation of the 1.x releases.
 Authors@R:
     c(
-      # Package and IP owner
       person(given = "Jasin", family = "Machkour", email = "jasin.machkour@tu-darmstadt.de", role = c("aut", "cre")),
-      # main contributors
       person(given = "Fabian", family = "Scheidt", email = "fabian.scheidt@tu-darmstadt.de", role = "aut"),
-      # previous contributors
       person(given = "Simon", family = "Tien", role = "ctb"),
-      # IP owners
       person(given = c("Daniel", "P."), family = "Palomar", email = "daniel.p.palomar@gmail.com", role = "aut"),
       person(given = "Michael", family = "Muma", email = "michael.muma@tu-darmstadt.de", role = "aut")
     )
@@ -46,4 +42,4 @@ Suggests:
     testthat (>= 3.0.0)
 VignetteBuilder: knitr
 SystemRequirements: C++20
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

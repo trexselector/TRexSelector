@@ -10,6 +10,17 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The help page of the R package lists the authors of DESCRIPTION again
+
+- man/TRexSelector-package.Rd was last generated on 2026-11-05 and kept an author block that
+  DESCRIPTION had left since. It still showed an e-mail address of the former contributor, which
+  DESCRIPTION no longer carries. roxygen could not repair the page, because it reads `Authors@R` as one
+  line. The first `#` comment then hides the rest of the field, the evaluation fails and the page comes
+  out without an author block. The four comment lines leave `Authors@R`, and AUTHORS.md keeps the
+  grouping of the members. The regenerated page matches DESCRIPTION, and `Config/roxygen2/version`
+  records 8.1.1, the version that wrote it. The other Rd pages and NAMESPACE come out byte-identical,
+  and the tracked tree holds the address nowhere else.
+
 #### The AR1 window of the dependency-aware selector follows the magnitude of the coefficient
 
 - `TRexDASelector` builds the window of its AR1 method with the half-width

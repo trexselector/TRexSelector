@@ -76,7 +76,7 @@ Authors:
 
 Other contributors:
 \itemize{
-  \item Simon Tien \email{simon.tien@stud.tu-darmstadt.de} [contributor]
+  \item Simon Tien [contributor]
 }
 
 }
