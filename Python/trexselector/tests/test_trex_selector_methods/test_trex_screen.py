@@ -96,6 +96,7 @@ def test_base_properties(signal_data, fast_control):
     trexselector.ScreenTRexMethod.TREX_DA_AR1,
     trexselector.ScreenTRexMethod.TREX_DA_EQUI,
     trexselector.ScreenTRexMethod.TREX_DA_BLOCK_EQUI,
+    trexselector.ScreenTRexMethod.TREX_DA_NN,
 ])
 def test_screen_method_variants(signal_data, method):
     X, y, n, p = signal_data
@@ -118,6 +119,7 @@ def test_screen_method_variants(signal_data, method):
     (trexselector.ScreenTRexMethod.TREX_DA_EQUI, -0.5),
     (trexselector.ScreenTRexMethod.TREX_DA_EQUI, float("nan")),
     (trexselector.ScreenTRexMethod.TREX_DA_AR1, 1.0),
+    (trexselector.ScreenTRexMethod.TREX_DA_NN, 1.0),
 ])
 def test_screen_rejects_invalid_rho_threshold(signal_data, method, rho_thr):
     """rho_thr_DA is checked at construction: [0, 1], and [0, 1) for TREX_DA_AR1."""
@@ -168,6 +170,7 @@ def test_screen_ar1_window_edges(signal_data):
     trexselector.ScreenTRexMethod.TREX_DA_AR1,
     trexselector.ScreenTRexMethod.TREX_DA_EQUI,
     trexselector.ScreenTRexMethod.TREX_DA_BLOCK_EQUI,
+    trexselector.ScreenTRexMethod.TREX_DA_NN,
 ])
 def test_screen_unusable_coefficient_is_estimated(signal_data, method, capfd):
     """A cor_coef outside [-1, 1] is replaced by the estimate, with a warning on stderr."""
@@ -195,6 +198,40 @@ def test_screen_unusable_coefficient_is_estimated(signal_data, method, capfd):
     coefficient, warning = run(-0.5)
     assert coefficient == pytest.approx(-0.5)
     assert "cor_coef" not in warning
+
+
+def test_screen_nn_groups_and_empty_group(signal_data):
+    """TREX_DA_NN: a zero threshold keeps every neighbor (equals TREX_DA_AR1), and a variable
+    without a correlated neighbor keeps its relative occurrence (equals plain screening)."""
+    X, y, n, p = signal_data
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 10
+
+    def run(X_run, y_run, method, rho_thr):
+        screen_ctrl = trexselector.ScreenTRexControlParameter()
+        screen_ctrl.trex_method = method
+        screen_ctrl.cor_coef = 0.5
+        screen_ctrl.rho_thr_DA = rho_thr
+        sel = trexselector.TRexScreeningSelector(X_run.copy(order="F"), y_run.copy(), screen_control=screen_ctrl,
+                                                 trex_control=ctrl, seed=7, verbose=False)
+        return sel.select()
+
+    method = trexselector.ScreenTRexMethod
+    nn_all, ar1_all = run(X, y, method.TREX_DA_NN, 0.0), run(X, y, method.TREX_DA_AR1, 0.0)
+    assert np.array_equal(nn_all.selected_var, ar1_all.selected_var)
+    np.testing.assert_allclose(nn_all.phi_mat, ar1_all.phi_mat)
+
+    # Centered orthonormal columns have no correlated neighbor
+    rng = np.random.default_rng(5)
+    centered = rng.standard_normal((n, p))
+    centered -= centered.mean(axis=0)
+    X_orth = np.linalg.qr(centered)[0]
+    y_orth = X_orth[:, 0] * 5 - X_orth[:, 7] * 4 + X_orth[:, 15] * 3 + 0.01 * rng.standard_normal(n)
+    nn_none, plain = run(X_orth, y_orth, method.TREX_DA_NN, 0.5), run(X_orth, y_orth, method.TREX, 0.5)
+    assert np.array_equal(nn_none.selected_var, plain.selected_var)
+    np.testing.assert_allclose(nn_none.phi_mat, plain.phi_mat)
+    # A penalty of one half for an empty group would select nothing
+    assert np.asarray(nn_none.selected_var).sum() > 0
 
 
 def test_screen_auto_estimate_cor(signal_data):

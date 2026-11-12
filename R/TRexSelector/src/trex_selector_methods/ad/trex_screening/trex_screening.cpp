@@ -124,11 +124,14 @@ void ScreenTRexSelector::validateScreenDAParameters() const {
             std::to_string(rho_thr));
     }
 
-    // TREX_DA_AR1: a threshold of 1 leaves no lag for the window.
-    if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_AR1 && rho_thr >= 1.0) {
+    // TREX_DA_AR1 and TREX_DA_NN: a threshold of 1 leaves no lag for the window.
+    const bool uses_window =
+        trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_AR1 ||
+        trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN;
+    if (uses_window && rho_thr >= 1.0) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1. Got: " +
-            std::to_string(rho_thr));
+            "ScreenTRexSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1 and "
+            "TREX_DA_NN. Got: " + std::to_string(rho_thr));
     }
 
     // TREX_DA_BLOCK_EQUI: the block sizes divide p by n_blocks.
@@ -165,6 +168,8 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
             variant = "DA-EQUI";
         } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_BLOCK_EQUI) {
             variant = "DA-BLOCK-EQUI";
+        } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN) {
+            variant = "DA-NN";
         }
         printProgress("Starting Screen-TRex [" + mode + ", " + variant
                       + "] (T=1, L=p=" + std::to_string(p_) + ")...");
@@ -559,6 +564,7 @@ void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
     if (estimate) {
         switch (trex_screen_ctrl_.trex_method) {
             case ScreenTRexMethod::TREX_DA_AR1:
+            case ScreenTRexMethod::TREX_DA_NN:
                 rho = estimateAR1Correlation();
                 break;
             case ScreenTRexMethod::TREX_DA_EQUI:
@@ -587,6 +593,8 @@ void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
                 return computeDA_EQUI_Delta(Phi, rho);
             case ScreenTRexMethod::TREX_DA_BLOCK_EQUI:
                 return computeDA_BLOCK_EQUI_Delta(Phi, rho);
+            case ScreenTRexMethod::TREX_DA_NN:
+                return computeDA_NN_Delta(Phi, rho);
             default:
                 throw std::runtime_error(
                     "ScreenTRexSelector: unreachable DA variant.");
@@ -715,6 +723,57 @@ Eigen::VectorXd ScreenTRexSelector::computeDA_AR1_Delta(
 
         DA_delta(static_cast<Eigen::Index>(j)) =
             2.0 - (min_diff > 1.5 ? 0.0 : min_diff);
+    }
+
+    return DA_delta;
+}
+
+
+Eigen::VectorXd ScreenTRexSelector::computeDA_NN_Delta(
+    const Eigen::VectorXd& Phi,
+    double rho
+) const {
+    /*
+        Group of j: the variables k in the AR(1) window [j−κ, j+κ], k≠j,
+        whose sample correlation |corr(x_j, x_k)| reaches ρ_thr_DA.
+            DA_delta[j] = 2 − min_{k in group} |Phi[j] − Phi[k]|
+        An empty group gives DA_delta[j] = 1: the variable keeps its Phi.
+        corr_jk = u_j · u_k with the unit-norm columns u_j = x_j / ‖x_j‖
+        of the centered X, as in estimateEquiCorrelation().
+    */
+    const auto p = static_cast<Eigen::Index>(p_);
+    const double rho_thr = trex_screen_ctrl_.rho_thr_DA;
+    const auto kap = static_cast<Eigen::Index>(dw::ar1HalfWidth(rho, rho_thr, p_));
+
+    if (verbose_) {
+        printProgress("DA-NN: window size κ = " + std::to_string(kap));
+    }
+
+    Eigen::VectorXd inv_norms(p);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        const double norm_j = X_->col(j).norm();
+        inv_norms(j) = norm_j > eps_ ? 1.0 / norm_j : 0.0;
+    }
+
+    Eigen::VectorXd DA_delta = Eigen::VectorXd::Ones(p);
+
+    for (Eigen::Index j = 0; j < p; ++j) {
+        double min_diff = 2.0;
+        bool has_neighbor = false;
+
+        const Eigen::Index start = std::max<Eigen::Index>(0, j - kap);
+        const Eigen::Index end   = std::min<Eigen::Index>(p - 1, j + kap);
+
+        for (Eigen::Index k = start; k <= end; ++k) {
+            if (k == j) { continue; }
+            const double corr = X_->col(j).dot(X_->col(k)) * inv_norms(j) * inv_norms(k);
+            if (std::abs(corr) >= rho_thr) {
+                has_neighbor = true;
+                min_diff = std::min(min_diff, std::abs(Phi(j) - Phi(k)));
+            }
+        }
+
+        if (has_neighbor) { DA_delta(j) = 2.0 - min_diff; }
     }
 
     return DA_delta;

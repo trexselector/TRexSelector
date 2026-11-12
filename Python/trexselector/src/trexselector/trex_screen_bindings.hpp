@@ -89,6 +89,9 @@ inline void bind_trex_screen(py::module& m) {
         .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "T-Rex screening with equicorrelated data augmentation.")
         .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "T-Rex screening with block-equicorrelated "
             "data augmentation.")
+        .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "T-Rex screening with the nearest neighbors inside the "
+            "AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, "
+            "and a variable without such a neighbor keeps its relative occurrence.")
         .export_values();
 
     py::class_<ScreenTRexControlParameter>(m, "ScreenTRexControlParameter", "Control parameters for "
@@ -103,7 +106,9 @@ inline void bind_trex_screen(py::module& m) {
             "ScreenTRexMethod).")
         .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold of the "
             "dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags "
-            "whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_EQUI and "
+            "whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_NN: the same "
+            "window, of which the variables stay whose sample correlation with the variable reaches the threshold, "
+            "range [0, 1). TREX_DA_EQUI and "
             "TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range "
             "[0, 1].")
         .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Correlation coefficient of the "

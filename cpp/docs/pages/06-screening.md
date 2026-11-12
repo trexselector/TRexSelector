@@ -54,10 +54,16 @@ times and reports the upper confidence bound of the estimated FDR instead of the
 
 ### Dependent variables
 
-`trex_method` switches the screening to dependency-aware dummies: `ScreenTRexMethod::TREX_DA_AR1`,
-`TREX_DA_EQUI` and `TREX_DA_BLOCK_EQUI` draw autoregressive, equi-correlated and block
-equi-correlated dummies. `estimated_correlation` reports the correlation the dummies were drawn with.
-The design of this page has independent columns, so the estimate is close to zero.
+`trex_method` makes the screening dependency-aware, with the ScreenTRexMethod enum. The dummies stay
+the same independent dummies, and the variants lower the relative occurrence of a variable that
+resembles its correlated neighbours. `TREX_DA_AR1` compares a variable with the neighbours inside a
+window, which holds the lags whose correlation `|cor_coef|^lag` reaches `rho_thr_DA`. `TREX_DA_NN`
+keeps the neighbours of that window whose sample correlation reaches `rho_thr_DA`, and a variable
+without such a neighbour keeps its relative occurrence. `TREX_DA_EQUI` compares a variable with all
+other variables and `TREX_DA_BLOCK_EQUI` with the variables of its block out of `n_blocks`, and both
+are skipped when `|cor_coef|` does not exceed `rho_thr_DA`. Setting `cor_coef` to `-2`, the default,
+estimates the coefficient from the data, and `estimated_correlation` reports the coefficient that was
+used. The design of this page has independent columns, so the estimate is close to zero.
 
 \snippet{trimleft} screening.cpp da
 \output{screening.da.txt}

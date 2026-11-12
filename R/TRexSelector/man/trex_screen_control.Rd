@@ -23,7 +23,9 @@ trex_screen_control(
 \item{ci_grid_step}{Grid step size for confidence-interval calculations (default: 0.001).}
 
 \item{trex_method}{Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
-"TREX_DA_BLOCK_EQUI" (default: "TREX").}
+"TREX_DA_BLOCK_EQUI", "TREX_DA_NN" (default: "TREX"). "TREX_DA_NN" compares a variable
+with the neighbors inside the AR(1) window whose sample correlation reaches
+\code{rho_thr_DA}, and a variable without such a neighbor keeps its relative occurrence.}
 
 \item{cor_coef}{Correlation coefficient of the dependency-aware variants. -2.0 triggers
 auto-estimation (default: -2.0). The variants use the magnitude of a supplied coefficient.
@@ -31,7 +33,9 @@ Any other value outside \code{[-1, 1]} gives a warning and is replaced by the es
 
 \item{rho_thr_DA}{Correlation threshold of the dependency-aware variants (default: 0.02).
 "TREX_DA_AR1": the window around a variable holds the lags whose correlation
-\code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. "TREX_DA_EQUI" and
+\code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. "TREX_DA_NN": the
+same window, of which the variables stay whose sample correlation with the variable
+reaches the threshold, range \code{[0, 1)}. "TREX_DA_EQUI" and
 "TREX_DA_BLOCK_EQUI": the correction is skipped when \code{abs(cor_coef)} does not exceed
 the threshold, range \code{[0, 1]}.}
 

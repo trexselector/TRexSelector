@@ -213,5 +213,5 @@ void decenterY(Eigen::VectorXd& y, const NormalizationParams& params);
 
 // =================================================================================
 } /* End of namespace trex::trex_selector_methods::ad::utils::data_normalizer */
-
+// ===================================================================================
 #endif /* End of TREX_TREX_SELECTOR_METHODS_UTILS_DATA_NORMALIZER_HPP */

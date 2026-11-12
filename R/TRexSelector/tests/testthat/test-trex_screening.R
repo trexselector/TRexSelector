@@ -96,6 +96,7 @@ test_that("TRexScreeningSelector correctly guards against invalid parameters", {
   expect_error(guard(trex_method = "TREX_DA_EQUI", rho_thr_DA = 1.5), "rho_thr_DA")
   expect_error(guard(trex_method = "TREX", rho_thr_DA = 1.5), "rho_thr_DA")
   expect_error(guard(trex_method = "TREX_DA_AR1", rho_thr_DA = 1), "rho_thr_DA")
+  expect_error(guard(trex_method = "TREX_DA_NN", rho_thr_DA = 1), "rho_thr_DA")
 
   # TREX_DA_BLOCK_EQUI takes between 1 and p blocks
   expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = 0), "n_blocks")
@@ -122,7 +123,7 @@ test_that("TRexScreeningSelector replaces a cor_coef outside [-1, 1] by the esti
     list(cor_coef = selector$estimated_correlation, warning_text = paste(warning_text, collapse = " "))
   }
 
-  for (trex_method in c("TREX_DA_AR1", "TREX_DA_EQUI", "TREX_DA_BLOCK_EQUI")) {
+  for (trex_method in c("TREX_DA_AR1", "TREX_DA_EQUI", "TREX_DA_BLOCK_EQUI", "TREX_DA_NN")) {
     estimated <- run(trex_method, -2)
     expect_false(grepl("cor_coef", estimated$warning_text), label = paste(trex_method, "sentinel is silent"))
 
@@ -136,6 +137,42 @@ test_that("TRexScreeningSelector replaces a cor_coef outside [-1, 1] by the esti
     expect_equal(supplied$cor_coef, -0.5)
     expect_false(grepl("cor_coef", supplied$warning_text))
   }
+})
+
+
+
+test_that("TRexScreeningSelector TREX_DA_NN groups the neighbors inside the window", {
+
+  set.seed(42)
+  n <- 60
+  p <- 20
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(X, y, trex_method, rho_thr_DA) {
+    screen_control <- trex_screen_control(trex_method = trex_method, cor_coef = 0.5, rho_thr_DA = rho_thr_DA)
+    selector <- TRexScreeningSelector$new(X + 0, y, seed = 7, verbose = FALSE,
+                                          screen_control = screen_control, control = trex_control(K = 10))
+    selector$select()
+    selector
+  }
+
+  # A zero threshold keeps every neighbor of the full window: the variant equals TREX_DA_AR1
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 8] * -4 + X[, 16] * 3 + rnorm(n)
+  nn_all <- run(X, y, "TREX_DA_NN", 0)
+  ar1_all <- run(X, y, "TREX_DA_AR1", 0)
+  expect_identical(nn_all$selected_var, ar1_all$selected_var)
+  expect_equal(nn_all$phi_mat, ar1_all$phi_mat)
+
+  # Centered orthonormal columns have no correlated neighbor: the variant equals the plain
+  # screening, and a penalty of one half for an empty group would select nothing
+  X_orth <- qr.Q(qr(scale(matrix(rnorm(n * p), n, p), scale = FALSE)))
+  y_orth <- X_orth[, 1] * 5 + X_orth[, 8] * -4 + X_orth[, 16] * 3 + rnorm(n, sd = 0.01)
+  nn_none <- run(X_orth, y_orth, "TREX_DA_NN", 0.5)
+  plain <- run(X_orth, y_orth, "TREX", 0.5)
+  expect_identical(nn_none$selected_var, plain$selected_var)
+  expect_equal(nn_none$phi_mat, plain$phi_mat)
+  expect_gt(sum(nn_none$selected_var), 0)
 })
 
 
@@ -302,7 +339,7 @@ test_that("TRexScreeningSelector DA-method variants run without error and return
   X <- matrix(rnorm(n * p), n, p)
   y <- X[, 1] * 5 + X[, 2] * -4 + rnorm(n)
 
-  for (tm in c("TREX_DA_AR1", "TREX_DA_EQUI", "TREX_DA_BLOCK_EQUI")) {
+  for (tm in c("TREX_DA_AR1", "TREX_DA_EQUI", "TREX_DA_BLOCK_EQUI", "TREX_DA_NN")) {
     sel <- TRexScreeningSelector$new(X, y,
                                      screen_control = trex_screen_control(trex_method = tm),
                                      verbose = FALSE)

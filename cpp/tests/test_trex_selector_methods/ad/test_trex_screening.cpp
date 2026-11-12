@@ -97,6 +97,8 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidRhoThreshold) {
     screen_params.rho_thr_DA = 1.0;
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
     EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_NN;
+    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
     EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
@@ -167,6 +169,58 @@ TEST(TRexScreeningWindowTest, Method_DA_AR1_WindowEdges) {
 }
 
 
+/** @brief TREX_DA_NN compares a variable with the neighbors inside the AR(1)
+ *  window whose sample correlation reaches the threshold. A zero threshold
+ *  keeps every neighbor, so the variant equals TREX_DA_AR1 there. A variable
+ *  without such a neighbor keeps its relative occurrence. */
+TEST(TRexScreeningWindowTest, Method_DA_NN_GroupsAndEmptyGroup) {
+    const Eigen::Index n = 60;
+    const Eigen::Index p = 20;
+    std::srand(13);
+
+    auto run = [&](const Eigen::MatrixXd& X0, const Eigen::VectorXd& y0, ScreenTRexMethod method,
+                   double cor_coef, double rho_thr_DA) {
+        Eigen::MatrixXd X = X0;
+        Eigen::VectorXd y = y0;
+        Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+
+        ScreenTRexControlParameter screen_params;
+        screen_params.trex_method = method;
+        screen_params.cor_coef = cor_coef;
+        screen_params.rho_thr_DA = rho_thr_DA;
+        screen_params.trex_ctrl.K = 10;
+
+        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        return selector.select();
+    };
+
+    // 1. A zero threshold: the whole design is the window and every neighbor stays.
+    const Eigen::MatrixXd X_any = Eigen::MatrixXd::Random(n, p);
+    const Eigen::VectorXd y_any =
+        3.0 * X_any.col(0) - 2.0 * X_any.col(7) + 2.5 * X_any.col(15) + 0.1 * Eigen::VectorXd::Random(n);
+    const auto nn_all = run(X_any, y_any, ScreenTRexMethod::TREX_DA_NN, 0.5, 0.0);
+    const auto ar1_all = run(X_any, y_any, ScreenTRexMethod::TREX_DA_AR1, 0.5, 0.0);
+    EXPECT_EQ(nn_all.selected_var, ar1_all.selected_var);
+    EXPECT_TRUE(nn_all.Phi_mat.isApprox(ar1_all.Phi_mat));
+
+    // 2. Centered orthonormal columns: every sample correlation is 0, so no
+    //    variable has a neighbor and the variant equals the plain screening.
+    Eigen::MatrixXd centered = Eigen::MatrixXd::Random(n, p);
+    centered.rowwise() -= centered.colwise().mean();
+    const Eigen::MatrixXd X_orth =
+        Eigen::HouseholderQR<Eigen::MatrixXd>(centered).householderQ() * Eigen::MatrixXd::Identity(n, p);
+    const Eigen::VectorXd y_orth =
+        3.0 * X_orth.col(0) - 2.0 * X_orth.col(7) + 2.5 * X_orth.col(15) + 0.01 * Eigen::VectorXd::Random(n);
+    const auto nn_none = run(X_orth, y_orth, ScreenTRexMethod::TREX_DA_NN, 0.5, 0.5);
+    const auto plain = run(X_orth, y_orth, ScreenTRexMethod::TREX, 0.5, 0.5);
+    EXPECT_EQ(nn_none.selected_var, plain.selected_var);
+    EXPECT_TRUE(nn_none.Phi_mat.isApprox(plain.Phi_mat));
+    EXPECT_GT(nn_none.selected_var.sum(), 0)
+        << "A penalty of one half for an empty group would leave nothing above the voting level.";
+}
+
+
 /** @brief A supplied coefficient outside [-1, 1] is replaced by the estimate,
  *  with a warning. A coefficient inside the range is used as supplied. */
 TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
@@ -194,7 +248,7 @@ TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
 
     const double nan = std::numeric_limits<double>::quiet_NaN();
     for (const auto method : {ScreenTRexMethod::TREX_DA_AR1, ScreenTRexMethod::TREX_DA_EQUI,
-                              ScreenTRexMethod::TREX_DA_BLOCK_EQUI}) {
+                              ScreenTRexMethod::TREX_DA_BLOCK_EQUI, ScreenTRexMethod::TREX_DA_NN}) {
         std::string warning;
         const double estimated = coefficient(method, AUTO_ESTIMATE_CORRELATION, warning);
         EXPECT_TRUE(warning.empty()) << "The sentinel requests the estimate without a warning.";

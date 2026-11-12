@@ -10,6 +10,32 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The screening selector gains a nearest-neighbor variant
+
+- `TREX_DA_NN` is a new variant of the screening selector. The group of a variable holds the neighbors
+  inside the AR(1) window whose sample correlation with the variable reaches `rho_thr_DA`, and the
+  relative occurrence is divided by 2 minus the smallest distance to the relative occurrences of that
+  group, as in the other dependency-aware variants. A variable without such a neighbor keeps its relative
+  occurrence. This rule for an empty group is a choice of the library, because the screening has no
+  calibration over the threshold and the penalty of one half of the dependency-aware papers would leave
+  nothing above the voting level on uncorrelated data. The window comes from the shared `ar1HalfWidth()`,
+  the coefficient from the AR(1) estimate or from `cor_coef`, and the threshold lies in [0, 1). The cost
+  is of order n p kappa.
+- The variant is bound in R (`trex_method = "TREX_DA_NN"`) and in Python
+  (`ScreenTRexMethod.TREX_DA_NN`), with the help of `trex_method` and `rho_thr_DA` on the three surfaces.
+  The guide pages 06 of the three surfaces describe the four dependency-aware variants of the screening
+  as what they are, a penalty on the relative occurrences with independent dummies, where they spoke of
+  dependent dummies, and they name the new variant and the parameters `cor_coef`, `rho_thr_DA` and
+  `n_blocks`.
+- The C++ code agrees with an independent Python prototype in all 1,200 runs of a probe (independent,
+  AR(1), equi-correlated and block designs, three thresholds, 100 runs each). In that probe the variant
+  behaves like the AR(1) window on the AR(1) design and gains a little power on blocks of five correlated
+  variables, it equals plain screening where no neighbor is correlated, and it does not reach the
+  equi-correlated design, whose dependence is not local. The tests pin a zero threshold (equal to
+  `TREX_DA_AR1`) and centered orthonormal columns (equal to plain screening, with a selection that is not
+  empty), and the rule for `cor_coef` covers the variant. C++ tests 706 of 706, R tests 1,643, Python
+  tests 649.
+
 #### The dependency-aware selector and the screening selector share one AR(1) window
 
 - The half-width of the AR(1) window, ceil(log(`rho_thr_DA`) / log(|`cor_coef`|)), is one function now.

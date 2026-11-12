@@ -46,6 +46,8 @@ ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control) {
             params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
         } else if (method == "TREX_DA_BLOCK_EQUI") {
             params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+        } else if (method == "TREX_DA_NN") {
+            params.trex_method = ScreenTRexMethod::TREX_DA_NN;
         } else {
             Rcpp::stop("Unknown ScreenTRexMethod: " + method);
         }

@@ -48,7 +48,10 @@ enum class ScreenTRexMethod {
     TREX_DA_EQUI,
 
     /** @brief Dependency-Aware T-Rex (Block-Equi-Correlated) */
-    TREX_DA_BLOCK_EQUI
+    TREX_DA_BLOCK_EQUI,
+
+    /** @brief Dependency-Aware T-Rex (nearest neighbors inside the AR(1) window) */
+    TREX_DA_NN
 };
 
 
@@ -69,6 +72,8 @@ struct ScreenTRexControlParameter {
     /** @brief Correlation threshold of the dependency-aware variants (default: 0.02).
      *  TREX_DA_AR1: the window around a variable holds the lags whose
      *  correlation |cor_coef|^lag reaches the threshold, range [0, 1).
+     *  TREX_DA_NN: the same window, of which the variables stay whose sample
+     *  correlation with the variable reaches the threshold, range [0, 1).
      *  TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when
      *  |cor_coef| does not exceed the threshold, range [0, 1].
      */
@@ -157,6 +162,10 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
  *  2. Confidence-Based Screen-TRex: bootstrap CI on dummy betas.
  *  3. DA-AR1: adjusts Phi using a local AR(1) neighborhood window.
  *  4. DA-EQUI: adjusts Phi using a global equi-correlation comparison.
+ *  5. DA-BLOCK-EQUI: the same comparison inside contiguous blocks.
+ *  6. DA-NN: adjusts Phi using the neighbors inside the AR(1) window whose
+ *     sample correlation reaches the threshold. A variable without such a
+ *     neighbor keeps its Phi.
  *
  *  References:
  *  -----------
@@ -439,6 +448,23 @@ protected:
     Eigen::VectorXd computeDA_BLOCK_EQUI_Delta(
         const Eigen::VectorXd& Phi, double rho) const;
 
+    /**
+     * @brief Compute DA adjustment deltas for the nearest-neighbor strategy.
+     *
+     * @details The group of j holds the variables k in the AR(1) window
+     *          [j−κ, j+κ], k≠j, whose sample correlation |corr(x_j, x_k)|
+     *          reaches ρ_thr_DA. DA_delta[j] = 2 − min over the group of
+     *          |Phi[j] − Phi[k]|. An empty group gives DA_delta[j] = 1, so
+     *          the variable keeps its Phi. Cost O(n p κ).
+     *
+     * @param Phi Relative occurrences (p × 1).
+     * @param rho AR(1) correlation estimate, which sets the window.
+     *
+     * @return DA_delta adjustment vector (p × 1).
+     */
+    Eigen::VectorXd computeDA_NN_Delta(
+        const Eigen::VectorXd& Phi, double rho) const;
+
 
     // =========================================================================
     // Validation
@@ -456,9 +482,9 @@ protected:
     /**
      * @brief Check the parameters of the dependency-aware variants.
      *
-     * `rho_thr_DA` must be in [0, 1], and in [0, 1) for TREX_DA_AR1, whose
-     * window has no lag left at a threshold of 1. `n_blocks` must be in
-     * [1, p] for TREX_DA_BLOCK_EQUI.
+     * `rho_thr_DA` must be in [0, 1], and in [0, 1) for TREX_DA_AR1 and
+     * TREX_DA_NN, whose window has no lag left at a threshold of 1.
+     * `n_blocks` must be in [1, p] for TREX_DA_BLOCK_EQUI.
      *
      * @throws std::invalid_argument on a value outside its range.
      */

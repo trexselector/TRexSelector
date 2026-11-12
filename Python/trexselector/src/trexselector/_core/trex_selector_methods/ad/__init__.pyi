@@ -6,7 +6,7 @@ import collections.abc
 import numpy
 import numpy.typing
 import typing
-__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'gamma_to_k', 'normalize_design', 'tikhonov_lambda2_power_rule']
+__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'gamma_to_k', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
     """
     Cell-selection policy for the BT (binary-tree) DA method.
@@ -1195,7 +1195,7 @@ class ScreenTRexControlParameter:
     @property
     def rho_thr_DA(self) -> float:
         """
-        Correlation threshold of the dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
+        Correlation threshold of the dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_NN: the same window, of which the variables stay whose sample correlation with the variable reaches the threshold, range [0, 1). TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
         """
     @rho_thr_DA.setter
     def rho_thr_DA(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1237,12 +1237,15 @@ class ScreenTRexMethod:
       TREX_DA_EQUI : T-Rex screening with equicorrelated data augmentation.
     
       TREX_DA_BLOCK_EQUI : T-Rex screening with block-equicorrelated data augmentation.
+    
+      TREX_DA_NN : T-Rex screening with the nearest neighbors inside the AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative occurrence.
     """
     TREX: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX: 0>
     TREX_DA_AR1: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX_DA_AR1: 1>
     TREX_DA_BLOCK_EQUI: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX_DA_BLOCK_EQUI: 3>
     TREX_DA_EQUI: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX_DA_EQUI: 2>
-    __members__: typing.ClassVar[dict[str, ScreenTRexMethod]]  # value = {'TREX': <ScreenTRexMethod.TREX: 0>, 'TREX_DA_AR1': <ScreenTRexMethod.TREX_DA_AR1: 1>, 'TREX_DA_EQUI': <ScreenTRexMethod.TREX_DA_EQUI: 2>, 'TREX_DA_BLOCK_EQUI': <ScreenTRexMethod.TREX_DA_BLOCK_EQUI: 3>}
+    TREX_DA_NN: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX_DA_NN: 4>
+    __members__: typing.ClassVar[dict[str, ScreenTRexMethod]]  # value = {'TREX': <ScreenTRexMethod.TREX: 0>, 'TREX_DA_AR1': <ScreenTRexMethod.TREX_DA_AR1: 1>, 'TREX_DA_EQUI': <ScreenTRexMethod.TREX_DA_EQUI: 2>, 'TREX_DA_BLOCK_EQUI': <ScreenTRexMethod.TREX_DA_BLOCK_EQUI: 3>, 'TREX_DA_NN': <ScreenTRexMethod.TREX_DA_NN: 4>}
     @typing.overload
     def __eq__(self, other: ScreenTRexMethod) -> bool:
         ...
@@ -2642,6 +2645,7 @@ TREX: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX: 0>
 TREX_DA_AR1: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_AR1: 1>
 TREX_DA_BLOCK_EQUI: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_BLOCK_EQUI: 3>
 TREX_DA_EQUI: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_EQUI: 2>
+TREX_DA_NN: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_NN: 4>
 TSTAGEWISE: SolverTypeForTRex  # value = <SolverTypeForTRex.TSTAGEWISE: 8>
 TSTEPWISE: SolverTypeForTRex  # value = <SolverTypeForTRex.TSTEPWISE: 7>
 Thresholded: SPCAMode  # value = <SPCAMode.Thresholded: 1>
