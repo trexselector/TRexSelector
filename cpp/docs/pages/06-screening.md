@@ -78,7 +78,9 @@ BiobankScreenTRex screens one or many phenotypes against one genotype matrix. Th
 `Y` as a vector map for one phenotype or as a matrix map with one column per phenotype. The control
 is a BiobankScreenTRexControl: the acceptance window of the estimated FDR is `lower_bound_FDR` to
 `upper_bound_FDR`, `target_FDR_trex` is the target of the fallback selector, and the screening
-control with its base control is nested in `trex_screen_ctrl`. `screenPhenotypes()` returns one
+control with its base control is nested in `trex_screen_ctrl`. The phenotypes draw independent
+dummies, because phenotype `i` (0-based) runs with `seed + i`, and a single-phenotype run with that
+seed reproduces it. `screenPhenotypes()` returns one
 record per phenotype.
 
 \snippet{trimleft} screening.cpp biobank

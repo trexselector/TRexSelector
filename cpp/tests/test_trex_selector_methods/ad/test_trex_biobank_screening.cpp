@@ -9,6 +9,8 @@
 #include <Eigen/Dense>
 
 // std includes
+#include <limits>
+#include <random>
 #include <stdexcept>
 
 // project trex includes
@@ -77,6 +79,98 @@ TEST_F(TRexBiobankScreeningTest, Execution_SinglePhenotypeDoesNotThrow) {
     EXPECT_NO_THROW({
         auto result = selector.screenPhenotype();
     });
+}
+
+
+namespace {
+
+/** @brief Probe exposing the seed derivation for testing. */
+class BiobankScreenTRexProbe : public BiobankScreenTRex {
+public:
+    using BiobankScreenTRex::BiobankScreenTRex;
+    using BiobankScreenTRex::phenotypeSeed;
+};
+
+} // namespace
+
+
+/** @brief Phenotype i runs with seed + i. Phenotype 0 keeps the seed, a
+ *  negative seed is passed on, and the sum stays a non-negative int. */
+TEST_F(TRexBiobankScreeningTest, Seed_PhenotypeSeedDerivation) {
+    BiobankScreenTRexControl control;
+
+    BiobankScreenTRexProbe seeded(X_map, Y_matrix_map, control, 11, false);
+    EXPECT_EQ(seeded.phenotypeSeed(0), 11);
+    EXPECT_EQ(seeded.phenotypeSeed(1), 12);
+    EXPECT_EQ(seeded.phenotypeSeed(250), 261);
+
+    BiobankScreenTRexProbe random(X_map, Y_matrix_map, control, -1, false);
+    EXPECT_EQ(random.phenotypeSeed(0), -1);
+    EXPECT_EQ(random.phenotypeSeed(7), -1);
+
+    const int largest = std::numeric_limits<int>::max();
+    BiobankScreenTRexProbe wrapped(X_map, Y_matrix_map, control, largest, false);
+    EXPECT_EQ(wrapped.phenotypeSeed(0), largest);
+    EXPECT_EQ(wrapped.phenotypeSeed(1), 0);
+    EXPECT_EQ(wrapped.phenotypeSeed(3), 2);
+}
+
+
+/** @brief The phenotypes draw independent dummies, and each one is reproduced
+ *  by a single-phenotype run with its seed. Twelve copies of one noise
+ *  response make the dummy draw visible: the screening of such a response
+ *  selects something in about half of the draws. */
+TEST(TRexBiobankScreeningSeedTest, Execution_PhenotypesUseIndependentSeeds) {
+    std::mt19937 rng(31);
+    std::normal_distribution<double> N01(0.0, 1.0);
+    const Eigen::Index n = 80;
+    const Eigen::Index p = 40;
+    const Eigen::Index copies = 12;
+    Eigen::MatrixXd X(n, p);
+    Eigen::VectorXd y(n);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(rng); }
+    }
+    for (Eigen::Index i = 0; i < n; ++i) { y(i) = N01(rng); }
+
+    BiobankScreenTRexControl control;
+    control.trex_screen_ctrl.R_boot = 100;
+    control.trex_screen_ctrl.trex_ctrl.K = 10;
+    const int seed = 11;
+
+    auto single = [&](int run_seed) {
+        Eigen::MatrixXd X_run = X;
+        Eigen::VectorXd y_run = y;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
+        BiobankScreenTRex selector(X_map, y_map, control, run_seed, false);
+        return selector.screenPhenotype();
+    };
+
+    Eigen::MatrixXd X_run = X;
+    Eigen::MatrixXd Y = y.replicate(1, copies);
+    Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+    Eigen::Map<Eigen::MatrixXd> Y_map(Y.data(), Y.rows(), Y.cols());
+    BiobankScreenTRex selector(X_map, Y_map, control, seed, false);
+    const auto results = selector.screenPhenotypes();
+    ASSERT_EQ(results.size(), static_cast<std::size_t>(copies));
+
+    std::size_t differing = 0;
+    for (std::size_t i = 0; i < results.size(); ++i) {
+        const auto expected = single(seed + static_cast<int>(i));
+        EXPECT_EQ(results[i].selected_indices, expected.selected_indices) << "phenotype " << i;
+        EXPECT_EQ(results[i].selected_indices_screen_ordinary, expected.selected_indices_screen_ordinary);
+        EXPECT_EQ(results[i].selected_indices_screen_bootstrap, expected.selected_indices_screen_bootstrap);
+        EXPECT_DOUBLE_EQ(results[i].estimated_FDR_screen_ordinary, expected.estimated_FDR_screen_ordinary);
+        EXPECT_DOUBLE_EQ(results[i].estimated_FDR_screen_bootstrap, expected.estimated_FDR_screen_bootstrap);
+        EXPECT_EQ(results[i].method_used, expected.method_used);
+
+        if (results[i].selected_indices_screen_ordinary != results[0].selected_indices_screen_ordinary) {
+            ++differing;
+        }
+    }
+    EXPECT_GT(differing, 0U)
+        << "With one shared dummy draw the twelve copies would give twelve identical screening results.";
 }
 
 

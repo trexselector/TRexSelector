@@ -1603,7 +1603,7 @@ class TRexBiobankScreeningSelector:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], Y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
         """
-        Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy.
+        Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy. Phenotype i (0-based) runs with seed + i, so the phenotypes draw independent dummies and a single phenotype is reproduced by a single-phenotype run with that seed.
         """
     def screenPhenotype(self) -> BiobankScreenTRexResult:
         """

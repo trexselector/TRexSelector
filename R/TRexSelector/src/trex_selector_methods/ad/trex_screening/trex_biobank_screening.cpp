@@ -9,6 +9,7 @@
 // ===================================================================================
 
 // std includes
+#include <cstdint>
 #include <utils/logging/logger.hpp>
 #include <iomanip>
 #include <iostream>
@@ -160,6 +161,21 @@ std::vector<BiobankScreenTRexResult> BiobankScreenTRex::screenPhenotypes() {
 
 
 // ======================================================================
+// Seed per phenotype
+// ======================================================================
+
+int BiobankScreenTRex::phenotypeSeed(std::size_t phenotype_index) const {
+    // A negative seed lets every selector draw its own entropy.
+    if (seed_ < 0) { return seed_; }
+
+    // seed + index, wrapped so that it stays a non-negative int.
+    const std::uint64_t shifted =
+        static_cast<std::uint64_t>(seed_) + static_cast<std::uint64_t>(phenotype_index);
+    return static_cast<int>(shifted % 2147483648ULL);
+}
+
+
+// ======================================================================
 // Algorithm 1
 // ======================================================================
 
@@ -190,7 +206,7 @@ BiobankScreenTRexResult BiobankScreenTRex::screenSinglePhenotype(
         *X_,
         y_map,
         bio_ctrl_.trex_screen_ctrl,
-        seed_,
+        phenotypeSeed(phenotype_index),
         false
     );
 
@@ -235,7 +251,7 @@ BiobankScreenTRexResult BiobankScreenTRex::runFallbackTRexSelector(
         y_map,
         bio_ctrl_.target_FDR_trex,
         bio_ctrl_.trex_screen_ctrl.trex_ctrl,
-        seed_,
+        phenotypeSeed(phenotype_index),
         false
     );
 

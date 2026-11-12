@@ -164,3 +164,33 @@ def test_select_2d_result_types(signal_data):
         assert isinstance(res.selected_indices, list)
         assert isinstance(res.estimated_FDR, float)
         assert 0.0 <= res.estimated_FDR <= 1.0
+
+
+def test_phenotypes_use_independent_seeds():
+    """Phenotype i runs with seed + i, and a single-phenotype run with that seed reproduces it."""
+    rng = np.random.default_rng(31)
+    n, p, copies = 80, 40, 12
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y_noise = rng.standard_normal(n)
+
+    # Twelve copies of one noise response make the dummy draw visible: the screening of such
+    # a response selects something in about half of the draws
+    Y = np.asfortranarray(np.tile(y_noise[:, None], (1, copies)))
+    ctrl = BiobankScreenTRexControl()
+    ctrl.trex_screen_ctrl.R_boot = 100
+    ctrl.trex_screen_ctrl.trex_ctrl.K = 10
+
+    multi = TRexBiobankScreeningSelector(X.copy(order="F"), Y, bio_ctrl=ctrl, seed=11, verbose=False).select()
+    assert len(multi) == copies
+
+    fields = ("selected_indices", "selected_indices_screen_ordinary", "selected_indices_screen_bootstrap",
+              "estimated_FDR_screen_ordinary", "estimated_FDR_screen_bootstrap", "method_used")
+    for i, res in enumerate(multi):
+        single = TRexBiobankScreeningSelector(X.copy(order="F"), y_noise.copy(), bio_ctrl=ctrl, seed=11 + i,
+                                              verbose=False).select()
+        for field in fields:
+            assert getattr(res, field) == getattr(single, field), (i, field)
+
+    # With one shared dummy draw the twelve copies would give twelve identical results
+    first = multi[0].selected_indices_screen_ordinary
+    assert any(res.selected_indices_screen_ordinary != first for res in multi)

@@ -116,7 +116,9 @@ print("estimated correlation:", round(ar_res.estimated_correlation, 3))
 vector for one phenotype or a matrix with one column per phenotype. The control is a
 `BiobankScreenTRexControl`: the acceptance window of the estimated FDR is `lower_bound_FDR` to
 `upper_bound_FDR`, `target_FDR_trex` is the target of the fallback selector, and the screening
-control with its base control is nested in `trex_screen_ctrl`.
+control with its base control is nested in `trex_screen_ctrl`. The phenotypes draw independent
+dummies, because phenotype `i` (0-based) runs with `seed + i`, and a single-phenotype run with that
+seed reproduces it.
 
 ```{code-cell} python
 Y = np.column_stack([y, X @ (0.5 * beta) + rng.standard_normal(n), rng.standard_normal(n)])

@@ -42,7 +42,9 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
     #'   selectors normalize it in place per call and restore it).
     #' @param Y Response vector (1D) or matrix (2D).
     #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1).
+    #' @param seed Random seed (default: -1). Phenotype \code{k} (the \code{k}-th column of
+    #'   \code{Y}) runs with \code{seed + k - 1}, so the phenotypes draw independent dummies and
+    #'   a single phenotype is reproduced by a single-phenotype run with that seed.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param biobank_control A biobank control list from \code{\link{trex_biobank_control}()}
     #'   (default: \code{trex_biobank_control()}).

@@ -196,7 +196,9 @@ inline void bind_trex_screening_biobanks(py::module& m) {
              py::arg("bio_ctrl") = BiobankScreenTRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = false,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy.")
+             "Construct for multiple phenotypes (2-D Y). X and Y are accessed zero-copy. Phenotype i (0-based) "
+             "runs with seed + i, so the phenotypes draw independent dummies and a single phenotype is reproduced "
+             "by a single-phenotype run with that seed.")
         .def("screenPhenotype", &PyBiobankScreenTRex::screenPhenotype, py::call_guard<py::gil_scoped_release>(), "Run "
             "screening for the single loaded phenotype.")
         .def("screenPhenotypes", &PyBiobankScreenTRex::screenPhenotypes, py::call_guard<py::gil_scoped_release>(),

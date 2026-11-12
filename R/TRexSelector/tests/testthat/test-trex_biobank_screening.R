@@ -249,3 +249,40 @@ test_that("TRexBiobankScreeningSelector on a readwrite mmap_matrix equals the in
   expect_identical(b$selected_indices, a$selected_indices)
   expect_equal(as.matrix(rw), X0, tolerance = 1e-12)
 })
+
+
+test_that("TRexBiobankScreeningSelector gives every phenotype its own seed", {
+
+  set.seed(42)
+  n <- 80
+  p <- 40
+  copies <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y_noise <- rnorm(n)
+
+  # Twelve copies of one noise response make the dummy draw visible: the screening of such
+  # a response selects something in about half of the draws
+  Y <- matrix(y_noise, n, copies)
+  screen_control <- trex_screen_control(R_boot = 100)
+  multi <- TRexBiobankScreeningSelector$new(X + 0, Y, seed = 11, verbose = FALSE,
+                                            screen_control = screen_control,
+                                            control = trex_control(K = 10))$select()
+  expect_length(multi, copies)
+
+  # Phenotype k runs with seed + k - 1, and a single-phenotype run with that seed reproduces it
+  for (k in seq_len(copies)) {
+    single <- TRexBiobankScreeningSelector$new(X + 0, y_noise, seed = 11 + k - 1, verbose = FALSE,
+                                               screen_control = screen_control,
+                                               control = trex_control(K = 10))$select()
+    for (field in c("selected_indices", "selected_indices_screen_ordinary",
+                    "selected_indices_screen_bootstrap", "estimated_FDR_screen_ordinary",
+                    "estimated_FDR_screen_bootstrap", "method_used")) {
+      expect_equal(multi[[k]][[field]], single[[field]], label = paste("phenotype", k, field))
+    }
+  }
+
+  # With one shared dummy draw the twelve copies would give twelve identical results
+  first <- multi[[1]]$selected_indices_screen_ordinary
+  differing <- sum(!vapply(multi, function(r) identical(r$selected_indices_screen_ordinary, first), logical(1)))
+  expect_gt(differing, 0)
+})

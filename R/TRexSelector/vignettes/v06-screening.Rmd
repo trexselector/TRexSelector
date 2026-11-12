@@ -112,7 +112,8 @@ round(ar$estimated_correlation, 3)
 `TRexBiobankScreeningSelector` screens one or many phenotypes against one genotype matrix. `Y` is a
 vector for one phenotype or a matrix with one column per phenotype. The acceptance window of the
 estimated FDR is `trex_biobank_control(lower_bound_FDR, upper_bound_FDR)`, and `tFDR` is the target
-of the fallback selector.
+of the fallback selector. The phenotypes draw independent dummies, because the phenotype in column `k`
+runs with `seed + k - 1`, and a single-phenotype run with that seed reproduces it.
 
 ```{r biobank}
 Y <- cbind(y, as.numeric(X %*% (0.5 * beta) + rnorm(n)), rnorm(n))

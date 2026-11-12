@@ -156,7 +156,8 @@ protected:
     /** @brief Control parameters for Biobank Screen-TRex */
     BiobankScreenTRexControl bio_ctrl_;
 
-    /** @brief Random seed for reproducibility */
+    /** @brief Random seed for reproducibility. Phenotype i runs with
+     *  seed + i, see phenotypeSeed(). */
     int seed_;
 
     /** @brief Verbosity flag */
@@ -192,7 +193,10 @@ public:
      * @param X Design matrix (n x p)
      * @param Y Phenotype matrix (n x q)
      * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
-     * @param seed Random seed for reproducibility (default: -1, random)
+     * @param seed Random seed for reproducibility (default: -1, random).
+     *             Phenotype i (0-based) runs with seed + i, so the phenotypes
+     *             draw independent dummies and a single phenotype is
+     *             reproduced by a single-phenotype run with that seed.
      * @param verbose If true, print progress messages (default: false)
      */
     BiobankScreenTRex(
@@ -300,6 +304,20 @@ protected:
     // ======================================================================
     // Protected Methods - Algorithm 1
     // ======================================================================
+
+    /**
+     * @brief Seed of one phenotype.
+     *
+     * @details Phenotype i runs its screening and its fallback selector with
+     *  seed + i, so the phenotypes draw independent dummies. Phenotype 0 and
+     *  the single-phenotype mode keep the seed itself. A negative seed is
+     *  passed on, so every selector draws its own entropy.
+     *
+     * @param phenotype_index Index of the phenotype (0-based).
+     *
+     * @return The seed for that phenotype.
+     */
+    int phenotypeSeed(std::size_t phenotype_index) const;
 
     /** @brief Screen a single phenotype column.
      *

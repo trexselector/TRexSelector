@@ -10,6 +10,23 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The biobank screening gives every phenotype its own seed
+
+- `BiobankScreenTRex` passed its seed to the screening of every phenotype, so all phenotypes competed
+  against the same dummies. Phenotype i (0-based) now runs its screening and its fallback selector with
+  seed + i, so the phenotypes draw independent dummies, as the R reference does by continuing its random
+  stream. The dummy generator mixes the seed, so neighboring seeds give unrelated streams. A negative
+  seed is passed on as before, and every selector then draws its own entropy.
+- Phenotype 0 and the single-phenotype mode keep the seed, so their results do not change. The results
+  of the later phenotypes of a seeded run change. A single-phenotype run with seed + i reproduces
+  phenotype i of a run.
+- The help of `seed` says this in C++, R and Python, and the guide pages 06 of the three surfaces carry
+  one sentence on it.
+- The tests screen twelve copies of one noise response, because the screening of such a response selects
+  something in about half of the dummy draws. Every copy equals the single run with its seed, and the
+  copies do not all agree. Both tests fail when all phenotypes share one seed. C++ tests 711 of 711,
+  R tests 1,729, Python tests 664.
+
 #### The screening selector checks its bootstrap parameters and reports 1 for an empty selection
 
 - `ScreenTRexSelector` checks `R_boot` and `ci_grid_step` at construction. `R_boot` is at least 2,

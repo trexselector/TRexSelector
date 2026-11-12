@@ -93,7 +93,9 @@ Other T-Rex selectors and controls:
 selectors normalize it in place per call and restore it).}
       \item{\code{Y}}{Response vector (1D) or matrix (2D).}
       \item{\code{tFDR}}{Target FDR level (default: 0.1).}
-      \item{\code{seed}}{Random seed (default: -1).}
+      \item{\code{seed}}{Random seed (default: -1). Phenotype \code{k} (the \code{k}-th column of
+\code{Y}) runs with \code{seed + k - 1}, so the phenotypes draw independent dummies and
+a single phenotype is reproduced by a single-phenotype run with that seed.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{biobank_control}}{A biobank control list from \code{\link{trex_biobank_control}()}
 (default: \code{trex_biobank_control()}).}
