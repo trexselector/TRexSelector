@@ -8,9 +8,10 @@ A genomics biobank holds hundreds of thousands of variables and hundreds of phen
 full T-Rex calibration on every phenotype is costly, and for most phenotypes the answer is that
 nothing is selected. Screen-T-Rex \cite machkour2023screen is a single-pass version of the random
 experiments without the L-loop and the T-loop: \f$K\f$ experiments with \f$p\f$ dummies each, stopped
-at the first dummy, and a false discovery rate (FDR) estimate read off the vote. It reports an
-estimated FDR instead of controlling a target, so it is a fast first pass. The biobank screening wraps
-it in a decision rule per phenotype: when the estimated FDR of the screening falls into an acceptance
+at the first dummy, and a false discovery rate (FDR) estimate read off the vote. The estimate is one
+over the number of selected variables, and it is 1 when nothing is selected. The screening reports
+this estimated FDR instead of controlling a target, so it is a fast first pass. The biobank screening
+wraps it in a decision rule per phenotype: when the estimated FDR of the screening falls into an acceptance
 window, the screening result is kept, otherwise the full T-Rex selector runs as a fallback.
 
 ## Screen-T-Rex
@@ -45,9 +46,12 @@ fresh dummies per experiment.
 
 ### A bootstrap confidence interval
 
-`use_bootstrap_CI = true` in the ScreenTRexControlParameter resamples the experiments `R_boot`
-times and reports the upper confidence bound of the estimated FDR instead of the point estimate, at
-`confidence_level`. `ci_grid_step` is the resolution of the bound.
+`use_bootstrap_CI = true` in the ScreenTRexControlParameter selects by the coefficients instead of
+the vote. The non-zero dummy coefficients of the experiments are resampled `R_boot` times, at least
+twice, for a confidence interval of their mean, and a variable is selected when its averaged
+coefficient lies outside that interval. `confidence_level` is the smallest level at which the selection
+is no larger than the ordinary one, searched on a grid of step `ci_grid_step` in \f$(0, 1]\f$. The
+estimated FDR is again one over the number of selected variables.
 
 \snippet{trimleft} screening.cpp boot
 \output{screening.boot.txt}

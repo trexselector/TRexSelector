@@ -18,9 +18,10 @@ trex_screen_control(
 \item{use_bootstrap_CI}{Whether to use bootstrap confidence intervals for screening
 (default: FALSE).}
 
-\item{R_boot}{Number of bootstrap iterations (default: 1000).}
+\item{R_boot}{Number of bootstrap resamples, at least 2 (default: 1000).}
 
-\item{ci_grid_step}{Grid step size for confidence-interval calculations (default: 0.001).}
+\item{ci_grid_step}{Step of the grid over the confidence level, in \code{(0, 1]}
+(default: 0.001).}
 
 \item{trex_method}{Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
 "TREX_DA_BLOCK_EQUI", "TREX_DA_NN" (default: "TREX"). "TREX_DA_NN" compares a variable

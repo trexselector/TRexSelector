@@ -98,6 +98,14 @@ test_that("TRexScreeningSelector correctly guards against invalid parameters", {
   expect_error(guard(trex_method = "TREX_DA_AR1", rho_thr_DA = 1), "rho_thr_DA")
   expect_error(guard(trex_method = "TREX_DA_NN", rho_thr_DA = 1), "rho_thr_DA")
 
+  # The bootstrap needs at least two resamples and a grid step in (0, 1], whether or not it is on
+  expect_error(guard(R_boot = 1), "R_boot")
+  expect_error(guard(R_boot = -5), "R_boot")
+  expect_error(guard(use_bootstrap_CI = TRUE, R_boot = 0), "R_boot")
+  expect_error(guard(ci_grid_step = 0), "ci_grid_step")
+  expect_error(guard(ci_grid_step = -0.01), "ci_grid_step")
+  expect_error(guard(use_bootstrap_CI = TRUE, ci_grid_step = 1.5), "ci_grid_step")
+
   # TREX_DA_BLOCK_EQUI takes between 1 and p blocks
   expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = 0), "n_blocks")
   expect_error(guard(trex_method = "TREX_DA_BLOCK_EQUI", n_blocks = -3), "n_blocks")
@@ -137,6 +145,36 @@ test_that("TRexScreeningSelector replaces a cor_coef outside [-1, 1] by the esti
     expect_equal(supplied$cor_coef, -0.5)
     expect_false(grepl("cor_coef", supplied$warning_text))
   }
+})
+
+
+
+test_that("TRexScreeningSelector reports an estimated FDR of 1 for an empty selection", {
+
+  set.seed(42)
+  n <- 80
+  p <- 40
+  X <- matrix(rnorm(n * p), n, p)
+  y_noise <- rnorm(n)
+
+  # A response orthogonal to the design and to the intercept leaves every variable behind
+  # the first dummy, so nothing is selected, with and without the bootstrap
+  y_orth <- as.numeric(resid(lm(y_noise ~ X)))
+  for (use_bootstrap in c(FALSE, TRUE)) {
+    selector <- TRexScreeningSelector$new(X + 0, y_orth, seed = 5, verbose = FALSE,
+                                          screen_control = trex_screen_control(use_bootstrap_CI = use_bootstrap,
+                                                                               R_boot = 100))
+    selector$select()
+    expect_equal(sum(selector$selected_var), 0)
+    expect_equal(selector$estimated_FDR, 1)
+  }
+
+  # With selections the estimate is one over their number
+  y_signal <- X[, 2] * 5 + X[, 10] * -5 + X[, 21] * 5 + 0.1 * y_noise
+  selector <- TRexScreeningSelector$new(X + 0, y_signal, seed = 5, verbose = FALSE)
+  selector$select()
+  expect_gt(sum(selector$selected_var), 0)
+  expect_equal(selector$estimated_FDR, 1 / sum(selector$selected_var))
 })
 
 

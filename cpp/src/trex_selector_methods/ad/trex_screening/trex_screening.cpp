@@ -9,6 +9,7 @@
 // ===================================================================================
 
 // std includes
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <numeric>
@@ -74,6 +75,7 @@ ScreenTRexSelector::ScreenTRexSelector(
 {
     validateScreenTRexStrategy();
     validateScreenDAParameters();
+    validateBootstrapParameters();
 }
 
 
@@ -141,6 +143,25 @@ void ScreenTRexSelector::validateScreenDAParameters() const {
         throw std::invalid_argument(
             "ScreenTRexSelector: n_blocks must be in [1, p] for TREX_DA_BLOCK_EQUI. Got: " +
             std::to_string(n_blocks) + " with p = " + std::to_string(p_));
+    }
+}
+
+
+void ScreenTRexSelector::validateBootstrapParameters() const {
+    // The standard error of the bootstrap needs two resamples.
+    if (trex_screen_ctrl_.R_boot < 2) {
+        throw std::invalid_argument(
+            "ScreenTRexSelector: R_boot must be at least 2. Got: " +
+            std::to_string(trex_screen_ctrl_.R_boot));
+    }
+
+    // The grid over the confidence level advances by this step. Written so
+    // that a NaN fails the check as well.
+    const double step = trex_screen_ctrl_.ci_grid_step;
+    if (!(step > 0.0 && step <= 1.0)) {
+        throw std::invalid_argument(
+            "ScreenTRexSelector: ci_grid_step must be in (0, 1]. Got: " +
+            std::to_string(step));
     }
 }
 
@@ -408,8 +429,9 @@ void ScreenTRexSelector::performOrdinarySelection(
 void ScreenTRexSelector::computeEstimatedFDR(
     ScreenTRexSelectionResult& result_out
 ) const {
+    // One over the number of selected variables, and 1 for an empty selection.
     const double R = static_cast<double>(result_out.selected_var.sum());
-    result_out.estimated_FDR = (R < 1.0) ? 0.0 : (1.0 / R);
+    result_out.estimated_FDR = 1.0 / std::max(1.0, R);
 }
 
 

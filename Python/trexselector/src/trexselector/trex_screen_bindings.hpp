@@ -99,9 +99,10 @@ inline void bind_trex_screen(py::module& m) {
         .def(py::init<>())
         .def_readwrite("use_bootstrap_CI", &ScreenTRexControlParameter::use_bootstrap_CI, "Use bootstrap confidence "
             "intervals for FDR estimation (default false).")
-        .def_readwrite("R_boot", &ScreenTRexControlParameter::R_boot, "Number of bootstrap replicates (default 1000).")
-        .def_readwrite("ci_grid_step", &ScreenTRexControlParameter::ci_grid_step, "Step size for the "
-            "confidence-interval grid.")
+        .def_readwrite("R_boot", &ScreenTRexControlParameter::R_boot, "Number of bootstrap resamples, at least 2 "
+            "(default 1000).")
+        .def_readwrite("ci_grid_step", &ScreenTRexControlParameter::ci_grid_step, "Step of the grid over the "
+            "confidence level, in (0, 1] (default 0.001).")
         .def_readwrite("trex_method", &ScreenTRexControlParameter::trex_method, "Screening method variant to use (see "
             "ScreenTRexMethod).")
         .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold of the "
@@ -124,7 +125,8 @@ inline void bind_trex_screen(py::module& m) {
         "SelectionResult "
         ""
         "extended with screening-specific fields.")
-        .def_readonly("estimated_FDR", &ScreenTRexSelectionResult::estimated_FDR, "Estimated false discovery rate.")
+        .def_readonly("estimated_FDR", &ScreenTRexSelectionResult::estimated_FDR, "Estimated false discovery rate, "
+            "one over the number of selected variables. An empty selection reports 1.")
         .def_readonly("used_bootstrap", &ScreenTRexSelectionResult::used_bootstrap, "Whether bootstrap CI was used for "
             "FDR estimation.")
         .def_readonly("confidence_level",      &ScreenTRexSelectionResult::confidence_level,      "Bootstrap "

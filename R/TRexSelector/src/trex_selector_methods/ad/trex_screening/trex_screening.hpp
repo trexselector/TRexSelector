@@ -60,10 +60,10 @@ struct ScreenTRexControlParameter {
     /** @brief If true, perform the Confidence-Based Screen-TRex (bootstrapping). */
     bool use_bootstrap_CI = false;
 
-    /** @brief Number of bootstrap resamples (default: 1000). */
+    /** @brief Number of bootstrap resamples, at least 2 (default: 1000). */
     std::size_t R_boot = 1000;
 
-    /** @brief Grid step size for confidence level search in [0, 1] (default: 0.001). */
+    /** @brief Step of the grid over the confidence level, in (0, 1] (default: 0.001). */
     double ci_grid_step = 0.001;
 
     /** @brief Screen-TRex variant to use (default: TREX). */
@@ -112,7 +112,8 @@ struct ScreenTRexControlParameter {
  *  Adds Screen-TRex specific diagnostics on top of the standard result.
  */
 struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
-    /** @brief Estimated FDR = 1 / max(1, R). */
+    /** @brief Estimated FDR = 1 / max(1, R) with R selected variables, so
+     *  an empty selection reports 1. */
     double estimated_FDR = 0.0;
 
     /** @brief Whether bootstrap CI was applied. */
@@ -489,6 +490,17 @@ protected:
      * @throws std::invalid_argument on a value outside its range.
      */
     void validateScreenDAParameters() const;
+
+    /**
+     * @brief Check the parameters of the bootstrap: `R_boot` at least 2 and
+     *        `ci_grid_step` in (0, 1].
+     *
+     * The biobank screening applies the bootstrap to every phenotype, so the
+     * check runs whether or not `use_bootstrap_CI` is set.
+     *
+     * @throws std::invalid_argument on a value outside its range.
+     */
+    void validateBootstrapParameters() const;
 
 };
 

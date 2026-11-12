@@ -75,7 +75,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
     }
   ),
   active = list(
-    #' @field estimated_FDR Empirical FDR expectation bounds.
+    #' @field estimated_FDR The estimated FDR, one over the number of selected variables. An
+    #'   empty selection reports 1.
     estimated_FDR = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")

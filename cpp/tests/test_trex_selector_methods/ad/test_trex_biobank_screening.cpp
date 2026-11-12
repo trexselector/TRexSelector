@@ -80,6 +80,43 @@ TEST_F(TRexBiobankScreeningTest, Execution_SinglePhenotypeDoesNotThrow) {
 }
 
 
+/** @brief An empty screening result reports an estimated FDR of 1, which no
+ *  acceptance window with an upper bound below 1 holds. With a lower bound of
+ *  0 the workflow therefore falls back to the T-Rex selector instead of
+ *  accepting the empty result. */
+TEST(TRexBiobankScreeningEstimateTest, Execution_EmptyScreeningFallsBack) {
+    std::srand(23);
+    const Eigen::Index n = 80;
+    const Eigen::Index p = 40;
+    Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
+    const Eigen::VectorXd noise = Eigen::VectorXd::Random(n);
+
+    // Residual of the noise after the projection onto [1, X]: every variable
+    // stays behind the first dummy, so the screening selects nothing.
+    Eigen::MatrixXd basis(n, p + 1);
+    basis << Eigen::VectorXd::Ones(n), X;
+    Eigen::VectorXd y = noise - basis * basis.colPivHouseholderQr().solve(noise);
+
+    Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+
+    BiobankScreenTRexControl control;
+    control.lower_bound_FDR = 0.0;
+    control.upper_bound_FDR = 0.15;
+    control.trex_screen_ctrl.R_boot = 100;
+    control.trex_screen_ctrl.trex_ctrl.K = 5;
+
+    BiobankScreenTRex selector(X_map, y_map, control, 5, false);
+    const auto result = selector.screenPhenotype();
+
+    EXPECT_TRUE(result.selected_indices_screen_ordinary.empty());
+    EXPECT_DOUBLE_EQ(result.estimated_FDR_screen_ordinary, 1.0);
+    EXPECT_DOUBLE_EQ(result.estimated_FDR_screen_bootstrap, 1.0);
+    EXPECT_TRUE(result.used_fallback_trex);
+    EXPECT_EQ(result.method_used, "T-Rex (fallback)");
+}
+
+
 /** @brief Execute fallback testing under impossible bounds */
 TEST_F(TRexBiobankScreeningTest, Execution_FallbackLogicActivation) {
     BiobankScreenTRexControl control;

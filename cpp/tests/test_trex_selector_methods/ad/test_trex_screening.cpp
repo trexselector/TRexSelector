@@ -10,6 +10,7 @@
 
 // std includes
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -124,6 +125,85 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
     screen_params.n_blocks = 0;
     screen_params.trex_method = ScreenTRexMethod::TREX;
     EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+}
+
+
+/** @brief The bootstrap parameters are checked at construction, whether or
+ *  not the bootstrap variant is on: `R_boot` at least 2 (the standard error
+ *  needs two resamples) and `ci_grid_step` in (0, 1] (a step of 0 would never
+ *  advance the grid over the confidence level). */
+TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBootstrapParameters) {
+    for (const bool use_bootstrap : {false, true}) {
+        ScreenTRexControlParameter screen_params;
+        screen_params.use_bootstrap_CI = use_bootstrap;
+
+        for (const std::size_t bad : {std::size_t{0}, std::size_t{1}}) {
+            screen_params.R_boot = bad;
+            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+        }
+        screen_params.R_boot = 2;
+        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+
+        for (const double bad : {0.0, -0.001, 1.5, std::numeric_limits<double>::quiet_NaN()}) {
+            screen_params.ci_grid_step = bad;
+            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+        }
+        screen_params.ci_grid_step = 1.0;
+        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    }
+}
+
+
+/** @brief The estimated FDR is one over the number of selected variables, and
+ *  1 when nothing is selected. A response orthogonal to the design and to the
+ *  intercept leaves every variable behind the first dummy, so nothing is
+ *  selected. */
+TEST(TRexScreeningEstimateTest, Estimate_EmptySelectionReportsOne) {
+    std::mt19937 rng(21);
+    std::normal_distribution<double> N01(0.0, 1.0);
+    const Eigen::Index n = 80;
+    const Eigen::Index p = 40;
+    Eigen::MatrixXd X(n, p);
+    Eigen::VectorXd noise(n);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(rng); }
+    }
+    for (Eigen::Index i = 0; i < n; ++i) { noise(i) = N01(rng); }
+
+    // Residual of the noise after the projection onto [1, X].
+    Eigen::MatrixXd basis(n, p + 1);
+    basis << Eigen::VectorXd::Ones(n), X;
+    const Eigen::VectorXd y_orth =
+        noise - basis * basis.colPivHouseholderQr().solve(noise);
+
+    for (const bool use_bootstrap : {false, true}) {
+        Eigen::MatrixXd X_run = X;
+        Eigen::VectorXd y_run = y_orth;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
+
+        ScreenTRexControlParameter screen_params;
+        screen_params.use_bootstrap_CI = use_bootstrap;
+        screen_params.R_boot = 100;
+
+        ScreenTRexSelector selector(X_map, y_map, screen_params, 5, false);
+        selector.select();
+        const auto& result = selector.getScreenResult();
+
+        EXPECT_EQ(result.selected_var.sum(), 0);
+        EXPECT_DOUBLE_EQ(result.estimated_FDR, 1.0);
+    }
+
+    // With selections the estimate is one over their number.
+    Eigen::MatrixXd X_run = X;
+    Eigen::VectorXd y_signal = 5.0 * X.col(1) - 5.0 * X.col(9) + 5.0 * X.col(20) + 0.1 * noise;
+    Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(y_signal.data(), y_signal.size());
+    ScreenTRexSelector selector(X_map, y_map, ScreenTRexControlParameter(), 5, false);
+    selector.select();
+    const auto& result = selector.getScreenResult();
+    ASSERT_GT(result.selected_var.sum(), 0);
+    EXPECT_DOUBLE_EQ(result.estimated_FDR, 1.0 / static_cast<double>(result.selected_var.sum()));
 }
 
 

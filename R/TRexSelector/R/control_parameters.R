@@ -454,8 +454,9 @@ trex_gvs_control <- function(gvs_type = "EN",
 #'
 #' @param use_bootstrap_CI Whether to use bootstrap confidence intervals for screening
 #'   (default: FALSE).
-#' @param R_boot Number of bootstrap iterations (default: 1000).
-#' @param ci_grid_step Grid step size for confidence-interval calculations (default: 0.001).
+#' @param R_boot Number of bootstrap resamples, at least 2 (default: 1000).
+#' @param ci_grid_step Step of the grid over the confidence level, in \code{(0, 1]}
+#'   (default: 0.001).
 #' @param trex_method Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
 #'   "TREX_DA_BLOCK_EQUI", "TREX_DA_NN" (default: "TREX"). "TREX_DA_NN" compares a variable
 #'   with the neighbors inside the AR(1) window whose sample correlation reaches

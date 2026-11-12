@@ -60,7 +60,8 @@ Other T-Rex selectors and controls:
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{estimated_FDR}}{Empirical FDR expectation bounds.}
+    \item{\code{estimated_FDR}}{The estimated FDR, one over the number of selected variables. An
+empty selection reports 1.}
 
     \item{\code{used_bootstrap}}{Employs bootstrapping.}
 

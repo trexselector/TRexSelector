@@ -30,7 +30,12 @@ ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control) {
         params.use_bootstrap_CI = control["use_bootstrap_CI"];
     }
     if (control.containsElementNamed("R_boot")) {
-        params.R_boot = control["R_boot"];
+        // Checked before the conversion: a negative count would wrap around.
+        const int R_boot = control["R_boot"];
+        if (R_boot < 2) {
+            Rcpp::stop("R_boot must be at least 2. Got: " + std::to_string(R_boot));
+        }
+        params.R_boot = static_cast<std::size_t>(R_boot);
     }
     if (control.containsElementNamed("ci_grid_step")) {
         params.ci_grid_step = control["ci_grid_step"];

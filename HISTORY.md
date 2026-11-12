@@ -10,6 +10,28 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The screening selector checks its bootstrap parameters and reports 1 for an empty selection
+
+- `ScreenTRexSelector` checks `R_boot` and `ci_grid_step` at construction. `R_boot` is at least 2,
+  because the standard error of the bootstrap divides by the number of resamples minus one, and
+  `ci_grid_step` lies in (0, 1], because a step of 0 never advanced the grid over the confidence level
+  and the search did not end. The check runs whether or not `use_bootstrap_CI` is set, because the
+  biobank screening applies the bootstrap to every phenotype. The R glue rejects a negative `R_boot`
+  before the conversion to an unsigned count.
+- The estimated FDR of an empty selection is 1, as the estimator 1 / max(1, R) of the screening paper
+  (Machkour, Muma and Palomar, SSP 2023) and the documentation of the field state it. The code returned
+  0 there, like the R reference. An estimate of 0 lay inside every acceptance window that starts at 0,
+  so the biobank screening accepted an empty result where the paper falls back to the T-Rex selector.
+  With the default window of 0.05 to 0.15 the decision is the same before and after, and only the two
+  reported screening estimates of an empty result move from 0 to 1.
+- The help of `R_boot`, `ci_grid_step` and `estimated_FDR` says this in C++, R and Python. The guide
+  pages 06 of the three surfaces give the estimator and describe the bootstrap variant as what it is, a
+  confidence interval of the mean of the non-zero dummy coefficients with a selection by the averaged
+  coefficients, where they spoke of resampled experiments and an upper confidence bound.
+- The tests use a response that is orthogonal to the design and to the intercept, which leaves every
+  variable behind the first dummy, so the selection is empty for certain. They fail on the code before
+  the change. C++ tests 709 of 709, R tests 1,655, Python tests 663.
+
 #### The screening selector gains a nearest-neighbor variant
 
 - `TREX_DA_NN` is a new variant of the screening selector. The group of a variable holds the neighbors

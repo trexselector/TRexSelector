@@ -1163,7 +1163,7 @@ class ScreenTRexControlParameter:
     @property
     def R_boot(self) -> int:
         """
-        Number of bootstrap replicates (default 1000).
+        Number of bootstrap resamples, at least 2 (default 1000).
         """
     @R_boot.setter
     def R_boot(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1171,7 +1171,7 @@ class ScreenTRexControlParameter:
     @property
     def ci_grid_step(self) -> float:
         """
-        Step size for the confidence-interval grid.
+        Step of the grid over the confidence level, in (0, 1] (default 0.001).
         """
     @ci_grid_step.setter
     def ci_grid_step(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1302,7 +1302,7 @@ class ScreenTRexSelectionResult(SelectionResult):
     @property
     def estimated_FDR(self) -> float:
         """
-        Estimated false discovery rate.
+        Estimated false discovery rate, one over the number of selected variables. An empty selection reports 1.
         """
     @property
     def estimated_correlation(self) -> float:

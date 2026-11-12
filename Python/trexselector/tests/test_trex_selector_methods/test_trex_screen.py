@@ -200,6 +200,53 @@ def test_screen_unusable_coefficient_is_estimated(signal_data, method, capfd):
     assert "cor_coef" not in warning
 
 
+@pytest.mark.parametrize("field, value", [
+    ("R_boot", 0),
+    ("R_boot", 1),
+    ("ci_grid_step", 0.0),
+    ("ci_grid_step", -0.01),
+    ("ci_grid_step", 1.5),
+    ("ci_grid_step", float("nan")),
+])
+@pytest.mark.parametrize("use_bootstrap", [False, True])
+def test_screen_rejects_invalid_bootstrap_parameters(signal_data, field, value, use_bootstrap):
+    """R_boot is at least 2 and ci_grid_step lies in (0, 1], whether or not the bootstrap is on."""
+    X, y, n, p = signal_data
+    screen_ctrl = trexselector.ScreenTRexControlParameter()
+    screen_ctrl.use_bootstrap_CI = use_bootstrap
+    setattr(screen_ctrl, field, value)
+    with pytest.raises(ValueError, match=field):
+        trexselector.TRexScreeningSelector(X, y, screen_control=screen_ctrl, verbose=False)
+
+
+@pytest.mark.parametrize("use_bootstrap", [False, True])
+def test_screen_empty_selection_reports_one(use_bootstrap):
+    """The estimated FDR is one over the number of selected variables, and 1 for an empty selection."""
+    rng = np.random.default_rng(21)
+    n, p = 80, 40
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y_noise = rng.standard_normal(n)
+
+    # A response orthogonal to the design and to the intercept leaves every variable behind
+    # the first dummy, so nothing is selected
+    basis = np.column_stack([np.ones(n), X])
+    y_orth = y_noise - basis @ np.linalg.lstsq(basis, y_noise, rcond=None)[0]
+
+    screen_ctrl = trexselector.ScreenTRexControlParameter()
+    screen_ctrl.use_bootstrap_CI = use_bootstrap
+    screen_ctrl.R_boot = 100
+    res = trexselector.TRexScreeningSelector(X.copy(order="F"), y_orth, screen_control=screen_ctrl,
+                                             seed=5, verbose=False).select()
+    assert np.asarray(res.selected_var).sum() == 0
+    assert res.estimated_FDR == pytest.approx(1.0)
+
+    y_signal = 5 * X[:, 1] - 5 * X[:, 9] + 5 * X[:, 20] + 0.1 * y_noise
+    res = trexselector.TRexScreeningSelector(X.copy(order="F"), y_signal, seed=5, verbose=False).select()
+    selected = np.asarray(res.selected_var).sum()
+    assert selected > 0
+    assert res.estimated_FDR == pytest.approx(1.0 / selected)
+
+
 def test_screen_nn_groups_and_empty_group(signal_data):
     """TREX_DA_NN: a zero threshold keeps every neighbor (equals TREX_DA_AR1), and a variable
     without a correlated neighbor keeps its relative occurrence (equals plain screening)."""
