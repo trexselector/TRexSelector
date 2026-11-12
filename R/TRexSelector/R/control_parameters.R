@@ -251,8 +251,12 @@ trex_control <- function(solver = "TLARS",
 #'   (default: "BT"). "NN" is a nearest-neighbour correlation-threshold sweep
 #'   (BT-style) over a rho grid of length \code{hc_grid_length}.
 #' @param cor_coef Correlation coefficient for AR1/EQUI. -2.0 triggers auto-estimation
-#'   (default: -2.0).
-#' @param rho_thr_DA Threshold below which equi-correlation is skipped (default: 0.02).
+#'   (default: -2.0). Both methods use the magnitude of a supplied coefficient.
+#' @param rho_thr_DA Correlation threshold of the AR1 and EQUI methods (default: 0.02).
+#'   AR1: the window around a variable holds the lags whose correlation
+#'   \code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. EQUI: the
+#'   correction is skipped when \code{abs(cor_coef)} does not exceed the threshold,
+#'   range \code{[0, 1]}.
 #' @param hc_linkage Hierarchical clustering linkage: "Single", "Complete", "Average",
 #'   "WPGMA", "Ward" (default: "Single").
 #' @param hc_grid_length Number of grid points for BT/NN calibration. \code{0}

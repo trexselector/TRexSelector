@@ -103,8 +103,12 @@ inline void bind_trex_da(py::module& m) {
     py::class_<TRexDAControlParameter>(m, "TRexDAControlParameter", "Control parameters for TRexDASelector.")
         .def(py::init<>())
         .def_readwrite("method", &TRexDAControlParameter::method, "The data augmentation method to use.")
-        .def_readwrite("cor_coef", &TRexDAControlParameter::cor_coef, "Correlation coefficient parameter.")
-        .def_readwrite("rho_thr_DA", &TRexDAControlParameter::rho_thr_DA, "Correlation threshold for DA.")
+        .def_readwrite("cor_coef", &TRexDAControlParameter::cor_coef, "Correlation coefficient of the AR1 and EQUI "
+            "methods; -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient.")
+        .def_readwrite("rho_thr_DA", &TRexDAControlParameter::rho_thr_DA, "Correlation threshold of the AR1 and "
+            "EQUI methods (default 0.02). AR1: the window around a variable holds the lags whose correlation "
+            "abs(cor_coef)**lag reaches the threshold, range [0, 1). EQUI: the correction is skipped when "
+            "abs(cor_coef) does not exceed the threshold, range [0, 1].")
         .def_readwrite("hc_linkage", &TRexDAControlParameter::hc_linkage, "Hierarchical clustering linkage method.")
         .def_readwrite("hc_grid_length", &TRexDAControlParameter::hc_grid_length, "Grid length for hierarchical "
             "clustering.")

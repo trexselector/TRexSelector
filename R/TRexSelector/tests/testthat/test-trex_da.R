@@ -189,6 +189,15 @@ test_that("TRexDASelector correctly guards against invalid DA parameters", {
     TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "EQUI", rho_thr_DA = 1.5), verbose = FALSE),
     "rho_thr_DA"
   )
+  # AR1 takes thresholds in [0, 1): at 1 the window holds no neighbor. EQUI accepts 1
+  # (X + 0 is a copy, so the selector that stays alive does not hold X).
+  expect_error(
+    TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "AR1", rho_thr_DA = 1), verbose = FALSE),
+    "rho_thr_DA"
+  )
+  expect_no_error(
+    TRexDASelector$new(X + 0, y, da_control = trex_da_control(da_method = "EQUI", rho_thr_DA = 1), verbose = FALSE)
+  )
 
   # Invalid DA Methods that are caught by Rcpp string mapping
   expect_error(
@@ -209,6 +218,36 @@ test_that("TRexDASelector correctly guards against invalid DA parameters", {
     "Unsupported linkage method for DA-BT"
   )
 
+})
+
+
+
+test_that("TRexDASelector AR1 uses the magnitude of a supplied cor_coef", {
+
+  set.seed(42)
+  n <- 60
+  p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 2] * -4 + X[, 3] * 3 + rnorm(n)
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(cor_coef) {
+    selector <- TRexDASelector$new(X + 0, y, tFDR = 0.1, seed = 7, verbose = FALSE,
+                                   da_control = trex_da_control(da_method = "AR1", cor_coef = cor_coef),
+                                   control = trex_control(K = 5))
+    selector$select()
+    selector
+  }
+  neg <- run(-0.5)
+  pos <- run(0.5)
+
+  # The window follows abs(cor_coef), so both runs give the same result
+  expect_identical(neg$selected_var, pos$selected_var)
+  expect_equal(neg$phi_prime, pos$phi_prime)
+  expect_equal(neg$phi_mat, pos$phi_mat)
+
+  # The field reports the coefficient as supplied
+  expect_equal(neg$cor_coef, -0.5)
 })
 
 

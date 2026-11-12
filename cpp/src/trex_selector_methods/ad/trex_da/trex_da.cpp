@@ -91,6 +91,14 @@ void TRexDASelector::validateDAParameters() const {
             std::to_string(trex_da_ctrl_.rho_thr_DA));
     }
 
+    // AR1: a threshold of 1 gives a window of half-width 0, which holds no
+    // neighbor and switches the correction off.
+    if (trex_da_ctrl_.method == DAMethod::AR1 && trex_da_ctrl_.rho_thr_DA >= 1.0) {
+        throw std::invalid_argument(
+            "rho_thr_DA must be in [0, 1) for the AR1 method. Got: " +
+            std::to_string(trex_da_ctrl_.rho_thr_DA));
+    }
+
     // Check linkage method is one of the supported ones (BT and PRIOR_GROUPS
     // both run hierarchical clustering with this linkage).
     if (trex_da_ctrl_.method == DAMethod::BT ||
@@ -696,17 +704,23 @@ void TRexDASelector::setupDA_AR1() {
         da_setup_.cor_coef = trex_da_ctrl_.cor_coef;
     }
 
-    // Compute window half-width: kap = ceil(log(rho_thr_DA) / log(cor_coef))
-    if (da_setup_.cor_coef > 0.0 && da_setup_.cor_coef < 1.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
-        da_setup_.kap = static_cast<std::size_t>(
-            std::ceil(std::log(trex_da_ctrl_.rho_thr_DA) / std::log(da_setup_.cor_coef)));
-    } else if (da_setup_.cor_coef == 0.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
-        // Limit of the formula as cor_coef -> 0+ (the log ratio tends to 0+,
+    // Compute window half-width: kap = ceil(log(rho_thr_DA) / log(|cor_coef|)).
+    // The autocorrelation |cor_coef|^lag decays with the magnitude, so a
+    // negative coefficient gives the window of its absolute value.
+    const double rho_abs = std::abs(da_setup_.cor_coef);
+    if (rho_abs > 0.0 && rho_abs < 1.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
+        const double half_width =
+            std::ceil(std::log(trex_da_ctrl_.rho_thr_DA) / std::log(rho_abs));
+        // A window wider than the design is the full window.
+        da_setup_.kap = half_width < static_cast<double>(p_)
+            ? static_cast<std::size_t>(half_width) : p_;
+    } else if (rho_abs == 0.0 && trex_da_ctrl_.rho_thr_DA > 0.0) {
+        // Limit of the formula as |cor_coef| -> 0+ (the log ratio tends to 0+,
         // so ceil gives 1): minimal +/-1 window, NOT the full-window fallback
         // (uncorrelated predictors need no wide deflation window).
         da_setup_.kap = 1;
     } else {
-        // cor_coef >= 1 (perfect correlation) or rho_thr_DA == 0 (every lag
+        // |cor_coef| >= 1 (perfect correlation) or rho_thr_DA == 0 (every lag
         // exceeds the threshold): full window.
         da_setup_.kap = p_;
     }

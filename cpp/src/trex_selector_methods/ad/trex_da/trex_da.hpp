@@ -119,7 +119,8 @@ struct TRexDAControlParameter {
     DAMethod method = DAMethod::BT;
 
     /** @brief Correlation coefficient for AR1/EQUI.
-     *  AUTO_ESTIMATE_CORRELATION = auto-estimate from X.
+     *  AUTO_ESTIMATE_CORRELATION = auto-estimate from X. Both methods use the
+     *  magnitude of a supplied coefficient.
      *
      *  @note Auto-estimation details: for EQUI, the mean of all pairwise
      *  Pearson correlations (identical to the R reference). For AR1, the
@@ -130,7 +131,11 @@ struct TRexDAControlParameter {
      */
     double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
 
-    /** @brief Threshold below which equi-correlation correction is skipped (default: 0.02). */
+    /** @brief Correlation threshold of the AR1 and EQUI methods (default: 0.02).
+     *  AR1: the window around a variable holds the lags whose correlation
+     *  |cor_coef|^lag reaches the threshold, range [0, 1). EQUI: the correction
+     *  is skipped when |cor_coef| does not exceed the threshold, range [0, 1].
+     */
     double rho_thr_DA = 0.02;
 
     /** @brief Linkage method for BT clustering (default: Single).

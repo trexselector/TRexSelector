@@ -8,6 +8,27 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-12
+
+#### The AR1 window of the dependency-aware selector follows the magnitude of the coefficient
+
+- `TRexDASelector` builds the window of its AR1 method with the half-width
+  ceil(log(`rho_thr_DA`) / log(|`cor_coef`|)), as Definition 1 of the paper on autoregressive
+  dependency models (Machkour, Muma and Palomar, EUSIPCO 2024) states it. Two inputs left that
+  definition. A supplied negative `cor_coef` gave the full window of all p variables, because only a
+  positive coefficient entered the formula. `rho_thr_DA = 1` gave a half-width of 0, a window without a
+  neighbor, which switched the correction off without a message. The window now follows the magnitude
+  of the coefficient, and the AR1 method rejects `rho_thr_DA = 1` with an error, because its range is
+  [0, 1) while EQUI keeps [0, 1]. A half-width beyond the design counts as the full window. The
+  estimated coefficient was a magnitude before, so runs with the defaults do not change, and `cor_coef`
+  in the result stays the coefficient as supplied.
+- The help of `cor_coef` and `rho_thr_DA` describes both methods in C++, R and Python (the header,
+  `trex_da_control()` with its Rd page, the binding docstrings with the regenerated stub).
+- The C++ test pins the half-width for the coefficients 0.5 and -0.5, for a zero and a unit
+  coefficient, for a zero threshold and for a window wider than the design. The R and Python tests
+  compare the runs with -0.5 and 0.5 and check the rejected threshold. The new tests fail on the code
+  before the fix. C++ tests 699 of 699, R tests 1,568, Python tests 633.
+
 ### 2026-11-11
 
 #### The solver types register with cereal in their sources

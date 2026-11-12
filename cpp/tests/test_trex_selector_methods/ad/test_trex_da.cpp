@@ -282,7 +282,21 @@ TEST(TRexDATest, Validation_ThrowsOnInvalidParameters) {
         TRexDASelector selector(X_map, y_map, 0.1, da_params);
     }, std::invalid_argument);
 
-    da_params.rho_thr_DA = 0.5; // Reset to valid
+    // AR1 takes thresholds in [0, 1): at 1 the window holds no neighbor.
+    da_params.method = DAMethod::AR1;
+    da_params.rho_thr_DA = 1.0;
+    EXPECT_THROW({
+        TRexDASelector selector(X_map, y_map, 0.1, da_params);
+    }, std::invalid_argument);
+
+    // EQUI accepts 1: the correction is then always skipped.
+    da_params.method = DAMethod::EQUI;
+    EXPECT_NO_THROW({
+        TRexDASelector selector(X_map, y_map, 0.1, da_params);
+    });
+
+    da_params.method = DAMethod::BT; // Reset to the default
+    da_params.rho_thr_DA = 0.5;      // Reset to valid
 
     // 2. Prior Groups Length Mismatch
     da_params.prior_groups = {{1, 1, 1, 1, 1}}; // Incorrect length (p = 10)
@@ -440,6 +454,46 @@ TEST(TRexDATest, Estimation_AR1YuleWalkerRecoversKnownRho) {
     const double est = trex.estimateAR1Correlation();
     EXPECT_NEAR(est, rho, 0.05)
         << "Yule-Walker AR(1) estimate drifted from the true coefficient.";
+}
+
+/** @brief The AR(1) window half-width follows |cor_coef| and never drops to 0.
+ *
+ *  kap = ceil(log(rho_thr_DA) / log(|cor_coef|)): a negative coefficient gives
+ *  the window of its magnitude, a zero coefficient the minimal window, and a
+ *  zero threshold, a unit coefficient or an overlong window the full window.
+ */
+TEST(TRexDATest, Setup_AR1WindowFollowsCoefficientMagnitude) {
+    const std::size_t p = 40;
+    Eigen::MatrixXd X = Eigen::MatrixXd::Random(30, static_cast<Eigen::Index>(p));
+    Eigen::VectorXd y = Eigen::VectorXd::Random(30);
+
+    auto half_width = [&](double cor_coef, double rho_thr_DA) {
+        Eigen::MatrixXd X_run = X;
+        Eigen::VectorXd y_run = y;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
+
+        TRexDAControlParameter da_ctrl;
+        da_ctrl.method = DAMethod::AR1;
+        da_ctrl.cor_coef = cor_coef;
+        da_ctrl.rho_thr_DA = rho_thr_DA;
+
+        TRexDASelectorProbe trex(X_map, y_map, 0.1, da_ctrl, 42, false);
+        trex.setupDA();
+        return trex.da_setup_.kap;
+    };
+
+    // ceil(log(0.02) / log(0.5)) = ceil(5.64) = 6
+    EXPECT_EQ(half_width(0.5, 0.02), 6U);
+    EXPECT_EQ(half_width(-0.5, 0.02), 6U)
+        << "A negative coefficient must give the window of its magnitude.";
+
+    EXPECT_EQ(half_width(0.0, 0.02), 1U);        // minimal window
+    EXPECT_EQ(half_width(0.5, 0.0), p);          // every lag reaches the threshold
+    EXPECT_EQ(half_width(1.0, 0.02), p);         // perfect correlation
+    EXPECT_EQ(half_width(-1.0, 0.02), p);
+    EXPECT_EQ(half_width(0.999999, 0.02), p);    // wider than the design
+    EXPECT_GE(half_width(0.5, 0.999), 1U);       // never an empty window
 }
 
 // ========================================================================================

@@ -140,6 +140,39 @@ def test_da_prior_groups(signal_data):
     assert rho_grid[-1] == pytest.approx(1.0)
 
 
+def test_da_ar1_uses_coefficient_magnitude(signal_data, fast_control):
+    """The AR1 window follows abs(cor_coef): -0.5 and 0.5 give the same result."""
+    X, y, n, p = signal_data
+
+    def run(cor_coef):
+        da_ctrl = trexselector.TRexDAControlParameter()
+        da_ctrl.method = trexselector.DAMethod.AR1
+        da_ctrl.cor_coef = cor_coef
+        sel = trexselector.TRexDASelector(X.copy(order="F"), y.copy(), da_control=da_ctrl,
+                                          trex_control=fast_control, seed=7, verbose=False)
+        return sel.select()
+
+    neg, pos = run(-0.5), run(0.5)
+    assert np.array_equal(neg.selected_var, pos.selected_var)
+    np.testing.assert_allclose(neg.phi_prime, pos.phi_prime)
+    np.testing.assert_allclose(neg.phi_mat, pos.phi_mat)
+    # The field reports the coefficient as supplied
+    assert neg.cor_coef == pytest.approx(-0.5)
+
+
+def test_da_ar1_rejects_unit_threshold(signal_data):
+    """AR1 takes thresholds in [0, 1): at 1 the window holds no neighbor. EQUI accepts 1."""
+    X, y, n, p = signal_data
+    da_ctrl = trexselector.TRexDAControlParameter()
+    da_ctrl.method = trexselector.DAMethod.AR1
+    da_ctrl.rho_thr_DA = 1.0
+    with pytest.raises(ValueError, match="rho_thr_DA"):
+        trexselector.TRexDASelector(X, y, da_control=da_ctrl, verbose=False)
+
+    da_ctrl.method = trexselector.DAMethod.EQUI
+    trexselector.TRexDASelector(X, y, da_control=da_ctrl, verbose=False)
+
+
 def test_da_prior_groups_rejects_negative_labels(signal_data):
     """Negative prior-group labels are rejected at validation."""
     X, y, n, p = signal_data

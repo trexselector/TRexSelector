@@ -1753,7 +1753,7 @@ class TRexDAControlParameter:
     @property
     def cor_coef(self) -> float:
         """
-        Correlation coefficient parameter.
+        Correlation coefficient of the AR1 and EQUI methods; -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient.
         """
     @cor_coef.setter
     def cor_coef(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1793,7 +1793,7 @@ class TRexDAControlParameter:
     @property
     def rho_thr_DA(self) -> float:
         """
-        Correlation threshold for DA.
+        Correlation threshold of the AR1 and EQUI methods (default 0.02). AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
         """
     @rho_thr_DA.setter
     def rho_thr_DA(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
