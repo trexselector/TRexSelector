@@ -127,6 +127,13 @@ test_that("TRexBiobankScreeningSelector correctly triggers fallback T-Rex decisi
 
   # With such extreme bounds, it should reject Screen-TRex evaluation and use the full T-Rex
   expect_true(res$used_fallback_trex)
+
+  # A fallback result reports the target level (tFDR, default 0.1), the flag marks it, and the
+  # screening estimates stay in their own fields
+  expect_equal(res$estimated_FDR, 0.1)
+  expect_equal(res$method_used, "T-Rex (fallback)")
+  expect_true(res$estimated_FDR_screen_ordinary > 0 && res$estimated_FDR_screen_ordinary <= 1)
+  expect_true(res$estimated_FDR_screen_bootstrap > 0 && res$estimated_FDR_screen_bootstrap <= 1)
 })
 
 

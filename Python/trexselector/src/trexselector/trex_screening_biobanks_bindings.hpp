@@ -146,27 +146,24 @@ inline void bind_trex_screening_biobanks(py::module& m) {
             "screened phenotype.")
         .def_readonly("selected_indices", &BiobankScreenTRexResult::selected_indices, "0-based indices of selected "
             "predictors.")
-        .def_readonly("estimated_FDR", &BiobankScreenTRexResult::estimated_FDR, "Estimated FDR of the selection.")
-        .def_readonly("method_used", &BiobankScreenTRexResult::method_used, "Method used: 'screening_ordinary', "
-            "'screening_bootstrap', or 'trex'.")
+        .def_readonly("estimated_FDR", &BiobankScreenTRexResult::estimated_FDR, "FDR level of the final selection: "
+            "the estimate of the accepted screening variant, or, for a fallback result, the target level "
+            "target_FDR_trex, at which the T-Rex selector controls the FDR. An estimate can equal the target, so "
+            "used_fallback_trex tells the two cases apart.")
+        .def_readonly("method_used", &BiobankScreenTRexResult::method_used, "Method that gave the final selection: "
+            "'Screen-TRex (ordinary)', 'Screen-TRex (bootstrap-CI)' or 'T-Rex (fallback)'.")
         .def_readonly("estimated_FDR_screen_ordinary", &BiobankScreenTRexResult::estimated_FDR_screen_ordinary,
-            "Estimated "
-            ""
-            "FDR from the ordinary (non-bootstrap) screening method.")
+            "Estimated FDR of the ordinary screening, stored for every phenotype, a fallback result included.")
         .def_readonly("estimated_FDR_screen_bootstrap", &BiobankScreenTRexResult::estimated_FDR_screen_bootstrap,
-            "Estimated "
-            ""
-            "FDR from the bootstrap screening method.")
+            "Estimated FDR of the bootstrap screening, stored for every phenotype, a fallback result included.")
         .def_readonly("selected_indices_screen_ordinary", &BiobankScreenTRexResult::selected_indices_screen_ordinary,
-            "Selected "
-            ""
-            "indices from the ordinary screening method (0-based).")
+            "Selected indices of the ordinary screening (0-based), stored for every phenotype, also when another "
+            "method gave the final selection.")
         .def_readonly("selected_indices_screen_bootstrap", &BiobankScreenTRexResult::selected_indices_screen_bootstrap,
-            "Selected "
-            ""
-            "indices from the bootstrap screening method (0-based).")
-        .def_readonly("used_fallback_trex", &BiobankScreenTRexResult::used_fallback_trex, "True if the T-Rex fallback "
-            "was used instead of screening.");
+            "Selected indices of the bootstrap screening (0-based), stored for every phenotype, also when another "
+            "method gave the final selection.")
+        .def_readonly("used_fallback_trex", &BiobankScreenTRexResult::used_fallback_trex, "True if the fallback T-Rex "
+            "selector gave the final selection. estimated_FDR then holds the target level and not an estimate.");
 
     py::class_<PyBiobankScreenTRex>(m, "TRexBiobankScreeningSelector",
         "Biobank-scale T-Rex selector for FDR-controlled variable selection across one or many "

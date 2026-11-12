@@ -138,6 +138,9 @@ len(records)
 ```
 
 Each record names the phenotype, the method that produced the result and whether the fallback ran.
+For a screening result `estimated_FDR` is the estimate of the accepted variant. For a fallback result
+it is the target level `target_FDR_trex`, at which the T-Rex selector controls the FDR. An estimate
+can equal the target, so `used_fallback_trex` tells the two cases apart.
 
 ```{code-cell} python
 print(f"{'phenotype':<10}{'selected':>9}{'estimated_FDR':>15}  {'method':<24}{'fallback':>9}")

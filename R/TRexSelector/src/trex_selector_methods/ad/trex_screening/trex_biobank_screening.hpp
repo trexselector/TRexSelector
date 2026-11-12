@@ -50,31 +50,42 @@ struct BiobankScreenTRexResult {
     /** @brief Final selected variable indices (from chosen method). */
     std::vector<std::size_t> selected_indices;
 
-    /** @brief Estimated FDR of final selection. */
+    /** @brief FDR level of the final selection.
+     *
+     * @details The estimate of the accepted screening variant, or, for a
+     *  fallback result, the target level `target_FDR_trex`, at which the
+     *  T-Rex selector controls the FDR. An estimate can equal the target, so
+     *  `used_fallback_trex` tells the two cases apart.
+     */
     double estimated_FDR;
 
     /** @brief Method used for selection */
     std::string method_used;
 
-    /** @brief Estimated FDR (ordinary). */
+    /** @brief Estimated FDR of the ordinary screening, stored for every
+     *  phenotype, a fallback result included. */
     double estimated_FDR_screen_ordinary;
 
-    /** @brief Estimated FDR (bootstrap). */
+    /** @brief Estimated FDR of the bootstrap screening, stored for every
+     *  phenotype, a fallback result included. */
     double estimated_FDR_screen_bootstrap;
 
     /** @brief Selected indices from ordinary Screen-TRex
      *
-     * @details Empty if not used in final selection.
+     * @details Stored for every phenotype, also when another method gave the
+     *  final selection.
      */
     std::vector<std::size_t> selected_indices_screen_ordinary;
 
     /** @brief Selected indices from bootstrap Screen-TRex
      *
-     * @details Empty if not used in final selection.
+     * @details Stored for every phenotype, also when another method gave the
+     *  final selection.
      */
     std::vector<std::size_t> selected_indices_screen_bootstrap;
 
-    /** @brief True if standard T-Rex was used */
+    /** @brief True if the fallback T-Rex selector gave the final selection.
+     *  `estimated_FDR` then holds the target level and not an estimate. */
     bool used_fallback_trex;
 };
 
@@ -280,7 +291,8 @@ public:
         /** @brief Number of phenotypes using fallback T-REx result. */
         std::size_t num_used_trex = 0;
 
-        /** @brief Average estimated FDR across all phenotypes. */
+        /** @brief Average of `estimated_FDR` across all phenotypes: estimates
+         *  for screening results and the target level for fallback results. */
         double avg_estimated_FDR;
 
         /** @brief Average number of selected variables across all phenotypes. */

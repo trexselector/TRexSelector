@@ -208,6 +208,9 @@ TEST(TRexBiobankScreeningEstimateTest, Execution_EmptyScreeningFallsBack) {
     EXPECT_DOUBLE_EQ(result.estimated_FDR_screen_bootstrap, 1.0);
     EXPECT_TRUE(result.used_fallback_trex);
     EXPECT_EQ(result.method_used, "T-Rex (fallback)");
+
+    // A fallback result reports the target level, and the flag marks it.
+    EXPECT_DOUBLE_EQ(result.estimated_FDR, control.target_FDR_trex);
 }
 
 

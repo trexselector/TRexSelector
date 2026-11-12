@@ -126,6 +126,9 @@ length(res)
 ```
 
 Each record names the phenotype, the method that produced the result and whether the fallback ran.
+For a screening result `estimated_FDR` is the estimate of the accepted variant. For a fallback result it
+is the target level `tFDR`, at which the T-Rex selector controls the FDR. An estimate can equal the
+target, so `used_fallback_trex` tells the two cases apart.
 
 ```{r records}
 summary_tab <- do.call(rbind, lapply(res, function(r)

@@ -10,6 +10,23 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The result of the biobank screening says what its FDR level is
+
+- `estimated_FDR` of a biobank result holds the estimate of the accepted screening variant, or, for a
+  fallback result, the target level at which the T-Rex selector controls the FDR. The documentation
+  called it an estimate in both cases. An estimate is one over the number of selected variables, so it
+  can equal the target, for example 0.1 with ten selected variables, and the number alone does not tell
+  the cases apart. The help now says that `used_fallback_trex` does, and that the two screening
+  estimates and the two screening index lists are stored for every phenotype, a fallback result
+  included. The header said these lists are empty when another method gave the final selection, which
+  the code never did.
+- The Python text of `method_used` named values that the code does not return. It now names the three
+  it returns, "Screen-TRex (ordinary)", "Screen-TRex (bootstrap-CI)" and "T-Rex (fallback)".
+- The change is documentation in C++, R and Python and one passage in the guide pages 06 of the three
+  surfaces. The code does not change. The tests pin the contract: a fallback result reports the target
+  level, carries the flag and keeps both screening estimates. C++ tests 711 of 711, R tests 1,733,
+  Python tests 665.
+
 #### The biobank screening gives every phenotype its own seed
 
 - `BiobankScreenTRex` passed its seed to the screening of every phenotype, so all phenotypes competed

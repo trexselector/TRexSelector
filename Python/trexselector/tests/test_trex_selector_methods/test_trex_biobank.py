@@ -166,6 +166,23 @@ def test_select_2d_result_types(signal_data):
         assert 0.0 <= res.estimated_FDR <= 1.0
 
 
+def test_fallback_result_reports_the_target(signal_data):
+    """A fallback result reports the target level, the flag marks it, and the screening
+    estimates stay in their own fields."""
+    X, y, n, p = signal_data
+    ctrl = BiobankScreenTRexControl()
+    ctrl.lower_bound_FDR = 0.0001   # an acceptance window no estimate 1 / R can meet
+    ctrl.upper_bound_FDR = 0.0002
+    ctrl.target_FDR_trex = 0.2
+    res = TRexBiobankScreeningSelector(X.copy(order="F"), y.copy(), bio_ctrl=ctrl, seed=3, verbose=False).select()
+
+    assert res.used_fallback_trex is True
+    assert res.method_used == "T-Rex (fallback)"
+    assert res.estimated_FDR == pytest.approx(0.2)
+    assert 0.0 < res.estimated_FDR_screen_ordinary <= 1.0
+    assert 0.0 < res.estimated_FDR_screen_bootstrap <= 1.0
+
+
 def test_phenotypes_use_independent_seeds():
     """Phenotype i runs with seed + i, and a single-phenotype run with that seed reproduces it."""
     rng = np.random.default_rng(31)

@@ -124,7 +124,12 @@ with \code{phenotype_index}, \code{selected_indices}, \code{estimated_FDR},
 \code{method_used}, \code{estimated_FDR_screen_ordinary},
 \code{estimated_FDR_screen_bootstrap}, \code{selected_indices_screen_ordinary},
 \code{selected_indices_screen_bootstrap}, and \code{used_fallback_trex}
-(indices are 1-based). For a matrix \code{Y}, a plain list of such records,
+(indices are 1-based). \code{estimated_FDR} is the estimate of the accepted screening
+variant, or, for a fallback result, the target level \code{tFDR}, at which the T-Rex
+selector controls the FDR. An estimate can equal the target, so
+\code{used_fallback_trex} tells the two cases apart. The two screening estimates and
+the two screening index vectors are stored for every phenotype, a fallback result
+included. For a matrix \code{Y}, a plain list of such records,
 one per column, so \code{res[[i]]} has the same shape as the vector case.
 This mirrors the Python binding, which returns one result object (vector)
 or a list of them (matrix). A tidy summary table is one line away, e.g.

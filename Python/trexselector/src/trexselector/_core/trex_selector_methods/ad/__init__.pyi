@@ -99,22 +99,22 @@ class BiobankScreenTRexResult:
     @property
     def estimated_FDR(self) -> float:
         """
-        Estimated FDR of the selection.
+        FDR level of the final selection: the estimate of the accepted screening variant, or, for a fallback result, the target level target_FDR_trex, at which the T-Rex selector controls the FDR. An estimate can equal the target, so used_fallback_trex tells the two cases apart.
         """
     @property
     def estimated_FDR_screen_bootstrap(self) -> float:
         """
-        Estimated FDR from the bootstrap screening method.
+        Estimated FDR of the bootstrap screening, stored for every phenotype, a fallback result included.
         """
     @property
     def estimated_FDR_screen_ordinary(self) -> float:
         """
-        Estimated FDR from the ordinary (non-bootstrap) screening method.
+        Estimated FDR of the ordinary screening, stored for every phenotype, a fallback result included.
         """
     @property
     def method_used(self) -> str:
         """
-        Method used: 'screening_ordinary', 'screening_bootstrap', or 'trex'.
+        Method that gave the final selection: 'Screen-TRex (ordinary)', 'Screen-TRex (bootstrap-CI)' or 'T-Rex (fallback)'.
         """
     @property
     def phenotype_index(self) -> int:
@@ -129,17 +129,17 @@ class BiobankScreenTRexResult:
     @property
     def selected_indices_screen_bootstrap(self) -> list[int]:
         """
-        Selected indices from the bootstrap screening method (0-based).
+        Selected indices of the bootstrap screening (0-based), stored for every phenotype, also when another method gave the final selection.
         """
     @property
     def selected_indices_screen_ordinary(self) -> list[int]:
         """
-        Selected indices from the ordinary screening method (0-based).
+        Selected indices of the ordinary screening (0-based), stored for every phenotype, also when another method gave the final selection.
         """
     @property
     def used_fallback_trex(self) -> bool:
         """
-        True if the T-Rex fallback was used instead of screening.
+        True if the fallback T-Rex selector gave the final selection. estimated_FDR then holds the target level and not an estimate.
         """
 class DAMethod:
     """
