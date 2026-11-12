@@ -232,9 +232,10 @@ public:
 // Cereal polymorphic registration
 // =============================================================================
 // Required to serialize a TLASSO_Solver held through a TLARS_Solver pointer
-// (e.g. TENETAug_Solver's inner solver). The base relation is registered
-// automatically via cereal::base_class in serialize().
+// (e.g. TENETAug_Solver's inner solver). The type is registered in
+// tlasso_solver.cpp, so its serialization code is compiled once. The macro
+// below links that source into every program that includes this header.
 #include <cereal/types/polymorphic.hpp>
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TLASSO_Solver)
+CEREAL_FORCE_DYNAMIC_INIT(trex_tlasso_solver)
 
 #endif /* TSOLVERS_TLASSO_SOLVER_HPP */

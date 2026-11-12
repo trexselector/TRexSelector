@@ -191,7 +191,10 @@ public:
 // =============================================================================
 // Cereal polymorphic registration
 // =============================================================================
+// The type is registered in tcdenet_solver.cpp, so its serialization code is
+// compiled once. The macro below links that source into every program that
+// includes this header.
 #include <cereal/types/polymorphic.hpp>
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::cd_based::TCDENET_Solver)
+CEREAL_FORCE_DYNAMIC_INIT(trex_tcdenet_solver)
 
 #endif /* End of TSOLVERS_LINEAR_MODEL_CD_BASED_TCDENET_SOLVER_HPP */

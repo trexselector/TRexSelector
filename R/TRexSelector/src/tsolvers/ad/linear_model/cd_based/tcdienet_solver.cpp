@@ -258,3 +258,12 @@ TCDIENET_Solver TCDIENET_Solver::load(const std::string& filename,
 
 // ============================================================================
 }  /* End of namespace trex::tsolvers::ad::linear_model::cd_based */
+
+// ============================================================================
+// Cereal polymorphic registration
+// ============================================================================
+// Registered in this source and not in the header: every source that includes
+// the header would otherwise compile the serialization code again. The
+// bindings cover the archives included above, binary and portable binary.
+CEREAL_REGISTER_DYNAMIC_INIT(trex_tcdienet_solver)
+CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::cd_based::TCDIENET_Solver)

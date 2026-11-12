@@ -8,6 +8,33 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-11
+
+#### The solver types register with cereal in their sources
+
+- CRAN's check of 2.0.1 on r-release-macos-x86_64 ended with FAIL and without an error. The log stops
+  inside the re-building of the vignettes at 30:03 of wall clock, after an install of 26 minutes, so the
+  time limit of the builder ended the check and the compile time was the lever. Eight solver headers
+  ended with `CEREAL_REGISTER_TYPE`, two of them with `CEREAL_REGISTER_POLYMORPHIC_RELATION` as well.
+  Every source that included a solver header therefore compiled the save and load code of these solvers
+  again, in up to 36 of the 48 objects of the R package. Under clang 14 with libc++ 14, the compiler
+  generation of that builder, 77 % of the function code in the objects was such repeated code.
+- The ten macro lines moved to the end of the eight solver sources (TLASSO, TENETAug, TIENET, TIENETAug,
+  TIKNET, TCDENET, TCDIENET and TCDTIKNET). The bindings cover the binary and the portable binary
+  archive as before. These are the archives that work with a solver, because the matrices are stored as
+  binary blocks and a text archive never compiled. Each header keeps `CEREAL_FORCE_DYNAMIC_INIT` and
+  each source carries `CEREAL_REGISTER_DYNAMIC_INIT`. This pair of cereal links the registering object
+  out of the static library into every program that includes the header, so a program that reloads a
+  solver through a `TSolver_Base` pointer and uses nothing else of its class works as before.
+- Measured under clang 14, four files at a time, the sources of the R package take 896 CPU seconds
+  before and 351 after, and the largest compiler process needs 1.3 GiB where it needed 1.9 GiB. The C++
+  library with its tests builds in 290 CPU seconds where it took 405 (Clang 23, Release), the Python
+  extension in about 160 where it took 208, and the manylinux wheel in about 14 CPU minutes where it
+  took 17:30. No interface or result changes. The C++ tests pass on macOS and on Linux with GCC 13.3
+  (698 of 698), the Python tests on macOS and in the manylinux_2_28 wheel (631 of 631) and the R tests
+  (1,562). A consumer of the installed static libraries saves and reloads the augmented solver and a
+  solver behind a base pointer with both archives.
+
 ### 2026-11-10
 
 #### The R package carries the setup of its pkgdown site

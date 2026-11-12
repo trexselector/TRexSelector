@@ -331,7 +331,10 @@ protected:
 // ============================================================================
 // Cereal polymorphic registration
 // ============================================================================
+// The type is registered in tienet_solver.cpp, so its serialization code is
+// compiled once. The macro below links that source into every program that
+// includes this header.
 #include <cereal/types/polymorphic.hpp>
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TIENET_Solver)
+CEREAL_FORCE_DYNAMIC_INIT(trex_tienet_solver)
 
 #endif /* End of TSOLVERS_LINEAR_MODEL_LARS_BASED_TIENET_SOLVER_HPP */

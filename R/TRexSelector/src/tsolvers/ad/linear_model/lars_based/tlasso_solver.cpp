@@ -248,3 +248,14 @@ TLASSO_Solver TLASSO_Solver::load(const std::string& filename,
 
 // ============================================================================
 }  // namespace trex::tsolvers::ad::linear_model::lars_based
+
+// ============================================================================
+// Cereal polymorphic registration
+// ============================================================================
+// Registered in this source and not in the header: every source that includes
+// the header would otherwise compile the serialization code again. The
+// bindings cover the archives included above, binary and portable binary.
+// The base relation is registered automatically via cereal::base_class in
+// serialize().
+CEREAL_REGISTER_DYNAMIC_INIT(trex_tlasso_solver)
+CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TLASSO_Solver)

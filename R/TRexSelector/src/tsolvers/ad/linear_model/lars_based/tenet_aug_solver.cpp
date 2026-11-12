@@ -343,3 +343,14 @@ TENETAug_Solver TENETAug_Solver::load(
 // ============================================================================
 } // namespace trex::tsolvers::ad::linear_model::lars_based
 // ============================================================================
+
+// ============================================================================
+// Cereal polymorphic registration
+// ============================================================================
+// Registered in this source and not in the header: every source that includes
+// the header would otherwise compile the serialization code again. The
+// bindings cover the archives included above, binary and portable binary.
+CEREAL_REGISTER_DYNAMIC_INIT(trex_tenet_aug_solver)
+CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TENETAug_Solver)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(trex::tsolvers::ad::TSolver_Base,
+                                     trex::tsolvers::ad::linear_model::lars_based::TENETAug_Solver)
