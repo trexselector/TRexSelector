@@ -1473,7 +1473,7 @@ class SolverHyperparameters:
     @property
     def tol(self) -> float:
         """
-        Numerical tolerance for solver steps.
+        Numerical tolerance of the selector (default 1e-6): the threshold of its own comparisons and the tolerance of the solvers in its random experiments. A stand-alone solver defaults to machine epsilon (SolverOptions.tol). The two tolerances serve different purposes and differ on purpose.
         """
     @tol.setter
     def tol(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:

@@ -16,6 +16,15 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The two tolerances of the solvers differ on purpose
+
+- A solver has the tolerance `tol` of its internal comparisons, machine epsilon by default. A selector has
+  its own `tol`, 1e-6 by default. It is the threshold of the selector's own comparisons, and the selector
+  sets it on the solvers of its random experiments. The two serve different purposes, were looked at
+  before and stay as they are.
+- The documentation of both fields in C++, the help of `trex_control()` and `tsolver_options()` in R and
+  the Python texts say which default applies where. No code changes.
+
 #### The R vignettes say why they copy the design with `X + 0`
 
 - The vignettes 03, 09 and 12 keep the design of a run in `X_before <- X + 0`. A plain assignment

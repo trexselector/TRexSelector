@@ -322,8 +322,10 @@ inline void bind_trex_core(py::module& m_tsm) {
             "solver in (0, 1].")
         .def_readwrite("ncgmp_variant", &disp::SolverHyperparameters::ncgmp_variant, "NCGMP variant: 0 = LineSearch, 1 "
             "= FullyCorrective.")
-        .def_readwrite("tol",           &disp::SolverHyperparameters::tol,           "Numerical tolerance for solver "
-            "steps.")
+        .def_readwrite("tol",           &disp::SolverHyperparameters::tol,           "Numerical tolerance of the "
+            "selector (default 1e-6): the threshold of its own comparisons and the tolerance of the solvers in its "
+            "random experiments. A stand-alone solver defaults to machine epsilon (SolverOptions.tol). The "
+            "two tolerances serve different purposes and differ on purpose.")
         .def_readwrite("exch_tie_alpha", &disp::SolverHyperparameters::exch_tie_alpha, "Exchangeable-tie band width "
             "for "
             "greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under trex+DA: 0.25.")

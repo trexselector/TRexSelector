@@ -78,7 +78,10 @@
 #'   store nothing: "SEEDED" is the storage-free twin of "STANDARD" (fresh
 #'   dummies at every L step, bit-identical to "STANDARD" for the same seed)
 #'   and "PERMUTATION_SEEDED" the storage-free twin of "PERMUTATION".
-#' @param tol Tolerance for solver algorithms (default: 1e-6).
+#' @param tol Numerical tolerance of the selector (default: 1e-6): the threshold of
+#'   its own comparisons and the tolerance of the solvers in its random experiments.
+#'   A stand-alone solver defaults to machine epsilon (\code{\link{tsolver_options}}).
+#'   The two tolerances serve different purposes and differ on purpose.
 #' @param lambda2 Elastic-net L2 penalty (TENET hyperparameter, default: 0.1).
 #' @param rho_afs AFS hyperparameter (default: 0.3).
 #' @param ncgmp_variant NCGMP variant: 0 = line_search, 1 = fully_corrective (default: 0).

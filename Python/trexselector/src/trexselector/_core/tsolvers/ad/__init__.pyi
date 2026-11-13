@@ -289,7 +289,8 @@ class SolverOptions:
     @property
     def tol(self) -> float:
         """
-        Numerical tolerance of the solver's internal comparisons. Default: machine epsilon.
+        Numerical tolerance of the solver's internal comparisons. Default: machine epsilon. A
+        selector sets its own tolerance on the solvers it runs (1e-6 by default).
         """
     @tol.setter
     def tol(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:

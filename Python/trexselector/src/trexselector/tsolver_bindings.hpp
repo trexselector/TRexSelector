@@ -702,7 +702,8 @@ inline void bind_solver_options(py::module& m) {
             "Column scaling applied when normalize is True: ScalingMode.L2 (default) or ZSCORE.")
        .def_readwrite("verbose", &SolverOptions::verbose, "Print status and diagnostics. Default False.")
        .def_readwrite("tol", &SolverOptions::tol,
-            "Numerical tolerance of the solver's internal comparisons. Default: machine epsilon.")
+            "Numerical tolerance of the solver's internal comparisons. Default: machine epsilon. A\n"
+            "selector sets its own tolerance on the solvers it runs (1e-6 by default).")
        .def_readwrite("tie_seed", &SolverOptions::tie_seed,
             "Seed of the tie-break engine. Default 0: a fixed seed, so a solver run is reproducible "
             "also where exact ties occur; < 0 seeds from std::random_device (nondeterministic).")

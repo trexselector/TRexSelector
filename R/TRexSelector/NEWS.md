@@ -38,6 +38,8 @@
   `tikhonov_K` is optional under `"GROUP_CENTERING"`. The vignette no longer runs the deprecated solver
   `"TCDTIKNET"` with the decoupled dummy block.
 * Three vignettes say why they copy the design with `X + 0`.
+* The help of `tol` in `trex_control()` and in `tsolver_options()` says that the selector and the
+  stand-alone solver have different defaults on purpose.
 
 ## New
 

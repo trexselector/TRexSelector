@@ -119,7 +119,8 @@ struct SolverOptions {
     // --- Numerics and tie-breaking (every solver) -------------------------
 
     /** @brief Numerical tolerance of the solver's internal comparisons
-     *  (collinearity, step roots, ...). Default: machine epsilon. */
+     *  (collinearity, step roots, ...). Default: machine epsilon. A selector
+     *  sets its own tolerance on the solvers it runs (1e-6 by default). */
     double tol = std::numeric_limits<double>::epsilon();
 
     /** @brief Seed of the solver's tie-break engine (pruneTiedDummies

@@ -49,7 +49,9 @@ NULL
 #'   scaling applied when \code{normalize} is \code{TRUE}.
 #' @param verbose Logical; print status and diagnostics. Default \code{FALSE}.
 #' @param tol Numerical tolerance of the solver's internal comparisons.
-#'   Default: machine epsilon.
+#'   Default: machine epsilon. A selector sets its own tolerance on the
+#'   solvers it runs, \code{tol} of \code{\link{trex_control}} (1e-6 by
+#'   default).
 #' @param tie_seed Seed of the solver's tie-break engine. Default 0: a fixed
 #'   seed, so a solver run is reproducible also where exact ties occur; a
 #'   negative value seeds from the system entropy source (nondeterministic).

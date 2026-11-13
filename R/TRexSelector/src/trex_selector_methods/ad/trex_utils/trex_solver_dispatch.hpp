@@ -133,7 +133,10 @@ struct SolverHyperparameters {
     /** @brief Variant selector for NCGMP solver
      * (0: Line Search/MP, 1: Fully Corrective/OMP) (ignored by non-using solvers). */
     int ncgmp_variant = 0;  //
-    /** @brief Numerical tolerance for solver steps. */
+    /** @brief Numerical tolerance of the selector: the threshold of its own
+     *  comparisons and the tolerance of the solvers in its random experiments.
+     *  A stand-alone solver defaults to machine epsilon (SolverOptions::tol).
+     *  The two tolerances serve different purposes and differ on purpose. */
     double tol = 1e-6;      //
     /** @brief Exchangeable-tie band width for greedy solvers (TOMP/TAFS), in
      * units of the pairwise ranking-noise sd. When > 0, statistically
