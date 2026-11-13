@@ -16,6 +16,18 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The guides say that the design comes back up to rounding
+
+- A selector and a writing T-solver center and scale the design in place and undo it afterwards. The
+  undo is not bit-exact, because centering, scaling and their inverse are floating-point operations. The
+  difference is of the order of 1e-16 (2.22e-16 in the T-solver example of the C++ guide), so a
+  comparison for identity fails while a comparison with a tolerance holds.
+- The guide pages print that difference and called it "the original values are back" (pages 03 and 12),
+  "the file holds the original values again" (page 11) and "the original values" (page 09). The comments
+  and labels now read "restored up to rounding", in the R vignettes, the Python guide pages and the two
+  C++ examples. Page 12, the page about the work in place, says it in its text as well. Exact bits would
+  need a copy of the design, which no binding makes.
+
 #### The PERMUTATION strategy permutes the dummies
 
 - The strategy tables of the C++, R and Python READMEs and of guide page 03 on the three surfaces

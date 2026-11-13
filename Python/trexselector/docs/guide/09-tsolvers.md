@@ -210,9 +210,9 @@ from trexselector.tsolvers.ad.lars_based import TLASSO_Solver
 
 X_before = X.copy(order="F")
 w = TLASSO_Solver(X, D, y)
-print("the scaled columns:  ", np.abs(X - X_before).max())
+print("the scaled columns:      ", np.abs(X - X_before).max())
 w.restore(X, D, y)
-print("the original values: ", np.abs(X - X_before).max())
+print("restored up to rounding: ", np.abs(X - X_before).max())
 ```
 
 A pipeline that runs several solvers on one design scales the data once in front with a scaler and

@@ -110,7 +110,7 @@ sel_mem.select()
 sel_map = tsn.TRexSelector(mm.to_numpy(), y, tFDR=0.1, trex_control=ctrl, seed=3, verbose=False)
 sel_map.select()
 print(list(sel_mem.selected_indices) == list(sel_map.selected_indices))
-print(np.max(np.abs(mm.to_numpy() - X)))      # the file holds the original values again
+print(np.max(np.abs(mm.to_numpy() - X)))      # the file is restored up to rounding
 ```
 
 The same holds for `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector`,

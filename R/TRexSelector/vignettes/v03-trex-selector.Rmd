@@ -251,7 +251,7 @@ X_before <- X + 0
 r_sel <- TRexSelector$new(X, y, tFDR = 0.1, seed = 42, verbose = FALSE)
 max(abs(X - X_before))      # the working design
 r_sel$restore()
-max(abs(X - X_before))      # the original values are back
+max(abs(X - X_before))      # restored up to rounding
 ```
 
 # FDR control in a small simulation

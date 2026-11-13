@@ -110,7 +110,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     TRexSelector sel_map(view, y_map, 0.1, ctrl, 3, false);   // the map of the file
     sel_map.select();
     std::cout << (sel_mem.getSelectedIndices() == sel_map.getSelectedIndices()) << '\n';
-    std::cout << (view - X).cwiseAbs().maxCoeff() << '\n';   // the original values are back
+    std::cout << (view - X).cwiseAbs().maxCoeff() << '\n';   // restored up to rounding
     //! [select]
 
     doc.begin("readonly");

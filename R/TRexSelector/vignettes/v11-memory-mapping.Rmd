@@ -107,7 +107,7 @@ sel_map <- TRexSelector$new(mm, y, tFDR = 0.1, seed = 3, verbose = FALSE,
                             control = trex_control(K = 10))
 sel_map$select()
 identical(sel_mem$selected_indices, sel_map$selected_indices)
-max(abs(as.matrix(mm) - X))      # the file holds the original values again
+max(abs(as.matrix(mm) - X))      # the file is restored up to rounding
 ```
 
 The same holds for `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector`,

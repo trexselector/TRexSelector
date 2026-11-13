@@ -204,7 +204,7 @@ X_before <- X + 0
 w <- TLASSO_Solver$new(X, D, y)
 max(abs(X - X_before))      # the scaled columns
 w$restore()
-max(abs(X - X_before))      # the original values
+max(abs(X - X_before))      # restored up to rounding
 ```
 
 A pipeline that runs several solvers on one design scales the data once in front with a scaler and

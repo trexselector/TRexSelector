@@ -23,6 +23,9 @@
   dummies.
 * The strategy table of the README and of the vignette "The T-Rex selector" describes `"PERMUTATION"`
   as what it is, one base dummy matrix whose rows are permuted per experiment.
+* Four vignettes print the difference between the design before and after a run. Their comments now say
+  "restored up to rounding", because the design comes back with differences of the order of 1e-16, and
+  the vignette "Working without data copies" says so in its text.
 
 ## New
 

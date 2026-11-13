@@ -162,9 +162,9 @@ int main() {
 
     lars::TLASSO_Solver w(X_map, D_map, y_map);
     std::cout << std::scientific << std::setprecision(2);
-    std::cout << "the scaled columns:  " << max_diff() << '\n';
+    std::cout << "the scaled columns:      " << max_diff() << '\n';
     w.restore(X_map, D_map, y_map);
-    std::cout << "the original values: " << max_diff() << '\n';
+    std::cout << "restored up to rounding: " << max_diff() << '\n';
     //! [writers]
 
     doc.begin("readers");

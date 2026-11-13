@@ -274,7 +274,7 @@ X_before = X.copy()
 r_sel = tsn.TRexSelector(X, y, tFDR=0.1, seed=42, verbose=False)
 print(np.abs(X - X_before).max())      # the working design
 r_sel.restore()
-print(np.abs(X - X_before).max())      # the original values are back
+print(np.abs(X - X_before).max())      # restored up to rounding
 ```
 
 ## FDR control in a small simulation

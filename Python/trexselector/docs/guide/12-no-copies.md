@@ -52,10 +52,11 @@ sel_f.restore()
 ## Selectors: in place at construction, back at the end
 
 A selector centers and scales `X` in place when it is constructed and writes the original values
-back when `select()` returns. In between, `X` holds the working design. `restore()` writes back
-early for a selector that will not run, and a selector that is garbage collected without running
-writes back in its finalizer. A `select()` that ends with an error writes back at once and retires
-the selector.
+back when `select()` returns. The values come back up to rounding, because centering, scaling and
+their inverse are floating-point operations. In between, `X` holds the working design. `restore()`
+writes back early for a selector that will not run, and a selector that is garbage collected without
+running writes back in its finalizer. A `select()` that ends with an error writes back at once and
+retires the selector.
 
 ```{code-cell} python
 n, p = 80, 40
@@ -67,7 +68,7 @@ ctrl.K = 10
 sel = tsn.TRexSelector(X, y, tFDR=0.1, trex_control=ctrl, seed=2, verbose=False)
 print(np.round(np.sqrt((X ** 2).sum(axis=0))[:3], 6))   # the working design: unit columns
 sel.select()
-print(np.max(np.abs(X - X_before)))                      # the original values are back
+print(np.max(np.abs(X - X_before)))                      # restored up to rounding
 ```
 
 ## T-solvers: writers and readers

@@ -28,10 +28,11 @@ from the start. The headers and names of this page:
 ## Selectors: in place at construction, back at the end
 
 A selector centers and scales `X` in place when it is constructed and writes the original values
-back when `select()` returns. In between, `X` holds the working design. `restore()` writes back
-early for a selector that will not run, and a selector that is destroyed without running writes back
-in its destructor. A `select()` that ends with an exception writes back at once and retires the
-selector.
+back when `select()` returns. The values come back up to rounding, because centering, scaling and
+their inverse are floating-point operations. In between, `X` holds the working design. `restore()`
+writes back early for a selector that will not run, and a selector that is destroyed without running
+writes back in its destructor. A `select()` that ends with an exception writes back at once and
+retires the selector.
 
 \snippet{trimleft} no_copies.cpp selector
 \output{no_copies.selector.txt}
