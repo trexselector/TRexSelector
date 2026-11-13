@@ -16,9 +16,8 @@ chain and asks neighbouring coefficients to be equal (smoothness), a graph Lapla
 \cite smola2003graphkernels and \cite chung1997spectral couples the variables along the edges of a
 graph, a group-mean matrix reproduces the penalty of the informed elastic net, and a block-diagonal
 centering matrix asks the members of a group to share a coefficient. The Tikhonov T-Rex selector
-runs the terminating Tikhonov-net solvers (TIKNET_Solver by the pathwise homotopy algorithm, the
-default, and the deprecated TCDTIKNET_Solver by coordinate descent) with such a matrix inside the
-random experiments.
+runs the terminating Tikhonov-net solver TIKNET_Solver, a pathwise homotopy algorithm, with such a
+matrix inside the random experiments.
 
 The headers and names of this page:
 
@@ -82,13 +81,11 @@ exist.
 ## Dummies for a structured penalty
 
 The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables
-under the penalty. Two defaults take care of that. `cluster_dummies = true` draws the dummies as
-per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or
-hierarchical clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = true` lets
-every dummy join the \f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling).
-`cluster_dummies = false` exists for validation runs. The decoupled dummy block,
-`fold_dummy_coupling = false`, exists with the deprecated `SolverTypeForTRex::TCDTIKNET` only and
-will be removed with it in the next minor release.
+under the penalty. Two mechanisms take care of that. `cluster_dummies = true` (default) draws the
+dummies as per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`,
+or hierarchical clustering with `corr_max` and `hc_linkage`), and every dummy joins the
+\f$\boldsymbol K\f$-coupling of the variable it mirrors (the folded coupling). `cluster_dummies =
+false` exists for validation runs.
 
 ## Group centering
 
@@ -97,22 +94,12 @@ will be removed with it in the next minor release.
 \f$\boldsymbol I - \boldsymbol J / p_m\f$ over the groups of `prior_groups`, so the members of a
 group share a coefficient. The structure needs `prior_groups` (0-based group ids, one per variable),
 and the selector refuses it without them. An all-singleton partition is legitimate, the penalty
-vanishes and the path is the lasso on per-variable cluster dummies. With
-`SolverTypeForTRex::TCDTIKNET` this path runs through the group-centering hooks of TCDIENET_Solver,
-so its warnings (sweep budget, certification fallback) carry the tag `[TCDIENET]`.
+vanishes and the path is the lasso on per-variable cluster dummies.
 
 \snippet{trimleft} trex_tikhonov.cpp group-centering
 \output{trex_tikhonov.group-centering.txt}
 
 ## The solver
 
-`solver_type` of the nested base control picks the Tikhonov-family solver:
-`SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm (the default of the control), or
-`TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
-Once \f$\lambda_2\f$ times \f$\boldsymbol K\f$ is large it can stop at its sweep budget
-(`cd_max_sweeps`) before it has converged. `select()` then throws instead of returning a selection
-from an unconverged path. `TCDTIKNET` is deprecated and will be removed with the coordinate descent
-family in the next minor release.
-
-\snippet{trimleft} trex_tikhonov.cpp solver
-\output{trex_tikhonov.solver.txt}
+The selector runs `SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. It is
+the default of the control.

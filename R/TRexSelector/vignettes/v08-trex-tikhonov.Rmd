@@ -35,9 +35,8 @@ a first-difference operator $\boldsymbol\Gamma$ gives the graph Laplacian of a c
 neighbouring coefficients to be equal (smoothness), a graph Laplacian in general [@smola2003graphkernels;
 @chung1997spectral] couples the variables along the edges of a graph, a group-mean matrix reproduces the
 penalty of the informed elastic net, and a block-diagonal centering matrix asks the members of a group to
-share a coefficient. The Tikhonov T-Rex selector runs the terminating Tikhonov-net solvers (TIKNET by the
-pathwise homotopy algorithm, the default, and the deprecated TCDTIKNET by coordinate descent) with such a
-matrix inside the random experiments.
+share a coefficient. The Tikhonov T-Rex selector runs the terminating Tikhonov-net solver TIKNET, a
+pathwise homotopy algorithm, with such a matrix inside the random experiments.
 
 # A smooth coefficient profile
 
@@ -127,12 +126,11 @@ profile$counts
 # Dummies for a structured penalty
 
 The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables
-under the penalty. Two defaults take care of that. `cluster_dummies = TRUE` draws the dummies as
-per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical
-clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = TRUE` lets every dummy join the
-$\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling). `cluster_dummies = FALSE`
-exists for validation runs. The decoupled dummy block, `fold_dummy_coupling = FALSE`, exists with the
-deprecated solver `"TCDTIKNET"` only and will be removed with it in TRexSelector 2.1.0.
+under the penalty. Two mechanisms take care of that. `cluster_dummies = TRUE` (default) draws the dummies
+as per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or
+hierarchical clustering with `corr_max` and `hc_linkage`), and every dummy joins the
+$\boldsymbol K$-coupling of the variable it mirrors (the folded coupling). `cluster_dummies = FALSE`
+exists for validation runs.
 
 # Group centering
 
@@ -140,9 +138,7 @@ deprecated solver `"TCDTIKNET"` only and will be removed with it in TRexSelector
 block-diagonal centering penalty $\boldsymbol I - \boldsymbol J / p_m$ over the groups of `prior_groups`,
 so the members of a group share a coefficient. The structure needs `prior_groups`, and the selector
 refuses it without them. An all-singleton partition is legitimate, the penalty vanishes and the path is
-the lasso on per-variable cluster dummies. With the solver `"TCDTIKNET"` this path runs through the
-group-centering hooks of TCDIENET, so its warnings (sweep budget, certification fallback) carry the tag
-`[TCDIENET]`.
+the lasso on per-variable cluster dummies.
 
 ```{r centering}
 groups <- rep(1:6, each = 10)
@@ -157,21 +153,8 @@ gc$selected_indices
 
 # The solver
 
-`trex_control(solver = )` picks the Tikhonov-family solver: `"TIKNET"`, the pathwise homotopy
-algorithm (default, the neutral `"TLARS"` of `trex_control()` maps to it), or `"TCDTIKNET"`,
-coordinate descent. Both solve the same problem. `"TCDTIKNET"` is not finally developed. Once
-$\lambda_2$ times $\boldsymbol K$ is large it can stop at its sweep budget (`cd_max_sweeps`) before it
-has converged. `select()` then stops with an error instead of a selection from an unconverged path.
-`"TCDTIKNET"` is deprecated and will be removed with the coordinate descent family in TRexSelector
-2.1.0. The selector raises a deprecation warning for it, as the run below shows.
-
-```{r tcdtiknet}
-cd <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
-                               tik_control = trex_tikhonov_control(tikhonov_K = K, lambda_2 = 1),
-                               control = trex_control(solver = "TCDTIKNET", K = 10))
-cd$select()
-cd$selected_indices
-```
+The selector runs `"TIKNET"`, the pathwise homotopy algorithm of the Tikhonov net. The neutral default
+`"TLARS"` of `trex_control()` maps to it.
 
 ```{r teardown, include = FALSE}
 trex_set_num_threads(old_threads)

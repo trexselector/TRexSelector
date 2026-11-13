@@ -81,7 +81,7 @@ The T-loop raises the stopping time \f$T\f$ one dummy at a time. `use_max_T_stop
 bounds it by \f$\lceil n / 2 \rceil\f$, and `tloop_stagnation_stop` stops the loop when the FDP
 estimate has not improved for `tloop_max_stagnant_steps` steps. The stagnation stop is a
 `std::optional<bool>` that defaults to `std::nullopt`, which resolves to off for the path solvers
-(T-LARS, T-LASSO, the elastic nets, the CD family) and to on for the greedy solvers.
+(T-LARS, T-LASSO, the elastic nets) and to on for the greedy solvers.
 
 ## The result fields
 

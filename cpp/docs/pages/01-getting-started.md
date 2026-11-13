@@ -30,9 +30,9 @@ The library currently has five groups of tools.
   (TRexDASelector), grouped variables (TRexGVSSelector), fast screening (ScreenTRexSelector,
   BiobankScreenTRex), sparse principal component analysis (PCA) (TRexSPCA) and a general Tikhonov
   penalty (TRexTikhonovSelector), under `src/trex_selector_methods/ad/`.
-- **T-solvers.** The twenty terminating forward selection solvers the selectors run inside their
-  random experiments, in four families (least angle regression, orthogonal matching pursuit,
-  adaptive forward stepwise and coordinate descent based) under `src/tsolvers/ad/`.
+- **T-solvers.** The terminating forward selection solvers the selectors run inside their random
+  experiments, of the least angle regression, orthogonal matching pursuit and adaptive forward
+  stepwise families, under `src/tsolvers/ad/`.
 - **Machine learning (ML) methods.** Scalers, ridge and elastic-net regression with cross-validation,
   singular value decomposition (SVD), PCA and hierarchical clustering under `src/ml_methods/`.
 - **Memory-mapped matrices.** Disk-backed designs are accepted everywhere an Eigen map is accepted.
@@ -130,10 +130,9 @@ time, and `getVotingGrid()` the voting levels. The T-Rex selector page walks thr
 
 The solver inside the random experiments is set in `TRexControlParameter::solver_type`. T-LARS
 (terminating least angle regression) is the default and the solver of the T-Rex paper. T-LASSO adds
-the lasso modification, T-ENET the elastic net, the orthogonal matching pursuit (OMP) family and the
-adaptive forward stepwise family are greedy and faster per step, and the coordinate descent (CD)
-family computes exact penalized minimizers at every dummy crossing. The T-solvers page describes the
-families, and every solver can be run on its own.
+the lasso modification, T-ENET the elastic net, and the orthogonal matching pursuit (OMP) family and
+the adaptive forward stepwise family are greedy and faster per step. The T-solvers page describes
+the families, and every solver can be run on its own.
 
 \snippet{trimleft} getting_started.cpp solver
 \output{getting_started.solver.txt}

@@ -15,7 +15,6 @@
 
 #include <ml_methods/scaler_methods/lp_norm_scaler.hpp>
 #include <tsolvers/ad/linear_model/afs_based.hpp>
-#include <tsolvers/ad/linear_model/cd_based.hpp>
 #include <tsolvers/ad/linear_model/lars_based.hpp>
 #include <tsolvers/ad/linear_model/omp_based.hpp>
 
@@ -24,7 +23,6 @@ using trex::tsolvers::ad::SolverOptions;
 namespace lars = trex::tsolvers::ad::linear_model::lars_based;
 namespace omp = trex::tsolvers::ad::linear_model::omp_based;
 namespace afs = trex::tsolvers::ad::linear_model::afs_based;
-namespace cd = trex::tsolvers::ad::linear_model::cd_based;
 //! [includes]
 
 //! [helpers]
@@ -196,8 +194,6 @@ int main() {
     run_reader<omp::TMP_Solver>("TMP", X_map, D_map, yc_map, reader_opts);
     run_reader<omp::TNCGMP_Solver>("TNCGMP", X_map, D_map, yc_map, reader_opts);
     run_reader<afs::TAFS_Solver>("TAFS", X_map, D_map, yc_map, reader_opts);
-    run_reader<cd::TCDLASSO_Solver>("TCDLASSO", X_map, D_map, yc_map, reader_opts);
-    run_reader<cd::TCDENET_Solver>("TCDENET", X_map, D_map, yc_map, reader_opts);
     //! [families]
 
     doc.begin("structured");
@@ -210,8 +206,7 @@ int main() {
                                   .precentered = true, .lambda2 = 0.5};
 
     run_reader<lars::TIENET_Solver>("TIENET", X_map, D_map, yc_map, groups, structured_opts);
-    run_reader<cd::TCDTIKNET_Solver>("TCDTIKNET", X_map, D_map, yc_map, identity,
-                                     structured_opts);
+    run_reader<lars::TIKNET_Solver>("TIKNET", X_map, D_map, yc_map, identity, structured_opts);
     //! [structured]
 
     doc.begin("save-load");

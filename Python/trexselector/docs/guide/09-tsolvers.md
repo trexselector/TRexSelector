@@ -35,15 +35,10 @@ greedy pursuits {cite}`scheidt2026greedy`. The classes live in the four submodul
 | OMP | `omp_based` | `TGP_Solver`, `TACGP_Solver` | gradient and approximate conjugate gradient pursuit {cite}`blumensath2008gp` |
 | OMP | `omp_based` | `TMP_Solver`, `TNCGMP_Solver` | matching pursuit {cite}`mallat1993mp` and non-negative constrained generalized matching pursuit {cite}`locatello2017mpfw` |
 | AFS | `afs_based` | `TAFS_Solver` | adaptive forward stepwise {cite}`zhang2026afs` |
-| CD | `cd_based` | `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver`, `TCDTIKNET_Solver` | pathwise coordinate descent {cite}`friedman2007pathwise,friedman2010glmnet` with exact minimizers at every dummy crossing |
 
-The path solvers (LARS and CD families) walk a regularization path, the greedy solvers (OMP and AFS
+The path solvers (LARS family) walk a regularization path, the greedy solvers (OMP and AFS
 families) add one variable per step. The informed solvers take a `groups` array, the Tikhonov
 solvers a penalty matrix `tikhonov_K`.
-
-The CD family is deprecated and will be removed in the next minor release. Constructing one of its
-classes raises a `FutureWarning`, as two examples below show. The homotopy solvers `TLASSO_Solver`,
-`TENET_Solver`, `TIENET_Solver` and `TIKNET_Solver` of `lars_based` solve the same problems.
 
 ## One terminated path
 
@@ -232,7 +227,7 @@ reader_opts = SolverOptions(normalize=False, intercept=False, precentered=True)
 With the data pre-scaled, every family runs on the same design.
 
 ```{code-cell} python
-from trexselector.tsolvers.ad import lars_based, omp_based, afs_based, cd_based
+from trexselector.tsolvers.ad import lars_based, omp_based, afs_based
 
 constructors = {
     "TLARS": lars_based.TLARS_Solver, "TLASSO": lars_based.TLASSO_Solver,
@@ -242,7 +237,6 @@ constructors = {
     "TGP": omp_based.TGP_Solver, "TACGP": omp_based.TACGP_Solver,
     "TMP": omp_based.TMP_Solver, "TNCGMP": omp_based.TNCGMP_Solver,
     "TAFS": afs_based.TAFS_Solver,
-    "TCDLASSO": cd_based.TCDLASSO_Solver, "TCDENET": cd_based.TCDENET_Solver,
 }
 print(f"{'solver':<11}{'steps':>6}  predictors")
 for name, make in constructors.items():
@@ -254,17 +248,16 @@ for name, make in constructors.items():
 The informed solvers and the Tikhonov solvers take their structure as an extra argument.
 
 ```{code-cell} python
-from trexselector.tsolvers.ad.lars_based import TIENET_Solver
-from trexselector.tsolvers.ad.cd_based import TCDTIKNET_Solver
+from trexselector.tsolvers.ad.lars_based import TIENET_Solver, TIKNET_Solver
 
 groups = np.repeat(np.arange(5, dtype=np.int32), 10)
 structured_opts = SolverOptions(normalize=False, intercept=False, precentered=True, lambda2=0.5)
 ien = TIENET_Solver(X, D, y_c, groups, structured_opts)
 ien.executeStep(T_stop=3)
-print("TIENET:   ", ien.getActivePredictorIndices())
-tik = TCDTIKNET_Solver(X, D, y_c, np.eye(p), structured_opts)
+print("TIENET:", ien.getActivePredictorIndices())
+tik = TIKNET_Solver(X, D, y_c, np.eye(p), structured_opts)
 tik.executeStep(T_stop=3)
-print("TCDTIKNET:", tik.getActivePredictorIndices())
+print("TIKNET:", tik.getActivePredictorIndices())
 ```
 
 ## Saving and loading

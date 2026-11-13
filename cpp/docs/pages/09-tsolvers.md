@@ -24,15 +24,10 @@ includes its solvers.
 | OMP | `omp_based.hpp` | TGP_Solver, TACGP_Solver | gradient and approximate conjugate gradient pursuit \cite blumensath2008gp |
 | OMP | `omp_based.hpp` | TMP_Solver, TNCGMP_Solver | matching pursuit \cite mallat1993mp and non-negative constrained generalized matching pursuit \cite locatello2017mpfw |
 | AFS | `afs_based.hpp` | TAFS_Solver | adaptive forward stepwise \cite zhang2026afs |
-| CD | `cd_based.hpp` | TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver | pathwise coordinate descent \cite friedman2007pathwise and \cite friedman2010glmnet with exact minimizers at every dummy crossing |
 
-The path solvers (LARS and CD families) walk a regularization path, the greedy solvers (OMP and AFS
+The path solvers (LARS family) walk a regularization path, the greedy solvers (OMP and AFS
 families) add one variable per step. The informed solvers take a `groups` vector, the Tikhonov
 solvers a sparse penalty matrix.
-
-The CD family is deprecated and will be removed in the next minor release. The homotopy solvers
-TLASSO_Solver, TENET_Solver, TIENET_Solver and TIKNET_Solver of `lars_based.hpp` solve the same
-problems.
 
 The headers and names of this page, and two helpers. The first prints index vectors, the second
 constructs a solver of a given type as a reader, runs it to three dummies and prints its steps and
@@ -104,7 +99,6 @@ only what differs.
 | `exch_tie_alpha`, `exch_tie_floor` | the exchangeable-tie band of the greedy solvers |
 | `lambda2` | the quadratic penalty of the elastic nets (0.1 by default) |
 | `rho_afs`, `ncgmp_variant`, `tenet_aug_use_lars` | solver-specific switches |
-| `kappa_dummy`, `fold_dummies`, `group_penalty`, `cd_*` | the dummy coupling and the coordinate descent budgets |
 | `verbose` | print the steps |
 
 \snippet{trimleft} tsolvers.cpp options

@@ -43,15 +43,10 @@ algorithm follows the T-Rex paper [@machkour2025trex], the greedy family the ter
 | OMP | `TGP_Solver`, `TACGP_Solver` | gradient and approximate conjugate gradient pursuit [@blumensath2008gp] |
 | OMP | `TMP_Solver`, `TNCGMP_Solver` | matching pursuit [@mallat1993mp] and non-negative constrained generalized matching pursuit [@locatello2017mpfw] |
 | AFS | `TAFS_Solver` | adaptive forward stepwise [@zhang2026afs] |
-| CD | `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver`, `TCDTIKNET_Solver` | pathwise coordinate descent [@friedman2007pathwise; @friedman2010glmnet] with exact minimizers at every dummy crossing |
 
-The path solvers (LARS and CD families) walk a regularization path, the greedy solvers (OMP and AFS
+The path solvers (LARS family) walk a regularization path, the greedy solvers (OMP and AFS
 families) add one variable per step. The informed solvers take a `groups` vector, the Tikhonov solvers
 a penalty matrix `tikhonov_K`.
-
-The CD family is deprecated and will be removed in TRexSelector 2.1.0. Constructing one of its classes
-raises a deprecation warning, as two examples below show. The homotopy solvers `TLASSO_Solver`,
-`TENET_Solver`, `TIENET_Solver` and `TIKNET_Solver` solve the same problems.
 
 # One terminated path
 
@@ -226,8 +221,7 @@ constructors <- list(
   TLARS = TLARS_Solver, TLASSO = TLASSO_Solver, TSTEPWISE = TSTEPWISE_Solver,
   TSTAGEWISE = TSTAGEWISE_Solver, TENET = TENET_Solver, TENETAug = TENETAug_Solver,
   TOMP = TOMP_Solver, TOOLS = TOOLS_Solver, TGP = TGP_Solver, TACGP = TACGP_Solver,
-  TMP = TMP_Solver, TNCGMP = TNCGMP_Solver, TAFS = TAFS_Solver,
-  TCDLASSO = TCDLASSO_Solver, TCDENET = TCDENET_Solver)
+  TMP = TMP_Solver, TNCGMP = TNCGMP_Solver, TAFS = TAFS_Solver)
 rows <- lapply(names(constructors), function(nm) {
   s <- constructors[[nm]]$new(X, D, y_c, options = reader_opts)
   s$execute_step(T_stop = 3)
@@ -246,9 +240,9 @@ ien <- TIENET_Solver$new(X, D, y_c, groups = groups,
                                                    precentered = TRUE, lambda2 = 0.5))
 ien$execute_step(T_stop = 3)
 ien$get_active_predictor_indices()
-tik <- TCDTIKNET_Solver$new(X, D, y_c, tikhonov_K = diag(p),
-                            options = tsolver_options(normalize = FALSE, intercept = FALSE,
-                                                      precentered = TRUE, lambda2 = 0.5))
+tik <- TIKNET_Solver$new(X, D, y_c, tikhonov_K = diag(p),
+                         options = tsolver_options(normalize = FALSE, intercept = FALSE,
+                                                   precentered = TRUE, lambda2 = 0.5))
 tik$execute_step(T_stop = 3)
 tik$get_active_predictor_indices()
 ```

@@ -44,6 +44,8 @@
 * Three vignettes say why they copy the design with `X + 0`.
 * The help of `tol` in `trex_control()` and in `tsolver_options()` says that the selector and the
   stand-alone solver have different defaults on purpose.
+* The vignettes no longer show the deprecated coordinate-descent solver family. Its help pages keep the
+  deprecation notice.
 
 ## New
 

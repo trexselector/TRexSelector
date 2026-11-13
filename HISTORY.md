@@ -16,6 +16,19 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The guides no longer show the coordinate-descent family
+
+- The coordinate-descent solver family is deprecated and leaves with the next minor releases. The guide
+  pages of the three surfaces no longer present it. Pages 05, 08 and 09 lose the examples that ran its
+  solvers and the passages that described them: the coordinate-descent choices of the grouped selector,
+  the second solver of the Tikhonov selector with its sweep budget, the decoupled dummy block, and the
+  row and the options of the family on the T-solver page. Pages 01 and 03 lose the mention of the family,
+  and page 01 no longer counts the solvers.
+- Page 08 runs the default solver TIKNET throughout, and the T-solver page shows the Tikhonov net with
+  TIKNET_Solver.
+- The help of the classes, of the solver names and of the options keeps the deprecation notice, and so
+  do the READMEs. No code changes.
+
 #### The stand-alone solvers take `lambda2 = 0.1` and `rho_afs = 0.3` by default
 
 - The solver options had `lambda2 = 0` and `rho_afs = 1` as defaults, while a selector hands 0.1 and 0.3

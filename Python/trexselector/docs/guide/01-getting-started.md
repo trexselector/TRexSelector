@@ -42,7 +42,7 @@ The package currently has five groups of tools.
   (`TRexDASelector`), grouped variables (`TRexGVSSelector`), fast screening (`TRexScreeningSelector`,
   `TRexBiobankScreeningSelector`), sparse principal component analysis (PCA) (`TRexSPCASelector`) and
   a general Tikhonov penalty (`TRexTikhonovSelector`).
-- **T-solvers.** The twenty terminating forward selection solvers the selectors run inside their
+- **T-solvers.** The terminating forward selection solvers the selectors run inside their
   random experiments, available as classes of their own under `trexselector.tsolvers.ad`.
 - **Machine learning (ML) methods.** Scalers, ridge and elastic-net regression with cross-validation,
   singular value decomposition (SVD), PCA and hierarchical clustering under `trexselector.ml_methods`.
@@ -146,10 +146,9 @@ print(np.round(sel.fdp_hat_mat[sel.T_stop - 1], 3))
 
 The solver inside the random experiments is set in `TRexControlParameter.solver_type`. T-LARS
 (terminating least angle regression) is the default and the solver of the T-Rex paper. T-LASSO adds
-the lasso modification, T-ENET the elastic net, the orthogonal matching pursuit (OMP) family and the
-adaptive forward stepwise family are greedy and faster per step, and the coordinate descent (CD)
-family computes exact penalized minimizers at every dummy crossing. The T-solvers page describes the
-families, and every solver can be run on its own.
+the lasso modification, T-ENET the elastic net, and the orthogonal matching pursuit (OMP) family and
+the adaptive forward stepwise family are greedy and faster per step. The T-solvers page describes
+the families, and every solver can be run on its own.
 
 ```{code-cell} python
 ctrl = tsn.TRexControlParameter()

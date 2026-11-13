@@ -138,15 +138,5 @@ int main() {
     print_indices("selected:", gc.getSelectedIndices());
     //! [group-centering]
 
-    doc.begin("solver");
-    //! [solver]
-    TRexTikhonovControlParameter cd_ctrl = tik_ctrl;
-    cd_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;
-
-    TRexTikhonovSelector cd(X_map, y_map, 0.1, cd_ctrl, 4, false);
-    cd.select();
-    print_indices("selected:", cd.getSelectedIndices());
-    //! [solver]
-
     return 0;
 }

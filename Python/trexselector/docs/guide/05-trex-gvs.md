@@ -18,10 +18,10 @@ trexselector.utils.set_num_threads(min(2, trexselector.utils.get_max_threads()))
 
 In genomics and finance, variables come in groups of highly correlated members that carry the same
 signal. The lasso picks one member of a group and drops the others, while the elastic net
-{cite}`zou2005elasticnet` spreads the coefficient over the group and lets the members enter together.
-The T-Rex selector for grouped variable selection (GVS) {cite}`machkour2022gvs` runs the terminating
-elastic net (T-ENET) inside the random experiments and draws its dummies in groups too, so that the
-dummies mirror the group structure of the null variables. The informed elastic net (IEN)
+{cite}`zou2005elasticnet` spreads the coefficient over the group and lets the members enter
+together. The T-Rex selector for grouped variable selection (GVS) {cite}`machkour2022gvs` runs the
+terminating elastic net (T-ENET) inside the random experiments and draws its dummies in groups too,
+so that the dummies mirror the group structure of the null variables. The informed elastic net (IEN)
 {cite}`machkour2023ien` goes one step further and encodes the known or estimated groups in the
 penalty, so that the members of a group share a coefficient.
 
@@ -50,11 +50,10 @@ y = X @ beta + rng.standard_normal(n)
 
 `gvs_type = GVSType.EN` is the default. The selector clusters the variables by correlation (single
 linkage, cut at `corr_max`), draws its dummies per cluster and runs the T-ENET solver chosen by
-`en_solver` (`ENSolverType.TENET` by default, `TENET_AUG` the row-augmented form and `TCDENET` the
-coordinate descent form, which select the same variables). The elastic-net penalty $\lambda_2$ is
-fixed here. `TCDENET` is deprecated and will be removed in the next minor release, so the selector
-raises a `FutureWarning` for it. The group control is a `TRexGVSControlParameter`, the base control a
-`TRexControlParameter`, and `select()` returns a `GVSSelectionResult`.
+`en_solver` (`ENSolverType.TENET` by default and `TENET_AUG`, the row-augmented form, which select
+the same variables). The elastic-net penalty $\lambda_2$ is fixed here. The group control is a
+`TRexGVSControlParameter`, the base control a `TRexControlParameter`, and `select()` returns a
+`GVSSelectionResult`.
 
 ```{code-cell} python
 gvs_ctrl = tsn.TRexGVSControlParameter()
@@ -114,13 +113,10 @@ print("boundary_pick:    ", diag.boundary_pick)
 
 `gvs_type = GVSType.IEN` encodes the groups in the penalty. The groups come from `prior_groups` in
 the control (0-based labels of length $p$) or from the correlation clustering. The solver is set in
-`TRexControlParameter.solver_type`: `SolverTypeForTRex.TIENET` (default, the native pathwise form),
-`TIENET_AUG` (row augmented) or `TCDIENET` (coordinate descent, not finally developed: a solve that
-does not converge within its sweep budget `cd_max_sweeps` stops with an error). `TCDIENET` is
-deprecated as well and will be removed in the next minor release. The IEN rules of `lambda2_method`
-(`CV_1SE_IEN_CCD`, the default on this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`)
-consume the group structure and return $\lambda_2$ on the solver scale. The penalty is left to the
-IEN rule here.
+`TRexControlParameter.solver_type`: `SolverTypeForTRex.TIENET` (default, the native pathwise form)
+or `TIENET_AUG` (row augmented). The IEN rules of `lambda2_method` (`CV_1SE_IEN_CCD`, the default on
+this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`) consume the group structure and
+return $\lambda_2$ on the solver scale. The penalty is left to the IEN rule here.
 
 ```{code-cell} python
 ien_ctrl = tsn.TRexGVSControlParameter()
