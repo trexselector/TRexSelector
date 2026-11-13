@@ -2,8 +2,13 @@
 % Please edit documentation in R/tsolvers.R
 \name{TCDENET_Solver}
 \alias{TCDENET_Solver}
-\title{T-CDENET Solver}
+\title{T-CDENET Solver (deprecated)}
 \description{
+\strong{Deprecated.} The coordinate-descent family will be removed in
+TRexSelector 2.1.0, and constructing this class raises a deprecation
+warning. Use \code{\link{TENET_Solver}}, the homotopy solver of the
+same problem.
+
 Terminating coordinate-descent Elastic Net (diagonal ridge \code{lambda2},
 the dummies get \code{kappa_dummy * lambda2}). The solver used internally
 by \code{TRexGVSSelector} for \code{en_solver = "TCDENET"}. Inherits the

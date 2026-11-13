@@ -15,8 +15,8 @@ be equal (smoothness), a graph Laplacian in general \cite smola2003graphkernels 
 \cite chung1997spectral couples the variables along the edges of a graph, and a block-diagonal
 centering matrix reproduces the penalty of the informed elastic net. The Tikhonov T-Rex selector
 runs the terminating Tikhonov-net solvers (TIKNET_Solver by the pathwise homotopy algorithm, the
-default, and TCDTIKNET_Solver by coordinate descent) with such a matrix inside the random
-experiments.
+default, and the deprecated TCDTIKNET_Solver by coordinate descent) with such a matrix inside the
+random experiments.
 
 The headers and names of this page:
 
@@ -86,7 +86,8 @@ with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = true` lets every d
 \f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist
 for validation runs, and the decoupled dummy block exists with `SolverTypeForTRex::TCDTIKNET` only.
 With \f$\boldsymbol K = \boldsymbol I\f$, independent dummies and the decoupled dummy block, the
-selector reduces to the plain elastic net.
+selector reduces to the plain elastic net. That solver is deprecated, and `fold_dummy_coupling` will
+be removed with it in the next minor release.
 
 \snippet{trimleft} trex_tikhonov.cpp elastic-net
 \output{trex_tikhonov.elastic-net.txt}
@@ -112,7 +113,8 @@ fallback) carry the tag `[TCDIENET]`.
 `TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
 Once \f$\lambda_2\f$ times \f$\boldsymbol K\f$ is large it can stop at its sweep budget
 (`cd_max_sweeps`) before it has converged. `select()` then throws instead of returning a selection
-from an unconverged path.
+from an unconverged path. `TCDTIKNET` is deprecated and will be removed with the coordinate descent
+family in the next minor release.
 
 \snippet{trimleft} trex_tikhonov.cpp solver
 \output{trex_tikhonov.solver.txt}

@@ -159,7 +159,7 @@ test_that("TIKNET and TCDTIKNET agree on the zero-K path (all-singleton GROUP_CE
     sel$selected_var
   }
 
-  sel_cd   <- run("TCDTIKNET")
+  sel_cd   <- quiet_cd(run("TCDTIKNET"))
   sel_lars <- run("TIKNET")
   expect_gt(sum(sel_cd), 0)
   expect_identical(sel_cd, sel_lars)
@@ -220,7 +220,7 @@ test_that("K = I with both escape hatches collapses onto the TCDENET run", {
     sel$selected_var
   }
 
-  expect_identical(run_tik(), run_tcenet())
+  expect_identical(quiet_cd(run_tik()), quiet_cd(run_tcenet()))
 })
 
 
@@ -249,7 +249,7 @@ test_that("group-mean K with prior groups matches GVS-IEN TCDIENET", {
     sel$selected_var
   }
 
-  expect_identical(run_tik(), run_gvs())
+  expect_identical(quiet_cd(run_tik()), quiet_cd(run_gvs()))
 })
 
 
@@ -403,10 +403,10 @@ test_that("an unconverged coordinate descent is an error and the design comes ba
   y <- as.numeric(rowSums(X[, 21:30]) + rnorm(n))
   X0 <- X + 0
 
-  sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
-                                  tik_control = trex_tikhonov_control(tikhonov_K = diag(p),
-                                                                      lambda_2 = 3000),
-                                  control = trex_control(solver = "TCDTIKNET", K = 10))
+  sel <- quiet_cd(TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
+                                           tik_control = trex_tikhonov_control(tikhonov_K = diag(p),
+                                                                               lambda_2 = 3000),
+                                           control = trex_control(solver = "TCDTIKNET", K = 10)))
   expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
   expect_error(sel$select(), "sweep budget.*before it converged.*cd_max_sweeps")
   expect_equal(X, X0, tolerance = 1e-12)          # given back

@@ -52,7 +52,8 @@ y = X @ beta + rng.standard_normal(n)
 linkage, cut at `corr_max`), draws its dummies per cluster and runs the T-ENET solver chosen by
 `en_solver` (`ENSolverType.TENET` by default, `TENET_AUG` the row-augmented form and `TCDENET` the
 coordinate descent form, which select the same variables). The elastic-net penalty $\lambda_2$ is
-fixed here. The group control is a `TRexGVSControlParameter`, the base control a
+fixed here. `TCDENET` is deprecated and will be removed in the next minor release, so the selector
+raises a `FutureWarning` for it. The group control is a `TRexGVSControlParameter`, the base control a
 `TRexControlParameter`, and `select()` returns a `GVSSelectionResult`.
 
 ```{code-cell} python
@@ -115,8 +116,8 @@ print("boundary_pick:    ", diag.boundary_pick)
 the control (0-based labels of length $p$) or from the correlation clustering. The solver is set in
 `TRexControlParameter.solver_type`: `SolverTypeForTRex.TIENET` (default, the native pathwise form),
 `TIENET_AUG` (row augmented) or `TCDIENET` (coordinate descent, not finally developed: a solve that
-does not converge within its sweep budget `cd_max_sweeps` stops with an error). The IEN rules of
-`lambda2_method`
+does not converge within its sweep budget `cd_max_sweeps` stops with an error). `TCDIENET` is
+deprecated as well and will be removed in the next minor release. The IEN rules of `lambda2_method`
 (`CV_1SE_IEN_CCD`, the default on this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`)
 consume the group structure and return $\lambda_2$ on the solver scale. The penalty is left to the
 IEN rule here.

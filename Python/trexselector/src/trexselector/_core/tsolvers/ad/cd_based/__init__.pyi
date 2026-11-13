@@ -11,6 +11,10 @@ class TCDENET_Solver:
     """
     Terminating cyclic coordinate descent elastic net (T-CDENET) solver.
     
+    Deprecated: the coordinate-descent family will be removed in the next minor release,
+    and constructing this class raises FutureWarning. Use TENET_Solver, the homotopy
+    solver of the same problem.
+    
     References
     ----------
     H. Zou and T. Hastie, "Regularization and Variable Selection via the Elastic Net," J. R.
@@ -210,6 +214,10 @@ class TCDENET_Solver:
 class TCDIENET_Solver:
     """
     Terminating cyclic coordinate descent informed elastic net (T-CDIENET) solver.
+    
+    Deprecated: the coordinate-descent family will be removed in the next minor release,
+    and constructing this class raises FutureWarning. Use TIENET_Solver, the homotopy
+    solver of the same problem.
     
     Not finally developed: its sweeps grow with lambda2 and on saturating designs, and a
     solve that does not converge within cd_max_sweeps raises RuntimeError. The homotopy
@@ -426,6 +434,10 @@ class TCDLASSO_Solver:
     """
     Terminating cyclic coordinate descent LASSO (T-CDLASSO) solver.
     
+    Deprecated: the coordinate-descent family will be removed in the next minor release,
+    and constructing this class raises FutureWarning. Use TLASSO_Solver, the homotopy
+    solver of the same problem.
+    
     References
     ----------
     R. Tibshirani, "Regression Shrinkage and Selection via the Lasso," J. R. Stat. Soc. Ser.
@@ -627,6 +639,10 @@ class TCDLASSO_Solver:
 class TCDTIKNET_Solver:
     """
     Terminating cyclic coordinate descent Tikhonov net (T-CDTIKNET) solver.
+    
+    Deprecated: the coordinate-descent family will be removed in the next minor release,
+    and constructing this class raises FutureWarning. Use TIKNET_Solver, the homotopy
+    solver of the same problem.
     
     Not finally developed: under the folded dummy coupling its sweeps grow with lambda2,
     and on saturating designs as well, and a solve that does not converge within

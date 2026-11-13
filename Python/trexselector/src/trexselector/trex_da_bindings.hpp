@@ -53,6 +53,8 @@ public:
         int seed,
         bool verbose
     ) {
+        warn_if_cd_solver_type(trex_control.solver_type);
+
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                   X.rows(),
                                                                   X.cols());

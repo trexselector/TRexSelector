@@ -2,8 +2,13 @@
 % Please edit documentation in R/tsolvers.R
 \name{TCDLASSO_Solver}
 \alias{TCDLASSO_Solver}
-\title{T-CDLASSO Solver}
+\title{T-CDLASSO Solver (deprecated)}
 \description{
+\strong{Deprecated.} The coordinate-descent family will be removed in
+TRexSelector 2.1.0, and constructing this class raises a deprecation
+warning. Use \code{\link{TLASSO_Solver}}, the homotopy solver of the
+same problem.
+
 Terminating coordinate-descent LASSO: exact penalized-lasso minimizers at
 every dummy crossing, localized with certificates (duality gap and
 coordinate statuses; \code{cd_certified_localization = FALSE} in the

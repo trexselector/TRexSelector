@@ -156,7 +156,9 @@ derived from \code{en_solver} (TENET, TENET_AUG, or TCDENET) and the
 if it is set to a non-matching solver). For \code{gvs_type = "IEN"}
 the \code{solver} field selects the IEN solver: "TIENET"
 (default, native pathwise), "TIENET_AUG", or "TCDIENET" (not finally
-developed, see \code{\link{trex_gvs_control}}).}
+developed, see \code{\link{trex_gvs_control}}). "TCDENET" and
+"TCDIENET" are deprecated and will be removed in TRexSelector 2.1.0:
+the selector raises a deprecation warning for them.}
       \item{\code{control}}{A control list from \code{\link{trex_control}()} (default:
 \code{trex_control()}). For \code{gvs_type = "EN"} the \code{solver}
 field is overridden; for "IEN" it selects the IEN-family solver.}

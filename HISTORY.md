@@ -10,6 +10,37 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-13
 
+#### The coordinate-descent solver family is deprecated
+
+- The coordinate-descent solvers TCDLASSO, TCDENET, TCDIENET and TCDTIKNET will be removed in the next
+  round of releases, R 2.1.0 and the next minor releases of Python and C++. They brought no gain over
+  the homotopy solvers of the same problems. In a benchmark TCDLASSO and TCDENET were 1.1 to 1.5 times
+  slower with equal selections, TCDIENET was 2.8 to 30 times slower and ended three of six runs with
+  the convergence error, and TCDTIKNET was 1.8 to 2.3 times slower with one error in six runs. The
+  replacements are TLASSO, TENET, TIENET and TIKNET.
+- R raises a deprecation warning of the class `deprecatedWarning`, as `.Deprecated()` raises it, where
+  one of the four solver classes is constructed and where a solver name of the family reaches a
+  selector, through `trex_control(solver = )` or `trex_gvs_control(en_solver = "TCDENET")`. Python
+  raises a `FutureWarning` on the same events, in the root selectors, in the selector classes of
+  `trex_selector_methods.ad`, in the Tikhonov power rule and in the classes of `tsolvers.ad.cd_based`,
+  and attributes it to the line of the caller. The warning comes once per construction, before
+  anything is standardized or claimed, and never from inside the random experiments. It names the
+  replacement. C++ compiles as before and marks the family with `@deprecated`.
+- The options that only the family reads get a note in the help and no warning. These are the six
+  `cd_*` knobs, `kappa_dummy`, `fold_dummies`, `group_penalty` and `fold_dummy_coupling` of the
+  Tikhonov control. They go with the family.
+- The help of the classes, of the solver names and of these options says so on the three surfaces, and
+  so do the READMEs and the guide pages 05, 08 and 09. The guide examples that run the family stay
+  until the removal and show the warning in R and Python. Two wrong statements leave on the way. The
+  R help of `tsolver_options()` called the family's options "not bound to R yet", and the Python help
+  of `SolverTypeForTRex.TCDTIKNET` said that the Tikhonov selector was not bound in Python.
+- The notice goes out with R 2.0.2, Python 1.0.1 and C++ 1.0.1. The R news file starts its section
+  2.0.2 with it.
+- Tests: new tests of the warnings in R and Python. They expect one warning per construction with the
+  replacement in its text, none from `select()` and none for the homotopy solvers and the defaults.
+  In Python a warning turned into an error leaves the design untouched. The existing tests of the
+  family run with the warning muffled. C++ tests 718 of 718, R tests 1,874, Python tests 697.
+
 #### A coordinate-descent solve that has not converged is an error
 
 - The coordinate-descent solvers stop a solve at their sweep budget (`cd_max_sweeps`, 2,000) and

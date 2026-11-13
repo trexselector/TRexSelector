@@ -2,8 +2,13 @@
 % Please edit documentation in R/tsolvers.R
 \name{TCDIENET_Solver}
 \alias{TCDIENET_Solver}
-\title{T-CDIENET Solver}
+\title{T-CDIENET Solver (deprecated)}
 \description{
+\strong{Deprecated.} The coordinate-descent family will be removed in
+TRexSelector 2.1.0, and constructing this class raises a deprecation
+warning. Use \code{\link{TIENET_Solver}}, the homotopy solver of the
+same problem.
+
 Terminating coordinate-descent Informed Elastic Net: exact fixed-lambda1
 IEN minimizers per dummy crossing with O(1) group-penalty hooks
 (\code{group_penalty = "MEAN"}, the canonical group-sum penalty, or

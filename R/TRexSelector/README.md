@@ -217,7 +217,8 @@ picks the one a selector uses.
   `TMP_Solver`, `TOOLS_Solver` and `TNCGMP_Solver`.
 - Adaptive forward stepwise: `TAFS_Solver`.
 - Coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`,
-  `TCDIENET_Solver` and `TCDTIKNET_Solver`.
+  `TCDIENET_Solver` and `TCDTIKNET_Solver`. The family is deprecated and
+  will be removed in TRexSelector 2.1.0.
 
 ### ML methods
 

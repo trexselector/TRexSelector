@@ -46,6 +46,8 @@ TRexSelector <- R6::R6Class("TRexSelector",
                           verbose = TRUE,
                           control = trex_control()) {
 
+      .warn_cd_solver_name(control$solver)
+
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)

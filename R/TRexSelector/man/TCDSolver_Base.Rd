@@ -2,8 +2,11 @@
 % Please edit documentation in R/tsolvers.R
 \name{TCDSolver_Base}
 \alias{TCDSolver_Base}
-\title{CD-family base class}
+\title{CD-family base class (deprecated)}
 \description{
+\strong{Deprecated.} The coordinate-descent family will be removed in
+TRexSelector 2.1.0, and this class goes with it.
+
 Shared getters of the coordinate-descent solver family
 (\code{TCDLASSO_Solver}, \code{TCDENET_Solver}, \code{TCDIENET_Solver},
 \code{TCDTIKNET_Solver}): the recorded lambda_1 path, the quadratic penalty

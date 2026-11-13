@@ -396,7 +396,9 @@ struct TRexTikhonovControlParameter {
      *  one solver that has this mode — it preserves the K = I ≡ TCDENET
      *  collapse but deforms exchangeability whenever K has off-diagonals
      *  (conservative for positive off-diagonals such as group-mean K,
-     *  anti-conservative for negative ones such as Laplacians). */
+     *  anti-conservative for negative ones such as Laplacians).
+     *  @deprecated Will be removed with TCDTIKNET and the coordinate descent
+     *  family in the next minor release. */
     bool fold_dummy_coupling = true;
 
     /** @brief Cluster-aware dummy generation (GVS parity). Default: true.
@@ -432,7 +434,8 @@ struct TRexTikhonovControlParameter {
      *  The CCD solver is not finally developed: once lambda_2 times K is
      *  large it can stop at its sweep budget (cd_max_sweeps) before it has
      *  converged. It then throws instead of continuing on an unconverged
-     *  path.
+     *  path. TCDTIKNET is deprecated and will be removed in the next minor
+     *  release.
      *  With penalty_structure = GROUP_CENTERING, the TCDTIKNET dispatch
      *  routes to TCDIENET's O(1) group-centering hooks, so the solver's
      *  warnings (sweep budget, certification fallback) carry the tag

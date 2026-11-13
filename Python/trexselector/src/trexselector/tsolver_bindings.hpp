@@ -46,6 +46,7 @@
 #include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 
 // binding helpers
+#include "deprecation.hpp"
 #include "design_views.hpp"
 
 // =====================================================================================
@@ -93,6 +94,9 @@ public:
                     Eigen::Ref<Eigen::VectorXd> y,
                     Args&&... args)
     {
+        // A class of the deprecated coordinate-descent family warns first.
+        warn_if_cd_solver_class<Solver>();
+
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                X.rows(),
                                                                X.cols());
@@ -722,25 +726,34 @@ inline void bind_solver_options(py::module& m) {
             "TENETAug / TIENETAug: pure-LARS inner path that never drops variables (True) instead of the LASSO inner "
                 "path (False, default).")
        .def_readwrite("kappa_dummy", &SolverOptions::kappa_dummy,
-            "Ridge weight of the dummy block (TCDENET; TCDTIKNET under INDEPENDENT_RIDGE). Default 1.0.")
+            "Ridge weight of the dummy block (TCDENET; TCDTIKNET under INDEPENDENT_RIDGE). Default 1.0. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("fold_dummies", &SolverOptions::fold_dummies,
-            "TCDTIKNET dummy coupling: False (default) INDEPENDENT_RIDGE, True FOLDED.")
+            "TCDTIKNET dummy coupling: False (default) INDEPENDENT_RIDGE, True FOLDED. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("group_penalty", &SolverOptions::group_penalty,
-            "TCDIENET structured penalty (GroupPenaltyVariant). Default MEAN.")
+            "TCDIENET structured penalty (GroupPenaltyVariant). Default MEAN. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_lambda_rel_tol", &SolverOptions::cd_lambda_rel_tol,
-            "CD family: relative lambda tolerance of the crossing search, in (0, 1). Default 1e-3.")
+            "CD family: relative lambda tolerance of the crossing search, in (0, 1). Default 1e-3. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_tol_certify", &SolverOptions::cd_tol_certify,
-            "CD family: certification-sweep tolerance. Default 1e-10.")
+            "CD family: certification-sweep tolerance. Default 1e-10. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_tol_probe", &SolverOptions::cd_tol_probe,
-            "CD family: probe-sweep tolerance. Default 1e-8.")
+            "CD family: probe-sweep tolerance. Default 1e-8. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_gram_cap", &SolverOptions::cd_gram_cap,
-            "CD family: ever-active Gram slots cached before falling back to naive sweeps. Default 400.")
+            "CD family: ever-active Gram slots cached before falling back to naive sweeps. Default 400. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_max_sweeps", &SolverOptions::cd_max_sweeps,
             "CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000. A solve that stops at "
             "the budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of "
-            "continuing on an unconverged path.")
+            "continuing on an unconverged path. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def_readwrite("cd_certified_localization", &SolverOptions::cd_certified_localization,
-            "CD family: True (default) CERTIFIED crossing localization, False LEGACY.")
+            "CD family: True (default) CERTIFIED crossing localization, False LEGACY. "
+            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def("__repr__", [](const SolverOptions& o) {
             return "SolverOptions(normalize=" + std::string(o.normalize ? "True" : "False") +
                    ", intercept=" + (o.intercept ? "True" : "False") +
@@ -791,7 +804,8 @@ inline void bind_tsolvers_module(py::module& m) {
         .export_values();
 
     py::enum_<trex::tsolvers::ad::GroupPenaltyVariant>(m, "GroupPenaltyVariant",
-        "Structured penalty of the group CCD solver (TCDIENET).")
+        "Structured penalty of the group CCD solver (TCDIENET). "
+        "Deprecated: removed with the coordinate-descent family in the next minor release.")
         .value("MEAN", trex::tsolvers::ad::GroupPenaltyVariant::MEAN,
                "K = blockdiag(1 1^T / p_m): the canonical IEN group-sum penalty.")
         .value("CENTERING", trex::tsolvers::ad::GroupPenaltyVariant::CENTERING,
@@ -1124,6 +1138,10 @@ inline void bind_tsolvers_module(py::module& m) {
         auto cls = bind_standard_tsolver<TCDLASSO_Solver>(m_cd, "TCDLASSO_Solver",
             "Terminating cyclic coordinate descent LASSO (T-CDLASSO) solver.\n"
             "\n"
+            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
+            "and constructing this class raises FutureWarning. Use TLASSO_Solver, the homotopy\n"
+            "solver of the same problem.\n"
+            "\n"
             "References\n"
             "----------\n"
             "R. Tibshirani, \"Regression Shrinkage and Selection via the Lasso,\" J. R. Stat. Soc. Ser.\n"
@@ -1146,6 +1164,10 @@ inline void bind_tsolvers_module(py::module& m) {
         auto cls = bind_standard_tsolver<TCDENET_Solver>(m_cd, "TCDENET_Solver",
             "Terminating cyclic coordinate descent elastic net (T-CDENET) solver.\n"
             "\n"
+            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
+            "and constructing this class raises FutureWarning. Use TENET_Solver, the homotopy\n"
+            "solver of the same problem.\n"
+            "\n"
             "References\n"
             "----------\n"
             "H. Zou and T. Hastie, \"Regularization and Variable Selection via the Elastic Net,\" J. R.\n"
@@ -1165,6 +1187,10 @@ inline void bind_tsolvers_module(py::module& m) {
     {
         auto cls = bind_groups_tsolver<TCDIENET_Solver>(m_cd, "TCDIENET_Solver",
             "Terminating cyclic coordinate descent informed elastic net (T-CDIENET) solver.\n"
+            "\n"
+            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
+            "and constructing this class raises FutureWarning. Use TIENET_Solver, the homotopy\n"
+            "solver of the same problem.\n"
             "\n"
             "Not finally developed: its sweeps grow with lambda2 and on saturating designs, and a\n"
             "solve that does not converge within cd_max_sweeps raises RuntimeError. The homotopy\n"
@@ -1196,6 +1222,10 @@ inline void bind_tsolvers_module(py::module& m) {
     {
         auto cls = bind_tikhonov_tsolver<TCDTIKNET_Solver>(m_cd, "TCDTIKNET_Solver",
             "Terminating cyclic coordinate descent Tikhonov net (T-CDTIKNET) solver.\n"
+            "\n"
+            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
+            "and constructing this class raises FutureWarning. Use TIKNET_Solver, the homotopy\n"
+            "solver of the same problem.\n"
             "\n"
             "Not finally developed: under the folded dummy coupling its sweeps grow with lambda2,\n"
             "and on saturating designs as well, and a solve that does not converge within\n"

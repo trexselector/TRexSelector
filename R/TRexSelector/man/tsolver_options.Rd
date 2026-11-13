@@ -86,20 +86,24 @@ stepwise.}
 augmented system with a pure-LARS inner path that never drops variables
 (default \code{FALSE}: LASSO inner path).}
 
-\item{kappa_dummy}{Ridge weight of the dummy block of the CCD elastic nets
-(not bound to R yet). Default 1.}
+\item{kappa_dummy}{Ridge weight of the dummy block of TCDENET, and of
+TCDTIKNET with \code{fold_dummies = FALSE}. Default 1. Deprecated: it
+will be removed with the coordinate-descent family in TRexSelector 2.1.0.}
 
-\item{fold_dummies}{Logical; TCDTIKNET dummy coupling (not bound to R
-yet). Default \code{FALSE}.}
+\item{fold_dummies}{Logical; TCDTIKNET dummy coupling. Default
+\code{FALSE}. Deprecated: it will be removed with the coordinate-descent
+family in TRexSelector 2.1.0.}
 
 \item{group_penalty}{TCDIENET structured penalty, \code{"MEAN"} (default)
-or \code{"CENTERING"} (not bound to R yet).}
+or \code{"CENTERING"}. Deprecated: it will be removed with the
+coordinate-descent family in TRexSelector 2.1.0.}
 
-\item{cd_lambda_rel_tol, cd_tol_certify, cd_tol_probe, cd_gram_cap, cd_max_sweeps, cd_certified_localization}{Knobs of the CD solver family (not bound to R yet); the defaults are the
+\item{cd_lambda_rel_tol, cd_tol_certify, cd_tol_probe, cd_gram_cap, cd_max_sweeps, cd_certified_localization}{Knobs of the coordinate-descent solver family; the defaults are the
 solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
 that stops at the sweep budget \code{cd_max_sweeps} far from a solution
 (KKT violation above 0.001 lambda_1) raises an error instead of
-continuing on an unconverged path.}
+continuing on an unconverged path. Deprecated: the six knobs will be
+removed with the coordinate-descent family in TRexSelector 2.1.0.}
 }
 \value{
 A named list suitable for the \code{options} argument of every

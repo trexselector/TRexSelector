@@ -81,7 +81,9 @@ public:
                 gvs_ctrl.trex_ctrl.solver_type =
                     gvs_sd::SolverTypeForTRex::TIENET;
             }
+            warn_if_cd_solver_type(gvs_ctrl.trex_ctrl.solver_type);
         } else { // EN
+            warn_if_cd_en_solver(gvs_ctrl.en_solver);
             switch (gvs_ctrl.en_solver) {
                 case ENSolverType::TENET_AUG:
                     gvs_ctrl.trex_ctrl.solver_type =
@@ -150,14 +152,16 @@ inline void bind_trex_gvs(py::module& m) {
         .value("IEN", GVSType::IEN, "Informed Elastic-Net using group structure from clustering (solver via "
             "trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its "
             "sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within "
-            "cd_max_sweeps raises RuntimeError.")
+            "cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor "
+            "release: the selector raises FutureWarning for it. Use TIENET.")
         .export_values();
 
     py::enum_<ENSolverType>(m, "ENSolverType", "Elastic-Net solver variant used when gvs_type == EN.")
         .value("TENET",     ENSolverType::TENET,     "Gram-based Elastic Net (ridge absorbed via Cholesky update).")
         .value("TENET_AUG", ENSolverType::TENET_AUG, "Augmented-LASSO Elastic Net (row-augmented system).")
         .value("TCDENET",   ENSolverType::TCDENET,   "Coordinate-descent Elastic Net (exact fixed-lambda1 minimizers "
-            "per dummy crossing).")
+            "per dummy crossing). "
+            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.")
         .export_values();
 
     py::class_<trex::ml_methods::model_selection::lambda2_cv_diagnostics>(m, "Lambda2CVDiagnostics",
@@ -229,7 +233,7 @@ inline void bind_trex_gvs(py::module& m) {
             "IEN "
             "= Informed Elastic Net).")
         .def_readwrite("en_solver",   &TRexGVSControlParameter::en_solver,   "EN solver variant when gvs_type == EN: "
-            "TENET (default), TENET_AUG, or TCDENET.")
+            "TENET (default), TENET_AUG, or TCDENET (deprecated, removed in the next minor release).")
         .def_readwrite("corr_max",    &TRexGVSControlParameter::corr_max,    "Maximum pairwise correlation for "
             "automatic cluster formation.")
         .def_readwrite("hc_linkage",  &TRexGVSControlParameter::hc_linkage,  "Hierarchical clustering linkage method.")

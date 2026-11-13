@@ -159,8 +159,8 @@ test_that("TRexGVSSelector warns when control$solver does not match the derived 
     "not an IEN-family solver"
   )
   expect_no_warning(
-    TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                        control = trex_control(solver = "TCDIENET"), verbose = FALSE)
+    quiet_cd(TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "IEN"),
+                                 control = trex_control(solver = "TCDIENET"), verbose = FALSE))
   )
   expect_warning(
     TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "EN"),

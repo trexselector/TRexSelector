@@ -496,7 +496,7 @@ class ENSolverType:
     
       TENET_AUG : Augmented-LASSO Elastic Net (row-augmented system).
     
-      TCDENET : Coordinate-descent Elastic Net (exact fixed-lambda1 minimizers per dummy crossing).
+      TCDENET : Coordinate-descent Elastic Net (exact fixed-lambda1 minimizers per dummy crossing). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.
     """
     TCDENET: typing.ClassVar[ENSolverType]  # value = <ENSolverType.TCDENET: 2>
     TENET: typing.ClassVar[ENSolverType]  # value = <ENSolverType.TENET: 0>
@@ -583,7 +583,7 @@ class GVSType:
     
       EN : Elastic-Net group variable selection (uses TENET solver).
     
-      IEN : Informed Elastic-Net using group structure from clustering (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError.
+      IEN : Informed Elastic-Net using group structure from clustering (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TIENET.
     """
     EN: typing.ClassVar[GVSType]  # value = <GVSType.EN: 0>
     IEN: typing.ClassVar[GVSType]  # value = <GVSType.IEN: 1>
@@ -1377,7 +1377,7 @@ class SolverHyperparameters:
     @property
     def cd_certified_localization(self) -> bool:
         """
-        CCD family: True (default) = certified crossing localization (duality-gap and coordinate-status certificates, closed-form continuation, records at the knot); False = LEGACY probe bisection with the support-nesting stop.
+        CCD family: True (default) = certified crossing localization (duality-gap and coordinate-status certificates, closed-form continuation, records at the knot); False = LEGACY probe bisection with the support-nesting stop. Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_certified_localization.setter
     def cd_certified_localization(self, arg0: bool) -> None:
@@ -1385,7 +1385,7 @@ class SolverHyperparameters:
     @property
     def cd_gram_cap(self) -> int:
         """
-        CCD family: column cap for the cached Gram matrix (0 keeps the solver default).
+        CCD family: column cap for the cached Gram matrix (0 keeps the solver default). Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_gram_cap.setter
     def cd_gram_cap(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1393,7 +1393,7 @@ class SolverHyperparameters:
     @property
     def cd_lambda_rel_tol(self) -> float:
         """
-        CCD family: relative lambda step tolerance of the crossing search (<= 0 keeps the solver default).
+        CCD family: relative lambda step tolerance of the crossing search (<= 0 keeps the solver default). Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_lambda_rel_tol.setter
     def cd_lambda_rel_tol(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1401,7 +1401,7 @@ class SolverHyperparameters:
     @property
     def cd_max_sweeps(self) -> int:
         """
-        CCD family: maximum coordinate sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path.
+        CCD family: maximum coordinate sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path. Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_max_sweeps.setter
     def cd_max_sweeps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1409,7 +1409,7 @@ class SolverHyperparameters:
     @property
     def cd_tol_certify(self) -> float:
         """
-        CCD family: KKT certification tolerance; applied only when set together with cd_tol_probe (both > 0).
+        CCD family: KKT certification tolerance; applied only when set together with cd_tol_probe (both > 0). Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_tol_certify.setter
     def cd_tol_certify(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1417,7 +1417,7 @@ class SolverHyperparameters:
     @property
     def cd_tol_probe(self) -> float:
         """
-        CCD family: probing tolerance; applied only when set together with cd_tol_certify (both > 0).
+        CCD family: probing tolerance; applied only when set together with cd_tol_certify (both > 0). Deprecated: removed with the coordinate-descent family in the next minor release.
         """
     @cd_tol_probe.setter
     def cd_tol_probe(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1510,17 +1510,17 @@ class SolverTypeForTRex:
     
       TENET_AUG : Terminating Elastic Net via augmented LASSO; accepted wherever TENET runs (LASSO inner path standard, LARS via tenet_aug_use_lars).
     
-      TCDLASSO : Terminating coordinate-descent LASSO (exact penalized-lasso minimizers per crossing; certified crossing localization by default).
+      TCDLASSO : Terminating coordinate-descent LASSO (exact penalized-lasso minimizers per crossing; certified crossing localization by default). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TLASSO.
     
-      TCDENET : Terminating coordinate-descent Elastic Net.
+      TCDENET : Terminating coordinate-descent Elastic Net. Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.
     
       TIENET : Terminating Informed Elastic Net, native pathwise (GVS-only, gvs_type=IEN; IEN default).
     
       TIENET_AUG : Terminating Informed Elastic Net via augmented LASSO (GVS-only, gvs_type=IEN).
     
-      TCDIENET : Terminating coordinate-descent Informed Elastic Net (GVS-only, gvs_type=IEN).
+      TCDIENET : Terminating coordinate-descent Informed Elastic Net (GVS-only, gvs_type=IEN). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIENET.
     
-      TCDTIKNET : Terminating coordinate-descent Tikhonov Net (sparse-K; needs a penalty matrix, TRexTikhonovSelector only — not yet bound in Python).
+      TCDTIKNET : Terminating coordinate-descent Tikhonov Net (sparse-K; needs a penalty matrix, TRexTikhonovSelector only). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIKNET.
     
       TIKNET : Terminating Tikhonov Net, native pathwise (sparse-K, FOLDED; TRexTikhonovSelector only).
     """
@@ -1929,7 +1929,7 @@ class TRexGVSControlParameter:
     @property
     def en_solver(self) -> ENSolverType:
         """
-        EN solver variant when gvs_type == EN: TENET (default), TENET_AUG, or TCDENET.
+        EN solver variant when gvs_type == EN: TENET (default), TENET_AUG, or TCDENET (deprecated, removed in the next minor release).
         """
     @en_solver.setter
     def en_solver(self, arg0: ENSolverType) -> None:
@@ -2357,7 +2357,7 @@ class TRexTikhonovControlParameter:
     @property
     def fold_dummy_coupling(self) -> bool:
         """
-        FOLDED dummy coupling: dummies take the K block of their real counterpart (default True). False is a validation switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it.
+        FOLDED dummy coupling: dummies take the K block of their real counterpart (default True). False is a validation switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it. Deprecated: removed with TCDTIKNET and the coordinate-descent family in the next minor release.
         """
     @fold_dummy_coupling.setter
     def fold_dummy_coupling(self, arg0: bool) -> None:
@@ -2484,7 +2484,7 @@ class TRexTikhonovControlParameter:
         ...
 class TRexTikhonovSelector(TRexSelector):
     """
-    T-Rex selector with a general Tikhonov penalty (TCDTIKNET / TIKNET) and cluster-aware dummies.
+    T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated TCDTIKNET) and cluster-aware dummies.
     
     References
     ----------

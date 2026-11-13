@@ -8,6 +8,10 @@
  * @file cd_based.hpp
  *
  * @brief Umbrella header for CCD-based terminating solvers.
+ *
+ * @deprecated The coordinate descent family will be removed in the next
+ *  minor release. Use the homotopy solvers of lars_based.hpp: TLASSO, TENET,
+ *  TIENET and TIKNET.
  */
 // ====================================================================
 

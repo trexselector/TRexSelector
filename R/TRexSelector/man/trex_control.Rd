@@ -49,7 +49,11 @@ are accepted by the parser but only dispatchable inside
 Tikhonov-family names "TCDTIKNET" and "TIKNET" need a
 penalty matrix and are dispatchable only inside
 \code{TRexTikhonovSelector}. The plain selector rejects both families
-with an informative error.}
+with an informative error. The coordinate-descent names "TCDLASSO",
+"TCDENET", "TCDIENET" and "TCDTIKNET" are deprecated and will be removed
+in TRexSelector 2.1.0: a selector that receives one of them raises a
+deprecation warning. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
+homotopy solvers of the same problems.}
 
 \item{K}{Number of random experiments (default: 20).}
 
@@ -124,25 +128,33 @@ name instead. Ignored by every other solver.}
 
 \item{cd_lambda_rel_tol}{Relative lambda step tolerance of the CCD family's
 crossing search (default: 1e-6, as in C++ and Python). Values <= 0 keep
-the solver's internal default. Ignored by the non-CCD solvers.}
+the solver's internal default. Ignored by the non-CCD solvers.
+Deprecated: it will be removed with the coordinate-descent family in
+TRexSelector 2.1.0.}
 
 \item{cd_tol_certify}{KKT certification tolerance of the CCD family. Must
 be set together with \code{cd_tol_probe}; the default -1 keeps the
-solver's own tolerances. Ignored by the non-CCD solvers.}
+solver's own tolerances. Ignored by the non-CCD solvers. Deprecated: it
+will be removed with the coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{cd_tol_probe}{Probing tolerance of the CCD family's coordinate
 sweeps. Must be set together with \code{cd_tol_certify}; the default -1
-keeps the solver's own tolerances. Ignored by the non-CCD solvers.}
+keeps the solver's own tolerances. Ignored by the non-CCD solvers.
+Deprecated: it will be removed with the coordinate-descent family in
+TRexSelector 2.1.0.}
 
 \item{cd_gram_cap}{Column cap for the CCD family's cached Gram matrix;
 above it the solver falls back to the naive updates (default: 0 = keep
-the solver's internal default). Ignored by the non-CCD solvers.}
+the solver's internal default). Ignored by the non-CCD solvers.
+Deprecated: it will be removed with the coordinate-descent family in
+TRexSelector 2.1.0.}
 
 \item{cd_max_sweeps}{Maximum coordinate sweeps per CCD subproblem
 (default: 0 = keep the solver's internal default of 2000). A solve that
 stops at this budget far from a solution (KKT violation above 0.001
 lambda_1) raises an error instead of continuing on an unconverged path.
-Ignored by the non-CCD solvers.}
+Ignored by the non-CCD solvers. Deprecated: it will be removed with the
+coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{cd_certified_localization}{Logical (default \code{TRUE}): the CD
 family localizes every dummy crossing with certificates — a duality
@@ -150,7 +162,8 @@ gap and coordinate statuses at every bracket endpoint, closed-form
 continuation between them, the record placed at the knot.
 \code{FALSE} selects the LEGACY probe bisection with the
 support-nesting stop (the pre-2026-08 behaviour, kept as the A/B
-baseline). Ignored by the non-CD solvers.}
+baseline). Ignored by the non-CD solvers. Deprecated: it will be removed
+with the coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{dummy_distribution}{Dummy variable distribution, created with
 \code{\link{trex_dummy_distribution}} (default: standard Normal).}

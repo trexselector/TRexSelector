@@ -104,6 +104,10 @@ using trex::tsolvers::ad::GroupPenaltyVariant;
  *  mode). A single global group is statistically degenerate and should be
  *  avoided.
  *
+ * @deprecated The coordinate descent family (TCDLASSO, TCDENET, TCDIENET,
+ *  TCDTIKNET) will be removed in the next minor release. Use TIENET_Solver,
+ *  the homotopy solver of the same problem.
+ *
  *  References:
  *  -----------
  *   J. Machkour, M. Muma, and D. P. Palomar, "The Informed Elastic Net for Fast Grouped Variable Selection

@@ -56,7 +56,9 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     #'   if it is set to a non-matching solver). For \code{gvs_type = "IEN"}
     #'   the \code{solver} field selects the IEN solver: "TIENET"
     #'   (default, native pathwise), "TIENET_AUG", or "TCDIENET" (not finally
-    #'   developed, see \code{\link{trex_gvs_control}}).
+    #'   developed, see \code{\link{trex_gvs_control}}). "TCDENET" and
+    #'   "TCDIENET" are deprecated and will be removed in TRexSelector 2.1.0:
+    #'   the selector raises a deprecation warning for them.
     #' @param control A control list from \code{\link{trex_control}()} (default:
     #'   \code{trex_control()}). For \code{gvs_type = "EN"} the \code{solver}
     #'   field is overridden; for "IEN" it selects the IEN-family solver.
@@ -86,6 +88,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
                   "Using \"TIENET\".")
           control$solver <- "TLARS"  # glue defaults it to TIENET
         }
+        .warn_cd_solver_name(control$solver)
       } else {
         derived_solver <- if (identical(gvs_control$en_solver, "TENET_AUG")) {
           "TENET_AUG"
@@ -102,6 +105,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
         }
         # The C++ glue derives solver_type from en_solver regardless.
         control$solver <- "TLARS"
+        .warn_cd_solver_name(gvs_control$en_solver, "en_solver")
       }
 
       # lambda_2 == 0 is the degenerate no-ridge case, NOT automatic CV

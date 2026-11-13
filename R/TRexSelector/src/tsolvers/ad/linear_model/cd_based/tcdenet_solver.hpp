@@ -50,6 +50,10 @@ namespace trex::tsolvers::ad::linear_model::cd_based {
  *  Zou-Hastie (1 + lambda2) rescaling; apply it downstream if the corrected
  *  elastic net convention is required).
  *
+ * @deprecated The coordinate descent family (TCDLASSO, TCDENET, TCDIENET,
+ *  TCDTIKNET) will be removed in the next minor release. Use TENET_Solver,
+ *  the homotopy solver of the same problem.
+ *
  *  References:
  *  -----------
  *   H. Zou and T. Hastie, "Regularization and Variable Selection via the Elastic Net," J. R. Stat. Soc. Ser.

@@ -211,6 +211,8 @@ enum class ENSolverType {
      *  minimizers per dummy crossing (K = I diagonal ridge; dummies get the
      *  same unit ridge, preserving exchangeability). Same data convention as
      *  TENET (pre-normalized X, center-only D, centered y).
+     *  @deprecated Will be removed with the coordinate descent family in the
+     *  next minor release. Use TENET.
      */
     TCDENET
 };

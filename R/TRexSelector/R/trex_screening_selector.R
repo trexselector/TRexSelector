@@ -53,6 +53,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
                           screen_control = trex_screen_control(),
                           control = trex_control()) {
 
+      .warn_cd_solver_name(control$solver)
+
       # Screening always uses STANDARD L-loop strategy
       control$lloop_strategy <- "STANDARD"
 

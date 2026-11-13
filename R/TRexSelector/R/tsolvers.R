@@ -74,18 +74,22 @@ NULL
 #' @param tenet_aug_use_lars Logical; TENETAug and TIENETAug run the
 #'   augmented system with a pure-LARS inner path that never drops variables
 #'   (default \code{FALSE}: LASSO inner path).
-#' @param kappa_dummy Ridge weight of the dummy block of the CCD elastic nets
-#'   (not bound to R yet). Default 1.
-#' @param fold_dummies Logical; TCDTIKNET dummy coupling (not bound to R
-#'   yet). Default \code{FALSE}.
+#' @param kappa_dummy Ridge weight of the dummy block of TCDENET, and of
+#'   TCDTIKNET with \code{fold_dummies = FALSE}. Default 1. Deprecated: it
+#'   will be removed with the coordinate-descent family in TRexSelector 2.1.0.
+#' @param fold_dummies Logical; TCDTIKNET dummy coupling. Default
+#'   \code{FALSE}. Deprecated: it will be removed with the coordinate-descent
+#'   family in TRexSelector 2.1.0.
 #' @param group_penalty TCDIENET structured penalty, \code{"MEAN"} (default)
-#'   or \code{"CENTERING"} (not bound to R yet).
+#'   or \code{"CENTERING"}. Deprecated: it will be removed with the
+#'   coordinate-descent family in TRexSelector 2.1.0.
 #' @param cd_lambda_rel_tol,cd_tol_certify,cd_tol_probe,cd_gram_cap,cd_max_sweeps,cd_certified_localization
-#'   Knobs of the CD solver family (not bound to R yet); the defaults are the
+#'   Knobs of the coordinate-descent solver family; the defaults are the
 #'   solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
 #'   that stops at the sweep budget \code{cd_max_sweeps} far from a solution
 #'   (KKT violation above 0.001 lambda_1) raises an error instead of
-#'   continuing on an unconverged path.
+#'   continuing on an unconverged path. Deprecated: the six knobs will be
+#'   removed with the coordinate-descent family in TRexSelector 2.1.0.
 #'
 #' @return A named list suitable for the \code{options} argument of every
 #'   T-solver constructor.
@@ -1484,9 +1488,12 @@ TIKNET_Solver <- R6::R6Class(
 )
 
 
-#' CD-family base class
+#' CD-family base class (deprecated)
 #'
 #' @description
+#' \strong{Deprecated.} The coordinate-descent family will be removed in
+#' TRexSelector 2.1.0, and this class goes with it.
+#'
 #' Shared getters of the coordinate-descent solver family
 #' (\code{TCDLASSO_Solver}, \code{TCDENET_Solver}, \code{TCDIENET_Solver},
 #' \code{TCDTIKNET_Solver}): the recorded lambda_1 path, the quadratic penalty
@@ -1550,9 +1557,14 @@ TCDSolver_Base <- R6::R6Class(
 }
 
 
-#' T-CDLASSO Solver
+#' T-CDLASSO Solver (deprecated)
 #'
 #' @description
+#' \strong{Deprecated.} The coordinate-descent family will be removed in
+#' TRexSelector 2.1.0, and constructing this class raises a deprecation
+#' warning. Use \code{\link{TLASSO_Solver}}, the homotopy solver of the
+#' same problem.
+#'
 #' Terminating coordinate-descent LASSO: exact penalized-lasso minimizers at
 #' every dummy crossing, localized with certificates (duality gap and
 #' coordinate statuses; \code{cd_certified_localization = FALSE} in the
@@ -1604,6 +1616,7 @@ TCDLASSO_Solver <- R6::R6Class(
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads the \code{cd_*} knobs.
     initialize = function(X, D, y, options = tsolver_options()) {
+      .warn_cd_solver_class("TCDLASSO")
       super$initialize(X, D, y)
       self$ptr <- tsolver_tcdlasso_create(self$X, self$D, self$y, options)
     }
@@ -1611,9 +1624,14 @@ TCDLASSO_Solver <- R6::R6Class(
 )
 
 
-#' T-CDENET Solver
+#' T-CDENET Solver (deprecated)
 #'
 #' @description
+#' \strong{Deprecated.} The coordinate-descent family will be removed in
+#' TRexSelector 2.1.0, and constructing this class raises a deprecation
+#' warning. Use \code{\link{TENET_Solver}}, the homotopy solver of the
+#' same problem.
+#'
 #' Terminating coordinate-descent Elastic Net (diagonal ridge \code{lambda2},
 #' the dummies get \code{kappa_dummy * lambda2}). The solver used internally
 #' by \code{TRexGVSSelector} for \code{en_solver = "TCDENET"}. Inherits the
@@ -1660,6 +1678,7 @@ TCDENET_Solver <- R6::R6Class(
     #'   solver reads \code{lambda2}, \code{kappa_dummy} and the \code{cd_*}
     #'   knobs.
     initialize = function(X, D, y, options = tsolver_options()) {
+      .warn_cd_solver_class("TCDENET")
       super$initialize(X, D, y)
       self$ptr <- tsolver_tcdenet_create(self$X, self$D, self$y, options)
     }
@@ -1667,9 +1686,14 @@ TCDENET_Solver <- R6::R6Class(
 )
 
 
-#' T-CDIENET Solver
+#' T-CDIENET Solver (deprecated)
 #'
 #' @description
+#' \strong{Deprecated.} The coordinate-descent family will be removed in
+#' TRexSelector 2.1.0, and constructing this class raises a deprecation
+#' warning. Use \code{\link{TIENET_Solver}}, the homotopy solver of the
+#' same problem.
+#'
 #' Terminating coordinate-descent Informed Elastic Net: exact fixed-lambda1
 #' IEN minimizers per dummy crossing with O(1) group-penalty hooks
 #' (\code{group_penalty = "MEAN"}, the canonical group-sum penalty, or
@@ -1729,6 +1753,7 @@ TCDIENET_Solver <- R6::R6Class(
     #'   solver reads \code{lambda2}, \code{group_penalty} and the
     #'   \code{cd_*} knobs.
     initialize = function(X, D, y, groups, options = tsolver_options()) {
+      .warn_cd_solver_class("TCDIENET")
       super$initialize(X, D, y)
       groups <- as.integer(groups)
       self$ptr <- tsolver_tcdienet_create(self$X, self$D, self$y, groups, options)
@@ -1745,9 +1770,14 @@ TCDIENET_Solver <- R6::R6Class(
 )
 
 
-#' T-CDTIKNET Solver
+#' T-CDTIKNET Solver (deprecated)
 #'
 #' @description
+#' \strong{Deprecated.} The coordinate-descent family will be removed in
+#' TRexSelector 2.1.0, and constructing this class raises a deprecation
+#' warning. Use \code{\link{TIKNET_Solver}}, the homotopy solver of the
+#' same problem.
+#'
 #' Terminating coordinate-descent Tikhonov Net: exact fixed-lambda1
 #' minimizers per dummy crossing under the general quadratic penalty
 #' \code{lambda2 * t(beta) K beta} with a sparse PSD \code{K}. Dummy coupling
@@ -1810,6 +1840,7 @@ TCDTIKNET_Solver <- R6::R6Class(
     #'   solver reads \code{lambda2}, \code{kappa_dummy}, \code{fold_dummies}
     #'   and the \code{cd_*} knobs.
     initialize = function(X, D, y, tikhonov_K, options = tsolver_options()) {
+      .warn_cd_solver_class("TCDTIKNET")
       super$initialize(X, D, y)
       tikhonov_K <- .as_tikhonov_k(tikhonov_K)
       self$ptr <- tsolver_tcdtiknet_create(self$X, self$D, self$y, tikhonov_K, options)

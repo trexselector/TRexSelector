@@ -96,6 +96,7 @@ public:
                                                                   y.size());
         const tik::TRexTikhonovControlParameter tik_ctrl =
             merge_tikhonov_control(tik_control, trex_control);
+        warn_if_cd_solver_type(tik_ctrl.trex_ctrl.solver_type);
         this->selector_ = std::make_unique<tik::TRexTikhonovSelector>(
             *(this->X_map_), *(this->y_map_), tFDR, tik_ctrl, seed, verbose
         );
@@ -310,7 +311,8 @@ inline void bind_trex_tikhonov(py::module& m) {
             "its dummies under the main run's first block tag.")
         .def_readwrite("fold_dummy_coupling", &tik::TRexTikhonovControlParameter::fold_dummy_coupling, "FOLDED dummy "
             "coupling: dummies take the K block of their real counterpart (default True). False is a validation "
-            "switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it.")
+            "switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it. "
+            "Deprecated: removed with TCDTIKNET and the coordinate-descent family in the next minor release.")
         .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Cluster-aware MVN "
             "dummies (default True); False = i.i.d. dummies (the K = I anchor).")
         .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Group assignment "
@@ -347,9 +349,10 @@ inline void bind_trex_tikhonov(py::module& m) {
               tik::Lambda2PowerRuleConfig cfg;
               cfg.grid           = grid;
               cfg.knee_tolerance = knee_tolerance;
-              return tik::tikhonov_lambda2_power_rule(X_map, y_map, tFDR,
-                                                      merge_tikhonov_control(tik_control, trex_control),
-                                                      seed, cfg, verbose);
+              const tik::TRexTikhonovControlParameter tik_ctrl =
+                  merge_tikhonov_control(tik_control, trex_control);
+              warn_if_cd_solver_type(tik_ctrl.trex_ctrl.solver_type);
+              return tik::tikhonov_lambda2_power_rule(X_map, y_map, tFDR, tik_ctrl, seed, cfg, verbose);
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
           py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
@@ -366,7 +369,7 @@ inline void bind_trex_tikhonov(py::module& m) {
           "fixed-lambda_2 FDR guarantee that each probe carries.");
 
     py::class_<PyTRexTikhonovSelector, PyTRexSelector>(m, "TRexTikhonovSelector",
-        "T-Rex selector with a general Tikhonov penalty (TCDTIKNET / TIKNET) and "
+        "T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated TCDTIKNET) and "
         "cluster-aware dummies.\n"
         "\n"
         "References\n"

@@ -80,6 +80,9 @@ namespace trex::tsolvers::ad::linear_model::cd_based {
  * coordinate-descent solution path based on the pathwise CCD framework.
  *
  * Used for algorithm selection, configuration, and logging/reporting.
+ *
+ * @deprecated Will be removed with the coordinate descent family in the
+ *  next minor release.
  */
 enum class SolverTypeCdBased: int {
     TCDLASSO = 0,      // Terminating Cyclic Coordinate Descent (LASSO)
@@ -94,6 +97,10 @@ enum class SolverTypeCdBased: int {
  * Supports in-memory and memory-mapped data over Eigen::Map. The Gram rows
  * of the ever-active variables and the continuation cache stay allocated
  * after executeStep(), so memoryBytes() counts them.
+ *
+ * @deprecated The coordinate descent family (TCDLASSO, TCDENET, TCDIENET,
+ *  TCDTIKNET) will be removed in the next minor release. Use TLASSO_Solver,
+ *  the homotopy solver of the same problem.
  *
  *  References:
  *  -----------

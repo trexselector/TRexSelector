@@ -21,6 +21,7 @@
 
 // trex_spca include
 #include <trex_selector_methods/ad/trex_spca/trex_spca.hpp>
+#include "deprecation.hpp"
 #include "design_views.hpp"
 
 // =====================================================================================
@@ -59,6 +60,8 @@ public:
         int seed,
         bool verbose
     ) {
+        warn_if_cd_en_solver(ctrl.en_solver);
+
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(), X.rows(), X.cols());
         selector_ = std::make_unique<TRexSPCA>(*X_map_, M, tFDR, ctrl, seed, verbose);
     }

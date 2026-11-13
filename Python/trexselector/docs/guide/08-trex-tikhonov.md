@@ -26,8 +26,8 @@ and asks neighbouring coefficients to be equal (smoothness), a graph Laplacian i
 {cite}`smola2003graphkernels,chung1997spectral` couples the variables along the edges of a graph,
 and a block-diagonal centering matrix reproduces the penalty of the informed elastic net. The
 Tikhonov T-Rex selector runs the terminating Tikhonov-net solvers (TIKNET by the pathwise homotopy
-algorithm, the default, and TCDTIKNET by coordinate descent) with such a matrix inside the random
-experiments.
+algorithm, the default, and the deprecated TCDTIKNET by coordinate descent) with such a matrix inside
+the random experiments.
 
 ## A smooth coefficient profile
 
@@ -136,7 +136,8 @@ with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = True` lets every d
 $\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist for
 validation runs, and the decoupled dummy block exists with the solver `TCDTIKNET` only. With
 $\boldsymbol K = \boldsymbol I$, independent dummies and the decoupled dummy block, the selector
-reduces to the plain elastic net.
+reduces to the plain elastic net. That solver is deprecated, so the run below raises a
+`FutureWarning`, and `fold_dummy_coupling` will be removed with it in the next minor release.
 
 ```{code-cell} python
 en_ctrl = tsn.TRexTikhonovControlParameter()
@@ -186,7 +187,8 @@ the pathwise homotopy algorithm (the default, the neutral `TLARS` of a fresh con
 `TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
 Once $\lambda_2$ times $\boldsymbol K$ is large it can stop at its sweep budget (`cd_max_sweeps`)
 before it has converged. `select()` then raises an error instead of returning a selection from an
-unconverged path.
+unconverged path. `TCDTIKNET` is deprecated and will be removed with the coordinate descent family in
+the next minor release. The selector raises a `FutureWarning` for it, as the run below shows.
 
 ```{code-cell} python
 cd = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=tik_ctrl, trex_control=cd_ctrl,

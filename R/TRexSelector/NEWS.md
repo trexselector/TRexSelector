@@ -1,3 +1,22 @@
+# TRexSelector 2.0.2
+
+## Deprecated
+
+* The coordinate-descent solver family is deprecated and will be removed in TRexSelector 2.1.0. This
+  covers the classes `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and `TCDTIKNET_Solver` with
+  their base `TCDSolver_Base`, the solver names `"TCDLASSO"`, `"TCDENET"`, `"TCDIENET"` and
+  `"TCDTIKNET"` of `trex_control(solver = )`, and `trex_gvs_control(en_solver = "TCDENET")`. The
+  homotopy solvers of the same problems replace them, `TLASSO_Solver`, `TENET_Solver`, `TIENET_Solver`
+  and `TIKNET_Solver` with the solver names `"TLASSO"`, `"TENET"`, `"TIENET"` and `"TIKNET"`. The
+  family brought no gain over them in speed or in the selections, and its two structured members do
+  not converge within a practical sweep budget on every design.
+* Constructing one of the four classes raises a deprecation warning, and so does a selector that
+  receives one of the solver names. The warning comes once per call and names the replacement.
+* The options that only the family reads go with it. These are `cd_lambda_rel_tol`, `cd_tol_certify`,
+  `cd_tol_probe`, `cd_gram_cap`, `cd_max_sweeps` and `cd_certified_localization` of `trex_control()`
+  and `tsolver_options()`, `kappa_dummy`, `fold_dummies` and `group_penalty` of `tsolver_options()`,
+  and `fold_dummy_coupling` of `trex_tikhonov_control()`. Their help says so, and they raise no warning.
+
 # TRexSelector 2.0.1
 
 A patch release. CRAN's daily checks of 2.0.0 reported "Installation failed" on the macOS builders for

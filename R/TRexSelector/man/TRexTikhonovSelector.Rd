@@ -6,7 +6,7 @@
 \description{
 FDR-controlled variable selection with a Tikhonov penalty
 matrix \code{K = t(Gamma) \%*\% Gamma} driving the Tikhonov-net solvers
-(TIKNET by default, or TCDTIKNET). \code{K = I} collapses to
+(TIKNET by default, or the deprecated TCDTIKNET). \code{K = I} collapses to
 the plain elastic net; a group-mean K reproduces the GVS-IEN penalty;
 banded / Laplacian K encode smoothness-informed selection;
 \code{penalty_structure = "GROUP_CENTERING"} builds the centering
@@ -171,7 +171,9 @@ coordinate-descent solver; any other value warns and falls back to
 \code{lambda_2} times K is large it can stop at its sweep budget
 (\code{cd_max_sweeps}) before it has converged. \code{select()}
 then stops with an error instead of a selection from an unconverged
-path.}
+path. \code{"TCDTIKNET"} is deprecated and will be removed in
+TRexSelector 2.1.0: the selector raises a deprecation warning for
+it.}
     }
     \if{html}{\out{</div>}}
   }

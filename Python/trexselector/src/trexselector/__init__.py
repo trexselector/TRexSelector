@@ -85,6 +85,12 @@ class TRexSelector:
     ``ScalingMode.NONE`` it writes nothing into X and accepts an array that is not
     writable, for example the view of a file opened with ``AccessMode.ReadOnly``.
     The selectors derived from this class follow the same rule.
+
+    The coordinate-descent solver types ``TCDLASSO``, ``TCDENET``, ``TCDIENET``
+    and ``TCDTIKNET`` are deprecated and will be removed in the next minor
+    release: a selector that receives one of them raises ``FutureWarning``. Use
+    ``TLASSO``, ``TENET``, ``TIENET`` and ``TIKNET``, the homotopy solvers of the
+    same problems.
     """
 
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
@@ -230,6 +236,11 @@ class TRexDASelector(TRexSelector):
 class TRexGVSSelector(TRexSelector):
     """
     Python wrapper for the C++ TRexGVSSelector (Group Variable Selection).
+
+    The coordinate-descent solvers of the two tracks, ``ENSolverType.TCDENET``
+    and ``SolverTypeForTRex.TCDIENET``, are deprecated and will be removed in
+    the next minor release: the selector raises ``FutureWarning`` for them.
+    Use ``ENSolverType.TENET`` and ``SolverTypeForTRex.TIENET``.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  gvs_control: TRexGVSControlParameter | None = None,
@@ -341,7 +352,8 @@ class TRexTikhonovSelector(TRexSelector):
     finally developed: once lambda_2 times K is large it can stop at its sweep
     budget (``cd_max_sweeps``) before it has converged. ``select()`` then
     raises ``RuntimeError`` instead of returning a selection from an
-    unconverged path.
+    unconverged path. TCDTIKNET is deprecated and will be removed in the next
+    minor release: the selector raises ``FutureWarning`` for it.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  tik_control: TRexTikhonovControlParameter | None = None,

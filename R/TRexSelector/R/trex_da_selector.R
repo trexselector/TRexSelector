@@ -59,6 +59,8 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
                           da_control = trex_da_control(),
                           control = trex_control()) {
 
+      .warn_cd_solver_name(control$solver)
+
       # No need to call super$initialize() because the Cpp pointer constructor is different.
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)

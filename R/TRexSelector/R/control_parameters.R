@@ -39,7 +39,11 @@
 #'   Tikhonov-family names "TCDTIKNET" and "TIKNET" need a
 #'   penalty matrix and are dispatchable only inside
 #'   \code{TRexTikhonovSelector}. The plain selector rejects both families
-#'   with an informative error.
+#'   with an informative error. The coordinate-descent names "TCDLASSO",
+#'   "TCDENET", "TCDIENET" and "TCDTIKNET" are deprecated and will be removed
+#'   in TRexSelector 2.1.0: a selector that receives one of them raises a
+#'   deprecation warning. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
+#'   homotopy solvers of the same problems.
 #' @param K Number of random experiments (default: 20).
 #' @param tloop_stagnation_stop Whether to stop the T-loop on stagnation. NULL
 #'   (default) leaves the choice to the C++ core, the same rule on every
@@ -96,27 +100,36 @@
 #' @param cd_lambda_rel_tol Relative lambda step tolerance of the CCD family's
 #'   crossing search (default: 1e-6, as in C++ and Python). Values <= 0 keep
 #'   the solver's internal default. Ignored by the non-CCD solvers.
+#'   Deprecated: it will be removed with the coordinate-descent family in
+#'   TRexSelector 2.1.0.
 #' @param cd_tol_certify KKT certification tolerance of the CCD family. Must
 #'   be set together with \code{cd_tol_probe}; the default -1 keeps the
-#'   solver's own tolerances. Ignored by the non-CCD solvers.
+#'   solver's own tolerances. Ignored by the non-CCD solvers. Deprecated: it
+#'   will be removed with the coordinate-descent family in TRexSelector 2.1.0.
 #' @param cd_tol_probe Probing tolerance of the CCD family's coordinate
 #'   sweeps. Must be set together with \code{cd_tol_certify}; the default -1
 #'   keeps the solver's own tolerances. Ignored by the non-CCD solvers.
+#'   Deprecated: it will be removed with the coordinate-descent family in
+#'   TRexSelector 2.1.0.
 #' @param cd_gram_cap Column cap for the CCD family's cached Gram matrix;
 #'   above it the solver falls back to the naive updates (default: 0 = keep
 #'   the solver's internal default). Ignored by the non-CCD solvers.
+#'   Deprecated: it will be removed with the coordinate-descent family in
+#'   TRexSelector 2.1.0.
 #' @param cd_max_sweeps Maximum coordinate sweeps per CCD subproblem
 #'   (default: 0 = keep the solver's internal default of 2000). A solve that
 #'   stops at this budget far from a solution (KKT violation above 0.001
 #'   lambda_1) raises an error instead of continuing on an unconverged path.
-#'   Ignored by the non-CCD solvers.
+#'   Ignored by the non-CCD solvers. Deprecated: it will be removed with the
+#'   coordinate-descent family in TRexSelector 2.1.0.
 #' @param cd_certified_localization Logical (default \code{TRUE}): the CD
 #'   family localizes every dummy crossing with certificates — a duality
 #'   gap and coordinate statuses at every bracket endpoint, closed-form
 #'   continuation between them, the record placed at the knot.
 #'   \code{FALSE} selects the LEGACY probe bisection with the
 #'   support-nesting stop (the pre-2026-08 behaviour, kept as the A/B
-#'   baseline). Ignored by the non-CD solvers.
+#'   baseline). Ignored by the non-CD solvers. Deprecated: it will be removed
+#'   with the coordinate-descent family in TRexSelector 2.1.0.
 #' @param dummy_distribution Dummy variable distribution, created with
 #'   \code{\link{trex_dummy_distribution}} (default: standard Normal).
 #' @param scaling_mode Working-design convention, one of \code{"L2"}
@@ -319,7 +332,10 @@ trex_da_control <- function(da_method = "BT",
 #'   optional variants. For \code{gvs_type = "EN"} the \code{solver} field
 #'   is ignored. TCDIENET is not finally developed: its sweeps grow with
 #'   \code{lambda_2} and on saturating designs, and a solve that does not
-#'   converge within \code{cd_max_sweeps} raises an error.
+#'   converge within \code{cd_max_sweeps} raises an error. TCDENET and
+#'   TCDIENET are deprecated and will be removed with the coordinate-descent
+#'   family in TRexSelector 2.1.0: the selector raises a deprecation warning
+#'   for them. Use TENET and TIENET.
 #'
 #' @param gvs_type Augmentation policy: "EN" (Elastic Net) or "IEN" (Informed Elastic Net)
 #'   (default: "EN").
@@ -346,7 +362,8 @@ trex_da_control <- function(da_method = "BT",
 #' @param en_solver Elastic Net solver variant for \code{gvs_type = "EN"}:
 #'   \code{"TENET"} (default, Gram-based), \code{"TENET_AUG"}
 #'   (row-augmented LASSO), or \code{"TCDENET"} (coordinate descent; exact
-#'   fixed-lambda1 elastic-net minimizers per dummy crossing). All solve
+#'   fixed-lambda1 elastic-net minimizers per dummy crossing; deprecated,
+#'   it will be removed in TRexSelector 2.1.0, use \code{"TENET"}). All solve
 #'   the same EN
 #'   problem and select the same variables up to path-vs-minimizer
 #'   differences; the switch exists to validate solver equivalence,
@@ -619,7 +636,8 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   the general-Tikhonov T-Rex: a penalty matrix
 #'   \code{K = t(Gamma) \%*\% Gamma} drives the Tikhonov-net solvers
 #'   (TIKNET by default; TCDTIKNET through the \code{solver} field
-#'   of \code{\link{trex_control}}). \code{K = I} collapses to the plain
+#'   of \code{\link{trex_control}}, deprecated and removed in TRexSelector
+#'   2.1.0). \code{K = I} collapses to the plain
 #'   elastic net; a group-mean K reproduces the GVS-IEN penalty;
 #'   banded/Laplacian K encode smoothness. With
 #'   \code{penalty_structure = "GROUP_CENTERING"} the selector builds K
@@ -707,6 +725,8 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   deforms exchangeability whenever K has off-diagonals. Only the
 #'   TCDTIKNET solver offers it, so it needs \code{solver = "TCDTIKNET"} in
 #'   \code{\link{trex_control}}; the default solver TIKNET raises an error.
+#'   Deprecated: it will be removed with TCDTIKNET and the coordinate-descent
+#'   family in TRexSelector 2.1.0.
 #' @param cluster_dummies Logical (default \code{TRUE}): draw dummies as
 #'   per-cluster colored MVN layers (GVS parity) on the clustering below.
 #'   \code{FALSE} restores canonical i.i.d. dummies — validation runs only;

@@ -238,7 +238,7 @@ uses.
   and `TNCGMP_Solver`.
 * Adaptive forward stepwise: `TAFS_Solver`.
 * Coordinate descent (CD) based: `TCDLASSO_Solver`, from which `TCDENET_Solver`, `TCDIENET_Solver`
-  and `TCDTIKNET_Solver` derive.
+  and `TCDTIKNET_Solver` derive. The family is deprecated and will be removed in the next minor release.
 
 ### ML methods (`src/ml_methods/`)
 

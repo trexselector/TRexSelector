@@ -52,7 +52,8 @@ IEN-geometry \code{"CV_1SE_IEN_CCD"}, \code{"CV_MIN_IEN_CCD"},
 \item{en_solver}{Elastic Net solver variant for \code{gvs_type = "EN"}:
 \code{"TENET"} (default, Gram-based), \code{"TENET_AUG"}
 (row-augmented LASSO), or \code{"TCDENET"} (coordinate descent; exact
-fixed-lambda1 elastic-net minimizers per dummy crossing). All solve
+fixed-lambda1 elastic-net minimizers per dummy crossing; deprecated,
+it will be removed in TRexSelector 2.1.0, use \code{"TENET"}). All solve
 the same EN
 problem and select the same variables up to path-vs-minimizer
 differences; the switch exists to validate solver equivalence,
@@ -113,7 +114,10 @@ TIENET (default, native pathwise), with TIENET_AUG and TCDIENET as
 optional variants. For \code{gvs_type = "EN"} the \code{solver} field
 is ignored. TCDIENET is not finally developed: its sweeps grow with
 \code{lambda_2} and on saturating designs, and a solve that does not
-converge within \code{cd_max_sweeps} raises an error.
+converge within \code{cd_max_sweeps} raises an error. TCDENET and
+TCDIENET are deprecated and will be removed with the coordinate-descent
+family in TRexSelector 2.1.0: the selector raises a deprecation warning
+for them. Use TENET and TIENET.
 }
 \examples{
 trex_gvs_control()

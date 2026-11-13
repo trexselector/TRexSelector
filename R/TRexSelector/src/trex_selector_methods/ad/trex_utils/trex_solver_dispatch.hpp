@@ -82,12 +82,21 @@ enum class SolverTypeForTRex {
     TSTAGEWISE, // Terminating Stagewise
     // -------------------------------
 
-    // CCD-based solvers (exact penalized-lasso minimizers per crossing)
+    // CCD-based solvers (exact penalized-lasso minimizers per crossing).
+    // The family is deprecated, each enumerator names its replacement.
     // -------------------------------
-    TCDLASSO,       // Terminating Cyclic Coordinate Descent (LASSO)
-    TCDENET,     // Terminating CCD Elastic Net (diagonal ridge)
-    TCDIENET,    // Terminating CCD Informed Elastic Net (GVS only)
-    TCDTIKNET,  // Terminating CCD Tikhonov Net (sparse-K, FOLDED or ridge)
+    /** @brief Terminating Cyclic Coordinate Descent (LASSO).
+     *  @deprecated Will be removed in the next minor release. Use TLASSO. */
+    TCDLASSO,
+    /** @brief Terminating CCD Elastic Net (diagonal ridge).
+     *  @deprecated Will be removed in the next minor release. Use TENET. */
+    TCDENET,
+    /** @brief Terminating CCD Informed Elastic Net (GVS only).
+     *  @deprecated Will be removed in the next minor release. Use TIENET. */
+    TCDIENET,
+    /** @brief Terminating CCD Tikhonov Net (sparse-K, FOLDED or ridge).
+     *  @deprecated Will be removed in the next minor release. Use TIKNET. */
+    TCDTIKNET,
     // -------------------------------
 
     // OMP-based solvers
@@ -145,6 +154,7 @@ struct SolverHyperparameters {
     bool tenet_aug_use_lars = false;
 
     // --- CD-family knobs (TCDLASSO / TCDENET / TCDIENET / TCDTIKNET; ignored by other solvers) ---
+    // Deprecated with the family: the six knobs will be removed in the next minor release.
 
     /** @brief Relative lambda tolerance of the CD crossing bisection.
      * The TRex-layer default is deliberately tighter than the solver's own
@@ -157,26 +167,31 @@ struct SolverHyperparameters {
      * agreement reproducer (Demos "TRex CCD"/demo_03_trex_gvs_study Part 3b,
      * Hastie blocks n=200 p=500 rho=0.70 SNR=2, 50 MC), exact-match rose
      * 0.880 -> 0.900 at no runtime cost, and saturated there — 1e-8 gives the
-     * same answer as 1e-6, while loosening to 1e-4 drops it to 0.620. */
+     * same answer as 1e-6, while loosening to 1e-4 drops it to 0.620.
+     * @deprecated Will be removed with the coordinate descent family. */
     double cd_lambda_rel_tol = 1e-6;
 
     /** @brief CD certification-sweep tolerance (recorded steps). Applied
      * together with cd_tol_probe; <= 0 (default) keeps the solver's own
-     * defaults (1e-10 / 1e-8). */
+     * defaults (1e-10 / 1e-8).
+     * @deprecated Will be removed with the coordinate descent family. */
     double cd_tol_certify = -1.0;
 
     /** @brief CD probe-sweep tolerance (jump/bisection solves). See
-     * cd_tol_certify. */
+     * cd_tol_certify.
+     * @deprecated Will be removed with the coordinate descent family. */
     double cd_tol_probe = -1.0;
 
     /** @brief Max ever-active gram slots before the CD solver falls back to
      * naive residual sweeps. 0 (default) keeps the solver's own default
-     * (400). */
+     * (400).
+     * @deprecated Will be removed with the coordinate descent family. */
     std::size_t cd_gram_cap = 0;
 
     /** @brief Stall guard: max coordinate sweeps per fixed-lambda solve.
      * 0 (default) keeps the solver's own default (2000). A solve that stops
-     * at the budget far from a solution throws, see SolverOptions. */
+     * at the budget far from a solution throws, see SolverOptions.
+     * @deprecated Will be removed with the coordinate descent family. */
     std::size_t cd_max_sweeps = 0;
 
     /** @brief Crossing-localization mode of the CD family. true (default):
@@ -184,7 +199,8 @@ struct SolverHyperparameters {
      * certificates), closed-form continuation, records placed at the knot.
      * false: LEGACY — KKT-guided jumps plus probe bisection with the
      * support-nesting stop (the pre-2026-08 behaviour; the A/B baseline).
-     * Applied on construction and after deserialization. */
+     * Applied on construction and after deserialization.
+     * @deprecated Will be removed with the coordinate descent family. */
     bool cd_certified_localization = true;
 };
 

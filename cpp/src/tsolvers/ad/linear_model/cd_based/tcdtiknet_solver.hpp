@@ -94,6 +94,10 @@ namespace trex::tsolvers::ad::linear_model::cd_based {
  *  O(1) per coordinate update by the specialized TCDIENET_Solver hooks —
  *  prefer TCDIENET whenever the penalty is a group structure.
  *
+ * @deprecated The coordinate descent family (TCDLASSO, TCDENET, TCDIENET,
+ *  TCDTIKNET) will be removed in the next minor release. Use TIKNET_Solver,
+ *  the homotopy solver of the same problem under the FOLDED coupling.
+ *
  *  References:
  *  -----------
  *   A. N. Tikhonov, "Solution of Incorrectly Formulated Problems and the Regularization Method," Soviet Math.

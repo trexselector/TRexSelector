@@ -270,10 +270,10 @@ test_that("a reader runs on readonly files for X and D and a writer is refused",
     function() TOOLS_Solver$new(ro, rod, yc, options = reader),
     function() TNCGMP_Solver$new(ro, rod, yc, options = reader),
     function() TAFS_Solver$new(ro, rod, yc, options = reader),
-    function() TCDLASSO_Solver$new(ro, rod, yc, options = reader),
-    function() TCDENET_Solver$new(ro, rod, yc, options = reader),
-    function() TCDIENET_Solver$new(ro, rod, yc, groups, options = reader),
-    function() TCDTIKNET_Solver$new(ro, rod, yc, K, options = reader)
+    function() quiet_cd(TCDLASSO_Solver$new(ro, rod, yc, options = reader)),
+    function() quiet_cd(TCDENET_Solver$new(ro, rod, yc, options = reader)),
+    function() quiet_cd(TCDIENET_Solver$new(ro, rod, yc, groups, options = reader)),
+    function() quiet_cd(TCDTIKNET_Solver$new(ro, rod, yc, K, options = reader))
   )
   for (make in readers) {
     solver <- make()

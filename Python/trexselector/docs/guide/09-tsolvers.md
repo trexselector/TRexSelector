@@ -41,6 +41,10 @@ The path solvers (LARS and CD families) walk a regularization path, the greedy s
 families) add one variable per step. The informed solvers take a `groups` array, the Tikhonov
 solvers a penalty matrix `tikhonov_K`.
 
+The CD family is deprecated and will be removed in the next minor release. Constructing one of its
+classes raises a `FutureWarning`, as two examples below show. The homotopy solvers `TLASSO_Solver`,
+`TENET_Solver`, `TIENET_Solver` and `TIKNET_Solver` of `lars_based` solve the same problems.
+
 ## One terminated path
 
 The data are drawn with a fixed seed. `X` and `D` are Fortran-ordered float64 arrays, which the

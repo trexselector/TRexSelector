@@ -2,8 +2,13 @@
 % Please edit documentation in R/tsolvers.R
 \name{TCDTIKNET_Solver}
 \alias{TCDTIKNET_Solver}
-\title{T-CDTIKNET Solver}
+\title{T-CDTIKNET Solver (deprecated)}
 \description{
+\strong{Deprecated.} The coordinate-descent family will be removed in
+TRexSelector 2.1.0, and constructing this class raises a deprecation
+warning. Use \code{\link{TIKNET_Solver}}, the homotopy solver of the
+same problem.
+
 Terminating coordinate-descent Tikhonov Net: exact fixed-lambda1
 minimizers per dummy crossing under the general quadratic penalty
 \code{lambda2 * t(beta) K beta} with a sparse PSD \code{K}. Dummy coupling

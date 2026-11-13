@@ -66,6 +66,8 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
                           screen_control = trex_screen_control(),
                           control = trex_control()) {
 
+      .warn_cd_solver_name(control$solver)
+
       biobank_control_list <- c(list(target_FDR_trex = tFDR), biobank_control)
 
       # Biobank/screening always uses STANDARD L-loop strategy

@@ -49,6 +49,10 @@ The path solvers (LARS and CD families) walk a regularization path, the greedy s
 families) add one variable per step. The informed solvers take a `groups` vector, the Tikhonov solvers
 a penalty matrix `tikhonov_K`.
 
+The CD family is deprecated and will be removed in TRexSelector 2.1.0. Constructing one of its classes
+raises a deprecation warning, as two examples below show. The homotopy solvers `TLASSO_Solver`,
+`TENET_Solver`, `TIENET_Solver` and `TIKNET_Solver` solve the same problems.
+
 # One terminated path
 
 ```{r data}

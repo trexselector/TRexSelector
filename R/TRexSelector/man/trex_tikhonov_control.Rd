@@ -129,7 +129,9 @@ decoupled unit-ridge dummy block (INDEPENDENT_RIDGE) — a validation
 escape hatch that preserves the \code{K = I} == TCDENET collapse but
 deforms exchangeability whenever K has off-diagonals. Only the
 TCDTIKNET solver offers it, so it needs \code{solver = "TCDTIKNET"} in
-\code{\link{trex_control}}; the default solver TIKNET raises an error.}
+\code{\link{trex_control}}; the default solver TIKNET raises an error.
+Deprecated: it will be removed with TCDTIKNET and the coordinate-descent
+family in TRexSelector 2.1.0.}
 
 \item{cluster_dummies}{Logical (default \code{TRUE}): draw dummies as
 per-cluster colored MVN layers (GVS parity) on the clustering below.
@@ -158,7 +160,8 @@ Build a control list for \code{\link{TRexTikhonovSelector}},
 the general-Tikhonov T-Rex: a penalty matrix
 \code{K = t(Gamma) \%*\% Gamma} drives the Tikhonov-net solvers
 (TIKNET by default; TCDTIKNET through the \code{solver} field
-of \code{\link{trex_control}}). \code{K = I} collapses to the plain
+of \code{\link{trex_control}}, deprecated and removed in TRexSelector
+2.1.0). \code{K = I} collapses to the plain
 elastic net; a group-mean K reproduces the GVS-IEN penalty;
 banded/Laplacian K encode smoothness. With
 \code{penalty_structure = "GROUP_CENTERING"} the selector builds K

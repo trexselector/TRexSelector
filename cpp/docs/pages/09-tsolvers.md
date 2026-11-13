@@ -30,6 +30,10 @@ The path solvers (LARS and CD families) walk a regularization path, the greedy s
 families) add one variable per step. The informed solvers take a `groups` vector, the Tikhonov
 solvers a sparse penalty matrix.
 
+The CD family is deprecated and will be removed in the next minor release. The homotopy solvers
+TLASSO_Solver, TENET_Solver, TIENET_Solver and TIKNET_Solver of `lars_based.hpp` solve the same
+problems.
+
 The headers and names of this page, and two helpers. The first prints index vectors, the second
 constructs a solver of a given type as a reader, runs it to three dummies and prints its steps and
 active predictors:

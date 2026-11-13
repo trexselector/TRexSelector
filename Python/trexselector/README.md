@@ -144,7 +144,7 @@ selector uses, with the `SolverTypeForTRex` enum.
   `TNCGMP_Solver`.
 * `afs_based`, adaptive forward stepwise: `TAFS_Solver`.
 * `cd_based`, coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and
-  `TCDTIKNET_Solver`.
+  `TCDTIKNET_Solver`. The family is deprecated and will be removed in the next minor release.
 
 ### ML methods
 

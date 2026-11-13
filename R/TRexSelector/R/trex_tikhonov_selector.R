@@ -4,7 +4,7 @@
 #'
 #' @description FDR-controlled variable selection with a Tikhonov penalty
 #'   matrix \code{K = t(Gamma) \%*\% Gamma} driving the Tikhonov-net solvers
-#'   (TIKNET by default, or TCDTIKNET). \code{K = I} collapses to
+#'   (TIKNET by default, or the deprecated TCDTIKNET). \code{K = I} collapses to
 #'   the plain elastic net; a group-mean K reproduces the GVS-IEN penalty;
 #'   banded / Laplacian K encode smoothness-informed selection;
 #'   \code{penalty_structure = "GROUP_CENTERING"} builds the centering
@@ -76,7 +76,9 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   \code{lambda_2} times K is large it can stop at its sweep budget
     #'   (\code{cd_max_sweeps}) before it has converged. \code{select()}
     #'   then stops with an error instead of a selection from an unconverged
-    #'   path.
+    #'   path. \code{"TCDTIKNET"} is deprecated and will be removed in
+    #'   TRexSelector 2.1.0: the selector raises a deprecation warning for
+    #'   it.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,
@@ -100,6 +102,7 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
                 "Using \"TIKNET\".")
         control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
       }
+      .warn_cd_solver_name(control$solver)
 
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
@@ -272,6 +275,7 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
             "accepts \"TIKNET\" or \"TCDTIKNET\". Using \"TIKNET\".")
     control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
   }
+  .warn_cd_solver_name(control$solver)
   X <- .as_double_matrix(X)
   y <- .as_double_vector(y)
   trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,
