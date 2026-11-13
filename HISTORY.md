@@ -1,12 +1,18 @@
 # TRexSelector changelog
 
-## TRexSelector C++ 1.0.1 / R 2.0.1 / Python 1.0.1
+## TRexSelector C++ 1.0.1 / R 2.0.2 / Python 1.0.1 (in preparation)
 
-Patch release of the three packages after the public release (CRAN 2026-11-06, GitHub and PyPI
-2026-11-07): the C++20 ranges calls that Apple clang 14 rejects are gone, the R package's configure
-finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without warnings of their own,
-and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
-changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
+The fix release after R 2.0.1, not published yet. It collects the work since the sources of R 2.0.1
+went to CRAN, and it changes results in several places. The dependency-aware selector takes its
+penalty from the last step for all methods, and its AR1 window follows the magnitude of the
+coefficient. The Tikhonov selector runs on the homotopy solver TIKNET by default. The biobank
+screening gives every phenotype its own seed, and the screening selector reports an FDR estimate of 1
+for an empty selection. A coordinate-descent solve that has not converged is an error. Beside the
+corrections the screening selector gains a nearest-neighbor variant, a read-only memory-mapped design
+serves where nothing is written into it, the coordinate-descent solver family is deprecated ahead of
+its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
+1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1. The DESCRIPTION of the R package reads 2.0.1
+until the release is prepared.
 
 ### 2026-11-13
 
@@ -484,6 +490,15 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
   referenced. Python/trexselector/run_lldb.sh, an lldb wrapper around a test script that no longer
   exists, and R/TRexSelector/tools/debug.R, a devtools loader that the VS Code launch configurations do
   not use, are archived outside the repository.
+
+## TRexSelector R 2.0.1
+
+Patch release of the R package after the public release (CRAN 2026-11-06, GitHub and PyPI
+2026-11-07), uploaded to CRAN on 2026-11-10: the C++20 ranges calls that Apple clang 14 rejects are
+gone, the R package's configure finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile
+without warnings of their own, and the READMEs describe the packages and install from CRAN and PyPI
+first. No interface or result changes. The sources of this release carry the C++ SDK and the Python
+package as 1.0.1, and neither was published from them. Their 1.0.1 is the release above.
 
 ### 2026-11-09
 
