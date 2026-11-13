@@ -21,6 +21,8 @@
   `R_array_BT` of `TRexDASelector` states what the arrays hold. The vignette "T-Rex+DA" is titled
   "T-Rex+DA: dependent variables", because every dependency-aware method draws ordinary independent
   dummies.
+* The strategy table of the README and of the vignette "The T-Rex selector" describes `"PERMUTATION"`
+  as what it is, one base dummy matrix whose rows are permuted per experiment.
 
 ## New
 

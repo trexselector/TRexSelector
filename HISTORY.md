@@ -16,6 +16,14 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The PERMUTATION strategy permutes the dummies
+
+- The strategy tables of the C++, R and Python READMEs and of guide page 03 on the three surfaces
+  described `PERMUTATION` as "permuted columns of the design" and its storage as K matrices. The
+  strategy draws one base dummy matrix and permutes its rows per experiment, and it stores that one
+  matrix. `PERMUTATION_SEEDED` re-derives the base matrix and its permutations from the seed and stores
+  nothing. The six tables say so. The code and its header were right.
+
 #### The R controls gain `bt_selection_mode` and `group_labels`
 
 - A comparison of the eight controls on the three surfaces, by parameter and default. Every field of the

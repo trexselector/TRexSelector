@@ -123,8 +123,8 @@ its L-loop calibrates the number of dummies as a multiple L of p. The control ob
 | `STANDARD` (default) | fresh matrices at every L step, the law of the T-Rex paper      | K matrices |
 | `HCONCAT`            | the same K matrices grow by p columns per L step                | K matrices |
 | `SEEDED`             | the draws of `STANDARD`, re-derived from the seed at every step | none       |
-| `PERMUTATION`        | permuted columns of the design                                  | K matrices |
-| `PERMUTATION_SEEDED` | the permutation re-derived from the seed                        | none       |
+| `PERMUTATION`        | one base dummy matrix, its rows permuted per experiment         | one matrix |
+| `PERMUTATION_SEEDED` | the base matrix and its permutations, re-derived from the seed  | none       |
 | `SKIPL`              | no L-loop, the cap `max_dummy_multiplier` is used directly      | K matrices |
 
 The seeded strategies store nothing and suit designs whose dummy matrices do not fit in memory, and they select
