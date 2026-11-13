@@ -4,6 +4,34 @@
 #'
 #' @description FDR-controlled variable selection algorithm for dependency scenarios.
 #'
+#' @section The penalty of the last step:
+#' The dependency-aware relative occurrences of variable \eqn{j} at step \eqn{t} of the T-loop are
+#' \deqn{\Phi^{DA}_t(j) = \Psi_T(j) \, \Phi_t(j), \qquad
+#'   \Psi_T(j) = \frac{1}{2 - \min_{j'} |\Phi_T(j) - \Phi_T(j')|}, \qquad t = 1, \dots, T,}{
+#'   Phi^DA_t(j) = Psi_T(j) * Phi_t(j),  Psi_T(j) = 1 / (2 - min_j' |Phi_T(j) - Phi_T(j')|),  t = 1, ..., T,}
+#' where \eqn{T} is the last step of the evaluated path and \eqn{j'} runs over the variables that
+#' \eqn{j} is compared with (its group, its window or all other variables). A variable without a group
+#' gets \eqn{\Psi_T(j) = 1/2}.
+#'
+#' This is a deliberate deviation from the papers below. Read literally, they recompute the penalty at
+#' every step, \eqn{\Psi_t(j)} from \eqn{\Phi_t}. The selector takes the penalty of the last step for
+#' all steps, with all five methods. The reason is the FDP estimator. It sums over the increments
+#' \eqn{\Phi^{DA}_t(j) - \Phi^{DA}_{t-1}(j)} and counts expected false discoveries only while no
+#' increment is negative. One penalty per variable keeps the increments non-negative. A penalty per
+#' step does not, because the penalty of a variable changes from step to step, and the FDP estimate
+#' then becomes too small.
+#'
+#' A Monte Carlo comparison of the two constructions (1,000 runs per setting on block, AR(1) and
+#' independent designs) supports the choice. With the method \code{"NN"} the per-step penalty exceeded
+#' a target FDR of 0.1, with 0.15 on an independent design and 0.13 on a block design, where the
+#' last-step penalty gave 0.00 and 0.03. No setting had the last-step penalty above the target and the
+#' per-step penalty below it. The per-step penalty selected more variables only where its estimate was
+#' invalid, and on AR(1) designs the last-step penalty had the higher true positive rate.
+#'
+#' The methods \code{"AR1"} and \code{"EQUI"} used the per-step penalty up to TRexSelector 2.0.1, so
+#' their selections can differ slightly from earlier versions. \code{"BT"}, \code{"NN"} and prior
+#' groups have always used the penalty of the last step.
+#'
 #' @importFrom R6 R6Class
 #'
 #' @references

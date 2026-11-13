@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 // std includes
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <random>
@@ -417,9 +418,119 @@ public:
     using TRexDASelector::estimateAR1Correlation;
     using TRexDASelector::setupDA;
     using TRexDASelector::da_setup_;
+    using TRexDASelector::daCorrect;
 };
 
 } // namespace
+
+
+// ========================================================================================
+// Deflation
+// ========================================================================================
+
+/** @brief Every method deflates all steps with the penalty of the last step.
+ *
+ *  Phi^DA_t(j) = Phi_t(j) / (2 - min |Phi_T(j) - Phi_T(j')|) for t = 1, ..., T
+ *  over the comparison set of j: the window for AR1, all other variables for
+ *  EQUI, the group mates for the BT-style methods (a division by 2 for an
+ *  empty group). One factor per variable keeps the increments non-negative.
+ */
+TEST(TRexDATest, Deflation_PenaltyOfTheLastStepForEveryMethod) {
+    const Eigen::Index p = 4;
+    const Eigen::Index T = 3;
+    const Eigen::MatrixXd X = Eigen::MatrixXd::Random(30, p);
+    const Eigen::VectorXd y = Eigen::VectorXd::Random(30);
+
+    // Variable 3 stays at 0.5 while its neighbour 2 rises to 0.5.
+    Eigen::MatrixXd phi(p, T);
+    phi << 0.2, 0.6, 1.0,
+           0.2, 0.3, 0.4,
+           0.0, 0.1, 0.5,
+           0.1, 0.5, 0.5;
+    const Eigen::VectorXd phi_last = phi.col(T - 1);
+
+    auto deflate = [&](DAMethod method, auto&& prepare) {
+        Eigen::MatrixXd X_run = X;
+        Eigen::VectorXd y_run = y;
+        Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
+        Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
+
+        TRexDAControlParameter da_ctrl;
+        da_ctrl.method = method;
+        TRexDASelectorProbe trex(X_map, y_map, 0.1, da_ctrl, 42, false);
+        prepare(trex);
+        return trex.daCorrect(phi, phi_last, static_cast<std::size_t>(T));
+    };
+
+    using Sets = std::vector<std::vector<Eigen::Index>>;
+    auto expect_last_step = [&](const Eigen::MatrixXd& deflated, const Sets& sets,
+                                const std::string& what) {
+        ASSERT_EQ(deflated.rows(), p) << what;
+        ASSERT_EQ(deflated.cols(), T) << what;
+        for (Eigen::Index j = 0; j < p; ++j) {
+            double min_diff = 0.0;  // an empty set divides by 2
+            if (!sets[static_cast<std::size_t>(j)].empty()) {
+                min_diff = 2.0;
+                for (const auto k : sets[static_cast<std::size_t>(j)]) {
+                    min_diff = std::min(min_diff, std::abs(phi_last(j) - phi_last(k)));
+                }
+            }
+            for (Eigen::Index t = 0; t < T; ++t) {
+                EXPECT_DOUBLE_EQ(deflated(j, t), phi(j, t) / (2.0 - min_diff))
+                    << what << ", variable " << j << ", step " << t + 1;
+            }
+        }
+        for (Eigen::Index t = 1; t < T; ++t) {
+            EXPECT_GE((deflated.col(t) - deflated.col(t - 1)).minCoeff(), 0.0)
+                << what << ": negative increment at step " << t + 1;
+        }
+    };
+
+    // AR1 with a half-width of 1: the direct neighbours.
+    const DACorrectionResult ar1 = deflate(DAMethod::AR1, [](TRexDASelectorProbe& trex) {
+        trex.da_setup_.kap = 1;
+    });
+    expect_last_step(ar1.phi_T_mat, {{1}, {0, 2}, {1, 3}, {2}}, "AR1");
+    EXPECT_TRUE(ar1.Phi == ar1.phi_T_mat.col(T - 1));
+
+    // The penalty of step 2 alone would give 0.5 / 1.6 for variable 3, above
+    // its value 0.5 / 2 of step 3: a negative increment.
+    EXPECT_DOUBLE_EQ(ar1.phi_T_mat(3, 1), 0.5 / 2.0);
+    EXPECT_DOUBLE_EQ(ar1.phi_T_mat(3, 2), 0.5 / 2.0);
+
+    // AR1 with an empty window deflates nothing.
+    const DACorrectionResult ar1_empty = deflate(DAMethod::AR1, [](TRexDASelectorProbe& trex) {
+        trex.da_setup_.kap = 0;
+    });
+    EXPECT_TRUE(ar1_empty.phi_T_mat == phi);
+    EXPECT_TRUE(ar1_empty.Phi == phi_last);
+
+    // EQUI: all other variables.
+    const DACorrectionResult equi = deflate(DAMethod::EQUI, [](TRexDASelectorProbe& trex) {
+        trex.da_setup_.cor_coef = 0.5;
+    });
+    expect_last_step(equi.phi_T_mat, {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}}, "EQUI");
+    EXPECT_TRUE(equi.Phi == equi.phi_T_mat.col(T - 1));
+
+    // EQUI below the correlation threshold is skipped.
+    const DACorrectionResult equi_off = deflate(DAMethod::EQUI, [](TRexDASelectorProbe& trex) {
+        trex.da_setup_.cor_coef = 0.01;
+    });
+    EXPECT_TRUE(equi_off.phi_T_mat == phi);
+
+    // BT-style with two cut levels: the pairs {0, 1} and {2, 3}, then singletons.
+    const DACorrectionResult bt = deflate(DAMethod::BT, [](TRexDASelectorProbe& trex) {
+        trex.da_setup_.use_BT_style = true;
+        trex.da_setup_.rho_grid_len = 2;
+        trex.da_setup_.gr_j_list = {{{1}, {}}, {{0}, {}}, {{3}, {}}, {{2}, {}}};
+    });
+    ASSERT_EQ(bt.phi_T_array_BT.size(), 2U);
+    expect_last_step(bt.phi_T_array_BT[0], {{1}, {0}, {3}, {2}}, "BT, pair level");
+    expect_last_step(bt.phi_T_array_BT[1], {{}, {}, {}, {}}, "BT, singleton level");
+    EXPECT_TRUE(bt.Phi_BT.col(0) == bt.phi_T_array_BT[0].col(T - 1));
+    EXPECT_TRUE(bt.Phi_BT.col(1) == bt.phi_T_array_BT[1].col(T - 1));
+    EXPECT_TRUE(bt.phi_T_mat == phi) << "The BT-style methods keep the undeflated history.";
+}
 
 
 /** @brief The row-wise Yule-Walker AR(1) estimator recovers a known rho.

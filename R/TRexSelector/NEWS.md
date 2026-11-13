@@ -1,5 +1,19 @@
 # TRexSelector 2.0.2
 
+## Changed
+
+* `TRexDASelector` takes the penalty of the methods `"AR1"` and `"EQUI"` from the last step of the
+  evaluated path and applies it to every step, as `"BT"`, `"NN"` and the prior groups always did. Up to
+  2.0.1 the two methods recomputed the penalty at every step, which is the literal reading of the
+  papers. A penalty per step makes the deflated occurrence history non-monotone, and the FDP estimate is
+  then too small. In a Monte Carlo comparison of the two constructions for all methods (1,000 runs per
+  setting) a penalty per step exceeded a target FDR of 0.1 with the nearest-neighbour method (0.15 and
+  0.13 against 0.00 and 0.03 with the last step), and `"AR1"` gained 0.01 to 0.02 in true positive rate
+  on AR(1) designs with the last step.
+* Selections of `"AR1"` can differ slightly from 2.0.1. Those of `"EQUI"` did not change in any tested
+  setting. The help of `TRexDASelector` and the vignette "T-Rex+DA" state the construction, the
+  deviation from the papers and the evidence.
+
 ## Deprecated
 
 * The coordinate-descent solver family is deprecated and will be removed in TRexSelector 2.1.0. This

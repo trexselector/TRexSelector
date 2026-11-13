@@ -70,6 +70,38 @@ and is replaced by the estimate.
 \snippet{trimleft} trex_da.cpp ar1
 \output{trex_da.ar1.txt}
 
+## The penalty of the last step
+
+All five methods penalize the relative occurrences in the same way. With \f$\Phi_t(j)\f$ the
+relative occurrence of variable \f$j\f$ after \f$t\f$ included dummies (step \f$t\f$ of the T-loop)
+and \f$T\f$ the stopping time at which the path is evaluated, its last step, the selector works with
+
+\f[
+\Phi_t^{\mathrm{DA}}(j) = \Psi_T(j) \, \Phi_t(j), \qquad
+\Psi_T(j) = \frac{1}{2 - \min_{j'} |\Phi_T(j) - \Phi_T(j')|}, \qquad t = 1, \dots, T,
+\f]
+
+where \f$j'\f$ runs over the variables that \f$j\f$ is compared with, its group, its window or all
+other variables. A variable without a group gets \f$\Psi_T(j) = 1/2\f$.
+
+This is a deliberate deviation from the papers. Read literally, they recompute the penalty at every
+step, \f$\Psi_t(j)\f$ from \f$\Phi_t\f$, while the selector takes the penalty of the last step for
+all steps. The reason is the FDP estimator. It sums over the increments
+\f$\Phi_t^{\mathrm{DA}}(j) - \Phi_{t-1}^{\mathrm{DA}}(j)\f$ and counts expected false discoveries
+only while no increment is negative. One penalty per variable keeps the increments non-negative. A
+penalty per step does not, because the penalty of a variable changes from step to step, and the FDP
+estimate then becomes too small.
+
+A Monte Carlo comparison of the two constructions with 1,000 runs per setting on block,
+autoregressive and independent designs supports the choice. With the nearest-neighbour method the
+per-step penalty exceeded a target FDR of 0.1, with 0.15 on an independent design and 0.13 on a
+block design, where the last-step penalty gave 0.00 and 0.03. No setting had the last-step penalty
+above the target and the per-step penalty below it. The per-step penalty selected more variables
+only where its estimate was invalid, and on autoregressive designs the last-step penalty had the
+higher true positive rate. The methods `AR1` and `EQUI` used the per-step penalty up to version
+1.0.0, so their selections can differ slightly from earlier versions, while `BT`, `NN` and the prior
+groups have always used the penalty of the last step.
+
 ## Prior groups
 
 When the groups of dependent variables are known, pass them as `prior_groups`, a vector of label

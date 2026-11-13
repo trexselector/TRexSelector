@@ -10,6 +10,80 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-13
 
+#### The dependency-aware selector takes its penalty from the last step, for all five methods
+
+- The dependency-aware T-Rex selector works with deflated relative occurrences,
+  Phi^DA_t(j) = Psi(j) Phi_t(j) with Psi(j) = 1 / (2 - min |Phi(j) - Phi(j')|) over the variables j'
+  that j is compared with. There are two ways to build the history over the steps t = 1, ..., T of
+  the T-loop. The penalty per step deflates step t with Psi_t, computed from Phi_t. The penalty of
+  the last step deflates every step with Psi_T, computed from Phi_T. BT, NN and PRIOR_GROUPS have
+  always used the last step, and AR1 and EQUI used the penalty per step. Since this entry all five
+  methods use the penalty of the last step.
+- This is a deliberate deviation from the papers (Signal Processing 234, 109990, and the AR1 and
+  nearest-neighbour papers). Read literally, they recompute the penalty at every step, and the R
+  reference implementation does so for AR1 and EQUI. A comment in the code called the last step of
+  the BT-style methods an "R-parity deviation from the paper" and left the per-step penalty open as
+  the correct form. It is not, for the reason and with the evidence below.
+- The reason. The FDP estimator sums over the increments Phi^DA_t(j) - Phi^DA_(t-1)(j) and is a
+  count of expected false discoveries only while no increment is negative. Then every share is in
+  [0, 1] and Phi' <= Phi^DA_T <= 1 holds by construction. One factor per variable keeps the
+  non-negative increments of Phi_t non-negative. A factor per step does not, because
+  Phi^DA_t - Phi^DA_(t-1) = Psi_t (Phi_t - Phi_(t-1)) + Phi_(t-1) (Psi_t - Psi_(t-1)), and the second
+  term is negative whenever the neighbours of a variable catch up with it. Three things then happen.
+  A step whose summed increment is not positive is dropped. A negative increment meets a negative
+  scale factor, Phi' rises above 1, the cap sets it to 1 and the variable counts as a certain true
+  discovery. A share exceeds 1. In all three cases the FDP estimate is too small.
+- This is the third time the same root shows. The first answer was a clamp of Phi' to [0, 1]
+  against negative FDP estimates (documented on 2026-07-05), which came from Phi' > 1 in trex_da.
+  On 2026-10-24 the lower clamp was removed, because it made the estimate anti-conservative in long
+  T-loops, and the upper cap stayed as a guard for trex_da. The cap never repaired the estimator. It
+  hid a per-step history as an estimate that is too small. With the penalty of the last step the cap
+  binds in at most 0.009 % of the evaluations, and those come from ordinary occurrences that are not
+  monotone near saturation. With the penalty per step it binds in 0.9 % to 26.5 % of them.
+- The evidence. A lab build applied either penalty to every method. An exploration ran 150 cells of
+  300 runs on seven designs, and a confirmation ran the 69 decisive cells with 1,000 runs on new
+  seeds (T-LARS, K = 20, block designs with correlation 0.7 and 0.9, AR(1) chains with 0.3 to 0.7,
+  independent designs, targets 0.1 to 0.4, also SKIPL with 10 p dummies).
+  - FDR. The penalty of the last step is at or below the target in all 28 cells of the confirmation.
+    The penalty per step exceeds a target of 0.1 with NN, 0.152 on the independent design and 0.127
+    on the block design, where the last step gives 0.000 and 0.026. No cell has the last step above
+    the target and the per-step penalty below it.
+  - Power. The penalty per step selects more in eight cells (NN, BT on the independent design,
+    PRIOR_GROUPS). Where its history was repaired to a monotone one, the gain disappeared, so it is
+    made by capped evaluations. BT on the independent design is the clearest case: 0.03 more TPR at
+    an FDR of 0.027 against 0.007, and the numbers of the last step after the repair. Outside these
+    cells the penalty per step has at most 0.003 more TPR, and on AR(1) chains the last step has
+    0.01 to 0.02 more.
+  - AR1, the method that changes its results: the FDR stays within 0.006 on designs with dependence
+    and far below the target, the TPR rises by 0.013 to 0.020 on AR(1) chains, and the FDR on the
+    independent design falls from 0.044 to 0.008.
+- Two statements of equality that were written down before the confirmation run did not hold, and
+  the record keeps them. The methods do not all have the same power under both penalties (BT on the
+  independent design), and the monotone repair of the per-step penalty does not give the numbers of
+  the last step on AR(1) chains, where it stays 0.01 to 0.02 below them in TPR. Neither speaks for
+  the penalty per step.
+- The change. `TRexDASelector::daCorrect` computes one penalty vector from the occurrences of the
+  last step for AR1 and EQUI and divides every column of the history by it. The loop over the steps
+  is gone, which also makes it cheaper. The library gives bit-identical results to the last-step
+  mode of the lab build on 104 selections (13 design and method pairs, 8 seeds, compared on the
+  selection, Phi', the Phi matrix, the FDP matrix and T_stop). Against the commit before, 4 of 40
+  AR1 selections differ, and EQUI, BT, NN and PRIOR_GROUPS are bit-identical.
+- Documentation, on the three surfaces. The class documentation of `TRexDASelector` in C++, R and
+  Python states the construction, the deviation from the papers, the reason and the evidence. The
+  guide page 04 has a section "The penalty of the last step" in the three guides. The R news file
+  lists the change under 2.0.2.
+- Tests. C++: `TRexDATest.Deflation_PenaltyOfTheLastStepForEveryMethod` checks the deflated history
+  of AR1, EQUI and the BT-style methods value by value against the formula, with a history in which
+  a penalty per step gives a negative increment. R and Python: on a tall AR(1) design the calibrated
+  occurrences of AR1 never exceed the deflated occurrences of the last step, over six seeds. The
+  penalty per step fails this in 9 of 20 seeds.
+- For whoever touches this again. Do not move a method to a penalty per step, and do not add or
+  remove a clamp on Phi', without repeating the comparison. The analysis, the lab build, its patch,
+  the cell scripts and all results are in the developers' notes under
+  notes/handover_2026-11-13/da_per_step (ANALYSIS.md, lab/).
+- Limits. T-LARS only, p up to 500, and no proof beyond what the papers claim. A solver that drops
+  variables has negative increments of its own, which was not examined.
+
 #### The selector tests of the coordinate-descent family run with a sweep budget of 200,000
 
 - Since a coordinate-descent solve that has not converged is an error (an entry below), a selector run

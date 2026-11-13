@@ -160,6 +160,38 @@ def test_da_ar1_uses_coefficient_magnitude(signal_data, fast_control):
     assert neg.cor_coef == pytest.approx(-0.5)
 
 
+def test_da_ar1_penalty_of_the_last_step_keeps_the_history_monotone():
+    """AR1 deflates every step with the penalty of the last step.
+
+    The deflated history is then non-decreasing, so the calibrated occurrences Phi' of the FDP
+    estimator never exceed the deflated occurrences of the last step. A penalty per step breaks
+    this in about every second run of this design. The design is tall (p < n / 2 - 1), so no
+    random experiment exhausts its path within the T-loop.
+    """
+    n, p, rho = 150, 60, 0.7
+    for seed in range(1, 7):
+        rng = np.random.default_rng(seed)
+        X = np.zeros((n, p), order="F")
+        X[:, 0] = rng.standard_normal(n)
+        for j in range(1, p):
+            X[:, j] = rho * X[:, j - 1] + np.sqrt(1 - rho**2) * rng.standard_normal(n)
+        beta = np.zeros(p)
+        beta[[9, 29, 49]] = 2.0
+        y = X @ beta + rng.standard_normal(n)
+
+        ctrl = trexselector.TRexControlParameter()
+        ctrl.K = 10
+        da_ctrl = trexselector.TRexDAControlParameter()
+        da_ctrl.method = trexselector.DAMethod.AR1
+        sel = trexselector.TRexDASelector(X, y, tFDR=0.2, da_control=da_ctrl, trex_control=ctrl,
+                                          seed=seed, verbose=False)
+        sel.select()
+
+        phi_da = np.asarray(sel.phi_mat)[-1]
+        phi_prime = np.asarray(sel.phi_prime).ravel()
+        assert np.all(phi_prime <= phi_da + 1e-12), f"Phi' above the deflated Phi, seed {seed}"
+
+
 @pytest.mark.parametrize("method", [trexselector.DAMethod.AR1, trexselector.DAMethod.EQUI])
 def test_da_unusable_coefficient_is_estimated(signal_data, fast_control, method, capfd):
     """A cor_coef outside [-1, 1] is replaced by the estimate, with a warning on stderr."""

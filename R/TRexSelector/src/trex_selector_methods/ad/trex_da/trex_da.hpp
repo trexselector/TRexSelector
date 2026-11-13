@@ -26,6 +26,10 @@
  *    (T_stop, V, rho_grid);
  *  - AR1 and EQUI stay on the 2D (T_stop, V) grid of the base class.
  *
+ * Penalty: all five methods deflate the whole occurrence history with the penalty
+ * of the last step. This deviates from the papers, which write one penalty per
+ * step (see the class TRexDASelector for the reason and the evidence).
+ *
  * FDR limitation (BT-style): at very high-within-group correlation (rho >~ 0.9)
  * and with no independent ("white") predictors, the equiangular TLARS solver
  * can exceed the target FDR because the true signal and its
@@ -219,8 +223,8 @@ struct DASetupResult {
  * @brief Output of the DA deflation step.
  */
 struct DACorrectionResult {
-    /** @brief Deflated phi_T_mat (p x T_stop). Modified in-place for AR1/EQUI.
-     *  Copy for BT-style.
+    /** @brief phi_T_mat (p x T_stop). For AR1 and EQUI every column is deflated
+     *  with the penalty of the last step. The undeflated copy for BT-style.
      */
     Eigen::MatrixXd phi_T_mat;
 
@@ -231,7 +235,8 @@ struct DACorrectionResult {
     Eigen::MatrixXd Phi_BT;
 
     /** @brief BT-style only: deflated phi_T_mat per rho level.
-     *  phi_T_array_BT[rho] is a (p x T_stop) matrix.
+     *  phi_T_array_BT[rho] is a (p x T_stop) matrix, every column deflated
+     *  with the penalty of the last step.
      */
     std::vector<Eigen::MatrixXd> phi_T_array_BT;
 };
@@ -250,6 +255,40 @@ struct DACorrectionResult {
  *  the FDP estimation.
  *  For BT-style methods the calibration is performed over a 3D grid (T_stop x V x rho_grid);
  *  for AR1/EQUI the standard 2D grid is used with modified phi_T / Phi values.
+ *
+ *  Penalty of the last step (a deliberate deviation from the papers):
+ *  ------------------------------------------------------------------
+ *  The dependency-aware relative occurrences of variable j at step t of the T-loop are
+ *  Phi^DA_t(j) = Psi(j) * Phi_t(j), with the penalty factor
+ *  Psi(j) = 1 / (2 - min |Phi(j) - Phi(j')|) over the variables j' that j is compared with
+ *  (its group, its window or all other variables), and Psi(j) = 1/2 for an empty group.
+ *
+ *  Read literally, the papers below recompute the factor at every step, Psi_t from Phi_t.
+ *  This class takes the factor of the last step T of the evaluated path, Psi_T from Phi_T,
+ *  and applies it to every step t = 1, ..., T. It does so for all five methods.
+ *
+ *  Reason: the FDP estimator sums over the increments Phi^DA_t(j) - Phi^DA_(t-1)(j) and is
+ *  a count of expected false discoveries only while no increment is negative. One factor
+ *  per variable keeps the non-negative increments of Phi_t non-negative. A factor per step
+ *  does not, because the factor of a variable changes from step to step. The estimator then
+ *  leaves its range, Phi' exceeds 1 and is capped, the variable counts as a certain true
+ *  discovery and the FDP estimate is too small.
+ *
+ *  Evidence: a Monte Carlo comparison of both constructions for all methods (1,000 runs per
+ *  setting, block, AR(1) and independent designs, T-LARS, November 2026).
+ *  - FDR: the per-step penalty exceeded a target of 0.1 with NN, 0.15 on an independent
+ *    design and 0.13 on a block design, where the last-step penalty gave 0.00 and 0.03.
+ *    No setting had the last-step penalty above the target and the per-step penalty below.
+ *  - Power: the per-step penalty selected more variables only where its estimator was out
+ *    of range, and the gain vanished once its history was made monotone. On AR(1) designs
+ *    the last-step penalty had the higher TPR, by 0.01 to 0.02.
+ *  - Range: Phi' was capped in 1 % to 27 % of the evaluations with the per-step penalty
+ *    and in at most 0.01 % with the last-step penalty.
+ *
+ *  AR1 and EQUI used the per-step penalty up to C++ 1.0.0, R 2.0.1 and Python 1.0.0, as
+ *  the R reference implementation of the papers does. BT, NN and PRIOR_GROUPS have always
+ *  used the last step, in the reference as well. Do not move a method to a penalty per
+ *  step, or add a clamp to Phi', without repeating that comparison (HISTORY.md, 2026-11-13).
  *
  *  References:
  *  -----------
@@ -527,8 +566,13 @@ protected:
     /**
      * @brief Apply the dependency-aware deflation to experiment results.
      *
+     * @details The penalty is computed once from `Phi`, the relative occurrences
+     *  of the last step, and deflates every column of `phi_T_mat` (see the
+     *  class documentation, "Penalty of the last step").
+     *
      * @param phi_T_mat Relative occurrence matrix (p x T_stop).
-     * @param Phi       Relative occurrence vector at T_stop (p x 1).
+     * @param Phi       Relative occurrence vector at T_stop (p x 1), the last
+     *                  column of `phi_T_mat`.
      * @param T_stop    Current stopping time.
      *
      * @return DACorrectionResult with deflated values.

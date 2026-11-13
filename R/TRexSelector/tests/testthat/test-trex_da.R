@@ -252,6 +252,35 @@ test_that("TRexDASelector AR1 uses the magnitude of a supplied cor_coef", {
 
 
 
+test_that("TRexDASelector AR1 deflates every step with the penalty of the last step", {
+
+  # The deflated history is then non-decreasing, so the calibrated occurrences
+  # phi_prime never exceed the deflated occurrences of the last step. A penalty
+  # per step breaks this in about every second run of this design. The design
+  # is tall (p < n / 2 - 1), so no experiment exhausts its path in the T-loop.
+  n <- 150
+  p <- 60
+  rho <- 0.7
+  for (seed in 1:6) {
+    set.seed(seed)
+    X <- matrix(0, n, p)
+    X[, 1] <- rnorm(n)
+    for (j in 2:p) X[, j] <- rho * X[, j - 1] + sqrt(1 - rho^2) * rnorm(n)
+    y <- as.numeric(2 * (X[, 10] + X[, 30] + X[, 50]) + rnorm(n))
+
+    selector <- TRexDASelector$new(X, y, tFDR = 0.2, seed = seed, verbose = FALSE,
+                                   da_control = trex_da_control(da_method = "AR1"),
+                                   control = trex_control(K = 10))
+    selector$select()
+
+    phi_mat <- selector$phi_mat
+    phi_da <- phi_mat[nrow(phi_mat), ]
+    expect_true(all(selector$phi_prime <= phi_da + 1e-12), info = paste("seed", seed))
+  }
+})
+
+
+
 test_that("TRexDASelector replaces a cor_coef outside [-1, 1] by the estimate with a warning", {
 
   set.seed(42)

@@ -934,81 +934,40 @@ DACorrectionResult TRexDASelector::daCorrect(
     std::size_t T_stop) const
 {
     DACorrectionResult result;
-    result.phi_T_mat = phi_T_mat;  // copy (will be modified for AR1/EQUI)
+    result.phi_T_mat = phi_T_mat;  // copy, deflated below for AR1 and EQUI
     result.Phi = Phi;              // copy
 
     const auto p = static_cast<Eigen::Index>(p_);
     const auto T = static_cast<Eigen::Index>(T_stop);
-    const std::size_t kap = da_setup_.kap;
 
 
-    // ── AR1 ─────────────────────────────────────────────────────────────────
-    if (trex_da_ctrl_.method == DAMethod::AR1) {
-        Eigen::MatrixXd delta = Eigen::MatrixXd::Constant(p, T, 2.0);
+    // ── AR1 and EQUI ────────────────────────────────────────────────────────
+    const bool is_ar1  = trex_da_ctrl_.method == DAMethod::AR1;
+    const bool is_equi = trex_da_ctrl_.method == DAMethod::EQUI &&
+                         std::abs(da_setup_.cor_coef) > trex_da_ctrl_.rho_thr_DA;
 
-        for (Eigen::Index t = 0; t < T; ++t) {
-            for (Eigen::Index j = 0; j < p; ++j) {
-                double min_diff = 2.0;
-                // Window: [j-kap, j+kap] excluding j
-                Eigen::Index lo = std::max(static_cast<Eigen::Index>(0),
-                                           j - static_cast<Eigen::Index>(kap));
-                Eigen::Index hi = std::min(p - 1, j + static_cast<Eigen::Index>(kap));
-                for (Eigen::Index k = lo; k <= hi; ++k) {
-                    if (k != j) {
-                        double diff = std::abs(result.phi_T_mat(j, t) -
-                                                  result.phi_T_mat(k, t));
-                        if (diff < min_diff) { min_diff = diff; }
-                    }
-                }
-                delta(j, t) = 2.0 - min_diff;
-            }
-        }
+    if (!da_setup_.use_BT_style && (is_ar1 || is_equi)) {
+        // Comparison set of j: the window [j - kap, j + kap] for AR1 and all
+        // variables for EQUI, without j itself.
+        const auto kap = static_cast<Eigen::Index>(da_setup_.kap);
 
-        // Deflate
-        for (Eigen::Index t = 0; t < T; ++t) {
-            for (Eigen::Index j = 0; j < p; ++j) {
-                if (delta(j, t) > eps_) {
-                    result.phi_T_mat(j, t) /= delta(j, t);
-                }
-            }
-        }
+        // delta = 1 / Psi of the last step (Phi) deflates every step, which
+        // keeps the increments of the history non-negative. A penalty per
+        // step takes the FDP estimator out of its range (see the class docs).
         for (Eigen::Index j = 0; j < p; ++j) {
-            if (delta(j, T - 1) > eps_) {
-                result.Phi(j) /= delta(j, T - 1);
-            }
-        }
-    }
-
-
-    // ── EQUI ────────────────────────────────────────────────────────────────
-    else if (trex_da_ctrl_.method == DAMethod::EQUI &&
-             std::abs(da_setup_.cor_coef) > trex_da_ctrl_.rho_thr_DA) {
-        Eigen::MatrixXd delta = Eigen::MatrixXd::Constant(p, T, 2.0);
-
-        for (Eigen::Index t = 0; t < T; ++t) {
-            for (Eigen::Index j = 0; j < p; ++j) {
-                double min_diff = 2.0;
-                for (Eigen::Index k = 0; k < p; ++k) {
-                    if (k != j) {
-                        double diff = std::abs(result.phi_T_mat(j, t) -
-                                        result.phi_T_mat(k, t));
-                        if (diff < min_diff) { min_diff = diff; }
-                    }
-                }
-                delta(j, t) = 2.0 - min_diff;
-            }
-        }
-
-        for (Eigen::Index t = 0; t < T; ++t) {
-            for (Eigen::Index j = 0; j < p; ++j) {
-                if (delta(j, t) > eps_) {
-                    result.phi_T_mat(j, t) /= delta(j, t);
+            const Eigen::Index lo = is_ar1 ? std::max<Eigen::Index>(0, j - kap) : 0;
+            const Eigen::Index hi = is_ar1 ? std::min(p - 1, j + kap) : p - 1;
+            double min_diff = 2.0;
+            for (Eigen::Index k = lo; k <= hi; ++k) {
+                if (k != j) {
+                    min_diff = std::min(min_diff, std::abs(Phi(j) - Phi(k)));
                 }
             }
-        }
-        for (Eigen::Index j = 0; j < p; ++j) {
-            if (delta(j, T - 1) > eps_) {
-                result.Phi(j) /= delta(j, T - 1);
+            // An empty comparison set gives delta = 0 and leaves the row as it is.
+            const double delta = 2.0 - min_diff;
+            if (delta > eps_) {
+                result.phi_T_mat.row(j) /= delta;
+                result.Phi(j) /= delta;
             }
         }
     }
@@ -1045,17 +1004,9 @@ DACorrectionResult TRexDASelector::daCorrect(
         }
 
         // phi_T_array_BT: for each rho level, phi_T_mat / delta_col (broadcast across T).
-        //
-        // NOTE (deliberate R-parity deviation from the paper): delta is
-        // computed once from the TERMINAL Phi (= phi_T_mat column T_stop) and
-        // applied to all columns t = 1..T_stop, exactly like the R reference
-        // (DA_delta_mat_BT uses phi_T_mat[j, T_stop] only). The paper's
-        // estimator (Eq. (10) of 109990) instead uses per-step penalties
-        // Psi_{t,L} recomputed from each column t — as the R (and our) AR1 /
-        // EQUI paths do. The two coincide for T_stop = 1 (entire L-loop) and
-        // differ only in the Phi'/V-hat' internals across the T-loop. We
-        // follow R here; switching to per-step deltas would deviate from the
-        // reference implementation and requires re-validating FDR/TPR curves.
+        // delta comes from the last step (Phi) and deflates every step, as for
+        // AR1 and EQUI above. This keeps the increments of the history
+        // non-negative (see the class docs for the per-step alternative).
         result.phi_T_array_BT.resize(rho_grid_len);
         for (std::size_t r = 0; r < rho_grid_len; ++r) {
             result.phi_T_array_BT[r].resize(p, T);
