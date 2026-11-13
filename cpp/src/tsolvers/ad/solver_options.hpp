@@ -190,7 +190,9 @@ struct SolverOptions {
     std::size_t cd_gram_cap = 400;
 
     /** @brief Stall guard: maximum coordinate sweeps per fixed-lambda solve.
-     *  Default 2000. */
+     *  Default 2000. A solve that stops at the budget far from a solution
+     *  (KKT violation above 0.001 lambda1) throws instead of continuing on
+     *  an unconverged path. */
     std::size_t cd_max_sweeps = 2000;
 
     /** @brief Crossing localization: true (default) CERTIFIED — duality-gap

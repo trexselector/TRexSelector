@@ -56,6 +56,9 @@
  *                       * TCDIENET (CCD): exact fixed-lambda1 IEN minimizers
  *                         per dummy crossing via the O(1) group-sum penalty
  *                         hooks. Same center-only data convention as TIENET.
+ *                         Not finally developed: its sweeps grow with
+ *                         lambda_2 and on saturating designs, and a solve
+ *                         that does not converge within cd_max_sweeps throws.
  *                       * TIENET_AUG: the solver internally builds the
  *                         group-informed Lasso-type system of Theorem 1
  *                           X_aug = [ X ; B ]  (M extra rows; B(m, .) =

@@ -42,6 +42,12 @@ namespace trex::tsolvers::ad::linear_model::cd_based {
  *                group-constant directions; singleton groups unpenalized.
  *                Mathematically identical to the TCDTIKNET FOLDED path with
  *                K_GC, at O(1) instead of O(p_m) per coordinate update.
+ *
+ *  State: not finally developed. A variable and its dummy copies share one
+ *  penalty term, so the sweeps needed grow with lambda2, and on saturating
+ *  designs as well. A solve that does not converge within cd_max_sweeps
+ *  throws (TCDLASSO_Solver::kUnconvergedKktRatio). The homotopy solver
+ *  TIENET_Solver has no such limit.
  */
 // Defined with the other option enums in tsolvers/solver_options.hpp and
 // re-exported here.

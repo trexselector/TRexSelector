@@ -8,7 +8,10 @@ Terminating coordinate-descent Informed Elastic Net: exact fixed-lambda1
 IEN minimizers per dummy crossing with O(1) group-penalty hooks
 (\code{group_penalty = "MEAN"}, the canonical group-sum penalty, or
 \code{"CENTERING"}). The solver used internally by \code{TRexGVSSelector}
-for \code{solver = "TCDIENET"}. Inherits the CD getters from
+for \code{solver = "TCDIENET"}. Not finally developed: its sweeps grow
+with \code{lambda2} and on saturating designs, and a solve that does not
+converge within \code{cd_max_sweeps} raises an error. The homotopy solver
+\code{\link{TIENET_Solver}} has no such limit. Inherits the CD getters from
 \code{\link{TCDSolver_Base}} and all common methods from
 \code{\link{TSolver_Base}}.
 }

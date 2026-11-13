@@ -10,7 +10,11 @@ minimizers per dummy crossing under the general quadratic penalty
 per \code{fold_dummies} in the options (\code{FALSE}: independent
 \code{kappa_dummy} ridge; \code{TRUE}: FOLDED layered convention). The
 solver used internally by \code{TRexTikhonovSelector} for
-\code{solver = "TCDTIKNET"}. Inherits the CD getters from
+\code{solver = "TCDTIKNET"}. Not finally developed: under the FOLDED
+coupling its sweeps grow with \code{lambda2}, and on saturating designs as
+well, and a solve that does not converge within \code{cd_max_sweeps}
+raises an error. The homotopy solver \code{\link{TIKNET_Solver}} has no
+such limit. Inherits the CD getters from
 \code{\link{TCDSolver_Base}} and all common methods from
 \code{\link{TSolver_Base}}.
 }

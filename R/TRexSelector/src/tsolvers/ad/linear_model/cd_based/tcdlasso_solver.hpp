@@ -258,8 +258,18 @@ protected:
     /** @brief Stall guard: max coordinate sweeps per fixed-lambda solve.
      *  CD on nearly collinear active columns can limit-cycle with deltas
      *  hovering at the tolerance; the budget bounds the tail (the KKT
-     *  certificate still reports the honest residual violation). */
+     *  certificate still reports the honest residual violation). A solve
+     *  that stops at the budget far from a solution throws, see
+     *  kUnconvergedKktRatio. */
     std::size_t max_sweeps_per_solve_{2000};
+
+    /** @brief Largest KKT violation, relative to lambda1, of an iterate that
+     *  solveAtLambda() accepts when it stops at the sweep budget. A limit
+     *  cycle at the tolerance stays far below it. Above it the solve has not
+     *  converged and the path from there on is not reliable. That happens
+     *  with the folded dummy coupling once lambda2 times K is large, and on
+     *  designs driven into saturation. */
+    static constexpr double kUnconvergedKktRatio = 1e-3;
 
     /** @brief Diagnostic: number of solves that hit the sweep budget. */
     long sweep_cap_hits_{0};
@@ -593,6 +603,13 @@ public:
      */
     double getKktViolation(double lambda1 = -1.0);
 
+protected:
+    /** @brief Max KKT violation of the current CD state at lambda1 (the
+     *  measure behind getKktViolation(), without the state checks). */
+    double kktViolationCd(double lambda1);
+
+public:
+
     /**
      * @brief Select the crossing-localization mode (default: certified).
      * @param certified true = CERTIFIED (certificates, closed-form
@@ -850,6 +867,9 @@ protected:
      * @param candidates Restricted KKT scan set (nullptr = full scan).
      *
      * @return Number of coordinate sweeps performed.
+     *
+     * @throws std::runtime_error if the solve stops at the sweep budget with
+     *         a KKT violation above kUnconvergedKktRatio * lambda1.
      */
     long solveAtLambda(double lambda1, double cd_tol,
                        const std::vector<std::size_t>* candidates);

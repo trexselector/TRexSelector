@@ -75,7 +75,9 @@ TRexSelector <- R6::R6Class("TRexSelector",
       invisible(self)
     },
 
-    #' @description Run the TRexSelector algorithm.
+    #' @description Run the TRexSelector algorithm. A \code{select()} that
+    #'   ends with an error gives \code{X} back at once (original scale) and
+    #'   retires the selector: construct a new one to run again.
     #' @return invisible(self)
     select = function() {
       trex_selector_select(private$ptr)

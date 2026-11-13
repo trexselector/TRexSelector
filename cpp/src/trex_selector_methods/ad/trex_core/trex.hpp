@@ -13,6 +13,7 @@
 
 // std includes
 #include <cstddef>
+#include <exception>
 #include <functional>
 #include <optional>
 #include <string>
@@ -358,9 +359,33 @@ protected:
      *  selector's normalized view is gone and select() must refuse. */
     bool released_{false};
 
-    /** @brief Throws if restore() was called before select(); every select()
-     *  implementation (base and overrides) calls it first. */
+    /** @brief Throws if X was given back before: by restore(), or by a
+     *  select() that ended with an error. Every select() implementation (base
+     *  and overrides) calls it first. */
     void ensureNotReleased() const;
+
+    /** @brief Scope guard of the select() implementations: an exception that
+     *  leaves the scope gives X back (original scale, claim released) and
+     *  retires the selector, so the caller's design never stays standardized
+     *  after an error. */
+    class GiveXBackOnError {
+    public:
+        explicit GiveXBackOnError(TRexSelector& selector) noexcept
+            : selector_(selector), pending_(std::uncaught_exceptions()) {}
+        ~GiveXBackOnError() {
+            if (std::uncaught_exceptions() > pending_) { selector_.giveXBackAfterError(); }
+        }
+        GiveXBackOnError(const GiveXBackOnError&) = delete;
+        GiveXBackOnError& operator=(const GiveXBackOnError&) = delete;
+
+    private:
+        TRexSelector& selector_;
+        int pending_;
+    };
+
+    /** @brief What GiveXBackOnError runs: restore X and retire the selector.
+     *  Never throws, the destructor stays the last line of defense. */
+    void giveXBackAfterError() noexcept;
 
     /** @brief Restore X to its original scale and release the shared-buffer
      *  claim. Idempotent (no-op if X is already denormalized). Subclasses that
@@ -529,6 +554,10 @@ public:
 
     /**
      * @brief Run T-Rex selection algorithm.
+     *
+     * @details A select() that ends with an exception gives X back at once
+     *  (original scale, claim released) and retires the selector: a later
+     *  select() throws, construct a new selector.
      *
      * @return SelectionResult containing selected variables and
      *         diagnostics.

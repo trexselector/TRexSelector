@@ -170,7 +170,7 @@ gc$selected_indices
 algorithm (default, the neutral `"TLARS"` of `trex_control()` maps to it), or `"TCDTIKNET"`,
 coordinate descent. Both solve the same problem. `"TCDTIKNET"` is not finally developed. Once
 $\lambda_2$ times $\boldsymbol K$ is large it can stop at its sweep budget (`cd_max_sweeps`) before it
-has converged. It reports that with a warning, and the selection is then not reliable.
+has converged. `select()` then stops with an error instead of a selection from an unconverged path.
 
 ```{r tcdtiknet}
 cd <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,

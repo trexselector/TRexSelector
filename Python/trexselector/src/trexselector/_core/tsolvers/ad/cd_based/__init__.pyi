@@ -211,6 +211,10 @@ class TCDIENET_Solver:
     """
     Terminating cyclic coordinate descent informed elastic net (T-CDIENET) solver.
     
+    Not finally developed: its sweeps grow with lambda2 and on saturating designs, and a
+    solve that does not converge within cd_max_sweeps raises RuntimeError. The homotopy
+    solver TIENET_Solver has no such limit.
+    
     References
     ----------
     J. Machkour, M. Muma, and D. P. Palomar, "The Informed Elastic Net for Fast Grouped
@@ -623,6 +627,10 @@ class TCDLASSO_Solver:
 class TCDTIKNET_Solver:
     """
     Terminating cyclic coordinate descent Tikhonov net (T-CDTIKNET) solver.
+    
+    Not finally developed: under the folded dummy coupling its sweeps grow with lambda2,
+    and on saturating designs as well, and a solve that does not converge within
+    cd_max_sweeps raises RuntimeError. The homotopy solver TIKNET_Solver has no such limit.
     
     References
     ----------

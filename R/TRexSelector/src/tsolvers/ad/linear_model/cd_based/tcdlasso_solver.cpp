@@ -616,6 +616,17 @@ long TCDLASSO_Solver::solveAtLambda(double lambda1, double cd_tol,
                 max_sweeps_per_solve_, "); accepting the current iterate "
                 "(further hits counted silently, see getSweepCapHits())."));
         }
+        // An iterate far from a solution would steer the path wrong.
+        const double violation = kktViolationCd(lambda1);
+        if (violation > kUnconvergedKktRatio * lambda1) {
+            throw std::runtime_error(concatMsg(
+                "[", solverTypeToString(), "] the coordinate descent stopped at its "
+                "sweep budget (", max_sweeps_per_solve_, ") before it converged: "
+                "KKT violation ", violation, " at lambda_1 = ", lambda1,
+                ". The path from here on would not be reliable. Raise "
+                "cd_max_sweeps, or use the homotopy solver of the same problem "
+                "(TLASSO, TENET, TIENET, TIKNET)."));
+        }
     }
 
     // Prune exact zeros (pruned variables keep their gram slot).
@@ -770,7 +781,11 @@ void TCDLASSO_Solver::recordCrossingStep(double lambda1) {
 double TCDLASSO_Solver::getKktViolation(double lambda1) {
     validateConnected();
     ensureCdState();
-    const double lam = (lambda1 > 0.0) ? lambda1 : lambda_current_;
+    return kktViolationCd((lambda1 > 0.0) ? lambda1 : lambda_current_);
+}
+
+
+double TCDLASSO_Solver::kktViolationCd(double lam) {
     if (r_dirty_) { refreshResidualCd(); }
 
     const std::size_t p_total = p_original_ + num_dummies_;

@@ -74,6 +74,13 @@ namespace trex::tsolvers::ad::linear_model::cd_based {
  *    (the anchor tests pin wide-margin designs). Dummy/null
  *    exchangeability holds for arbitrary K.
  *
+ *  State: not finally developed. Under FOLDED a variable and its dummy
+ *  copies share one penalty term, so the sweeps needed grow with lambda2
+ *  times K, and on saturating designs as well. A solve that does not
+ *  converge within cd_max_sweeps throws
+ *  (TCDLASSO_Solver::kUnconvergedKktRatio). The homotopy solver
+ *  TIKNET_Solver has no such limit.
+ *
  *  Methodological caveat (INDEPENDENT_RIDGE only): informed penalties with
  *  off-diagonal K couple null reals to their neighbors' coefficients while
  *  dummies stay uncoupled, deforming the dummy/null exchangeability the

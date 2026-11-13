@@ -16,8 +16,11 @@
 
 // std includes
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
+#include <random>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -33,6 +36,7 @@
 #include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>
@@ -716,6 +720,64 @@ TEST_F(TSolverCdTest, CertifiedResumeReproducesKnots) {
     }
     EXPECT_EQ(ref.getActions(), res.getActions());
     std::filesystem::remove(file);
+}
+
+
+
+/** @brief A solve that stops at the sweep budget far from a solution throws
+ *  instead of continuing on an unreliable path. Under the folded dummy
+ *  coupling the sweeps needed grow with lambda2: the default budget is too
+ *  small at lambda2 = 3000, and a larger one reproduces the homotopy. */
+TEST(TSolverCdBudgetTest, UnconvergedSolveThrowsAndALargerBudgetConverges) {
+    const Eigen::Index n = 120, p = 60;
+    std::mt19937 rng(2718);
+    auto N01 = [&rng]() {
+        const double u1 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        const double u2 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        return std::sqrt(-2.0 * std::log(u1)) * std::cos(6.283185307179586 * u2);
+    };
+    Eigen::MatrixXd X0(n, p), D0(n, p);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X0(i, j) = N01(); D0(i, j) = N01(); }
+    }
+    Eigen::VectorXd y0(n);
+    for (Eigen::Index i = 0; i < n; ++i) { y0(i) = X0.row(i).segment(20, 10).sum() + N01(); }
+    Eigen::SparseMatrix<double> K(p, p);
+    K.setIdentity();
+
+    trex::tsolvers::ad::SolverOptions options;
+    options.lambda2 = 3000.0;
+    options.fold_dummies = true;
+
+    auto actives_at_five_dummies = [&](auto&& make) {
+        Eigen::MatrixXd X = X0, D = D0;
+        Eigen::VectorXd y = y0;
+        Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p), Dm(D.data(), n, p);
+        Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
+        auto solver = make(Xm, Dm, ym);
+        solver.executeStep(5, true);
+        return solver.getActivePredictorIndices().size();
+    };
+    using MapM = Eigen::Map<Eigen::MatrixXd>;
+    using MapV = Eigen::Map<Eigen::VectorXd>;
+
+    // The default budget of 2000 sweeps: an error that names the budget.
+    try {
+        actives_at_five_dummies([&](MapM& X, MapM& D, MapV& y) { return TCDTIKNET_Solver(X, D, y, K, options); });
+        FAIL() << "the solver accepted an unconverged iterate";
+    } catch (const std::runtime_error& e) {
+        EXPECT_NE(std::string(e.what()).find("sweep budget (2000)"), std::string::npos) << e.what();
+        EXPECT_NE(std::string(e.what()).find("cd_max_sweeps"), std::string::npos) << e.what();
+    }
+
+    // A larger budget converges and gives the count of the homotopy.
+    trex::tsolvers::ad::SolverOptions patient = options;
+    patient.cd_max_sweeps = 200000;
+    const std::size_t n_cd =
+        actives_at_five_dummies([&](MapM& X, MapM& D, MapV& y) { return TCDTIKNET_Solver(X, D, y, K, patient); });
+    const std::size_t n_homotopy =
+        actives_at_five_dummies([&](MapM& X, MapM& D, MapV& y) { return TIKNET_Solver(X, D, y, K, options); });
+    EXPECT_EQ(n_cd, n_homotopy);
 }
 
 // ========================================================================================

@@ -185,7 +185,8 @@ gc.selected_indices
 the pathwise homotopy algorithm (the default, the neutral `TLARS` of a fresh control maps to it), or
 `TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
 Once $\lambda_2$ times $\boldsymbol K$ is large it can stop at its sweep budget (`cd_max_sweeps`)
-before it has converged. It reports that with a warning, and the selection is then not reliable.
+before it has converged. `select()` then raises an error instead of returning a selection from an
+unconverged path.
 
 ```{code-cell} python
 cd = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=tik_ctrl, trex_control=cd_ctrl,

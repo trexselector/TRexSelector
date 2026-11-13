@@ -148,7 +148,9 @@ inline void bind_trex_gvs(py::module& m) {
     py::enum_<GVSType>(m, "GVSType", "Group Variable Selection method variants.")
         .value("EN", GVSType::EN, "Elastic-Net group variable selection (uses TENET solver).")
         .value("IEN", GVSType::IEN, "Informed Elastic-Net using group structure from clustering (solver via "
-            "trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET).")
+            "trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its "
+            "sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within "
+            "cd_max_sweeps raises RuntimeError.")
         .export_values();
 
     py::enum_<ENSolverType>(m, "ENSolverType", "Elastic-Net solver variant used when gvs_type == EN.")

@@ -736,7 +736,9 @@ inline void bind_solver_options(py::module& m) {
        .def_readwrite("cd_gram_cap", &SolverOptions::cd_gram_cap,
             "CD family: ever-active Gram slots cached before falling back to naive sweeps. Default 400.")
        .def_readwrite("cd_max_sweeps", &SolverOptions::cd_max_sweeps,
-            "CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000.")
+            "CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000. A solve that stops at "
+            "the budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of "
+            "continuing on an unconverged path.")
        .def_readwrite("cd_certified_localization", &SolverOptions::cd_certified_localization,
             "CD family: True (default) CERTIFIED crossing localization, False LEGACY.")
        .def("__repr__", [](const SolverOptions& o) {
@@ -1164,6 +1166,10 @@ inline void bind_tsolvers_module(py::module& m) {
         auto cls = bind_groups_tsolver<TCDIENET_Solver>(m_cd, "TCDIENET_Solver",
             "Terminating cyclic coordinate descent informed elastic net (T-CDIENET) solver.\n"
             "\n"
+            "Not finally developed: its sweeps grow with lambda2 and on saturating designs, and a\n"
+            "solve that does not converge within cd_max_sweeps raises RuntimeError. The homotopy\n"
+            "solver TIENET_Solver has no such limit.\n"
+            "\n"
             "References\n"
             "----------\n"
             "J. Machkour, M. Muma, and D. P. Palomar, \"The Informed Elastic Net for Fast Grouped\n"
@@ -1190,6 +1196,10 @@ inline void bind_tsolvers_module(py::module& m) {
     {
         auto cls = bind_tikhonov_tsolver<TCDTIKNET_Solver>(m_cd, "TCDTIKNET_Solver",
             "Terminating cyclic coordinate descent Tikhonov net (T-CDTIKNET) solver.\n"
+            "\n"
+            "Not finally developed: under the folded dummy coupling its sweeps grow with lambda2,\n"
+            "and on saturating designs as well, and a solve that does not converge within\n"
+            "cd_max_sweeps raises RuntimeError. The homotopy solver TIKNET_Solver has no such limit.\n"
             "\n"
             "References\n"
             "----------\n"

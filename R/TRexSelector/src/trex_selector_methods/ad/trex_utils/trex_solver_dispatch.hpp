@@ -175,7 +175,8 @@ struct SolverHyperparameters {
     std::size_t cd_gram_cap = 0;
 
     /** @brief Stall guard: max coordinate sweeps per fixed-lambda solve.
-     * 0 (default) keeps the solver's own default (2000). */
+     * 0 (default) keeps the solver's own default (2000). A solve that stops
+     * at the budget far from a solution throws, see SolverOptions. */
     std::size_t cd_max_sweeps = 0;
 
     /** @brief Crossing-localization mode of the CD family. true (default):

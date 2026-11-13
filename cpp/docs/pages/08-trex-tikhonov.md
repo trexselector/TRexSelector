@@ -111,8 +111,8 @@ fallback) carry the tag `[TCDIENET]`.
 `SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm (the default of the control), or
 `TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
 Once \f$\lambda_2\f$ times \f$\boldsymbol K\f$ is large it can stop at its sweep budget
-(`cd_max_sweeps`) before it has converged. It reports that with a warning, and the selection is
-then not reliable.
+(`cd_max_sweeps`) before it has converged. `select()` then throws instead of returning a selection
+from an unconverged path.
 
 \snippet{trimleft} trex_tikhonov.cpp solver
 \output{trex_tikhonov.solver.txt}

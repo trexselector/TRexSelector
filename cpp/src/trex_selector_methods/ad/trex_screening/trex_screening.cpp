@@ -173,6 +173,7 @@ void ScreenTRexSelector::validateBootstrapParameters() const {
 tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
 
     ensureNotReleased();
+    const GiveXBackOnError give_x_back(*this);
 
     // 1. Enforce Screen-TRex fixed parameters: T = 1, L = p
     T_stop_             = 1;

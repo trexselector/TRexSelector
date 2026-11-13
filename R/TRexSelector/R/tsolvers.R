@@ -82,7 +82,10 @@ NULL
 #'   or \code{"CENTERING"} (not bound to R yet).
 #' @param cd_lambda_rel_tol,cd_tol_certify,cd_tol_probe,cd_gram_cap,cd_max_sweeps,cd_certified_localization
 #'   Knobs of the CD solver family (not bound to R yet); the defaults are the
-#'   solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}).
+#'   solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
+#'   that stops at the sweep budget \code{cd_max_sweeps} far from a solution
+#'   (KKT violation above 0.001 lambda_1) raises an error instead of
+#'   continuing on an unconverged path.
 #'
 #' @return A named list suitable for the \code{options} argument of every
 #'   T-solver constructor.
@@ -1671,7 +1674,10 @@ TCDENET_Solver <- R6::R6Class(
 #' IEN minimizers per dummy crossing with O(1) group-penalty hooks
 #' (\code{group_penalty = "MEAN"}, the canonical group-sum penalty, or
 #' \code{"CENTERING"}). The solver used internally by \code{TRexGVSSelector}
-#' for \code{solver = "TCDIENET"}. Inherits the CD getters from
+#' for \code{solver = "TCDIENET"}. Not finally developed: its sweeps grow
+#' with \code{lambda2} and on saturating designs, and a solve that does not
+#' converge within \code{cd_max_sweeps} raises an error. The homotopy solver
+#' \code{\link{TIENET_Solver}} has no such limit. Inherits the CD getters from
 #' \code{\link{TCDSolver_Base}} and all common methods from
 #' \code{\link{TSolver_Base}}.
 #'
@@ -1748,7 +1754,11 @@ TCDIENET_Solver <- R6::R6Class(
 #' per \code{fold_dummies} in the options (\code{FALSE}: independent
 #' \code{kappa_dummy} ridge; \code{TRUE}: FOLDED layered convention). The
 #' solver used internally by \code{TRexTikhonovSelector} for
-#' \code{solver = "TCDTIKNET"}. Inherits the CD getters from
+#' \code{solver = "TCDTIKNET"}. Not finally developed: under the FOLDED
+#' coupling its sweeps grow with \code{lambda2}, and on saturating designs as
+#' well, and a solve that does not converge within \code{cd_max_sweeps}
+#' raises an error. The homotopy solver \code{\link{TIKNET_Solver}} has no
+#' such limit. Inherits the CD getters from
 #' \code{\link{TCDSolver_Base}} and all common methods from
 #' \code{\link{TSolver_Base}}.
 #'

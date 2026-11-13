@@ -11,6 +11,7 @@
 // std includes
 #include <algorithm>
 #include <cmath>
+#include <exception>
 #include <stdexcept>
 #include <vector>
 
@@ -105,6 +106,22 @@ TRexSPCA::~TRexSPCA() {
 // ==============================================================================
 
 const TRexSPCAResult& TRexSPCA::select() {
+
+    // An exception that leaves select() gives X back at once (uncentered).
+    struct UncenterOnError {
+        TRexSPCA& self;
+        int pending = std::uncaught_exceptions();
+        ~UncenterOnError() {
+            if (std::uncaught_exceptions() > pending && self.X_is_centered_) {
+                try {
+                    self.scaler_.inverse_transform_inplace(*self.X_);
+                    self.X_is_centered_ = false;
+                } catch (...) {
+                    // the destructor restores X
+                }
+            }
+        }
+    } uncenter_on_error{*this};
 
     const Eigen::Index n = X_->rows();
     const Eigen::Index p = X_->cols();

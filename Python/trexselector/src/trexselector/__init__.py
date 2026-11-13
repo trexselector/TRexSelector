@@ -107,6 +107,9 @@ class TRexSelector:
         Executes the T-Rex selector algorithm.
         Releases the GIL to allow underlying C++ OpenMP multithreading to run in parallel.
 
+        A ``select()`` that ends with an error gives ``X`` back at once (original
+        scale) and retires the selector: construct a new one to run again.
+
         Returns
         -------
         SelectionResult
@@ -336,8 +339,9 @@ class TRexTikhonovSelector(TRexSelector):
     pathwise homotopy solver (default), or TCDTIKNET, the coordinate-descent
     solver, chosen through ``trex_control.solver_type``. TCDTIKNET is not
     finally developed: once lambda_2 times K is large it can stop at its sweep
-    budget (``cd_max_sweeps``) before it has converged. It reports that with a
-    warning, and the selection is then not reliable.
+    budget (``cd_max_sweeps``) before it has converged. ``select()`` then
+    raises ``RuntimeError`` instead of returning a selection from an
+    unconverged path.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  tik_control: TRexTikhonovControlParameter | None = None,

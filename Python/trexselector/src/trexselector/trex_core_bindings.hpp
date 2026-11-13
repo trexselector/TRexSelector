@@ -334,7 +334,9 @@ inline void bind_trex_core(py::module& m_tsm) {
             "cached "
             "Gram matrix (0 keeps the solver default).")
         .def_readwrite("cd_max_sweeps", &disp::SolverHyperparameters::cd_max_sweeps, "CCD family: maximum coordinate "
-            "sweeps per subproblem (0 keeps the solver default).")
+            "sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from "
+            "a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an "
+            "unconverged path.")
         .def_readwrite("cd_certified_localization", &disp::SolverHyperparameters::cd_certified_localization, "CCD "
             "family: True (default) = certified crossing localization (duality-gap and coordinate-status certificates, "
             "closed-form continuation, records at the knot); False = LEGACY probe bisection with the support-nesting "
@@ -518,7 +520,8 @@ inline void bind_trex_core(py::module& m_tsm) {
              "select() then raises, construct a new one. Without it, an unselected "
              "selector gives X back only when it is garbage-collected.")
         .def("select", &PyTRexSelector::select, py::call_guard<py::gil_scoped_release>(),
-             "Run the T-Rex algorithm and return a SelectionResult.")
+             "Run the T-Rex algorithm and return a SelectionResult. A select() that ends with an error gives X "
+             "back at once (original scale) and retires the selector: construct a new one to run again.")
         .def("getTFDR", &PyTRexSelector::getTFDR, "Return the target FDR.")
         .def("getK", &PyTRexSelector::getK, "Return K: the number of random experiments.")
         .def("getMaxNumDummies", &PyTRexSelector::getMaxNumDummies, "Return the maximum number of dummy variables per "

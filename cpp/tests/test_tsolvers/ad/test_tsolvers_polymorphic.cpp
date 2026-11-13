@@ -112,6 +112,13 @@ constexpr bool lifts_row_bound =
     std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver> ||
     std::is_same_v<T, TCDENET_Solver> || std::is_same_v<T, TCDIENET_Solver>;
 
+/** @brief The coordinate-descent solvers with a quadratic penalty. Deep in a
+ *  saturated path their solves do not converge within a practical sweep
+ *  budget, and the solver then throws instead of continuing. */
+template <typename T>
+constexpr bool cd_ridge_family =
+    std::is_same_v<T, TCDENET_Solver> || std::is_same_v<T, TCDIENET_Solver>;
+
 // Factory with explicit preprocessing options (lambda2 = 0.5 as above)
 template <typename T>
 std::unique_ptr<T> create_solver_with(Eigen::Map<Eigen::MatrixXd>& X,
@@ -294,6 +301,12 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     trex::tsolvers::ad::SolverOptions base;
     base.normalize = false;
     base.tie_seed = 7;
+    // The run takes every dummy and so goes into saturation, where TCDLASSO
+    // needs more sweeps than its default budget to converge. The CD solvers
+    // of the ridge family stop after a third of the dummies, see the trait.
+    base.cd_max_sweeps = 200000;
+    const std::size_t T_stop = cd_ridge_family<TypeParam> ? static_cast<std::size_t>(L / 3)
+                                                          : static_cast<std::size_t>(L);
 
     // intercept = true: the solver centers its (separate) buffers itself
     Eigen::MatrixXd Xa = X0, Da = D0;
@@ -304,7 +317,7 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     trex::tsolvers::ad::SolverOptions with_intercept = base;
     with_intercept.intercept = true;
     auto fitted = create_solver_with<TypeParam>(Xa_map, Da_map, ya_map, with_intercept);
-    fitted->executeStep(L, true);
+    fitted->executeStep(T_stop, true);
 
     // precentered reader on the caller-centered data
     Eigen::MatrixXd Xb = X0, Db = D0;
@@ -316,7 +329,7 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     reader.intercept = false;
     reader.precentered = true;
     auto precentered = create_solver_with<TypeParam>(Xb_map, Db_map, yb_map, reader);
-    precentered->executeStep(L, true);
+    precentered->executeStep(T_stop, true);
 
     EXPECT_EQ(fitted->getActions(), precentered->getActions());
     EXPECT_EQ(fitted->getDoF(), precentered->getDoF());

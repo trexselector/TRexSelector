@@ -169,8 +169,9 @@ default \code{"TLARS"} maps to it), or \code{"TCDTIKNET"}, the
 coordinate-descent solver; any other value warns and falls back to
 \code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
 \code{lambda_2} times K is large it can stop at its sweep budget
-(\code{cd_max_sweeps}) before it has converged. It reports that
-with a warning, and the selection is then not reliable.}
+(\code{cd_max_sweeps}) before it has converged. \code{select()}
+then stops with an error instead of a selection from an unconverged
+path.}
     }
     \if{html}{\out{</div>}}
   }

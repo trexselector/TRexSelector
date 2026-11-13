@@ -74,8 +74,9 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   coordinate-descent solver; any other value warns and falls back to
     #'   \code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
     #'   \code{lambda_2} times K is large it can stop at its sweep budget
-    #'   (\code{cd_max_sweeps}) before it has converged. It reports that
-    #'   with a warning, and the selection is then not reliable.
+    #'   (\code{cd_max_sweeps}) before it has converged. \code{select()}
+    #'   then stops with an error instead of a selection from an unconverged
+    #'   path.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,

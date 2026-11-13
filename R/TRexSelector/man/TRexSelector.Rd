@@ -177,7 +177,9 @@ garbage-collected.
 \if{html}{\out{<a id="method-TRexSelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexSelector-select}{}}}
 \subsection{\code{TRexSelector$select()}}{
-  Run the TRexSelector algorithm.
+  Run the TRexSelector algorithm. A \code{select()} that
+ends with an error gives \code{X} back at once (original scale) and
+retires the selector: construct a new one to run again.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexSelector$select()}

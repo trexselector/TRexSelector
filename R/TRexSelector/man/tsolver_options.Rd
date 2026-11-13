@@ -96,7 +96,10 @@ yet). Default \code{FALSE}.}
 or \code{"CENTERING"} (not bound to R yet).}
 
 \item{cd_lambda_rel_tol, cd_tol_certify, cd_tol_probe, cd_gram_cap, cd_max_sweeps, cd_certified_localization}{Knobs of the CD solver family (not bound to R yet); the defaults are the
-solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}).}
+solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
+that stops at the sweep budget \code{cd_max_sweeps} far from a solution
+(KKT violation above 0.001 lambda_1) raises an error instead of
+continuing on an unconverged path.}
 }
 \value{
 A named list suitable for the \code{options} argument of every

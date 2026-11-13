@@ -391,3 +391,24 @@ test_that("the default run on a chain Laplacian selects the planted block", {
   expect_true(sel$lambda2_pilot$ran)
   expect_lt(sel$lambda2_used, 1000)   # not the top of the pilot grid
 })
+
+
+test_that("an unconverged coordinate descent is an error and the design comes back", {
+  # TCDTIKNET at a lambda_2 beyond its sweep budget: select() ends with an error instead of a
+  # selection from an unconverged path, the design is given back at once and the selector is retired
+  set.seed(2718)
+  n <- 120
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(rowSums(X[, 21:30]) + rnorm(n))
+  X0 <- X + 0
+
+  sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
+                                  tik_control = trex_tikhonov_control(tikhonov_K = diag(p),
+                                                                      lambda_2 = 3000),
+                                  control = trex_control(solver = "TCDTIKNET", K = 10))
+  expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
+  expect_error(sel$select(), "sweep budget.*before it converged.*cd_max_sweeps")
+  expect_equal(X, X0, tolerance = 1e-12)          # given back
+  expect_error(sel$select(), "can no longer run") # retired
+})

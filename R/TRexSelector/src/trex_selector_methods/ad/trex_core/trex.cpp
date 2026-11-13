@@ -244,7 +244,20 @@ void TRexSelector::ensureNotReleased() const {
     if (released_) {
         throw std::runtime_error(
             "TRexSelector::select(): restore() gave X back before select() ran; "
-            "this selector can no longer run, construct a new one.");
+            "this selector can no longer run, construct a new one. (A select() "
+            "that ended with an error gives X back as well.)");
+    }
+}
+
+
+void TRexSelector::giveXBackAfterError() noexcept {
+    try {
+        if (X_is_normalized_) {
+            denormalizeAndReleaseX();
+            released_ = true;   // the normalized view is gone: select() must refuse
+        }
+    } catch (...) {
+        // the destructor writes X back
     }
 }
 
@@ -349,6 +362,7 @@ void TRexSelector::validateTRexParameters() const {
 TRexSelector::SelectionResult TRexSelector::select() {
 
     ensureNotReleased();
+    const GiveXBackOnError give_x_back(*this);
 
     // 1. Voting grid and optimization point
     // -----------------------------------------------------

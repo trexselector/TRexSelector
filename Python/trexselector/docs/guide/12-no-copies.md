@@ -54,7 +54,8 @@ sel_f.restore()
 A selector centers and scales `X` in place when it is constructed and writes the original values
 back when `select()` returns. In between, `X` holds the working design. `restore()` writes back
 early for a selector that will not run, and a selector that is garbage collected without running
-writes back in its finalizer.
+writes back in its finalizer. A `select()` that ends with an error writes back at once and retires
+the selector.
 
 ```{code-cell} python
 n, p = 80, 40

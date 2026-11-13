@@ -403,3 +403,30 @@ def test_default_run_on_a_chain_laplacian_selects_the_planted_block():
     assert np.isin(support, selected).sum() >= 8
     assert np.setdiff1d(selected, support).size <= 4
     assert sel.lambda2_used < 1000.0   # not the top of the pilot grid
+
+
+def test_unconverged_coordinate_descent_raises_and_gives_the_design_back():
+    """TCDTIKNET at a lambda_2 beyond its sweep budget.
+
+    select() ends with an error instead of a selection from an unconverged path, the design is
+    given back at once and the selector is retired.
+    """
+    rng = np.random.default_rng(2718)
+    n, p = 120, 60
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, 20:30].sum(axis=1) + rng.standard_normal(n)
+    X0 = X.copy(order="F")
+
+    tik = tsn.TRexTikhonovControlParameter()
+    tik.tikhonov_K = np.eye(p)
+    tik.lambda_2 = 3000.0
+    sel = tsn.TRexTikhonovSelector(
+        X, y, tFDR=0.1, tik_control=tik,
+        trex_control=_base_control(K=10, mult=10, solver=tsn.SolverTypeForTRex.TCDTIKNET),
+        seed=4, verbose=False)
+    assert not np.allclose(X, X0)                     # standardized in place
+    with pytest.raises(RuntimeError, match="sweep budget.*before it converged.*cd_max_sweeps"):
+        sel.select()
+    np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
+    with pytest.raises(RuntimeError, match="can no longer run"):
+        sel.select()                                  # retired

@@ -63,7 +63,9 @@ the path (0 is healthy).
 `gvs_type = GVSType::IEN` encodes the groups in the penalty. The groups come from `prior_groups` in
 the control (0-based labels of length \f$p\f$) or from the correlation clustering. The solver is set
 in `trex_ctrl.solver_type`: `SolverTypeForTRex::TIENET` (default, the native pathwise form),
-`TIENET_AUG` (row augmented) or `TCDIENET` (coordinate descent). The IEN rules of `lambda2_method`
+`TIENET_AUG` (row augmented) or `TCDIENET` (coordinate descent, not finally developed: a solve that
+does not converge within its sweep budget `cd_max_sweeps` stops with an error). The IEN rules of
+`lambda2_method`
 (`CV_1SE_IEN_CCD`, the default on this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`)
 consume the group structure and return \f$\lambda_2\f$ on the solver scale. The penalty is left to
 the IEN rule here.

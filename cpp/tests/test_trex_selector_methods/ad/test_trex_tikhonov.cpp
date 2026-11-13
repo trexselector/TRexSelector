@@ -23,6 +23,8 @@
 #include <algorithm>
 #include <cmath>
 #include <random>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 // project trex includes
@@ -291,6 +293,46 @@ TEST_F(TRexTikhonovTest, DefaultRun_ChainLaplacianSelectsThePlantedBlock) {
     EXPECT_LE(false_positives, 4);
     EXPECT_TRUE(trex.getLambda2PilotResult().ran);
     EXPECT_LT(trex.getLambda2Used(), 1000.0) << "the pilot picked the top of its grid";
+}
+
+
+/** @brief The CCD solver at a lambda_2 beyond its sweep budget: select()
+ *  ends with an error instead of a selection from an unconverged path, the
+ *  design is given back at once and the selector is retired. */
+TEST_F(TRexTikhonovTest, UnconvergedCdSolve_ThrowsAndGivesXBack) {
+    const Eigen::Index n = 120, p = 60;
+    std::mt19937 rng(2718);
+    auto N01 = [&rng]() {
+        const double u1 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        const double u2 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        return std::sqrt(-2.0 * std::log(u1)) * std::cos(6.283185307179586 * u2);
+    };
+    Eigen::MatrixXd X(n, p);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(); }
+    }
+    Eigen::VectorXd y(n);
+    for (Eigen::Index i = 0; i < n; ++i) { y(i) = X.row(i).segment(20, 10).sum() + N01(); }
+    const Eigen::MatrixXd X_before = X;
+
+    Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p);
+    Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
+    TRexTikhonovControlParameter ctrl;
+    ctrl.tikhonov_K = identityK(p);
+    ctrl.lambda_2 = 3000.0;
+    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
+    ctrl.trex_ctrl.K = 10;
+    TRexTikhonovSelector trex(Xm, ym, 0.1, ctrl, 4, false);
+    EXPECT_GT((X - X_before).cwiseAbs().maxCoeff(), 1e-3);   // standardized in place
+
+    try {
+        trex.select();
+        FAIL() << "select() returned from an unconverged path";
+    } catch (const std::runtime_error& e) {
+        EXPECT_NE(std::string(e.what()).find("sweep budget"), std::string::npos) << e.what();
+    }
+    EXPECT_LT((X - X_before).cwiseAbs().maxCoeff(), 1e-10);  // given back
+    EXPECT_THROW(trex.select(), std::runtime_error);         // retired
 }
 
 
@@ -816,6 +858,9 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         t.tloop_stagnation_stop    = true;
         t.tloop_max_stagnant_steps = 5;
         t.use_memory_mapping       = false;
+        // With up to 10 p dummies the paths saturate, where the CD solvers
+        // need more sweeps than their default budget to converge.
+        t.solver_params.cd_max_sweeps = 200000;
     };
     struct Case { double lambda2; unsigned seed; };
     const std::vector<Case> cases = {{10.0, 22}, {10.0, 51}, {10.0, 63},

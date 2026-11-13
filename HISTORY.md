@@ -8,6 +8,36 @@ finds R's OpenMP flags on R 4.6 and R-devel again, the sources compile without w
 and the READMEs describe the packages and install from CRAN and PyPI first. No interface or result
 changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.1.
 
+### 2026-11-13
+
+#### A coordinate-descent solve that has not converged is an error
+
+- The coordinate-descent solvers stop a solve at their sweep budget (`cd_max_sweeps`, 2,000) and
+  accepted the iterate they had, with one warning. Where that iterate was far from a solution, the
+  path and the selection built on it were wrong. That happens with the folded dummy coupling of
+  TCDTIKNET and TCDIENET once lambda_2 times K is large, because a variable and its dummy copies share
+  one penalty term and the sweeps needed grow in proportion to lambda_2.
+- A solve that stops at the budget with a KKT violation above 0.001 lambda_1 now throws. The message
+  names the budget, the violation and the way out: a larger `cd_max_sweeps`, or the homotopy solver of
+  the same problem. The experiment loops carry the exception out of their parallel region, so R gets
+  an error and Python a `RuntimeError`. The warning of the first hit stays.
+- A `select()` that ends with an error gives the design back at once and retires the selector. Before,
+  the design stayed standardized until the selector was destroyed or garbage collected. The same holds
+  for the centering of the sparse principal component selector.
+- What the check does in practice: it catches the large lambda_2 case, and it never fired in 120
+  ordinary runs of the plain selector with TCDLASSO and TCDENET, whose selections all equalled the
+  homotopy's. It also fires on designs driven into saturation, where the accepted iterate was usually
+  right: 4 of 80 demo-style runs of TCDTIKNET with up to 10 p dummies end with the error at the default
+  budget and none at a budget of 200,000.
+- The help of `cd_max_sweeps` and of the two solvers states the rule in C++, R and Python, the grouped
+  selector's help calls TCDIENET not finally developed, and the guide pages 05, 08 and 12 follow.
+- Tests: the solver test of `precentered` runs TCDLASSO with a budget of 200,000 and stops the two
+  ridge-type coordinate-descent solvers after a third of the dummies, because deep in saturation they
+  do not converge within a practical budget. The Tikhonov equivalence test with up to 10 p dummies
+  runs with a budget of 200,000. New tests: a solver test for the error and for the larger budget that
+  reproduces the homotopy, and a selector test on each surface for the error, the design given back
+  and the retired selector. C++ tests 718 of 718, R tests 1,842, Python tests 679.
+
 ### 2026-11-12
 
 #### The Tikhonov selector runs on the homotopy solver TIKNET by default

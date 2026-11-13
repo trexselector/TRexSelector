@@ -583,7 +583,7 @@ class GVSType:
     
       EN : Elastic-Net group variable selection (uses TENET solver).
     
-      IEN : Informed Elastic-Net using group structure from clustering (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET).
+      IEN : Informed Elastic-Net using group structure from clustering (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError.
     """
     EN: typing.ClassVar[GVSType]  # value = <GVSType.EN: 0>
     IEN: typing.ClassVar[GVSType]  # value = <GVSType.IEN: 1>
@@ -1401,7 +1401,7 @@ class SolverHyperparameters:
     @property
     def cd_max_sweeps(self) -> int:
         """
-        CCD family: maximum coordinate sweeps per subproblem (0 keeps the solver default).
+        CCD family: maximum coordinate sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path.
         """
     @cd_max_sweeps.setter
     def cd_max_sweeps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2282,7 +2282,7 @@ class TRexSelector:
         """
     def select(self) -> SelectionResult:
         """
-        Run the T-Rex algorithm and return a SelectionResult.
+        Run the T-Rex algorithm and return a SelectionResult. A select() that ends with an error gives X back at once (original scale) and retires the selector: construct a new one to run again.
         """
 class TRexTikhonovControlParameter:
     """

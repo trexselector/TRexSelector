@@ -139,8 +139,10 @@ above it the solver falls back to the naive updates (default: 0 = keep
 the solver's internal default). Ignored by the non-CCD solvers.}
 
 \item{cd_max_sweeps}{Maximum coordinate sweeps per CCD subproblem
-(default: 0 = keep the solver's internal default). Ignored by the
-non-CCD solvers.}
+(default: 0 = keep the solver's internal default of 2000). A solve that
+stops at this budget far from a solution (KKT violation above 0.001
+lambda_1) raises an error instead of continuing on an unconverged path.
+Ignored by the non-CCD solvers.}
 
 \item{cd_certified_localization}{Logical (default \code{TRUE}): the CD
 family localizes every dummy crossing with certificates — a duality

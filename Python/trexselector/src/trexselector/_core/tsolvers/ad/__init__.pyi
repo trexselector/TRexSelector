@@ -145,7 +145,7 @@ class SolverOptions:
     @property
     def cd_max_sweeps(self) -> int:
         """
-        CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000.
+        CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000. A solve that stops at the budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path.
         """
     @cd_max_sweeps.setter
     def cd_max_sweeps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:

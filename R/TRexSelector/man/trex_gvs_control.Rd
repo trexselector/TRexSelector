@@ -111,7 +111,9 @@ TRexGVSSelector. The solver is determined automatically from \code{gvs_type}:
 an IEN-family \code{solver} field in \code{\link{trex_control}} —
 TIENET (default, native pathwise), with TIENET_AUG and TCDIENET as
 optional variants. For \code{gvs_type = "EN"} the \code{solver} field
-is ignored.
+is ignored. TCDIENET is not finally developed: its sweeps grow with
+\code{lambda_2} and on saturating designs, and a solve that does not
+converge within \code{cd_max_sweeps} raises an error.
 }
 \examples{
 trex_gvs_control()
