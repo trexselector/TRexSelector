@@ -14,6 +14,14 @@
   setting. The help of `TRexDASelector` and the vignette "T-Rex+DA" state the construction, the
   deviation from the papers and the evidence.
 
+## Fixed
+
+* The help of `trex_da_control()` no longer offers `hc_linkage = "Ward"`, which the selector rejects, and
+  the error names the supported linkages. The help of the fields `FDP_hat_array_BT`, `Phi_array_BT` and
+  `R_array_BT` of `TRexDASelector` states what the arrays hold. The vignette "T-Rex+DA" is titled
+  "T-Rex+DA: dependent variables", because every dependency-aware method draws ordinary independent
+  dummies.
+
 ## Deprecated
 
 * The coordinate-descent solver family is deprecated and will be removed in TRexSelector 2.1.0. This

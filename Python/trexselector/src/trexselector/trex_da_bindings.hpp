@@ -39,7 +39,7 @@ public:
      * @param X Reference to the design matrix (n × p).
      * @param y Reference to the response vector (n × 1).
      * @param tFDR Target False Discovery Rate threshold.
-     * @param da_control Configuration parameters specific to the Data Augmentation method.
+     * @param da_control Configuration parameters of the dependency-aware correction.
      * @param trex_control General configuration parameters for the TRex algorithm.
      * @param seed Random seed for reproducible computations.
      * @param verbose If true, prompts standard out messaging during select().
@@ -106,12 +106,12 @@ public:
  * @param m The Python module to bind against.
  */
 inline void bind_trex_da(py::module& m) {
-    py::enum_<DAMethod>(m, "DAMethod", "Data Augmentation methods.")
-        .value("AR1", DAMethod::AR1, "Autoregressive order 1.")
-        .value("EQUI", DAMethod::EQUI, "Equicorrelated structure.")
-        .value("BT", DAMethod::BT, "Block-Toeplitz structure.")
-        .value("NN", DAMethod::NN, "Nearest-Neighbor approach.")
-        .value("PRIOR_GROUPS", DAMethod::PRIOR_GROUPS, "Prior group correlation structures.")
+    py::enum_<DAMethod>(m, "DAMethod", "Dependency-aware (DA) methods.")
+        .value("AR1", DAMethod::AR1, "First-order autoregressive dependency: a window of neighbouring variables.")
+        .value("EQUI", DAMethod::EQUI, "Equi-correlated dependency: all other variables.")
+        .value("BT", DAMethod::BT, "Binary tree: groups from a hierarchical clustering of the variables.")
+        .value("NN", DAMethod::NN, "Nearest neighbours: groups from a sweep of correlation thresholds.")
+        .value("PRIOR_GROUPS", DAMethod::PRIOR_GROUPS, "Groups supplied by the user, clustered within each group.")
         .export_values();
 
     py::enum_<BTSelectionMode>(m, "BTSelectionMode", "Cell-selection policy for the BT (binary-tree) DA method.")
@@ -123,7 +123,8 @@ inline void bind_trex_da(py::module& m) {
 
     py::class_<TRexDAControlParameter>(m, "TRexDAControlParameter", "Control parameters for TRexDASelector.")
         .def(py::init<>())
-        .def_readwrite("method", &TRexDAControlParameter::method, "The data augmentation method to use.")
+        .def_readwrite("method", &TRexDAControlParameter::method, "Dependency-aware method (default: BT). Ignored\n"
+            "when prior_groups is set.")
         .def_readwrite("cor_coef", &TRexDAControlParameter::cor_coef, "Correlation coefficient of the AR1 and EQUI "
             "methods; setting the parameter to -2 estimates it from the data. Both methods use the magnitude of a "
             "supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.")
@@ -131,7 +132,9 @@ inline void bind_trex_da(py::module& m) {
             "EQUI methods (default 0.02). AR1: the window around a variable holds the lags whose correlation "
             "abs(cor_coef)**lag reaches the threshold, range [0, 1). EQUI: the correction is skipped when "
             "abs(cor_coef) does not exceed the threshold, range [0, 1].")
-        .def_readwrite("hc_linkage", &TRexDAControlParameter::hc_linkage, "Hierarchical clustering linkage method.")
+        .def_readwrite("hc_linkage", &TRexDAControlParameter::hc_linkage,
+            "Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Ward is\n"
+            "rejected, because the correlation distance 1 - |cor| is not Euclidean.")
         .def_readwrite("hc_grid_length", &TRexDAControlParameter::hc_grid_length, "Grid length for hierarchical "
             "clustering.")
         .def_readwrite("bt_selection_mode", &TRexDAControlParameter::bt_selection_mode, "Cell-selection policy for the "

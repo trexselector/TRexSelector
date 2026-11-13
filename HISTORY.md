@@ -16,6 +16,34 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The documentation of the dependency-aware selector drops the "dependency-aware dummies"
+
+- There are no dependency-aware dummies. Every method of the dependency-aware selector draws ordinary
+  independent dummies, and the dependency enters through the penalty on the relative occurrences. The
+  phrase stood in the title of guide page 04 on the three surfaces, in its first heading ("Why dependent
+  variables need their own dummies"), in the selector tables of the C++, R and Python READMEs and in the
+  description of `trex_da_control()` ("dependency-aware dummy generation"). The page is now "T-Rex+DA:
+  dependent variables", the heading "Why dependent variables need a correction", the table row
+  "dependency-aware (DA) selection of dependent variables", and the control builds "the dependency-aware
+  correction".
+- The R help of `hc_linkage` offered "Ward", the R parser accepted it and the constructor rejected it.
+  Ward's update is valid for squared Euclidean distances only, and the correlation distance 1 - |cor| is
+  not Euclidean. The help no longer offers it and says why, the R parser rejects it with the list of the
+  supported linkages, as the parser of the grouped selector does, and the C++ header and the Python
+  docstring of `hc_linkage` say the same.
+- The R help of the fields `FDP_hat_array_BT`, `Phi_array_BT` and `R_array_BT` was wrong ("Variables x
+  Thresholds x K", "variables selected", "mapping original to clustered features"). The arrays hold the
+  FDP estimates (stopping times x voting levels x correlation thresholds), the dependency-aware relative
+  occurrences (stopping times x variables x correlation thresholds) and the numbers of selected variables
+  (the stopping times that can be selected x voting levels x correlation thresholds).
+- The Python bindings expanded DA as "Data Augmentation" in six places and called BT a "Block-Toeplitz
+  structure". DA is dependency-aware and BT is the binary tree. The texts of the five values of
+  `DAMethod`, of four values of `ScreenTRexMethod` and of `method` say what the methods do.
+- The search index of the R vignettes is rebuilt. It had missed two headings of earlier commits, "The
+  penalty of the last step" and "A read-only file".
+- Tests: the R test of the invalid parameters expects the new message for an unknown linkage and for
+  Ward, and a Python test expects the rejection of Ward. No result changes.
+
 #### The R help example of `TRexDASelector` runs on dependent variables
 
 - The example ran the selector with the method BT on `Gauss_data`, a design with independent variables,

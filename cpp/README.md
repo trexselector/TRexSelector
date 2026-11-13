@@ -210,7 +210,7 @@ control struct, which carries the T-solver choice, the dummy settings and the th
 | Selector               | Task                                                             | Control                        |
 | ---------------------- | ---------------------------------------------------------------- | ------------------------------ |
 | `TRexSelector`         | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
-| `TRexDASelector`       | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter`       |
+| `TRexDASelector`       | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `TRexDAControlParameter`       |
 | `TRexGVSSelector`      | group variable selection (GVS), T-Rex GVS                        | `TRexGVSControlParameter`      |
 | `ScreenTRexSelector`   | FDR-controlled screening of many variables, Screen-T-Rex         | `ScreenTRexControlParameter`   |
 | `BiobankScreenTRex`    | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |

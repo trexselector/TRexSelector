@@ -263,7 +263,7 @@ trex_control <- function(solver = "TLARS",
 #'
 #' @title TRex DA Control Parameters
 #'
-#' @description Build a control list for the dependency-aware dummy generation in TRexDASelector.
+#' @description Build a control list for the dependency-aware correction of TRexDASelector.
 #'
 #' @param da_method Dependency estimation method: "BT", "AR1", "EQUI", "NN"
 #'   (default: "BT"). "NN" is a nearest-neighbour correlation-threshold sweep
@@ -277,7 +277,9 @@ trex_control <- function(solver = "TLARS",
 #'   correction is skipped when \code{abs(cor_coef)} does not exceed the threshold,
 #'   range \code{[0, 1]}.
 #' @param hc_linkage Hierarchical clustering linkage: "Single", "Complete", "Average",
-#'   "WPGMA", "Ward" (default: "Single").
+#'   "WPGMA" (default: "Single"). "Ward" is rejected, because its update is valid for
+#'   squared Euclidean distances only and the correlation distance \code{1 - abs(cor)}
+#'   is not Euclidean.
 #' @param hc_grid_length Number of grid points for BT/NN calibration. \code{0}
 #'   (default) lets the core auto-select \code{min(20, p)}.
 #' @param prior_groups Optional prior grouping constraints: a list of integer

@@ -146,28 +146,36 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
       trex_da_get_method_string(private$ptr)
     },
 
-    #' @field FDP_hat_array_BT A 3D array of FDP estimates for BT method:
-    #' (Variables x Thresholds x K).
+    #' @field FDP_hat_array_BT FDP estimates of the methods BT, NN and prior groups: an array
+    #'   with one row per stopping time (\code{T_stop}), one column per voting level
+    #'   (\code{voting_grid}) and one slice per correlation threshold (\code{rho_grid}).
+    #'   Empty for AR1 and EQUI.
     FDP_hat_array_BT = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
       }
-      # A 3-d array (T_stop x p x R) built once in C++; an empty result
-      # is a length-0 numeric vector.
+      # A 3-d array (T_stop x V x rho levels) built once in C++; an empty
+      # result is a length-0 numeric vector.
       trex_da_get_fdp_hat_array_bt(private$ptr)
     },
 
-    #' @field Phi_array_BT A 3D array of variables selected for BT method.
+    #' @field Phi_array_BT Dependency-aware relative occurrences of the methods BT, NN and
+    #'   prior groups: an array with one row per stopping time (\code{T_stop}), one column
+    #'   per variable and one slice per correlation threshold (\code{rho_grid}). Empty for
+    #'   AR1 and EQUI.
     Phi_array_BT = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
       }
-      # A 3-d array (T_stop x p x R) built once in C++; an empty result
-      # is a length-0 numeric vector.
+      # A 3-d array (T_stop x p x rho levels) built once in C++; an empty
+      # result is a length-0 numeric vector.
       trex_da_get_phi_array_bt(private$ptr)
     },
 
-    #' @field R_array_BT A 3D array mapping original to clustered features for BT method.
+    #' @field R_array_BT Numbers of selected variables of the methods BT, NN and prior
+    #'   groups: an array with one row per stopping time that can be selected
+    #'   (\code{T_stop - 1}), one column per voting level (\code{voting_grid}) and one
+    #'   slice per correlation threshold (\code{rho_grid}). Empty for AR1 and EQUI.
     R_array_BT = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")

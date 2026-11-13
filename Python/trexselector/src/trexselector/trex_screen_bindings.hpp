@@ -104,11 +104,13 @@ public:
  */
 inline void bind_trex_screen(py::module& m) {
     py::enum_<ScreenTRexMethod>(m, "ScreenTRexMethod", "Screening TRex baseline variants.")
-        .value("TREX", ScreenTRexMethod::TREX, "Standard T-Rex screening without data augmentation.")
-        .value("TREX_DA_AR1", ScreenTRexMethod::TREX_DA_AR1, "T-Rex screening with AR(1) data augmentation.")
-        .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "T-Rex screening with equicorrelated data augmentation.")
-        .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "T-Rex screening with block-equicorrelated "
-            "data augmentation.")
+        .value("TREX", ScreenTRexMethod::TREX, "T-Rex screening without a dependency-aware correction.")
+        .value("TREX_DA_AR1", ScreenTRexMethod::TREX_DA_AR1, "T-Rex screening with the dependency-aware correction "
+            "for AR(1) dependency.")
+        .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "T-Rex screening with the dependency-aware correction "
+            "for equi-correlated variables.")
+        .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "T-Rex screening with the dependency-aware "
+            "correction for block equi-correlated variables.")
         .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "T-Rex screening with the nearest neighbors inside the "
             "AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, "
             "and a variable without such a neighbor keeps its relative occurrence.")

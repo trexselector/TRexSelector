@@ -208,14 +208,14 @@ test_that("TRexDASelector correctly guards against invalid DA parameters", {
   # Invalid Hierarchical Linkage Options (rejected at Rcpp mapping)
   expect_error(
     TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "BT", hc_linkage = "UNKNOWN"), verbose = FALSE),
-    "Unknown LinkageMethod:"
+    "Unsupported linkage method for the dependency-aware selector: UNKNOWN"
   )
 
-  # Unsupported Hierarchical Linkage (passed Rcpp, rejected by C++ Core)
-  # (Ward relies on non-Euclidean geometry and is blocked in validateDAParameters)
+  # Ward is not offered: its update needs squared Euclidean distances, and the
+  # correlation distance is not Euclidean. The message names the supported linkages.
   expect_error(
     TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "BT", hc_linkage = "Ward"), verbose = FALSE),
-    "Unsupported linkage method for DA-BT"
+    "Unsupported linkage method for the dependency-aware selector: Ward\\nSupported: Single, Complete, Average, WPGMA"
   )
 
 })

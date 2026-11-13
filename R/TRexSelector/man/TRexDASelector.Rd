@@ -114,12 +114,20 @@ Other T-Rex selectors and controls:
 
     \item{\code{da_method_used}}{The integer code (or name mapped later) of the DA method used.}
 
-    \item{\code{FDP_hat_array_BT}}{A 3D array of FDP estimates for BT method:
-(Variables x Thresholds x K).}
+    \item{\code{FDP_hat_array_BT}}{FDP estimates of the methods BT, NN and prior groups: an array
+with one row per stopping time (\code{T_stop}), one column per voting level
+(\code{voting_grid}) and one slice per correlation threshold (\code{rho_grid}).
+Empty for AR1 and EQUI.}
 
-    \item{\code{Phi_array_BT}}{A 3D array of variables selected for BT method.}
+    \item{\code{Phi_array_BT}}{Dependency-aware relative occurrences of the methods BT, NN and
+prior groups: an array with one row per stopping time (\code{T_stop}), one column
+per variable and one slice per correlation threshold (\code{rho_grid}). Empty for
+AR1 and EQUI.}
 
-    \item{\code{R_array_BT}}{A 3D array mapping original to clustered features for BT method.}
+    \item{\code{R_array_BT}}{Numbers of selected variables of the methods BT, NN and prior
+groups: an array with one row per stopping time that can be selected
+(\code{T_stop - 1}), one column per voting level (\code{voting_grid}) and one
+slice per correlation threshold (\code{rho_grid}). Empty for AR1 and EQUI.}
 
     \item{\code{cor_coef}}{The correlation coefficient of the dependency-aware
 dummy generation (AR1 / EQUI methods).}

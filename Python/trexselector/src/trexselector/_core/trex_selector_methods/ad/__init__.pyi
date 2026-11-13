@@ -143,19 +143,19 @@ class BiobankScreenTRexResult:
         """
 class DAMethod:
     """
-    Data Augmentation methods.
+    Dependency-aware (DA) methods.
     
     Members:
     
-      AR1 : Autoregressive order 1.
+      AR1 : First-order autoregressive dependency: a window of neighbouring variables.
     
-      EQUI : Equicorrelated structure.
+      EQUI : Equi-correlated dependency: all other variables.
     
-      BT : Block-Toeplitz structure.
+      BT : Binary tree: groups from a hierarchical clustering of the variables.
     
-      NN : Nearest-Neighbor approach.
+      NN : Nearest neighbours: groups from a sweep of correlation thresholds.
     
-      PRIOR_GROUPS : Prior group correlation structures.
+      PRIOR_GROUPS : Groups supplied by the user, clustered within each group.
     """
     AR1: typing.ClassVar[DAMethod]  # value = <DAMethod.AR1: 0>
     BT: typing.ClassVar[DAMethod]  # value = <DAMethod.BT: 2>
@@ -1230,13 +1230,13 @@ class ScreenTRexMethod:
     
     Members:
     
-      TREX : Standard T-Rex screening without data augmentation.
+      TREX : T-Rex screening without a dependency-aware correction.
     
-      TREX_DA_AR1 : T-Rex screening with AR(1) data augmentation.
+      TREX_DA_AR1 : T-Rex screening with the dependency-aware correction for AR(1) dependency.
     
-      TREX_DA_EQUI : T-Rex screening with equicorrelated data augmentation.
+      TREX_DA_EQUI : T-Rex screening with the dependency-aware correction for equi-correlated variables.
     
-      TREX_DA_BLOCK_EQUI : T-Rex screening with block-equicorrelated data augmentation.
+      TREX_DA_BLOCK_EQUI : T-Rex screening with the dependency-aware correction for block equi-correlated variables.
     
       TREX_DA_NN : T-Rex screening with the nearest neighbors inside the AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative occurrence.
     """
@@ -1792,7 +1792,8 @@ class TRexDAControlParameter:
     @property
     def hc_linkage(self) -> ...:
         """
-        Hierarchical clustering linkage method.
+        Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Ward is
+        rejected, because the correlation distance 1 - |cor| is not Euclidean.
         """
     @hc_linkage.setter
     def hc_linkage(self, arg0: ...) -> None:
@@ -1800,7 +1801,8 @@ class TRexDAControlParameter:
     @property
     def method(self) -> DAMethod:
         """
-        The data augmentation method to use.
+        Dependency-aware method (default: BT). Ignored
+        when prior_groups is set.
         """
     @method.setter
     def method(self, arg0: DAMethod) -> None:

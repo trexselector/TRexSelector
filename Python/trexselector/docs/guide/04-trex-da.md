@@ -5,7 +5,7 @@ kernelspec:
   display_name: Python 3
 ---
 
-# T-Rex+DA: dependency-aware dummies
+# T-Rex+DA: dependent variables
 
 ```{code-cell} python
 :tags: [remove-cell]
@@ -14,7 +14,7 @@ import trexselector.utils
 trexselector.utils.set_num_threads(min(2, trexselector.utils.get_max_threads()))
 ```
 
-## Why dependent variables need their own dummies
+## Why dependent variables need a correction
 
 The false discovery rate (FDR) guarantee of the T-Rex selector rests on the exchangeability of the
 null variables and the dummies along the solution path. Independent dummies are exchangeable with

@@ -29,7 +29,9 @@ correction is skipped when \code{abs(cor_coef)} does not exceed the threshold,
 range \code{[0, 1]}.}
 
 \item{hc_linkage}{Hierarchical clustering linkage: "Single", "Complete", "Average",
-"WPGMA", "Ward" (default: "Single").}
+"WPGMA" (default: "Single"). "Ward" is rejected, because its update is valid for
+squared Euclidean distances only and the correlation distance \code{1 - abs(cor)}
+is not Euclidean.}
 
 \item{hc_grid_length}{Number of grid points for BT/NN calibration. \code{0}
 (default) lets the core auto-select \code{min(20, p)}.}
@@ -50,7 +52,7 @@ groups, never on the raw groups themselves. (default: \code{NULL}).}
 A named list for use in TRexDASelector.
 }
 \description{
-Build a control list for the dependency-aware dummy generation in TRexDASelector.
+Build a control list for the dependency-aware correction of TRexDASelector.
 }
 \examples{
 trex_da_control()

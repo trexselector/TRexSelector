@@ -160,6 +160,19 @@ def test_da_ar1_uses_coefficient_magnitude(signal_data, fast_control):
     assert neg.cor_coef == pytest.approx(-0.5)
 
 
+def test_da_rejects_ward_linkage(signal_data, fast_control):
+    """Ward needs squared Euclidean distances, and the correlation distance is not Euclidean."""
+    from trexselector.ml_methods.clustering import LinkageMethod
+
+    X, y, n, p = signal_data
+    da_ctrl = trexselector.TRexDAControlParameter()
+    da_ctrl.hc_linkage = LinkageMethod.Ward
+    with pytest.raises(Exception, match="Unsupported linkage method"):
+        sel = trexselector.TRexDASelector(X, y, da_control=da_ctrl, trex_control=fast_control,
+                                          verbose=False)
+        sel.select()
+
+
 def test_da_ar1_penalty_of_the_last_step_keeps_the_history_monotone():
     """AR1 deflates every step with the penalty of the last step.
 

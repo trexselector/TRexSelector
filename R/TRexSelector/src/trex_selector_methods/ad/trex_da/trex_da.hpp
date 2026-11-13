@@ -145,6 +145,8 @@ struct TRexDAControlParameter {
 
     /** @brief Linkage method for BT clustering (default: Single).
      *  Supported: Single, Complete, Average (UPGMA), WPGMA (McQuitty).
+     *  Ward is rejected, because its update is valid for squared Euclidean
+     *  distances only and the correlation distance 1 - |cor| is not Euclidean.
      */
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 

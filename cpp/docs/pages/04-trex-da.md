@@ -1,8 +1,8 @@
-# T-Rex+DA: dependency-aware dummies {#trex_da}
+# T-Rex+DA: dependent variables {#trex_da}
 
 [TOC]
 
-## Why dependent variables need their own dummies
+## Why dependent variables need a correction
 
 The false discovery rate (FDR) guarantee of the T-Rex selector rests on the exchangeability of the
 null variables and the dummies along the solution path. Independent dummies are exchangeable with

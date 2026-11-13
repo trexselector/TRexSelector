@@ -47,8 +47,9 @@ TRexDAControlParameter parse_da_parameter(const Rcpp::List& control) {
         else if (linkage == "Complete") params.hc_linkage = trx_ml_hac_LinkageMethod::Complete;
         else if (linkage == "Average") params.hc_linkage = trx_ml_hac_LinkageMethod::Average;
         else if (linkage == "WPGMA") params.hc_linkage = trx_ml_hac_LinkageMethod::WPGMA;
-        else if (linkage == "Ward") params.hc_linkage = trx_ml_hac_LinkageMethod::Ward;
-        else Rcpp::stop("Unknown LinkageMethod: " + linkage);
+        else
+            Rcpp::stop("Unsupported linkage method for the dependency-aware selector: " + linkage +
+                       "\nSupported: Single, Complete, Average, WPGMA.");
     }
 
     // Prior-groups constraints: a list of integer label vectors, each of

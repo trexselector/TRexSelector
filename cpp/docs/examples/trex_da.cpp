@@ -1,4 +1,4 @@
-// Example program of the guide page "T-Rex+DA: dependency-aware dummies". The regions
+// Example program of the guide page "T-Rex+DA: dependent variables". The regions
 // between the //! [name] markers appear in the page, with the output they print next to them.
 #include "doc_output.hpp"
 

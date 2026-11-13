@@ -107,7 +107,7 @@ the T-solver choice, the dummy settings and the thread budgets, and returns a re
 | Selector                       | Task                                                             | Control                        |
 | ------------------------------ | ---------------------------------------------------------------- | ------------------------------ |
 | `TRexSelector`                 | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
-| `TRexDASelector`               | dependency-aware (DA) dummies for correlated variables, T-Rex+DA | `TRexDAControlParameter`       |
+| `TRexDASelector`               | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `TRexDAControlParameter`       |
 | `TRexGVSSelector`              | group variable selection (GVS), T-Rex GVS                        | `TRexGVSControlParameter`      |
 | `TRexScreeningSelector`        | FDR-controlled screening of many variables, Screen-T-Rex         | `ScreenTRexControlParameter`   |
 | `TRexBiobankScreeningSelector` | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |
