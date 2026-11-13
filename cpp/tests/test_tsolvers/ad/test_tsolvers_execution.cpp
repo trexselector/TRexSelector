@@ -441,7 +441,8 @@ TEST_F(TSolverExecutionTest, TIENETLambda2ZeroReducesToTLASSO) {
     Eigen::Map<Eigen::MatrixXd> Xi_map(Xi.data(), Xi.rows(), Xi.cols());
     Eigen::Map<Eigen::MatrixXd> Di_map(Di.data(), Di.rows(), Di.cols());
     Eigen::Map<Eigen::VectorXd> yi_map(yi.data(), yi.size());
-    TIENET_Solver ien(Xi_map, Di_map, yi_map, groups);
+    TIENET_Solver ien(Xi_map, Di_map, yi_map, groups,
+                      trex::tsolvers::ad::SolverOptions{.lambda2 = 0.0});
     ien.executeStep(5, true);
 
     Eigen::MatrixXd Xl = X, Dl = D;

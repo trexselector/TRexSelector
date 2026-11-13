@@ -298,7 +298,7 @@ TEST_F(TSolverCdTest, CrossingSupportsMatchTIENET) {
 /** @brief lambda2 == 0 collapses T-CDENET exactly onto plain T-CDLASSO. */
 TEST_F(TSolverCdTest, TcdenetLambda2ZeroReducesToTcdlasso) {
     Mapped me(X, D, y);
-    TCDENET_Solver enet(me.Xm, me.Dm, me.ym);
+    TCDENET_Solver enet(me.Xm, me.Dm, me.ym, trex::tsolvers::ad::SolverOptions{.lambda2 = 0.0});
     enet.executeStep(5, true);
 
     Mapped mc(X, D, y);

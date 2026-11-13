@@ -13,6 +13,10 @@
 * Selections of `"AR1"` can differ slightly from 2.0.1. Those of `"EQUI"` did not change in any tested
   setting. The help of `TRexDASelector` and the vignette "T-Rex+DA" state the construction, the
   deviation from the papers and the evidence.
+* `tsolver_options()` defaults to `lambda2 = 0.1` and `rho_afs = 0.3`, the values a selector hands to its
+  solvers. Up to 2.0.1 they were 0 and 1. A stand-alone elastic-net solver built without `lambda2` no
+  longer equals its lasso, and a stand-alone `TAFS_Solver` no longer runs forward stepwise. `lambda2 = 0`
+  and `rho_afs = 1` give the earlier behaviour. The selectors do not change.
 
 ## Fixed
 

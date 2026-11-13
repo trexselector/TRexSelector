@@ -718,9 +718,9 @@ inline void bind_solver_options(py::module& m) {
             "Minimum |correlation| for exchangeable-tie candidates in [0, 1). Default 0.5.")
        .def_readwrite("lambda2", &SolverOptions::lambda2,
             "L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0; read by the elastic-net, "
-            "IEN and Tikhonov solvers. Default 0 (no quadratic penalty).")
+            "IEN and Tikhonov solvers. Default 0.1, as inside the selectors; 0 means no quadratic penalty.")
        .def_readwrite("rho_afs", &SolverOptions::rho_afs,
-            "TAFS shrinkage step in (0, 1]; 1 (default) is forward stepwise.")
+            "TAFS shrinkage step in (0, 1]. Default 0.3, as inside the selectors; 1 is forward stepwise.")
        .def_readwrite("ncgmp_variant", &SolverOptions::ncgmp_variant,
             "TNCGMP variant (NCGMPVariant). Default LineSearch.")
        .def_readwrite("tenet_aug_use_lars", &SolverOptions::tenet_aug_use_lars,

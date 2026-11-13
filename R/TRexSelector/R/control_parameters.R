@@ -83,7 +83,7 @@
 #'   A stand-alone solver defaults to machine epsilon (\code{\link{tsolver_options}}).
 #'   The two tolerances serve different purposes and differ on purpose.
 #' @param lambda2 Elastic-net L2 penalty (TENET hyperparameter, default: 0.1).
-#' @param rho_afs AFS hyperparameter (default: 0.3).
+#' @param rho_afs Shrinkage step of TAFS in (0, 1] (default: 0.3); 1 is forward stepwise.
 #' @param ncgmp_variant NCGMP variant: 0 = line_search, 1 = fully_corrective (default: 0).
 #' @param exch_tie_alpha Exchangeable-tie band width for greedy solvers
 #'   (TOMP/TAFS), in units of the pairwise ranking-noise sd. When > 0,

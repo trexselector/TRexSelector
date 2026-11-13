@@ -184,7 +184,7 @@ one by one.
 | `tie_seed` | the seed of the tie-break engine (0 by default, so exact ties resolve reproducibly) |
 | `n_threads` | the thread budget of the solver's own passes (1 serial, at least 1, and a pass splits only above about a million entries of the design) |
 | `exch_tie_alpha`, `exch_tie_floor` | the exchangeable-tie band of the greedy solvers |
-| `lambda2` | the quadratic penalty of the elastic nets (0 by default) |
+| `lambda2` | the quadratic penalty of the elastic nets (0.1 by default) |
 | `rho_afs`, `ncgmp_variant`, `tenet_aug_use_lars` | solver-specific switches |
 | `verbose` | print the steps |
 

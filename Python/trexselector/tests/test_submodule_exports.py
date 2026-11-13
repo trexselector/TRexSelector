@@ -2,7 +2,11 @@
 Tests that all public symbols declared in __all__ are importable and non-None.
 """
 import importlib
+
+import numpy as np
 import pytest
+
+import trexselector
 
 
 MODULES_TO_CHECK = [
@@ -165,7 +169,12 @@ def test_tsolver_symbols_importable():
     for cls in (TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver,
                 TIENET_Solver, TIKNET_Solver):
         assert callable(cls)
-    assert SolverOptions().lambda2 == 0.0
+    # One default inside a selector and in the stand-alone solver; the tolerances differ on purpose
+    opts = SolverOptions()
+    params = trexselector.TRexControlParameter().solver_params
+    assert (opts.lambda2, opts.rho_afs) == (0.1, 0.3)
+    assert (params.lambda2, params.rho_afs) == (opts.lambda2, opts.rho_afs)
+    assert params.tol == 1e-6 and opts.tol == np.finfo(float).eps
     assert GroupPenaltyVariant.MEAN is not None
     assert NCGMPVariant.LineSearch is not None
 

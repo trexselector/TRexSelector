@@ -398,9 +398,10 @@ inline void applyCdKnobs(cd::TCDLASSO_Solver& solver,
 /**
  * @brief Translate a SolverConfig into the solver-level SolverOptions.
  *
- * @details The T-Rex layer keeps its own SolverHyperparameters (with its own
- *          defaults, e.g. lambda2 0.1, rho_afs 0.3, CD knobs "<= 0 keeps the
- *          solver default"); this is the single place where they are mapped
+ * @details The T-Rex layer keeps its own SolverHyperparameters (lambda2 0.1
+ *          and rho_afs 0.3 as the solvers' own defaults, its own tol 1e-6, CD
+ *          knobs "<= 0 keeps the solver default"); this is the single place
+ *          where they are mapped
  *          onto the solvers' construction-time options. The CD
  *          knobs are copied only when set (> 0), so the solver defaults
  *          stay in force otherwise.

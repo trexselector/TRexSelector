@@ -16,6 +16,22 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The stand-alone solvers take `lambda2 = 0.1` and `rho_afs = 0.3` by default
+
+- The solver options had `lambda2 = 0` and `rho_afs = 1` as defaults, while a selector hands 0.1 and 0.3
+  to the solvers of its random experiments. The two parameters now have one default, 0.1 and 0.3, in
+  `SolverOptions` of C++ and Python and in `tsolver_options()` of R.
+- What changes for a stand-alone solver that is built without these options. An elastic-net solver
+  (TENET, TENETAug, TIENET, TIENETAug, TIKNET and the deprecated coordinate-descent ones) runs with a
+  penalty of 0.1 and no longer equals its lasso, and TAFS runs with a shrinkage step of 0.3 and no
+  longer as forward stepwise. `lambda2 = 0` and `rho_afs = 1` give the earlier behaviour. The selectors
+  set both values themselves and do not change.
+- The help texts of the two options on the three surfaces state the default, and the table of guide
+  page 09 does.
+- Tests. Four C++ tests of "lambda2 = 0 reduces to the lasso" relied on the old default and now set it.
+  One Python test pinned the old default. A new test on each surface pins the shared defaults of the two
+  parameters and the two tolerances. C++ tests 720 of 720, R tests 1,895, Python tests 699.
+
 #### The two tolerances of the solvers differ on purpose
 
 - A solver has the tolerance `tol` of its internal comparisons, machine epsilon by default. A selector has

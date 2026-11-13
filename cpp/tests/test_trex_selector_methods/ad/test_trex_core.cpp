@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 
 // std includes
+#include <limits>
 #include <optional>
 #include <vector>
 
@@ -98,6 +99,23 @@ void run_trex_core_test(Eigen::Index n,
 }
 
 /** @brief Test TRexSelector with low-dimensional data. */
+/** @brief The penalty of the elastic nets and the step of TAFS have one
+ *  default, inside a selector and in the stand-alone solver. The two
+ *  tolerances differ on purpose. */
+TEST(TRexCoreTest, SolverDefaultsOfTheSelectorMatchTheSolverOptions) {
+    const TRexControlParameter ctrl;
+    const trex::tsolvers::ad::SolverOptions opts;
+
+    EXPECT_DOUBLE_EQ(opts.lambda2, 0.1);
+    EXPECT_DOUBLE_EQ(opts.rho_afs, 0.3);
+    EXPECT_DOUBLE_EQ(ctrl.solver_params.lambda2, opts.lambda2);
+    EXPECT_DOUBLE_EQ(ctrl.solver_params.rho_afs, opts.rho_afs);
+
+    EXPECT_DOUBLE_EQ(ctrl.solver_params.tol, 1e-6);
+    EXPECT_DOUBLE_EQ(opts.tol, std::numeric_limits<double>::epsilon());
+}
+
+
 TEST(TRexCoreTest, LowDimensional) {
     run_trex_core_test(300, 100);
 }

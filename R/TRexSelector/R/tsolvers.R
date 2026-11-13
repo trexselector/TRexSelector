@@ -67,10 +67,11 @@ NULL
 #' @param exch_tie_floor Minimum absolute correlation for exchangeable-tie
 #'   candidates, in [0, 1). Default 0.5.
 #' @param lambda2 L2 (ridge / group-ridge) penalty weight, >= 0. Read by
-#'   TENET, TENETAug and TIENETAug. Default 0 (no quadratic penalty: the
-#'   elastic nets reduce to their lasso).
-#' @param rho_afs TAFS shrinkage step in (0, 1]; 1 (default) is forward
-#'   stepwise.
+#'   TENET, TENETAug and TIENETAug. Default 0.1, as inside the selectors.
+#'   With 0 there is no quadratic penalty and the elastic nets reduce to
+#'   their lasso.
+#' @param rho_afs TAFS shrinkage step in (0, 1]. Default 0.3, as inside the
+#'   selectors; 1 is forward stepwise.
 #' @param ncgmp_variant TNCGMP variant: \code{"line_search"} (default) or
 #'   \code{"fully_corrective"}.
 #' @param tenet_aug_use_lars Logical; TENETAug and TIENETAug run the
@@ -112,8 +113,8 @@ tsolver_options <- function(normalize = TRUE,
                             n_threads = 1,
                             exch_tie_alpha = 0,
                             exch_tie_floor = 0.5,
-                            lambda2 = 0,
-                            rho_afs = 1,
+                            lambda2 = 0.1,
+                            rho_afs = 0.3,
                             ncgmp_variant = c("line_search", "fully_corrective"),
                             tenet_aug_use_lars = FALSE,
                             kappa_dummy = 1,
@@ -1313,7 +1314,7 @@ TAFS_Solver <- R6::R6Class(
     #' @param y Numeric response vector.
     #' @param options Solver options from \code{\link{tsolver_options}}; this
     #'   solver reads \code{rho_afs}, the shrinkage parameter in (0, 1]
-    #'   (default 1: forward stepwise).
+    #'   (default 0.3; 1 is forward stepwise).
     initialize = function(X, D, y, options = tsolver_options()) {
       super$initialize(X, D, y)
       self$ptr <- tsolver_tafs_create(self$X, self$D, self$y, options)

@@ -549,6 +549,17 @@ test_that("precentered counts the intercept like intercept = TRUE and caps the a
   expect_lte(reader$get_num_actives(), nn - 1L)
 })
 
+test_that("lambda2 and rho_afs have one default in a selector and in the stand-alone solver", {
+  expect_identical(tsolver_options()$lambda2, 0.1)
+  expect_identical(tsolver_options()$rho_afs, 0.3)
+  expect_identical(trex_control()$lambda2, tsolver_options()$lambda2)
+  expect_identical(trex_control()$rho_afs, tsolver_options()$rho_afs)
+
+  # The two tolerances differ on purpose
+  expect_identical(trex_control()$tol, 1e-6)
+  expect_identical(tsolver_options()$tol, .Machine$double.eps)
+})
+
 test_that("the default tie seed is fixed (reproducible tie-breaking)", {
   expect_identical(tsolver_options()$tie_seed, 0)
   expect_identical(tsolver_options(tie_seed = -1)$tie_seed, -1)

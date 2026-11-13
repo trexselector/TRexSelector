@@ -370,7 +370,7 @@ TEST(TSolverGettersTest, TENETWithZeroLambda2MatchesTLASSO) {
     Eigen::Map<Eigen::MatrixXd> X1_map(X1.data(), n, p);
     Eigen::Map<Eigen::MatrixXd> D1_map(D1.data(), n, L);
     Eigen::Map<Eigen::VectorXd> y1_map(y1.data(), n);
-    TENET_Solver tenet(X1_map, D1_map, y1_map);
+    TENET_Solver tenet(X1_map, D1_map, y1_map, trex::tsolvers::ad::SolverOptions{.lambda2 = 0.0});
     tenet.executeStep(3, true);
 
     Eigen::MatrixXd X2 = X, D2 = D;

@@ -357,7 +357,8 @@ protected:
  *  coupling term multiplies to literal zero; K is carried but inert). */
 TEST_F(TSolverTikTest, TiknetLambda2ZeroReducesToTlasso) {
     Mapped mt(X, D, y);
-    TIKNET_Solver tik(mt.Xm, mt.Dm, mt.ym, groupCenteringK(X.cols(), 5));
+    TIKNET_Solver tik(mt.Xm, mt.Dm, mt.ym, groupCenteringK(X.cols(), 5),
+                      trex::tsolvers::ad::SolverOptions{.lambda2 = 0.0});
     tik.executeStep(5, true);
 
     Mapped ml(X, D, y);

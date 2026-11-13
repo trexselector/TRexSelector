@@ -144,13 +144,14 @@ struct SolverOptions {
 
     /** @brief L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0.
      *  Read by TENET, TENETAug, TIENET, TIENETAug, TIKNET, TCDENET,
-     *  TCDIENET, TCDTIKNET. Default 0 (no quadratic penalty: the elastic
-     *  nets reduce to their lasso). */
-    double lambda2 = 0.0;
+     *  TCDIENET, TCDTIKNET. Default 0.1, as inside the selectors. With 0
+     *  there is no quadratic penalty and the elastic nets reduce to their
+     *  lasso. */
+    double lambda2 = 0.1;
 
-    /** @brief Shrinkage step of TAFS in (0, 1]; 1 (default) is forward
-     *  stepwise. Read by TAFS only. */
-    double rho_afs = 1.0;
+    /** @brief Shrinkage step of TAFS in (0, 1]. Default 0.3, as inside the
+     *  selectors; 1 is forward stepwise. Read by TAFS only. */
+    double rho_afs = 0.3;
 
     /** @brief NCGMP variant. Read by TNCGMP only. Default LineSearch. */
     NCGMPVariant ncgmp_variant = NCGMPVariant::LineSearch;

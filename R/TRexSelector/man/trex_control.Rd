@@ -107,7 +107,7 @@ The two tolerances serve different purposes and differ on purpose.}
 
 \item{lambda2}{Elastic-net L2 penalty (TENET hyperparameter, default: 0.1).}
 
-\item{rho_afs}{AFS hyperparameter (default: 0.3).}
+\item{rho_afs}{Shrinkage step of TAFS in (0, 1] (default: 0.3); 1 is forward stepwise.}
 
 \item{ncgmp_variant}{NCGMP variant: 0 = line_search, 1 = fully_corrective (default: 0).}
 

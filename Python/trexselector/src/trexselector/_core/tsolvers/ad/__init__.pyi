@@ -217,7 +217,7 @@ class SolverOptions:
     @property
     def lambda2(self) -> float:
         """
-        L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0; read by the elastic-net, IEN and Tikhonov solvers. Default 0 (no quadratic penalty).
+        L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0; read by the elastic-net, IEN and Tikhonov solvers. Default 0.1, as inside the selectors; 0 means no quadratic penalty.
         """
     @lambda2.setter
     def lambda2(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -257,7 +257,7 @@ class SolverOptions:
     @property
     def rho_afs(self) -> float:
         """
-        TAFS shrinkage step in (0, 1]; 1 (default) is forward stepwise.
+        TAFS shrinkage step in (0, 1]. Default 0.3, as inside the selectors; 1 is forward stepwise.
         """
     @rho_afs.setter
     def rho_afs(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:

@@ -117,7 +117,7 @@ Other T-solvers:
       \item{\code{y}}{Numeric response vector.}
       \item{\code{options}}{Solver options from \code{\link{tsolver_options}}; this
 solver reads \code{rho_afs}, the shrinkage parameter in (0, 1]
-(default 1: forward stepwise).}
+(default 0.3; 1 is forward stepwise).}
     }
     \if{html}{\out{</div>}}
   }

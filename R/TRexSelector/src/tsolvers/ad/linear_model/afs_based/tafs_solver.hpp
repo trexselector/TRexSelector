@@ -52,9 +52,9 @@ class TAFS_Solver : public TSolver_Base {
 protected:
     /**
      * @brief Shrinkage step size in (0, 1]. Forward Stepwise (rho = 1) to LAR/LASSO
-     * (rho -> 0). Default is 1.0 (no shrinkage, i.e., Forward Stepwise).
+     * (rho -> 0). Set from SolverOptions::rho_afs, default 0.3.
      */
-    double rho_{1.0};
+    double rho_{0.3};
 
 public:
     // ==========================================================================
