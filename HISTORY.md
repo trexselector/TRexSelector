@@ -16,6 +16,14 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### Guide page 05 describes the informed elastic net as its paper does
+
+- The page said that the informed elastic net encodes the groups in the penalty "so that the members of
+  a group share a coefficient". That describes a centering penalty. The informed elastic net penalizes
+  the squared sum of the coefficients of a group, divided by the group size. The page now says what the
+  paper shows: it keeps the grouping effect of the elastic net at a lower computation time, and it is
+  the elastic net when every variable is its own group.
+
 #### The guides no longer show the coordinate-descent family
 
 - The coordinate-descent solver family is deprecated and leaves with the next minor releases. The guide

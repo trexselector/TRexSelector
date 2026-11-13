@@ -29,10 +29,11 @@ In genomics and finance, variables come in groups of highly correlated members t
 signal. The lasso picks one member of a group and drops the others, while the elastic net
 [@zou2005elasticnet] spreads the coefficient over the group and lets the members enter together. The
 T-Rex selector for grouped variable selection (GVS) [@machkour2022gvs] runs the terminating elastic net
-(T-ENET) inside the random experiments and draws its dummies in groups too, so that the dummies mirror the
-group structure of the null variables. The informed elastic net (IEN) [@machkour2023ien] goes one step
-further and encodes the known or estimated groups in the penalty, so that the members of a group share a
-coefficient.
+(T-ENET) inside the random experiments and draws its dummies in groups too, so that the dummies mirror
+the group structure of the null variables. The informed elastic net (IEN) [@machkour2023ien] goes one
+step further and encodes the known or estimated groups in the penalty. It keeps the grouping effect of
+the elastic net at a lower computation time, and it is the elastic net when every variable is its own
+group.
 
 # Data with groups
 

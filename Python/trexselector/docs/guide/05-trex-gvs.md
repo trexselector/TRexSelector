@@ -23,7 +23,8 @@ together. The T-Rex selector for grouped variable selection (GVS) {cite}`machkou
 terminating elastic net (T-ENET) inside the random experiments and draws its dummies in groups too,
 so that the dummies mirror the group structure of the null variables. The informed elastic net (IEN)
 {cite}`machkour2023ien` goes one step further and encodes the known or estimated groups in the
-penalty, so that the members of a group share a coefficient.
+penalty. It keeps the grouping effect of the elastic net at a lower computation time, and it is the
+elastic net when every variable is its own group.
 
 ## Data with groups
 

@@ -46,6 +46,9 @@
   stand-alone solver have different defaults on purpose.
 * The vignettes no longer show the deprecated coordinate-descent solver family. Its help pages keep the
   deprecation notice.
+* The vignette "T-Rex GVS: grouped variable selection" describes the informed elastic net as its paper
+  does. It keeps the grouping effect of the elastic net and is the elastic net when every variable is
+  its own group.
 
 ## New
 
