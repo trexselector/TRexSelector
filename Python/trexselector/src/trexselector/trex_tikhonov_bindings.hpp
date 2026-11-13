@@ -43,8 +43,8 @@ using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
  * @brief The nested base control merged into the Tikhonov control. The C++
  *        constructor takes one control struct that nests the base parameters
  *        as `trex_ctrl` and rejects any non-Tikhonov solver; the caller-facing
- *        default (TLARS) is neutral, so anything outside TCDTIKNET / TIKNET
- *        becomes TCDTIKNET, mirroring the R glue (the Python wrapper warns
+ *        default (TLARS) is neutral, so anything outside TIKNET / TCDTIKNET
+ *        becomes TIKNET, mirroring the R glue (the Python wrapper warns
  *        first on an explicit mismatch).
  */
 inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
@@ -58,7 +58,7 @@ inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
         st == tik_sd::SolverTypeForTRex::TCDTIKNET ||
         st == tik_sd::SolverTypeForTRex::TIKNET;
     if (!tik_family) {
-        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TCDTIKNET;
+        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TIKNET;
     }
     return tik_ctrl;
 }
@@ -259,8 +259,8 @@ inline void bind_trex_tikhonov(py::module& m) {
             "GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.")
         .def(py::init<>())
         .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "SPARSE_GENERAL "
-            "(tikhonov_K given) or GROUP_CENTERING (K from the groups; TCDTIKNET then runs through the group-centering "
-            "hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).")
+            "(tikhonov_K given) or GROUP_CENTERING (K from the groups; with the TCDTIKNET solver this path runs "
+            "through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).")
         .def_property("tikhonov_K",
             [](const tik::TRexTikhonovControlParameter& c) {
                 return Eigen::MatrixXd(c.tikhonov_K);
@@ -309,7 +309,8 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readwrite("pilot_shared_dummies", &tik::TRexTikhonovControlParameter::pilot_shared_dummies, "Pilot draws "
             "its dummies under the main run's first block tag.")
         .def_readwrite("fold_dummy_coupling", &tik::TRexTikhonovControlParameter::fold_dummy_coupling, "FOLDED dummy "
-            "coupling: dummies take the K block of their real counterpart (default True).")
+            "coupling: dummies take the K block of their real counterpart (default True). False is a validation "
+            "switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it.")
         .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Cluster-aware MVN "
             "dummies (default True); False = i.i.d. dummies (the K = I anchor).")
         .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Group assignment "

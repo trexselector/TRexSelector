@@ -112,7 +112,7 @@ test_that("construction gates translate as R errors", {
     "prior_groups"
   )
 
-  # A non-Tikhonov-family solver choice warns (and falls back to TCDTIKNET).
+  # A non-Tikhonov-family solver choice warns (and falls back to TIKNET).
   expect_warning(
     TRexTikhonovSelector$new(
       d$X, d$y, verbose = FALSE,
@@ -120,21 +120,24 @@ test_that("construction gates translate as R errors", {
                                           lambda_2 = 0.5,
                                           cluster_dummies = FALSE),
       control = trex_control(solver = "TOMP")),
-    "not a Tikhonov-family solver"
+    "not a Tikhonov-family solver.*Using \"TIKNET\""
   )
 
-  # fold_dummy_coupling = FALSE exists only on the TCDTIKNET path. (The
-  # warning case above constructed a live selector on d$X; a fresh copy
+  # fold_dummy_coupling = FALSE exists only on the TCDTIKNET path, so the
+  # default solver (TIKNET, the homotopy) and an explicit TIKNET refuse it.
+  # (The warning case above constructed a live selector on d$X; a fresh copy
   # keeps the shared-buffer guard out of this check.)
-  expect_error(
-    TRexTikhonovSelector$new(
-      d$X + 0, d$y, verbose = FALSE,
-      tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p),
-                                          lambda_2 = 0.5,
-                                          fold_dummy_coupling = FALSE),
-      control = trex_control(solver = "TIKNET")),
-    "TCDTIKNET"
-  )
+  for (control in list(trex_control(), trex_control(solver = "TIKNET"))) {
+    expect_error(
+      TRexTikhonovSelector$new(
+        d$X + 0, d$y, verbose = FALSE,
+        tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p),
+                                            lambda_2 = 0.5,
+                                            fold_dummy_coupling = FALSE),
+        control = control),
+      "TCDTIKNET"
+    )
+  }
 })
 
 
@@ -203,7 +206,8 @@ test_that("K = I with both escape hatches collapses onto the TCDENET run", {
         tikhonov_K = diag(d$p), lambda_2 = 0.5,
         cluster_dummies = FALSE,       # i.i.d. dummies: base parity
         fold_dummy_coupling = FALSE),  # independent dummy ridge: TCDENET
-      control = trex_control(K = 5, max_dummy_multiplier = 2))
+      # The decoupled dummy block exists with the coordinate-descent solver only
+      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2))
     sel$select()
     sel$selected_var
   }
@@ -229,7 +233,8 @@ test_that("group-mean K with prior groups matches GVS-IEN TCDIENET", {
       tik_control = trex_tikhonov_control(
         tikhonov_K = .group_mean_k(d$p), lambda_2 = 1.0,
         prior_groups = d$groups),
-      control = trex_control(K = 5, max_dummy_multiplier = 2))
+      # The coordinate-descent solver is the exact counterpart of GVS-TCDIENET
+      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2))
     sel$select()
     sel$selected_var
   }
@@ -361,4 +366,28 @@ test_that("the full-profile knee runs one selection per grid value and keeps the
                                                 knee_tolerance = -1),
                "knee_tolerance")
   expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y), "tik_control")
+})
+
+
+test_that("the default run on a chain Laplacian selects the planted block", {
+  # The default control: the homotopy solver and the pilot rule over its default grid up to
+  # 3000. The coordinate-descent solver stops unconverged at the large grid values, the pilot
+  # then takes its count there for the knee, picks 3000 and the selection holds 23 nulls.
+  set.seed(2718)
+  n <- 120
+  p <- 60
+  support <- 21:30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(rowSums(X[, support]) + rnorm(n))
+  K <- crossprod(diff(diag(p)))
+
+  sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
+                                  tik_control = trex_tikhonov_control(tikhonov_K = K),
+                                  control = trex_control(K = 10))
+  sel$select()
+
+  expect_gte(sum(support %in% sel$selected_indices), 8)
+  expect_lte(length(setdiff(sel$selected_indices, support)), 4)
+  expect_true(sel$lambda2_pilot$ran)
+  expect_lt(sel$lambda2_used, 1000)   # not the top of the pilot grid
 })

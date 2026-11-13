@@ -10,6 +10,33 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-12
 
+#### The Tikhonov selector runs on the homotopy solver TIKNET by default
+
+- `TRexTikhonovSelector` ran on the coordinate-descent solver TCDTIKNET by default. Once lambda_2 times
+  K is large, that solver stops at its sweep budget of 2,000 and accepts the unconverged iterate. On the
+  chain Laplacian of the guide (n = 120, p = 60, target level 0.1) a fixed lambda_2 of 1,000 gave an FDP
+  of 0.17 and a lambda_2 of 3,000 an FDP of 0.70. The default pilot rule scans a grid up to 3,000, took
+  the count of the unconverged probes for the knee and picked 3,000, so the default run selected 33
+  variables with an FDP of 0.70 after 142 s. The warnings of the solver were the only sign.
+- The default is now TIKNET, the pathwise homotopy solver of the method paper, in C++, R and Python. It
+  selects the planted block at every lambda_2 in a fraction of a second and prints no warning, and its
+  pilot counts equal those of TCDTIKNET wherever that solver converges. TCDTIKNET stays selectable. The
+  help says that it is not finally developed and that it can stop at its sweep budget before it has
+  converged, which it reports with a warning.
+- Results move for every run of the Tikhonov selector that names no solver. `fold_dummy_coupling = FALSE`,
+  a validation switch, exists with TCDTIKNET only, so it now needs that solver named.
+- The help of the three surfaces and the guide pages 08 name the default and the state of TCDTIKNET. The
+  elastic-net anchor of the guide names TCDTIKNET, and the solver example shows it as the alternative.
+  Two sentences of the guide are corrected on the way: the folded dummy coupling exists with both
+  solvers, only the decoupled dummy block is limited to TCDTIKNET, and in C++ the solver of a fresh base
+  control is not mapped to the default. The R help example of the selector set
+  `fold_dummy_coupling = FALSE` without a solver, and it now runs on the defaults.
+- A new test on each surface runs the default control on a chain Laplacian and expects the planted block
+  and a lambda_2 below the top of the pilot grid. With the old default the same data give 13, 10 and 23
+  null variables and a lambda_2 of 3,000. The tests that compare with the coordinate-descent selectors
+  name TCDTIKNET, and the folded anchor also checks that TIKNET selects the same set as the grouped
+  selector. C++ tests 716 of 716, R tests 1,838, Python tests 678.
+
 #### A read-only memory-mapped design serves where nothing is written into it
 
 - `MemoryMappedMatrix::getMap()` refuses a file opened read-only, and every binding of a selector and

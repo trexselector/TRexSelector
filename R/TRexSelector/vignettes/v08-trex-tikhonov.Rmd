@@ -34,8 +34,8 @@ first-difference operator $\boldsymbol\Gamma$ gives the graph Laplacian of a cha
 coefficients to be equal (smoothness), a graph Laplacian in general [@smola2003graphkernels;
 @chung1997spectral] couples the variables along the edges of a graph, and a block-diagonal centering
 matrix reproduces the penalty of the informed elastic net. The Tikhonov T-Rex selector runs the
-terminating Tikhonov-net solvers (TCDTIKNET by coordinate descent, TIKNET by the pathwise algorithm) with
-such a matrix inside the random experiments.
+terminating Tikhonov-net solvers (TIKNET by the pathwise homotopy algorithm, the default, and TCDTIKNET
+by coordinate descent) with such a matrix inside the random experiments.
 
 # A smooth coefficient profile
 
@@ -128,16 +128,17 @@ The false discovery rate (FDR) guarantee needs dummies that are exchangeable wit
 under the penalty. Two defaults take care of that. `cluster_dummies = TRUE` draws the dummies as
 per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical
 clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = TRUE` lets every dummy join the
-$\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling, available with TCDTIKNET). Both
-switches exist for validation runs. With $\boldsymbol K = \boldsymbol I$, independent dummies and the
-decoupled dummy block, the selector reduces to the plain elastic net.
+$\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist for
+validation runs, and the decoupled dummy block exists with the solver `"TCDTIKNET"` only. With
+$\boldsymbol K = \boldsymbol I$, independent dummies and the decoupled dummy block, the selector
+reduces to the plain elastic net.
 
 ```{r anchor}
 en <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                tik_control = trex_tikhonov_control(
                                  tikhonov_K = diag(p), lambda_2 = 1,
                                  cluster_dummies = FALSE, fold_dummy_coupling = FALSE),
-                               control = trex_control(K = 10))
+                               control = trex_control(solver = "TCDTIKNET", K = 10))
 en$select()
 en$selected_indices
 ```
@@ -148,9 +149,9 @@ en$selected_indices
 block-diagonal centering penalty $\boldsymbol I - \boldsymbol J / p_m$ over the dummy clusters, so the
 members of a group share a coefficient, the penalty of the informed elastic net. The groups come from
 `prior_groups` or from the clustering. An all-singleton partition is legitimate, the penalty vanishes
-and the path is the lasso on per-variable cluster dummies. On this path the TCDTIKNET solver runs
-through the group-centering hooks of TCDIENET, so its warnings (sweep budget, certification fallback)
-carry the tag `[TCDIENET]`.
+and the path is the lasso on per-variable cluster dummies. With the solver `"TCDTIKNET"` this path
+runs through the group-centering hooks of TCDIENET, so its warnings (sweep budget, certification
+fallback) carry the tag `[TCDIENET]`.
 
 ```{r centering}
 groups <- rep(1:6, each = 10)
@@ -165,16 +166,18 @@ gc$selected_indices
 
 # The solver
 
-`trex_control(solver = )` picks the Tikhonov-family solver: `"TCDTIKNET"` (default, the neutral
-`"TLARS"` of `trex_control()` maps to it) or `"TIKNET"`, the pathwise algorithm. Both solve the same
-problem.
+`trex_control(solver = )` picks the Tikhonov-family solver: `"TIKNET"`, the pathwise homotopy
+algorithm (default, the neutral `"TLARS"` of `trex_control()` maps to it), or `"TCDTIKNET"`,
+coordinate descent. Both solve the same problem. `"TCDTIKNET"` is not finally developed. Once
+$\lambda_2$ times $\boldsymbol K$ is large it can stop at its sweep budget (`cd_max_sweeps`) before it
+has converged. It reports that with a warning, and the selection is then not reliable.
 
-```{r tiknet}
-pw <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
+```{r tcdtiknet}
+cd <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                tik_control = trex_tikhonov_control(tikhonov_K = K, lambda_2 = 1),
-                               control = trex_control(solver = "TIKNET", K = 10))
-pw$select()
-pw$selected_indices
+                               control = trex_control(solver = "TCDTIKNET", K = 10))
+cd$select()
+cd$selected_indices
 ```
 
 ```{r teardown, include = FALSE}

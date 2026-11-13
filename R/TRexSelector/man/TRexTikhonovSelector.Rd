@@ -6,7 +6,7 @@
 \description{
 FDR-controlled variable selection with a Tikhonov penalty
 matrix \code{K = t(Gamma) \%*\% Gamma} driving the Tikhonov-net solvers
-(TCDTIKNET by default, or TIKNET). \code{K = I} collapses to
+(TIKNET by default, or TCDTIKNET). \code{K = I} collapses to
 the plain elastic net; a group-mean K reproduces the GVS-IEN penalty;
 banded / Laplacian K encode smoothness-informed selection;
 \code{penalty_structure = "GROUP_CENTERING"} builds the centering
@@ -19,9 +19,7 @@ Dummies are cluster-aware and FOLDED-coupled by default.
 data(Gauss_data)
 X <- Gauss_data$X
 y <- Gauss_data$y
-ctrl <- trex_tikhonov_control(tikhonov_K = diag(ncol(X)), lambda_2 = 0.5,
-                              cluster_dummies = FALSE,
-                              fold_dummy_coupling = FALSE)
+ctrl <- trex_tikhonov_control(tikhonov_K = diag(ncol(X)), lambda_2 = 0.5)
 sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, verbose = FALSE,
                                 tik_control = ctrl)
 sel$select()
@@ -165,10 +163,14 @@ writes nothing and \code{"readonly"} mode suffices.}
 penalty matrix K).}
       \item{\code{control}}{A control list from \code{\link{trex_control}()}
 (default: \code{trex_control()}). The \code{solver} field selects
-the Tikhonov-family solver: \code{"TCDTIKNET"} (default; the
-neutral \code{trex_control()} default \code{"TLARS"} maps to it),
-or \code{"TIKNET"} (native pathwise); any other value warns and
-falls back to \code{"TCDTIKNET"}.}
+the Tikhonov-family solver: \code{"TIKNET"}, the pathwise
+homotopy solver (default; the neutral \code{trex_control()}
+default \code{"TLARS"} maps to it), or \code{"TCDTIKNET"}, the
+coordinate-descent solver; any other value warns and falls back to
+\code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
+\code{lambda_2} times K is large it can stop at its sweep budget
+(\code{cd_max_sweeps}) before it has converged. It reports that
+with a warning, and the selection is then not reliable.}
     }
     \if{html}{\out{</div>}}
   }

@@ -146,7 +146,11 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
     EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl),
                  std::invalid_argument);
 
-    // Correct K, default solver (TCDTIKNET) constructs.
+    // Correct K: the default solver (TIKNET, the homotopy) and the CCD
+    // solver both construct.
+    EXPECT_EQ(TRexTikhonovControlParameter().trex_ctrl.solver_type, disp::SolverTypeForTRex::TIKNET);
+    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
+    EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
     ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
 }
@@ -205,6 +209,7 @@ TEST_F(TRexTikhonovTest, Equivalence_IdentityKMatchesTcdenetBaseRun) {
         ctrl.lambda_2   = lambda2;
         ctrl.cluster_dummies     = false;  // i.i.d. dummies: base parity
         ctrl.fold_dummy_coupling = false;  // independent dummy ridge: TCDENET
+        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the solver with this mode
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -235,6 +240,57 @@ TEST_F(TRexTikhonovTest, Equivalence_IdentityKMatchesTcdenetBaseRun) {
         << "K = I Tikhonov run diverged from the TCDENET base run.\n"
         << "  Tikhonov n_selected = " << sel_tik.sum() << "\n"
         << "  TCDENET   n_selected = " << sel_cenet.sum();
+}
+
+
+// ========================================================================================
+// The default run on a chain Laplacian
+// ========================================================================================
+
+/** @brief The default control (homotopy solver, pilot rule over its default
+ *  grid up to 3000) on an unscaled chain Laplacian selects the planted block
+ *  (here all ten actives and two nulls). The CCD solver stops unconverged at
+ *  the large grid values, the pilot then takes its count there for the knee,
+ *  picks 3000 and the selection holds thirteen nulls. */
+TEST_F(TRexTikhonovTest, DefaultRun_ChainLaplacianSelectsThePlantedBlock) {
+    const Eigen::Index n = 120, p = 60;
+    // Box-Muller on the raw engine output: the same data on every platform.
+    std::mt19937 rng(2718);
+    auto N01 = [&rng]() {
+        const double u1 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        const double u2 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
+        return std::sqrt(-2.0 * std::log(u1)) * std::cos(6.283185307179586 * u2);
+    };
+    Eigen::MatrixXd X(n, p);
+    for (Eigen::Index j = 0; j < p; ++j) {
+        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(); }
+    }
+    Eigen::VectorXd y(n);
+    for (Eigen::Index i = 0; i < n; ++i) {
+        y(i) = X.row(i).segment(20, 10).sum() + N01();   // ten equal actives, columns 20 to 29
+    }
+    Eigen::SparseMatrix<double> gamma(p - 1, p);
+    std::vector<Eigen::Triplet<double>> trip;
+    for (Eigen::Index i = 0; i < p - 1; ++i) {
+        trip.emplace_back(i, i, -1.0);
+        trip.emplace_back(i, i + 1, 1.0);
+    }
+    gamma.setFromTriplets(trip.begin(), trip.end());
+
+    Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p);
+    Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
+    TRexTikhonovControlParameter ctrl;                 // lambda_2 < 0: the pilot rule
+    ctrl.tikhonov_K = TRexTikhonovSelector::gammaToK(gamma);
+    ctrl.trex_ctrl.K = 10;
+    TRexTikhonovSelector trex(Xm, ym, 0.1, ctrl, 4, false);
+    const Eigen::VectorXi selected = trex.select().selected_var;
+
+    const int true_positives = selected.segment(20, 10).sum();
+    const int false_positives = selected.sum() - true_positives;
+    EXPECT_GE(true_positives, 8);
+    EXPECT_LE(false_positives, 4);
+    EXPECT_TRUE(trex.getLambda2PilotResult().ran);
+    EXPECT_LT(trex.getLambda2Used(), 1000.0) << "the pilot picked the top of its grid";
 }
 
 
@@ -517,7 +573,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         prior_groups[static_cast<std::size_t>(j)] = j / 5;
     }
 
-    auto run_tik = [&]() {
+    auto run_tik = [&](disp::SolverTypeForTRex solver) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -528,6 +584,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         ctrl.prior_groups = prior_groups;
         // Defaults under test: cluster_dummies = true, fold_dummy_coupling
         // = true (the FOLDED anchor is only meaningful on the default path).
+        ctrl.trex_ctrl.solver_type = solver;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -550,7 +607,8 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         return trex.select().selected_var;
     };
 
-    const Eigen::VectorXi sel_tik = run_tik();
+    // The CCD solver is the exact counterpart of GVS-TCDIENET.
+    const Eigen::VectorXi sel_tik = run_tik(disp::SolverTypeForTRex::TCDTIKNET);
     const Eigen::VectorXi sel_gvs = run_gvs();
 
     ASSERT_EQ(sel_tik.size(), sel_gvs.size());
@@ -558,6 +616,11 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         << "FOLDED group-mean-K Tikhonov run diverged from GVS-TCDIENET.\n"
         << "  Tikhonov n_selected = " << sel_tik.sum() << "\n"
         << "  GVS      n_selected = " << sel_gvs.sum();
+
+    // The default solver, the homotopy, selects the same set.
+    const Eigen::VectorXi sel_default = run_tik(disp::SolverTypeForTRex::TIKNET);
+    EXPECT_TRUE((sel_default.array() == sel_gvs.array()).all())
+        << "TIKNET n_selected = " << sel_default.sum() << ", GVS n_selected = " << sel_gvs.sum();
 }
 
 
@@ -599,6 +662,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
         ctrl.tikhonov_K   = K;
         ctrl.lambda_2     = 10.0;
         ctrl.prior_groups = prior_groups;
+        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the CCD anchor
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -682,6 +746,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_
                 ctrl.lambda_2     = lambda2;
                 ctrl.prior_groups = prior_groups;
                 demo_control(ctrl.trex_ctrl, 1);
+                ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the CCD anchor
                 TRexTikhonovSelector trex(Xm, ym, 0.1, ctrl, 42, false);
                 return trex.select().selected_var;
             };
@@ -767,6 +832,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         TRexTikhonovControlParameter tc;
         tc.tikhonov_K = K; tc.lambda_2 = c.lambda2; tc.prior_groups = prior_groups;
         demo_control(tc.trex_ctrl);
+        tc.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the CCD anchor
         TRexTikhonovSelector tik(Xm1, ym1, 0.1, tc, 42, false);
 
         gvs::TRexGVSControlParameter gc;
@@ -920,7 +986,8 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringFastPathMatchesSparse) {
         ctrl.lambda_2     = 2.0;
         ctrl.prior_groups = prior_groups;
         // fold_dummy_coupling = true (default): FOLDED, matching the
-        // by-construction folding of the GROUP_CENTERING hooks.
+        // by-construction folding of the GROUP_CENTERING hooks, a CCD path.
+        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);

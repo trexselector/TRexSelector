@@ -132,6 +132,7 @@ int main() {
     en_ctrl.lambda_2 = 1.0;
     en_ctrl.cluster_dummies = false;
     en_ctrl.fold_dummy_coupling = false;
+    en_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;   // the solver with this mode
     en_ctrl.trex_ctrl.K = 10;
 
     TRexTikhonovSelector en(X_map, y_map, 0.1, en_ctrl, 4, false);
@@ -157,12 +158,12 @@ int main() {
 
     doc.begin("solver");
     //! [solver]
-    TRexTikhonovControlParameter pw_ctrl = tik_ctrl;
-    pw_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIKNET;
+    TRexTikhonovControlParameter cd_ctrl = tik_ctrl;
+    cd_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;
 
-    TRexTikhonovSelector pw(X_map, y_map, 0.1, pw_ctrl, 4, false);
-    pw.select();
-    print_indices("selected:", pw.getSelectedIndices());
+    TRexTikhonovSelector cd(X_map, y_map, 0.1, cd_ctrl, 4, false);
+    cd.select();
+    print_indices("selected:", cd.getSelectedIndices());
     //! [solver]
 
     return 0;

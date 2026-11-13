@@ -4,7 +4,7 @@
 #'
 #' @description FDR-controlled variable selection with a Tikhonov penalty
 #'   matrix \code{K = t(Gamma) \%*\% Gamma} driving the Tikhonov-net solvers
-#'   (TCDTIKNET by default, or TIKNET). \code{K = I} collapses to
+#'   (TIKNET by default, or TCDTIKNET). \code{K = I} collapses to
 #'   the plain elastic net; a group-mean K reproduces the GVS-IEN penalty;
 #'   banded / Laplacian K encode smoothness-informed selection;
 #'   \code{penalty_structure = "GROUP_CENTERING"} builds the centering
@@ -41,9 +41,7 @@
 #' data(Gauss_data)
 #' X <- Gauss_data$X
 #' y <- Gauss_data$y
-#' ctrl <- trex_tikhonov_control(tikhonov_K = diag(ncol(X)), lambda_2 = 0.5,
-#'                               cluster_dummies = FALSE,
-#'                               fold_dummy_coupling = FALSE)
+#' ctrl <- trex_tikhonov_control(tikhonov_K = diag(ncol(X)), lambda_2 = 0.5)
 #' sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, verbose = FALSE,
 #'                                 tik_control = ctrl)
 #' sel$select()
@@ -70,10 +68,14 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   penalty matrix K).
     #' @param control A control list from \code{\link{trex_control}()}
     #'   (default: \code{trex_control()}). The \code{solver} field selects
-    #'   the Tikhonov-family solver: \code{"TCDTIKNET"} (default; the
-    #'   neutral \code{trex_control()} default \code{"TLARS"} maps to it),
-    #'   or \code{"TIKNET"} (native pathwise); any other value warns and
-    #'   falls back to \code{"TCDTIKNET"}.
+    #'   the Tikhonov-family solver: \code{"TIKNET"}, the pathwise
+    #'   homotopy solver (default; the neutral \code{trex_control()}
+    #'   default \code{"TLARS"} maps to it), or \code{"TCDTIKNET"}, the
+    #'   coordinate-descent solver; any other value warns and falls back to
+    #'   \code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
+    #'   \code{lambda_2} times K is large it can stop at its sweep budget
+    #'   (\code{cd_max_sweeps}) before it has converged. It reports that
+    #'   with a warning, and the selection is then not reliable.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,
@@ -88,14 +90,14 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 
       # Only the Tikhonov family has a general-K mode. "TLARS" is the
       # trex_control() default and cannot be distinguished from an explicit
-      # choice, so it never warns; the C++ glue maps it to TCDTIKNET.
-      tik_family <- c("TCDTIKNET", "TIKNET")
+      # choice, so it never warns; the C++ glue maps it to TIKNET.
+      tik_family <- c("TIKNET", "TCDTIKNET")
       if (!(control$solver %in% c("TLARS", tik_family))) {
         warning("control$solver = \"", control$solver,
                 "\" is not a Tikhonov-family solver; TRexTikhonovSelector ",
-                "accepts \"TCDTIKNET\" or \"TIKNET\". ",
-                "Using \"TCDTIKNET\".")
-        control$solver <- "TLARS"  # the C++ glue defaults it to TCDTIKNET
+                "accepts \"TIKNET\" or \"TCDTIKNET\". ",
+                "Using \"TIKNET\".")
+        control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
       }
 
       if (inherits(X, "MemoryMappedMatrix")) {
@@ -262,12 +264,12 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
     stop("knee_tolerance must be a single number >= 0. Got: ",
          format(knee_tolerance))
   }
-  tik_family <- c("TCDTIKNET", "TIKNET")
+  tik_family <- c("TIKNET", "TCDTIKNET")
   if (!(control$solver %in% c("TLARS", tik_family))) {
     warning("control$solver = \"", control$solver,
             "\" is not a Tikhonov-family solver; the Tikhonov T-Rex ",
-            "accepts \"TCDTIKNET\" or \"TIKNET\". Using \"TCDTIKNET\".")
-    control$solver <- "TLARS"  # the C++ glue defaults it to TCDTIKNET
+            "accepts \"TIKNET\" or \"TCDTIKNET\". Using \"TIKNET\".")
+    control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
   }
   X <- .as_double_matrix(X)
   y <- .as_double_vector(y)

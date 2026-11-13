@@ -23,8 +23,8 @@ using namespace trex::trex_selector_methods::ad::trex_core;
 /**
  * @brief The nested base control merged into the Tikhonov control. The C++
  *        constructor rejects any non-Tikhonov solver; the caller-facing
- *        default (TLARS) is neutral, so anything outside TCDTIKNET / TIKNET
- *        becomes TCDTIKNET (the R level warns first on an explicit mismatch).
+ *        default (TLARS) is neutral, so anything outside TIKNET / TCDTIKNET
+ *        becomes TIKNET (the R level warns first on an explicit mismatch).
  */
 inline TRexTikhonovControlParameter merge_tikhonov_control(
     const TRexTikhonovControlParameter& tik_control,
@@ -37,7 +37,7 @@ inline TRexTikhonovControlParameter merge_tikhonov_control(
         st == tik_sd::SolverTypeForTRex::TCDTIKNET ||
         st == tik_sd::SolverTypeForTRex::TIKNET;
     if (!tik_family) {
-        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TCDTIKNET;
+        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TIKNET;
     }
     return tik_ctrl;
 }

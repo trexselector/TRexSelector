@@ -332,8 +332,12 @@ class TRexTikhonovSelector(TRexSelector):
     ``tikhonov_K`` (``penalty_structure = SPARSE_GENERAL``, converted to sparse
     internally) or ``GROUP_CENTERING`` built from the groups. lambda_2 < 0
     resolves by ``tik_control.lambda2_method`` (CV tuners or the pilot power
-    rules); the dummies are cluster-aware by default. Solver: TCDTIKNET
-    (default) or TIKNET, chosen through ``trex_control.solver_type``.
+    rules); the dummies are cluster-aware by default. Solver: TIKNET, the
+    pathwise homotopy solver (default), or TCDTIKNET, the coordinate-descent
+    solver, chosen through ``trex_control.solver_type``. TCDTIKNET is not
+    finally developed: once lambda_2 times K is large it can stop at its sweep
+    budget (``cd_max_sweeps``) before it has converged. It reports that with a
+    warning, and the selection is then not reliable.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  tik_control: TRexTikhonovControlParameter | None = None,
@@ -353,13 +357,13 @@ class TRexTikhonovSelector(TRexSelector):
         # Only the Tikhonov family has a general-K mode. TLARS is the
         # TRexControlParameter default and cannot be distinguished from an
         # explicit choice, so it never warns; the C++ glue maps it to
-        # TCDTIKNET. Mirrors the R surface.
-        _tik_family = (SolverTypeForTRex.TCDTIKNET, SolverTypeForTRex.TIKNET)
+        # TIKNET. Mirrors the R surface.
+        _tik_family = (SolverTypeForTRex.TIKNET, SolverTypeForTRex.TCDTIKNET)
         if trex_control.solver_type not in (SolverTypeForTRex.TLARS,) + _tik_family:
             warnings.warn(
                 f"trex_control.solver_type = {trex_control.solver_type.name} "
                 f"is not a Tikhonov-family solver; TRexTikhonovSelector accepts "
-                f"TCDTIKNET or TIKNET. Using TCDTIKNET.",
+                f"TIKNET or TCDTIKNET. Using TIKNET.",
                 UserWarning,
                 stacklevel=2,
             )
@@ -421,12 +425,12 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
         trex_control = TRexControlParameter()
     if seed < 0:
         raise ValueError("seed must be non-negative: the probes share their dummies.")
-    _tik_family = (SolverTypeForTRex.TCDTIKNET, SolverTypeForTRex.TIKNET)
+    _tik_family = (SolverTypeForTRex.TIKNET, SolverTypeForTRex.TCDTIKNET)
     if trex_control.solver_type not in (SolverTypeForTRex.TLARS,) + _tik_family:
         warnings.warn(
             f"trex_control.solver_type = {trex_control.solver_type.name} "
             f"is not a Tikhonov-family solver; the Tikhonov T-Rex accepts "
-            f"TCDTIKNET or TIKNET. Using TCDTIKNET.",
+            f"TIKNET or TCDTIKNET. Using TIKNET.",
             UserWarning,
             stacklevel=2,
         )

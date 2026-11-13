@@ -14,8 +14,9 @@ coefficients. \f$\boldsymbol K = \boldsymbol I\f$ is the elastic net, a first-di
 be equal (smoothness), a graph Laplacian in general \cite smola2003graphkernels and
 \cite chung1997spectral couples the variables along the edges of a graph, and a block-diagonal
 centering matrix reproduces the penalty of the informed elastic net. The Tikhonov T-Rex selector
-runs the terminating Tikhonov-net solvers (TCDTIKNET_Solver by coordinate descent, TIKNET_Solver by
-the pathwise algorithm) with such a matrix inside the random experiments.
+runs the terminating Tikhonov-net solvers (TIKNET_Solver by the pathwise homotopy algorithm, the
+default, and TCDTIKNET_Solver by coordinate descent) with such a matrix inside the random
+experiments.
 
 The headers and names of this page:
 
@@ -82,10 +83,10 @@ The false discovery rate (FDR) guarantee needs dummies that are exchangeable wit
 the penalty. Two defaults take care of that. `cluster_dummies = true` draws the dummies as per-cluster
 coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical clustering
 with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = true` lets every dummy join the
-\f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling, available with
-TCDTIKNET_Solver). Both switches exist for validation runs. With \f$\boldsymbol K = \boldsymbol
-I\f$, independent dummies and the decoupled dummy block, the selector reduces to the plain elastic
-net.
+\f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist
+for validation runs, and the decoupled dummy block exists with `SolverTypeForTRex::TCDTIKNET` only.
+With \f$\boldsymbol K = \boldsymbol I\f$, independent dummies and the decoupled dummy block, the
+selector reduces to the plain elastic net.
 
 \snippet{trimleft} trex_tikhonov.cpp elastic-net
 \output{trex_tikhonov.elastic-net.txt}
@@ -97,9 +98,9 @@ net.
 / p_m\f$ over the dummy clusters, so the members of a group share a coefficient, the penalty of the
 informed elastic net. The groups come from `prior_groups` (0-based group ids, one per variable) or
 from the clustering. An all-singleton partition is legitimate, the penalty vanishes and the path is
-the lasso on per-variable cluster dummies. On this path the TCDTIKNET_Solver runs through the
-group-centering hooks of TCDIENET_Solver, so its warnings (sweep budget, certification fallback)
-carry the tag `[TCDIENET]`.
+the lasso on per-variable cluster dummies. With `SolverTypeForTRex::TCDTIKNET` this path runs
+through the group-centering hooks of TCDIENET_Solver, so its warnings (sweep budget, certification
+fallback) carry the tag `[TCDIENET]`.
 
 \snippet{trimleft} trex_tikhonov.cpp group-centering
 \output{trex_tikhonov.group-centering.txt}
@@ -107,8 +108,11 @@ carry the tag `[TCDIENET]`.
 ## The solver
 
 `solver_type` of the nested base control picks the Tikhonov-family solver:
-`SolverTypeForTRex::TCDTIKNET` (the default, the neutral `TLARS` of a fresh control maps to it) or
-`TIKNET`, the pathwise algorithm. Both solve the same problem.
+`SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm (the default of the control), or
+`TCDTIKNET`, coordinate descent. Both solve the same problem. `TCDTIKNET` is not finally developed.
+Once \f$\lambda_2\f$ times \f$\boldsymbol K\f$ is large it can stop at its sweep budget
+(`cd_max_sweeps`) before it has converged. It reports that with a warning, and the selection is
+then not reliable.
 
 \snippet{trimleft} trex_tikhonov.cpp solver
 \output{trex_tikhonov.solver.txt}

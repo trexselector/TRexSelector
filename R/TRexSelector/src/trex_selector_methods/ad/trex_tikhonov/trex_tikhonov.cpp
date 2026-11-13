@@ -110,11 +110,11 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     trex_tik_ctrl_.tikhonov_K.makeCompressed();
 
     // ---- Solver gate ------------------------------------------------------
-    // Two solvers implement the general sparse-K mode: TCDTIKNET (CCD,
-    // exact fixed-lambda1 minimizers; FOLDED or INDEPENDENT_RIDGE dummy
-    // coupling) and TIKNET (native LARS homotopy, FOLDED-only). The shared
-    // dispatch would reject anything K-aware for other enumerators anyway,
-    // so fail fast with a precise message.
+    // Two solvers implement the general sparse-K mode: TIKNET (native LARS
+    // homotopy, the default, FOLDED-only) and TCDTIKNET (CCD; FOLDED or
+    // INDEPENDENT_RIDGE dummy coupling). The shared dispatch would reject
+    // anything K-aware for other enumerators anyway, so fail fast with a
+    // precise message.
     if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TCDTIKNET &&
         trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIKNET) {
         throw std::invalid_argument(

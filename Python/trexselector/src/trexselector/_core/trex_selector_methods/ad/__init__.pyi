@@ -2357,7 +2357,7 @@ class TRexTikhonovControlParameter:
     @property
     def fold_dummy_coupling(self) -> bool:
         """
-        FOLDED dummy coupling: dummies take the K block of their real counterpart (default True).
+        FOLDED dummy coupling: dummies take the K block of their real counterpart (default True). False is a validation switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it.
         """
     @fold_dummy_coupling.setter
     def fold_dummy_coupling(self, arg0: bool) -> None:
@@ -2389,7 +2389,7 @@ class TRexTikhonovControlParameter:
     @property
     def penalty_structure(self) -> TikPenaltyStructure:
         """
-        SPARSE_GENERAL (tikhonov_K given) or GROUP_CENTERING (K from the groups; TCDTIKNET then runs through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).
+        SPARSE_GENERAL (tikhonov_K given) or GROUP_CENTERING (K from the groups; with the TCDTIKNET solver this path runs through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).
         """
     @penalty_structure.setter
     def penalty_structure(self, arg0: TikPenaltyStructure) -> None:

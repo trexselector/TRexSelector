@@ -73,7 +73,7 @@ def test_control_fields_roundtrip():
     assert not hasattr(tsn.TikLambda2Method, "PILOT_MAX")   # the argmax variant is gone
     assert ctrl.cluster_dummies is True
     assert ctrl.fold_dummy_coupling is True
-    assert ctrl.trex_ctrl.solver_type == tsn.SolverTypeForTRex.TCDTIKNET
+    assert ctrl.trex_ctrl.solver_type == tsn.SolverTypeForTRex.TIKNET   # the homotopy solver
     assert ctrl.tikhonov_K.shape == (0, 0)
     assert ctrl.cv_dfmax_ratio == pytest.approx(0.8)
 
@@ -138,10 +138,10 @@ def test_empty_or_misdimensioned_k_raises():
                                  trex_control=_base_control(), verbose=False)
 
 
-def test_non_family_solver_warns_and_uses_tcdtiknet():
+def test_non_family_solver_warns_and_uses_tiknet():
     X, y, groups = _grouped_data()
     tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
-    with pytest.warns(UserWarning, match="not a Tikhonov-family solver"):
+    with pytest.warns(UserWarning, match="not a Tikhonov-family solver.*Using TIKNET"):
         sel = tsn.TRexTikhonovSelector(
             X, y, tik_control=tik,
             trex_control=_base_control(solver=tsn.SolverTypeForTRex.TLASSO),
@@ -190,10 +190,12 @@ def test_group_mean_k_matches_gvs_ien_tcdienet(lambda_2):
     X, y, groups = _grouped_data(seed=11, n=80, p=16)
     K = _group_mean_k(groups)
 
+    # The coordinate-descent solver is the exact counterpart of GVS-TCDIENET.
     tik = _tik_control(K, lambda_2, prior_groups=groups)
-    sel_tik = tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik,
-                                       trex_control=_base_control(K=5, mult=3),
-                                       seed=42, verbose=False)
+    sel_tik = tsn.TRexTikhonovSelector(
+        X.copy(), y.copy(), tik_control=tik,
+        trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDTIKNET),
+        seed=42, verbose=False)
     sel_tik.select()
 
     gvs = tsn.TRexGVSControlParameter()
@@ -216,12 +218,19 @@ def test_identity_k_with_both_escape_hatches_collapses_onto_tcdenet():
     X, y, _ = _grouped_data(seed=5)
     lambda_2 = 1.5
 
+    # The decoupled dummy block exists with the coordinate-descent solver only.
     tik = _tik_control(np.eye(X.shape[1]), lambda_2,
                        cluster_dummies=False, fold_dummy_coupling=False)
-    sel_tik = tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik,
-                                       trex_control=_base_control(K=5, mult=2),
-                                       seed=42, verbose=False)
+    sel_tik = tsn.TRexTikhonovSelector(
+        X.copy(), y.copy(), tik_control=tik,
+        trex_control=_base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDTIKNET),
+        seed=42, verbose=False)
     sel_tik.select()
+
+    # The default solver, the homotopy, has the folded coupling only.
+    with pytest.raises(ValueError, match="fold_dummy_coupling = false"):
+        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik,
+                                 trex_control=_base_control(K=5, mult=2), seed=42, verbose=False)
 
     base = _base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDENET)
     base.solver_params.lambda2 = lambda_2
@@ -365,3 +374,32 @@ def test_lambda2_power_rule_profiles_the_grid_and_keeps_the_contract():
         tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, knee_tolerance=-1.0)
     with pytest.raises(ValueError, match="tik_control"):
         tsn.tikhonov_lambda2_power_rule(X, y)
+
+
+# ---------------------------------------------------------------------------
+# The default run on a chain Laplacian
+# ---------------------------------------------------------------------------
+
+def test_default_run_on_a_chain_laplacian_selects_the_planted_block():
+    """The default control (homotopy solver, pilot rule over its default grid up to 3000).
+
+    The coordinate-descent solver stops unconverged at the large grid values, the pilot then
+    takes its count there for the knee, picks 3000 and the selection is dominated by nulls.
+    """
+    rng = np.random.default_rng(2718)
+    n, p = 120, 60
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    support = np.arange(20, 30)
+    y = X[:, support].sum(axis=1) + rng.standard_normal(n)
+    gamma = np.diff(np.eye(p), axis=0)
+
+    tik = tsn.TRexTikhonovControlParameter()   # lambda_2 < 0: the pilot rule
+    tik.tikhonov_K = gamma.T @ gamma
+    sel = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=tik, trex_control=_base_control(K=10, mult=10),
+                                   seed=4, verbose=False)
+    sel.select()
+
+    selected = np.flatnonzero(sel.selected_var)
+    assert np.isin(support, selected).sum() >= 8
+    assert np.setdiff1d(selected, support).size <= 4
+    assert sel.lambda2_used < 1000.0   # not the top of the pilot grid

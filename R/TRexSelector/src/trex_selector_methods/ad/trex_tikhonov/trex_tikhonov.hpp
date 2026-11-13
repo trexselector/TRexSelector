@@ -13,9 +13,11 @@
  *
  *  Method:
  *  -------
- *  TRexTikhonovSelector runs the standard T-Rex calibration with the CCD
- *  Tikhonov-Net solver (TCDTIKNET_Solver) in its general sparse-K
- *  mode: the quadratic penalty is (lambda_2 / 2) * beta^T K beta for a
+ *  TRexTikhonovSelector runs the standard T-Rex calibration with a
+ *  terminating Tikhonov-net solver in its general sparse-K mode, by default
+ *  the pathwise homotopy solver (TIKNET_Solver) and on request the
+ *  coordinate-descent solver (TCDTIKNET_Solver, not finally developed):
+ *  the quadratic penalty is (lambda_2 / 2) * beta^T K beta for a
  *  user-supplied PSD matrix K = Gamma^T Gamma (p x p).
  *  This generalizes:
  *    - K = I                     -> plain elastic net (TCDENET),
@@ -64,8 +66,8 @@
  *  by injecting the penalty matrix into the shared solver dispatch:
  *  `buildRunnerConfig()` is overridden to set
  *  `ExperimentRunnerConfig::tikhonov_K` (forwarded to
- *  `SolverConfig::tikhonov_K`, where dispatchByType() routes TCDTIKNET
- *  through its sparse-K constructor) and to overwrite `solver_params.lambda2` with
+ *  `SolverConfig::tikhonov_K`, where dispatchByType() routes TIKNET or
+ *  TCDTIKNET through its sparse-K constructor) and to overwrite `solver_params.lambda2` with
  *  the resolved penalty weight. Cluster-aware dummies enter through the
  *  DummyGenerator cluster mode (`setClusterModel()` in `onSelectBegin()`),
  *  so the base dummy hook, the ExperimentRunner, and the memory-mapped
@@ -383,14 +385,15 @@ struct TRexTikhonovControlParameter {
      *  PERMUTATION family is refused). */
     bool pilot_shared_dummies = false;
 
-    /** @brief Dummy-coupling mode of the sparse-K TCDTIKNET penalty.
+    /** @brief Dummy-coupling mode of the sparse-K penalty.
      *  Default: true (FOLDED) — dummy copy t joins its originating
      *  variable (t - p) mod p in the K-coupling, the exact generalization
      *  of GVS's layered group convention; dummy/null exchangeability then
      *  holds for arbitrary K (with K = sum_m 1_m 1_m^T / p_m the solver
      *  reproduces GVS-TCDIENET bit-exactly). Set to false
      *  (INDEPENDENT_RIDGE: decoupled unit-ridge dummy block) ONLY for
-     *  validation / equivalence runs — it preserves the K = I ≡ TCDENET
+     *  validation / equivalence runs, and with solver_type TCDTIKNET, the
+     *  one solver that has this mode — it preserves the K = I ≡ TCDENET
      *  collapse but deforms exchangeability whenever K has off-diagonals
      *  (conservative for positive off-diagonals such as group-mean K,
      *  anti-conservative for negative ones such as Laplacians). */
@@ -424,8 +427,12 @@ struct TRexTikhonovControlParameter {
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
-     *  `solver_type` must be one of the general-K solvers: TCDTIKNET (CCD,
-     *  default) or TIKNET (native LARS homotopy, FOLDED-coupling only).
+     *  `solver_type` must be one of the general-K solvers: TIKNET (native
+     *  LARS homotopy, the default, FOLDED coupling only) or TCDTIKNET (CCD).
+     *  The CCD solver is not finally developed: once lambda_2 times K is
+     *  large it can stop at its sweep budget (cd_max_sweeps) before it has
+     *  converged. It reports that with a warning, and the selection is then
+     *  not reliable.
      *  With penalty_structure = GROUP_CENTERING, the TCDTIKNET dispatch
      *  routes to TCDIENET's O(1) group-centering hooks, so the solver's
      *  warnings (sweep budget, certification fallback) carry the tag
@@ -436,7 +443,7 @@ struct TRexTikhonovControlParameter {
      *  hyperparameters, ...) apply unchanged. */
     tc::TRexControlParameter trex_ctrl = [] {
         tc::TRexControlParameter t;
-        t.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
+        t.solver_type = disp::SolverTypeForTRex::TIKNET;
         return t;
     }();
 };
