@@ -33,6 +33,14 @@ TRexDAControlParameter parse_da_parameter(const Rcpp::List& control) {
         else Rcpp::stop("Unknown DAMethod: " + method);
     }
 
+    if (control.containsElementNamed("bt_selection_mode")) {
+        std::string mode = control["bt_selection_mode"];
+        if (mode == "FeasibleOnly") params.bt_selection_mode = BTSelectionMode::FeasibleOnly;
+        else if (mode == "RFaithful") params.bt_selection_mode = BTSelectionMode::RFaithful;
+        else
+            Rcpp::stop("Unknown bt_selection_mode: " + mode + "\nSupported: FeasibleOnly, RFaithful.");
+    }
+
     if (control.containsElementNamed("cor_coef")) params.cor_coef = control["cor_coef"];
     if (control.containsElementNamed("rho_thr_DA")) params.rho_thr_DA = control["rho_thr_DA"];
 

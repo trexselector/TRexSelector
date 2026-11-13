@@ -293,6 +293,12 @@ trex_control <- function(solver = "TLARS",
 #'   heights plus the conservative rho = 1 singleton anchor. The deflation
 #'   therefore acts on tight data-driven neighbourhoods inside the known
 #'   groups, never on the raw groups themselves. (default: \code{NULL}).
+#' @param bt_selection_mode Which cells of the calibration grid may win the selection
+#'   of the methods BT, NN and prior groups. \code{"FeasibleOnly"} (default) admits
+#'   only cells whose FDP estimate is at or below the target, which controls the
+#'   realized FDR. \code{"RFaithful"} admits every cell with the largest selection
+#'   count, as the R reference implementation does, and can exceed the target at
+#'   high within-group correlation. Ignored by AR1 and EQUI.
 #'
 #' @return A named list for use in TRexDASelector.
 #'
@@ -309,14 +315,17 @@ trex_da_control <- function(da_method = "BT",
                             rho_thr_DA = 0.02,
                             hc_linkage = "Single",
                             hc_grid_length = 0,
-                            prior_groups = NULL) {
+                            prior_groups = NULL,
+                            bt_selection_mode = "FeasibleOnly") {
+  bt_selection_mode <- match.arg(bt_selection_mode, c("FeasibleOnly", "RFaithful"))
   list(
-    da_method       = da_method,
-    cor_coef        = cor_coef,
-    rho_thr_DA      = rho_thr_DA,
-    hc_linkage      = hc_linkage,
-    hc_grid_length  = hc_grid_length,
-    prior_groups    = prior_groups
+    da_method         = da_method,
+    cor_coef          = cor_coef,
+    rho_thr_DA        = rho_thr_DA,
+    hc_linkage        = hc_linkage,
+    hc_grid_length    = hc_grid_length,
+    prior_groups      = prior_groups,
+    bt_selection_mode = bt_selection_mode
   )
 }
 
@@ -377,6 +386,9 @@ trex_da_control <- function(da_method = "BT",
 #'   (\code{FALSE}, default). This is the LARS-vs-LASSO distinction. Ignored for
 #'   \code{en_solver = "TENET"}.
 #' @param groups Integer vector of manually specified group assignments (1-based, default: NULL).
+#' @param group_labels Optional character vector with a name per group of \code{groups}, in
+#'   the order of the group numbers. Its length must equal the number of groups. The names
+#'   are returned in the field \code{group_labels} of the selector (default: NULL).
 #' @param cv_n_folds Number of folds for the k-fold cross-validation used by the
 #'   CV \code{lambda2_method} paths (default: 10, matching \code{cv.glmnet}).
 #'   Ignored when \code{lambda_2 >= 0}.
@@ -426,7 +438,8 @@ trex_gvs_control <- function(gvs_type = "EN",
                              cv_n_lambda1 = 40,
                              cv_n_lambda2 = 100,
                              cv_dfmax_ratio = 0.8,
-                             cv_seed = -1) {
+                             cv_seed = -1,
+                             group_labels = NULL) {
   # NULL resolves by track: the EN-shaped ridge CV for EN, the IEN-geometry
   # tuner (group-consuming, no p/2 conversion) for IEN. 1SE in both cases —
   # the MIN rule tends to pin to the grid floor.
@@ -461,6 +474,7 @@ trex_gvs_control <- function(gvs_type = "EN",
     en_solver          = en_solver,
     tenet_aug_use_lars = as.logical(tenet_aug_use_lars),
     groups             = groups,
+    group_labels       = if (is.null(group_labels)) NULL else as.character(group_labels),
     cv_n_folds         = as.integer(cv_n_folds),
     cv_n_lambda        = as.integer(cv_n_lambda),
     cv_n_lambda1       = as.integer(cv_n_lambda1),

@@ -18,7 +18,8 @@ trex_gvs_control(
   cv_n_lambda1 = 40,
   cv_n_lambda2 = 100,
   cv_dfmax_ratio = 0.8,
-  cv_seed = -1
+  cv_seed = -1,
+  group_labels = NULL
 )
 }
 \arguments{
@@ -100,6 +101,10 @@ Must be finite. Ignored by the other rules and when
 \code{seed} (deterministic when \code{seed >= 0}, hardware entropy when
 \code{seed < 0}); a value \code{>= 0} overrides \code{seed} for CV folds
 only, giving per-trial fold reproducibility.}
+
+\item{group_labels}{Optional character vector with a name per group of \code{groups}, in
+the order of the group numbers. Its length must equal the number of groups. The names
+are returned in the field \code{group_labels} of the selector (default: NULL).}
 }
 \value{
 A named list for use in TRexGVSSelector.

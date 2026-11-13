@@ -10,7 +10,8 @@ trex_da_control(
   rho_thr_DA = 0.02,
   hc_linkage = "Single",
   hc_grid_length = 0,
-  prior_groups = NULL
+  prior_groups = NULL,
+  bt_selection_mode = "FeasibleOnly"
 )
 }
 \arguments{
@@ -47,6 +48,13 @@ within each constraint group, and the calibration rho grid (length
 heights plus the conservative rho = 1 singleton anchor. The deflation
 therefore acts on tight data-driven neighbourhoods inside the known
 groups, never on the raw groups themselves. (default: \code{NULL}).}
+
+\item{bt_selection_mode}{Which cells of the calibration grid may win the selection
+of the methods BT, NN and prior groups. \code{"FeasibleOnly"} (default) admits
+only cells whose FDP estimate is at or below the target, which controls the
+realized FDR. \code{"RFaithful"} admits every cell with the largest selection
+count, as the R reference implementation does, and can exceed the target at
+high within-group correlation. Ignored by AR1 and EQUI.}
 }
 \value{
 A named list for use in TRexDASelector.

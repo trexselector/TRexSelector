@@ -252,6 +252,41 @@ test_that("TRexDASelector AR1 uses the magnitude of a supplied cor_coef", {
 
 
 
+test_that("trex_da_control carries bt_selection_mode", {
+
+  set.seed(42)
+  n <- 60
+  p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 2] * -4 + X[, 3] * 3 + rnorm(n)
+
+  # The default is the feasible-only policy of the core
+  expect_identical(trex_da_control()$bt_selection_mode, "FeasibleOnly")
+  expect_identical(trex_da_control(bt_selection_mode = "RFaithful")$bt_selection_mode, "RFaithful")
+  expect_error(trex_da_control(bt_selection_mode = "Other"), "should be one of")
+
+  # X + 0 hands every run its own copy of the design
+  run <- function(da_control) {
+    selector <- TRexDASelector$new(X + 0, y, tFDR = 0.1, seed = 7, verbose = FALSE,
+                                   da_control = da_control, control = trex_control(K = 5))
+    selector$select()
+    selector
+  }
+  default <- run(trex_da_control())
+  feasible <- run(trex_da_control(bt_selection_mode = "FeasibleOnly"))
+  faithful <- run(trex_da_control(bt_selection_mode = "RFaithful"))
+  expect_identical(default$selected_var, feasible$selected_var)
+  expect_length(faithful$selected_var, p)
+
+  # A control built by hand reaches the parser, which names the supported values
+  by_hand <- trex_da_control()
+  by_hand$bt_selection_mode <- "Other"
+  expect_error(TRexDASelector$new(X + 0, y, verbose = FALSE, da_control = by_hand),
+               "Unknown bt_selection_mode")
+})
+
+
+
 test_that("TRexDASelector AR1 deflates every step with the penalty of the last step", {
 
   # The deflated history is then non-decreasing, so the calibrated occurrences

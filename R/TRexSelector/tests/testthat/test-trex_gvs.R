@@ -462,6 +462,34 @@ test_that("TRexGVSSelector exposes per-variable cluster labels (groups)", {
 })
 
 
+test_that("trex_gvs_control carries the names of the groups (group_labels)", {
+  set.seed(42)
+  n <- 60
+  p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1] * 3 + X[, 2] * -2 + X[, 5] * 2 + rnorm(n))
+  prior <- rep(1:4, each = 3)
+  labels <- c("north", "east", "south", "west")
+
+  expect_null(trex_gvs_control()$group_labels)
+
+  s <- TRexGVSSelector$new(X, y, tFDR = 0.2, seed = 1, verbose = FALSE,
+                           gvs_control = trex_gvs_control(gvs_type = "EN", groups = prior,
+                                                          group_labels = labels))
+  s$select()
+  expect_identical(s$group_labels, labels)
+
+  # One name per group
+  expect_error(
+    TRexGVSSelector$new(X, y, verbose = FALSE,
+                        gvs_control = trex_gvs_control(gvs_type = "EN", groups = prior,
+                                                       group_labels = labels[1:3])),
+    "group_labels"
+  )
+})
+
+
+
 test_that("TRexGVSSelector groups reflects HAC assignment for Route 2", {
   set.seed(7)
   n <- 60; p <- 10

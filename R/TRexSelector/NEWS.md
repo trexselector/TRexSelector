@@ -22,6 +22,11 @@
   "T-Rex+DA: dependent variables", because every dependency-aware method draws ordinary independent
   dummies.
 
+## New
+
+* `trex_da_control()` gains `bt_selection_mode` and `trex_gvs_control()` gains `group_labels`. Both
+  parameters existed in C++ and Python.
+
 ## Deprecated
 
 * The coordinate-descent solver family is deprecated and will be removed in TRexSelector 2.1.0. This

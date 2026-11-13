@@ -16,6 +16,19 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The R controls gain `bt_selection_mode` and `group_labels`
+
+- A comparison of the eight controls on the three surfaces, by parameter and default. Every field of the
+  C++ control structs is a Python attribute and the other way round, and R and Python agree on every
+  default. R lacked two parameters. `trex_da_control()` gains `bt_selection_mode` ("FeasibleOnly", the
+  default, or "RFaithful"), the policy for the cells of the calibration grid that may win the selection
+  of BT, NN and prior groups. `trex_gvs_control()` gains `group_labels`, the names of the groups of
+  `groups`, which the selector returns in its field `group_labels`.
+- The sparse principal component selector of R keeps its one control with the parameters of the wrapper.
+  It does not take the controls of the grouped selector and of the T-Rex selector.
+- Tests in R: the default, both values, an unknown value at the control and at the parser, a run with
+  each policy, the names of the groups returned by the selector and a wrong number of names.
+
 #### The documentation of the dependency-aware selector drops the "dependency-aware dummies"
 
 - There are no dependency-aware dummies. Every method of the dependency-aware selector draws ordinary
