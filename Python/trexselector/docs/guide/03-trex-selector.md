@@ -112,10 +112,10 @@ sel.voting_grid
 ### Early stopping of the T-loop
 
 The T-loop raises the stopping time $T$ one dummy at a time. `use_max_T_stop = True` (default)
-bounds it, and `tloop_stagnation_stop` stops the loop when the FDP estimate has not improved for
-`tloop_max_stagnant_steps` steps. The stagnation stop defaults to `None`, which resolves to off for
-the path solvers (T-LARS, T-LASSO, the elastic nets, the CD family) and to on for the greedy
-solvers.
+bounds it by $\lceil n / 2 \rceil$, and `tloop_stagnation_stop` stops the loop when the FDP estimate
+has not improved for `tloop_max_stagnant_steps` steps. The stagnation stop defaults to `None`, which
+resolves to off for the path solvers (T-LARS, T-LASSO, the elastic nets, the CD family) and to on
+for the greedy solvers.
 
 ## The result fields
 

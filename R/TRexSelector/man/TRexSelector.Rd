@@ -94,11 +94,17 @@ estimate (length p), at most 1 and possibly negative.}
 
     \item{\code{K}}{The number of random experiments.}
 
-    \item{\code{max_num_dummies}}{The maximum dummy multiplier of the L-loop.}
+    \item{\code{max_num_dummies}}{The cap of the dummy multiplier, \code{max_dummy_multiplier}
+of \code{trex_control()}: the L-loop adds dummies up to this many times the number
+of variables. The field holds a multiplier, not a number of dummies.}
 
-    \item{\code{max_T_stop}}{Whether the maximum T_stop rule is active.}
+    \item{\code{max_T_stop}}{Whether the bound on the stopping time is on, \code{use_max_T_stop}
+of \code{trex_control()}: the T-loop then ends at \code{ceiling(n / 2)} at the
+latest. The field holds a logical, not a stopping time.}
 
-    \item{\code{stagnation_check}}{Whether the stagnation check is active.}
+    \item{\code{stagnation_check}}{Whether the T-loop stops on stagnation,
+\code{tloop_stagnation_stop} of \code{trex_control()} after the default by the
+solver family is resolved.}
 
     \item{\code{num_selected}}{The number of selected variables.}
 

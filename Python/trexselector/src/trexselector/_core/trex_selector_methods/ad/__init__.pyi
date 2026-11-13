@@ -1666,7 +1666,7 @@ class TRexControlParameter:
     @property
     def max_dummy_multiplier(self) -> int:
         """
-        Maximum dummy multiplier L (default 10).
+        Cap of the dummy multiplier L: the L-loop adds dummies up to this multiple of p (default 10).
         """
     @max_dummy_multiplier.setter
     def max_dummy_multiplier(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1746,7 +1746,7 @@ class TRexControlParameter:
     @property
     def use_max_T_stop(self) -> bool:
         """
-        If true, always run solvers to T_stop regardless of early stopping.
+        If true (default), the T-loop ends at ceil(n / 2) at the latest. If false, it can run up to the number of dummies.
         """
     @use_max_T_stop.setter
     def use_max_T_stop(self, arg0: bool) -> None:
@@ -2244,7 +2244,7 @@ class TRexSelector:
         """
     def getMaxNumDummies(self) -> int:
         """
-        Return the maximum number of dummy variables per L level.
+        Return the cap of the dummy multiplier (max_dummy_multiplier), a multiplier and not a number of dummies.
         """
     def getMaxTStop(self) -> bool:
         """

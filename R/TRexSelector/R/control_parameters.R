@@ -66,8 +66,10 @@
 #'   when the experiments run in sequence; inside a parallel run the
 #'   solvers stay serial. A pass splits only above about a million entries
 #'   of the design, so small problems run serially whatever the budget.
-#' @param max_dummy_multiplier Maximum dummy features multiplier (default: 10).
-#' @param use_max_T_stop Whether to bound max T_stop (default: TRUE).
+#' @param max_dummy_multiplier Cap of the dummy multiplier: the L-loop adds dummies up to
+#'   this many times the number of variables (default: 10).
+#' @param use_max_T_stop Whether the T-loop ends at \code{ceiling(n / 2)} at the latest
+#'   (default: TRUE). Without the bound it can run up to the number of dummies.
 #' @param opt_threshold Optimization threshold (default: 0.75).
 #' @param lloop_strategy L-loop strategy: "SKIPL", "STANDARD", "HCONCAT",
 #'   "PERMUTATION", "PERMUTATION_SEEDED", or "SEEDED" (default: "STANDARD",

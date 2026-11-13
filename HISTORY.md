@@ -16,6 +16,20 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The texts of the dummy-multiplier cap and of the stopping-time bound say what they hold
+
+- The Python text of `use_max_T_stop` said "always run solvers to T_stop regardless of early stopping",
+  which is not what the option does. With the option on, the default, the T-loop ends at ceiling(n / 2)
+  at the latest, and without it the loop can run up to the number of dummies. The Python text of
+  `getMaxNumDummies` promised "the maximum number of dummy variables per L level", and the method
+  returns the cap of the dummy multiplier.
+- The R fields `max_num_dummies` and `max_T_stop` carry names that mislead. The first holds that cap, a
+  multiplier, and the second holds whether the bound is on, a logical. Their help says so now, and so
+  does the help of `stagnation_check`. The names change with the naming pass of the next minor releases,
+  and the Python selector classes gain the three fields then.
+- The R help of `max_dummy_multiplier` and `use_max_T_stop`, the C++ documentation of the two getters
+  and of the field, and guide page 03 on the three surfaces name the bound. No code changes.
+
 #### The guides say that the design comes back up to rounding
 
 - A selector and a writing T-solver center and scale the design in place and undo it afterwards. The

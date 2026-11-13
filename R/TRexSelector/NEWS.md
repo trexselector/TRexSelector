@@ -26,6 +26,9 @@
 * Four vignettes print the difference between the design before and after a run. Their comments now say
   "restored up to rounding", because the design comes back with differences of the order of 1e-16, and
   the vignette "Working without data copies" says so in its text.
+* The help of the fields `max_num_dummies` and `max_T_stop` says what they hold, the cap of the dummy
+  multiplier and whether the bound on the stopping time is on. The help of `max_dummy_multiplier` and
+  `use_max_T_stop` in `trex_control()` names the bound, `ceiling(n / 2)`.
 
 ## New
 

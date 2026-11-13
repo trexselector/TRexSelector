@@ -196,19 +196,25 @@ TRexSelector <- R6::R6Class("TRexSelector",
       trex_selector_get_k(private$ptr)
     },
 
-    #' @field max_num_dummies The maximum dummy multiplier of the L-loop.
+    #' @field max_num_dummies The cap of the dummy multiplier, \code{max_dummy_multiplier}
+    #'   of \code{trex_control()}: the L-loop adds dummies up to this many times the number
+    #'   of variables. The field holds a multiplier, not a number of dummies.
     max_num_dummies = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       trex_selector_get_max_num_dummies(private$ptr)
     },
 
-    #' @field max_T_stop Whether the maximum T_stop rule is active.
+    #' @field max_T_stop Whether the bound on the stopping time is on, \code{use_max_T_stop}
+    #'   of \code{trex_control()}: the T-loop then ends at \code{ceiling(n / 2)} at the
+    #'   latest. The field holds a logical, not a stopping time.
     max_T_stop = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       trex_selector_get_max_t_stop(private$ptr)
     },
 
-    #' @field stagnation_check Whether the stagnation check is active.
+    #' @field stagnation_check Whether the T-loop stops on stagnation,
+    #'   \code{tloop_stagnation_stop} of \code{trex_control()} after the default by the
+    #'   solver family is resolved.
     stagnation_check = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       trex_selector_get_stagnation_check(private$ptr)

@@ -141,7 +141,8 @@ struct TRexControlParameter {
     /** @brief Maximum number of dummy variables as a multiple of p (default: 10). */
     std::size_t max_dummy_multiplier = 10;
 
-    /** @brief If true, limit T_stop to ceiling(n/2) (default: true). */
+    /** @brief If true, limit T_stop to ceiling(n/2) (default: true). If false,
+     *  the T-loop can run up to the number of dummies. */
     bool use_max_T_stop = true;
 
     /** @brief Optimization threshold (default: 0.75). */
@@ -589,10 +590,14 @@ public:
     /** @brief Get number of random experiments K. */
     std::size_t getK() const noexcept { return trex_ctrl_.K; }
 
-    /** @brief Get maximum dummy multiplier used for model calibrations. */
+    /** @brief Get the cap of the dummy multiplier (max_dummy_multiplier): the
+     *  L-loop adds dummies up to this multiple of p. The value is a multiplier,
+     *  not a number of dummies. */
     std::size_t getMaxNumDummies() const noexcept { return trex_ctrl_.max_dummy_multiplier; }
 
-    /** @brief Check if maximum stopping time is used. */
+    /** @brief Check whether the bound on the stopping time is on
+     *  (use_max_T_stop): the T-loop then ends at ceiling(n/2) at the latest.
+     *  The value is a flag, not a stopping time. */
     bool getMaxTStop() const noexcept { return trex_ctrl_.use_max_T_stop; }
 
     /** @brief Check if stagnation check is enabled (AUTO is resolved by
