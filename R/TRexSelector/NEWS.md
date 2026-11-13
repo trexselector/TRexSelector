@@ -37,6 +37,7 @@
   coefficient and needs `prior_groups`, the penalty carries the factor one half of the code, and
   `tikhonov_K` is optional under `"GROUP_CENTERING"`. The vignette no longer runs the deprecated solver
   `"TCDTIKNET"` with the decoupled dummy block.
+* Three vignettes say why they copy the design with `X + 0`.
 
 ## New
 

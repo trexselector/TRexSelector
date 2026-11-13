@@ -200,7 +200,7 @@ the columns of `X` and `D` in place, holds the statistics, and writes the origin
 error, because a second in-place transformation would move the data by rounding. `y` is never written.
 
 ```{r writer}
-X_before <- X + 0
+X_before <- X + 0           # a copy, a plain assignment would share the buffer with X
 w <- TLASSO_Solver$new(X, D, y)
 max(abs(X - X_before))      # the scaled columns
 w$restore()

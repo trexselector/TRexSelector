@@ -247,7 +247,7 @@ holds the working design. `restore()` gives it back early when a constructed sel
 page on working without data copies has the full contract.
 
 ```{r restore}
-X_before <- X + 0
+X_before <- X + 0           # a copy, a plain assignment would share the buffer with X
 r_sel <- TRexSelector$new(X, y, tFDR = 0.1, seed = 42, verbose = FALSE)
 max(abs(X - X_before))      # the working design
 r_sel$restore()

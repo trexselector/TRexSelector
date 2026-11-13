@@ -16,6 +16,12 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The R vignettes say why they copy the design with `X + 0`
+
+- The vignettes 03, 09 and 12 keep the design of a run in `X_before <- X + 0`. A plain assignment
+  shares the buffer with `X` and would show the working design. A comment beside each of the three
+  lines says so.
+
 #### The documentation of the Tikhonov selector says which penalty is which
 
 - The penalty of the informed elastic net is the group-mean matrix, K = sum_m 1_m 1_m^T / p_m. The header
