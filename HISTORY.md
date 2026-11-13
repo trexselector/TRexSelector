@@ -10,6 +10,18 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-13
 
+#### The R help example of `TRexDASelector` runs on dependent variables
+
+- The example ran the selector with the method BT on `Gauss_data`, a design with independent variables,
+  and selected nothing, for every one of ten seeds. That is the expected behaviour and no defect. The
+  selector penalizes the relative occurrences for a dependency that is not there, and on independent
+  variables that costs power without a reason. An example that selects nothing shows the class at its
+  worst, so it moves to the design the class is made for.
+- The example now draws the design of the vignette "T-Rex+DA", an AR(1) process across the columns with
+  coefficient 0.7 (n = 100, p = 100, five active variables). With the method BT it selects four of the
+  five active variables for each of ten seeds, with no false variable in eight of them and one in two.
+- Only the help changes. `R CMD check --as-cran` runs the example and ends with Status OK.
+
 #### The dependency-aware selector takes its penalty from the last step, for all five methods
 
 - The dependency-aware T-Rex selector works with deflated relative occurrences,

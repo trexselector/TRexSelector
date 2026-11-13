@@ -38,10 +38,20 @@ groups have always used the penalty of the last step.
 
 \examples{
 \donttest{
-data(Gauss_data)
-X <- Gauss_data$X
-y <- Gauss_data$y
-sel <- TRexDASelector$new(X, y, tFDR = 0.1, verbose = FALSE,
+# Dependent variables: an AR(1) process across the columns, five of them active
+set.seed(321)
+n <- 100
+p <- 100
+rho <- 0.7
+X <- matrix(0, n, p)
+X[, 1] <- rnorm(n)
+for (j in 2:p) X[, j] <- rho * X[, j - 1] + sqrt(1 - rho^2) * rnorm(n)
+true_support <- c(10, 30, 50, 70, 90)
+beta <- numeric(p)
+beta[true_support] <- 2
+y <- as.numeric(X \%*\% beta + rnorm(n))
+
+sel <- TRexDASelector$new(X, y, tFDR = 0.1, seed = 7, verbose = FALSE,
                           da_control = trex_da_control(da_method = "BT"))
 sel$select()
 sel$selected_indices
