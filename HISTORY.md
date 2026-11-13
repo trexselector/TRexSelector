@@ -16,6 +16,19 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The documentation says what each dependency-aware method is made for
+
+- Each method of the dependency-aware selector stands for the dependency model of its paper. The binary
+  tree follows the hierarchical graphical model of the T-Rex+DA paper. It is made for disjoint groups of
+  highly correlated variables and was studied with one active variable per group. The autoregressive
+  method is made for variables whose correlation decays with their distance in the column order, as in a
+  first-order autoregressive process, and does not assume one active variable per group. The
+  nearest-neighbour method is made for overlapping groups of highly correlated variables, as they are
+  characteristic for stock returns. The equi-correlated method is made for variables that all share one
+  correlation.
+- Guide page 04 says so in a paragraph of "The dependency methods" on the three surfaces, and so do the
+  help of `da_method` in R and the texts of `DAMethod` in C++ and Python.
+
 #### The texts of the dummy-multiplier cap and of the stopping-time bound say what they hold
 
 - The Python text of `use_max_T_stop` said "always run solvers to T_stop regardless of early stopping",

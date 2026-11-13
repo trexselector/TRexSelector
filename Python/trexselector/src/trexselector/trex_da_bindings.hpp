@@ -107,10 +107,14 @@ public:
  */
 inline void bind_trex_da(py::module& m) {
     py::enum_<DAMethod>(m, "DAMethod", "Dependency-aware (DA) methods.")
-        .value("AR1", DAMethod::AR1, "First-order autoregressive dependency: a window of neighbouring variables.")
-        .value("EQUI", DAMethod::EQUI, "Equi-correlated dependency: all other variables.")
-        .value("BT", DAMethod::BT, "Binary tree: groups from a hierarchical clustering of the variables.")
-        .value("NN", DAMethod::NN, "Nearest neighbours: groups from a sweep of correlation thresholds.")
+        .value("AR1", DAMethod::AR1, "Made for a first-order autoregressive dependency across the columns. A "
+            "variable is compared with a window of neighbouring variables.")
+        .value("EQUI", DAMethod::EQUI, "Made for variables that all share one correlation. A variable is compared "
+            "with all other variables.")
+        .value("BT", DAMethod::BT, "Binary tree, made for disjoint groups of highly correlated variables. The "
+            "groups come from a hierarchical clustering.")
+        .value("NN", DAMethod::NN, "Nearest neighbours, made for overlapping groups of highly correlated "
+            "variables. The groups come from a sweep of correlation thresholds.")
         .value("PRIOR_GROUPS", DAMethod::PRIOR_GROUPS, "Groups supplied by the user, clustered within each group.")
         .export_values();
 

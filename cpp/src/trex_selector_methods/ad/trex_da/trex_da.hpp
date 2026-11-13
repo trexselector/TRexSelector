@@ -73,16 +73,20 @@ namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
  * @brief Dependency-aware correction methods.
  */
 enum class DAMethod {
-    /** @brief AR(1) windowed correction for ordered predictors. */
+    /** @brief AR(1) windowed correction for ordered predictors. Made for a
+     *  first-order autoregressive dependency across the columns. */
     AR1,
 
-    /** @brief Equicorrelation correction (all-vs-all). */
+    /** @brief Equicorrelation correction (all-vs-all). Made for variables
+     *  that all share one correlation. */
     EQUI,
 
-    /** @brief Binary-tree dendrogram-based clustering. */
+    /** @brief Binary-tree dendrogram-based clustering. Made for disjoint
+     *  groups of highly correlated variables. */
     BT,
 
-    /** @brief Nearest-neighbour correlation threshold sweep. */
+    /** @brief Nearest-neighbour correlation threshold sweep. Made for
+     *  overlapping groups of highly correlated variables. */
     NN,
 
     /** @brief User-supplied group labels at multiple hierarchy levels. */

@@ -15,9 +15,12 @@ trex_da_control(
 )
 }
 \arguments{
-\item{da_method}{Dependency estimation method: "BT", "AR1", "EQUI", "NN"
-(default: "BT"). "NN" is a nearest-neighbour correlation-threshold sweep
-(BT-style) over a rho grid of length \code{hc_grid_length}.}
+\item{da_method}{Dependency model (default: "BT"). "BT", the binary tree, is made
+for disjoint groups of highly correlated variables. "NN", nearest neighbours, is
+made for overlapping groups of highly correlated variables and sweeps the
+correlation thresholds of a rho grid of length \code{hc_grid_length}. "AR1" is
+made for a first-order autoregressive dependency across the columns. "EQUI" is
+made for variables that all share one correlation.}
 
 \item{cor_coef}{Correlation coefficient for AR1/EQUI. -2.0 triggers auto-estimation
 (default: -2.0). Both methods use the magnitude of a supplied coefficient. Any other

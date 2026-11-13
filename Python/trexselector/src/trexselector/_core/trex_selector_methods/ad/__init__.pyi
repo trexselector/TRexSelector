@@ -147,13 +147,13 @@ class DAMethod:
     
     Members:
     
-      AR1 : First-order autoregressive dependency: a window of neighbouring variables.
+      AR1 : Made for a first-order autoregressive dependency across the columns. A variable is compared with a window of neighbouring variables.
     
-      EQUI : Equi-correlated dependency: all other variables.
+      EQUI : Made for variables that all share one correlation. A variable is compared with all other variables.
     
-      BT : Binary tree: groups from a hierarchical clustering of the variables.
+      BT : Binary tree, made for disjoint groups of highly correlated variables. The groups come from a hierarchical clustering.
     
-      NN : Nearest neighbours: groups from a sweep of correlation thresholds.
+      NN : Nearest neighbours, made for overlapping groups of highly correlated variables. The groups come from a sweep of correlation thresholds.
     
       PRIOR_GROUPS : Groups supplied by the user, clustered within each group.
     """

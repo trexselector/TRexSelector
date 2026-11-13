@@ -29,6 +29,8 @@
 * The help of the fields `max_num_dummies` and `max_T_stop` says what they hold, the cap of the dummy
   multiplier and whether the bound on the stopping time is on. The help of `max_dummy_multiplier` and
   `use_max_T_stop` in `trex_control()` names the bound, `ceiling(n / 2)`.
+* The help of `trex_da_control(da_method = )` and the vignette "T-Rex+DA" say which dependency model
+  each method is made for.
 
 ## New
 

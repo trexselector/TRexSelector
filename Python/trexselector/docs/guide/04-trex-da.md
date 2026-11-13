@@ -92,6 +92,16 @@ enum.
 | `AR1` | first-order autoregressive: a variable is compared with its neighbours inside a window | `cor_coef` (estimated when `-2`), `rho_thr_DA` |
 | `EQUI` | equi-correlated: a variable is compared with all other variables | `cor_coef` (estimated when `-2`), `rho_thr_DA` |
 
+Each method stands for the dependency model of its paper and is made for data that follow that
+model. The binary tree method follows the hierarchical graphical model of
+{cite}`machkour2025datrex`. It is made for variables that form disjoint groups of highly correlated
+variables, and it was studied with one active variable per group. The autoregressive method follows
+{cite}`machkour2024ar1`. It is made for variables whose correlation decays with their distance in
+the column order, as in a first-order autoregressive process, and it does not assume one active
+variable per group. The nearest-neighbour method follows {cite}`machkour2025indextracking`. It is
+made for overlapping groups of highly correlated variables, as they are characteristic for stock
+returns. The equi-correlated method is made for variables that all share one correlation.
+
 The binary tree method clusters the variables by correlation distance with the linkage `hc_linkage`
 (`LinkageMethod.Single` by default), evaluates the FDP estimate at `hc_grid_length` correlation
 thresholds (the default `0` lets the core take $\min(20, p)$ points) and keeps the threshold
