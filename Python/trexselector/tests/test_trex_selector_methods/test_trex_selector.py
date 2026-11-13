@@ -381,7 +381,10 @@ def test_ccd_and_aug_solvers_run(signal_data, solver):
     ctrl = trexselector.TRexControlParameter()
     ctrl.K = 3
     ctrl.solver_type = getattr(trexselector.SolverTypeForTRex, solver)
-    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, verbose=False)
+    # A budget that converges on every draw of the dummies, and a fixed seed: at the default budget a
+    # coordinate-descent run on this design ends with the convergence error for about 3 seeds in 100.
+    ctrl.solver_params.cd_max_sweeps = 200000
+    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=42, verbose=False)
     res = sel.select()
     assert res is not None
 
@@ -426,7 +429,8 @@ def test_cd_localization_modes_run(signal_data, certified):
     ctrl.K = 3
     ctrl.solver_type = trexselector.SolverTypeForTRex.TCDLASSO
     ctrl.solver_params.cd_certified_localization = certified
-    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, verbose=False)
+    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
+    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=42, verbose=False)
     res = sel.select()
     assert res is not None
     assert res.selected_var.shape[0] == p

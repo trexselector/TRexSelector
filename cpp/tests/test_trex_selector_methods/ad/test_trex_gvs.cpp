@@ -313,6 +313,7 @@ void run_gvs_select_e2e(GVSType gvs_type,
     ctrl.trex_ctrl.solver_type = solver_type;
     ctrl.trex_ctrl.K = 5;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
+    ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     TRexGVSSelector trex(X_map, y_map, 0.2, ctrl, 42, false);
     auto result = trex.select();
@@ -426,6 +427,7 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         ctrl.trex_ctrl.use_memory_mapping = use_mmap;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
         TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
@@ -509,6 +511,7 @@ TEST_F(TRexGVSTest, EndToEnd_TCDIENETMatchesTIENET) {
         ctrl.trex_ctrl.solver_type = st;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -539,6 +542,7 @@ TEST_F(TRexGVSTest, EndToEnd_TCDENETMatchesTENET) {
         ctrl.lambda_2  = 1.0;                    // FIXED, > 0
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };

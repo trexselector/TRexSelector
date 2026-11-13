@@ -153,7 +153,7 @@ test_that("TIKNET and TCDTIKNET agree on the zero-K path (all-singleton GROUP_CE
       tik_control = trex_tikhonov_control(
         penalty_structure = "GROUP_CENTERING",
         prior_groups = seq_len(d$p), lambda_2 = 10),
-      control = trex_control(solver = solver, K = 5,
+      control = trex_control(solver = solver, K = 5, cd_max_sweeps = cd_test_sweeps,
                              max_dummy_multiplier = 2))
     sel$select()
     sel$selected_var
@@ -207,7 +207,8 @@ test_that("K = I with both escape hatches collapses onto the TCDENET run", {
         cluster_dummies = FALSE,       # i.i.d. dummies: base parity
         fold_dummy_coupling = FALSE),  # independent dummy ridge: TCDENET
       # The decoupled dummy block exists with the coordinate-descent solver only
-      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2))
+      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2,
+                             cd_max_sweeps = cd_test_sweeps))
     sel$select()
     sel$selected_var
   }
@@ -215,7 +216,7 @@ test_that("K = I with both escape hatches collapses onto the TCDENET run", {
     sel <- TRexSelector$new(
       d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
       control = trex_control(solver = "TCDENET", lambda2 = 0.5, K = 5,
-                             max_dummy_multiplier = 2))
+                             max_dummy_multiplier = 2, cd_max_sweeps = cd_test_sweeps))
     sel$select()
     sel$selected_var
   }
@@ -234,7 +235,8 @@ test_that("group-mean K with prior groups matches GVS-IEN TCDIENET", {
         tikhonov_K = .group_mean_k(d$p), lambda_2 = 1.0,
         prior_groups = d$groups),
       # The coordinate-descent solver is the exact counterpart of GVS-TCDIENET
-      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2))
+      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2,
+                             cd_max_sweeps = cd_test_sweeps))
     sel$select()
     sel$selected_var
   }
@@ -244,7 +246,7 @@ test_that("group-mean K with prior groups matches GVS-IEN TCDIENET", {
       gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 1.0,
                                      groups = d$groups),
       control = trex_control(solver = "TCDIENET", K = 5,
-                             max_dummy_multiplier = 2))
+                             max_dummy_multiplier = 2, cd_max_sweeps = cd_test_sweeps))
     sel$select()
     sel$selected_var
   }

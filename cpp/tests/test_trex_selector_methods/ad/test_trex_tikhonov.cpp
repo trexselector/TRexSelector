@@ -214,6 +214,7 @@ TEST_F(TRexTikhonovTest, Equivalence_IdentityKMatchesTcdenetBaseRun) {
         ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the solver with this mode
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -228,6 +229,7 @@ TEST_F(TRexTikhonovTest, Equivalence_IdentityKMatchesTcdenetBaseRun) {
         TRexControlParameter ctrl;
         ctrl.solver_type = disp::SolverTypeForTRex::TCDENET;
         ctrl.solver_params.lambda2 = lambda2;
+        ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         ctrl.K = 5;
         ctrl.max_dummy_multiplier = 2;
         TRexSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -629,6 +631,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         ctrl.trex_ctrl.solver_type = solver;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -645,6 +648,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -707,6 +711,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
         ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;  // the CCD anchor
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -721,6 +726,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
         ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -774,6 +780,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_
         t.tloop_stagnation_stop    = true;
         t.tloop_max_stagnant_steps = 5;
         t.use_memory_mapping       = false;
+        t.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
     };
 
     int n_diff = 0;
@@ -924,6 +931,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_AllSingletonGroupsIsZeroKLasso) {
         ctrl.trex_ctrl.solver_type = solver;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -1035,6 +1043,7 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringFastPathMatchesSparse) {
         ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         TRexTikhonovSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };

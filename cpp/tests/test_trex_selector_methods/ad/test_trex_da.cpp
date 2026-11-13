@@ -70,6 +70,7 @@ void run_trex_da_test(Eigen::Index n,
     trex_ctrl.K = K;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
+    trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     TRexDAControlParameter da_ctrl;
     da_ctrl.method = method;

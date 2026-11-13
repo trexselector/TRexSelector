@@ -51,7 +51,8 @@ test_that("TCDLASSO and TCDENET run end-to-end and recover the planted support",
   for (s in c("TCDLASSO", "TCDENET")) {
     selector <- quiet_cd(TRexSelector$new(d$X, d$y, tFDR = 0.2, seed = 42,
                                           verbose = FALSE,
-                                          control = trex_control(solver = s, K = 5)))
+                                          control = trex_control(solver = s, K = 5,
+                                                                 cd_max_sweeps = cd_test_sweeps)))
     selector$select()
 
     expect_length(selector$selected_var, d$p)
@@ -70,8 +71,8 @@ test_that("CD selection is seed-reproducible", {
   run_once <- function() {
     selector <- TRexSelector$new(d$X, d$y, tFDR = 0.2, seed = 7,
                                  verbose = FALSE,
-                                 control = trex_control(solver = "TCDENET",
-                                                        K = 5))
+                                 control = trex_control(solver = "TCDENET", K = 5,
+                                                        cd_max_sweeps = cd_test_sweeps))
     selector$select()
     selector$selected_var
   }
@@ -85,7 +86,7 @@ test_that("CD knobs pass through the control parser", {
   ctrl <- trex_control(solver = "TCDENET", K = 3,
                        cd_lambda_rel_tol = 1e-4,
                        cd_tol_certify = 1e-6, cd_tol_probe = 1e-7,
-                       cd_gram_cap = 100, cd_max_sweeps = 500)
+                       cd_gram_cap = 100, cd_max_sweeps = cd_test_sweeps)
   selector <- quiet_cd(TRexSelector$new(d$X, d$y, tFDR = 0.2, seed = 42,
                                         verbose = FALSE, control = ctrl))
   selector$select()
@@ -117,7 +118,7 @@ test_that("both CD crossing-localization modes run and recover the support", {
   for (certified in c(TRUE, FALSE)) {
     selector <- quiet_cd(TRexSelector$new(
       d$X, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-      control = trex_control(solver = "TCDLASSO", K = 5,
+      control = trex_control(solver = "TCDLASSO", K = 5, cd_max_sweeps = cd_test_sweeps,
                              cd_certified_localization = certified)))
     selector$select()
     expect_true(all(d$support %in% selector$selected_indices),
@@ -170,7 +171,7 @@ test_that("GVS runs the CCD family: en_solver = TCDENET and IEN solver choices",
     fresh(), y, tFDR = 0.2, seed = 42, verbose = FALSE,
     gvs_control = trex_gvs_control(gvs_type = "EN", en_solver = "TCDENET",
                                    lambda_2 = 1.0),
-    control = trex_control(K = 5)
+    control = trex_control(K = 5, cd_max_sweeps = cd_test_sweeps)
   ))
   sel_en$select()
   expect_length(sel_en$selected_var, p)
@@ -179,7 +180,7 @@ test_that("GVS runs the CCD family: en_solver = TCDENET and IEN solver choices",
   sel_ien <- quiet_cd(TRexGVSSelector$new(
     fresh(), y, tFDR = 0.2, seed = 42, verbose = FALSE,
     gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 1.0),
-    control = trex_control(solver = "TCDIENET", K = 5)
+    control = trex_control(solver = "TCDIENET", K = 5, cd_max_sweeps = cd_test_sweeps)
   ))
   sel_ien$select()
   expect_length(sel_ien$selected_var, p)
@@ -222,7 +223,7 @@ test_that("a selector warns once for a coordinate-descent solver name", {
   # One warning at construction that names the replacement, none from the experiments
   w <- cd_deprecations(
     sel <- TRexSelector$new(d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-                            control = trex_control(solver = "TCDLASSO", K = 3, cd_max_sweeps = 2e5)))
+                            control = trex_control(solver = "TCDLASSO", K = 3, cd_max_sweeps = cd_test_sweeps)))
   expect_identical(w, .cd_name_message("solver", "TCDLASSO", "TLASSO"))
   expect_length(cd_deprecations(sel$select()), 0)
 
@@ -267,7 +268,7 @@ test_that("the grouped and the Tikhonov selector warn for their coordinate-desce
 
   w <- cd_deprecations(trex_tikhonov_lambda2_power_rule(
     d$X + 0, d$y, tik_control = tik, seed = 1, grid = c(0, 1),
-    control = trex_control(solver = "TCDTIKNET", K = 3, cd_max_sweeps = 2e5)))
+    control = trex_control(solver = "TCDTIKNET", K = 3, cd_max_sweeps = cd_test_sweeps)))
   expect_identical(w, .cd_name_message("solver", "TCDTIKNET", "TIKNET"))
 
   # The defaults raise none

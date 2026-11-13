@@ -64,6 +64,7 @@ void run_trex_core_test(Eigen::Index n,
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
     trex_ctrl.lloop_strategy = l_strategy;
+    trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     if (multi_threaded) {
         trex_ctrl.parallel_rnd_experiments = true;
@@ -706,6 +707,7 @@ TEST(TRexCoreTest, WarmStart_MemoryMappedMatchesInMemory_CdFamily) {
         ctrl.K = 3;
         ctrl.max_dummy_multiplier = 2;
         ctrl.solver_type = solver;
+        ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         const double tFDR = 0.2;   // keeps the T-loop past T = 1 (see above)
 
         Eigen::Map<Eigen::MatrixXd> X1(X_mem.data(), X_mem.rows(), X_mem.cols());

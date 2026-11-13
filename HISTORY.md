@@ -10,6 +10,24 @@ changes. Versions: C++ SDK 1.0.1, R TRexSelector 2.0.1, Python trexselector 1.0.
 
 ### 2026-11-13
 
+#### The selector tests of the coordinate-descent family run with a sweep budget of 200,000
+
+- Since a coordinate-descent solve that has not converged is an error (an entry below), a selector run
+  of the family can end with that error, depending on the draw of the dummies. Over 200 seeds at the
+  default budget of 2,000 sweeps, TCDLASSO did so for 6 seeds on the Python test design (n = 50,
+  p = 20), its legacy localization for 3 and TCDIENET in the grouped selector for 1. On a design like
+  the C++ core test (n = 150, p = 200) TCDLASSO did so for 8 seeds. TCDENET and the R test designs
+  never did. At a budget of 200,000 no seed ends with the error on any of these designs.
+- Four Python tests ran such a selector without a seed and failed in about one suite run of twelve.
+  They now run with a fixed seed.
+- The seeded tests passed on the development machine. The dummies come from the distributions of the
+  C++ standard library and differ per platform, so a seed that passes on one platform proves nothing
+  for another. Every test that runs a selector of the family to completion now sets `cd_max_sweeps`
+  to 200,000, in seven C++ test files, two R test files and three Python test files. The test of the
+  error itself keeps the default budget, and the tests that run a solver class directly are unchanged.
+- No test result changes and no test runs longer. C++ tests 718 of 718, R tests 1,874, Python tests
+  697 in five runs in a row.
+
 #### The coordinate-descent solver family is deprecated
 
 - The coordinate-descent solvers TCDLASSO, TCDENET, TCDIENET and TCDTIKNET will be removed in the next

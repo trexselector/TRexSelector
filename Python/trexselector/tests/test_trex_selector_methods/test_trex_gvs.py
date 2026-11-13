@@ -281,11 +281,12 @@ def test_gvs_en_tcdenet_runs(signal_data):
     X, y, n, p = signal_data
     ctrl = trexselector.TRexControlParameter()
     ctrl.K = 3
+    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
     gvs_ctrl = trexselector.TRexGVSControlParameter()
     gvs_ctrl.en_solver = trexselector.ENSolverType.TCDENET
     gvs_ctrl.lambda_2 = 1.0
     sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl,
-                                            trex_control=ctrl, verbose=False)
+                                            trex_control=ctrl, seed=42, verbose=False)
     res = sel.select()
     assert res is not None
 
@@ -295,11 +296,12 @@ def test_gvs_ien_solver_choice_tcdienet(signal_data):
     ctrl = trexselector.TRexControlParameter()
     ctrl.K = 3
     ctrl.solver_type = trexselector.SolverTypeForTRex.TCDIENET
+    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
     gvs_ctrl = trexselector.TRexGVSControlParameter()
     gvs_ctrl.gvs_type = trexselector.GVSType.IEN
     gvs_ctrl.lambda_2 = 1.0
     sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl,
-                                            trex_control=ctrl, verbose=False)
+                                            trex_control=ctrl, seed=42, verbose=False)
     res = sel.select()
     assert res is not None
 

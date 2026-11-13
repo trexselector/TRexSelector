@@ -51,12 +51,19 @@ def _tik_control(K=None, lambda_2=1.0, **fields):
     return ctrl
 
 
-def _base_control(K=5, mult=2, solver=None):
+# Sweep budget of the coordinate-descent selector runs. At the default budget such a run can end with
+# the convergence error on some draws of the dummies, and the dummies differ per platform.
+_CD_SWEEPS = 200000
+
+
+def _base_control(K=5, mult=2, solver=None, sweeps=None):
     ctrl = tsn.TRexControlParameter()
     ctrl.K = K
     ctrl.max_dummy_multiplier = mult
     if solver is not None:
         ctrl.solver_type = solver
+    if sweeps is not None:
+        ctrl.solver_params.cd_max_sweeps = sweeps
     return ctrl
 
 
@@ -194,7 +201,7 @@ def test_group_mean_k_matches_gvs_ien_tcdienet(lambda_2):
     tik = _tik_control(K, lambda_2, prior_groups=groups)
     sel_tik = tsn.TRexTikhonovSelector(
         X.copy(), y.copy(), tik_control=tik,
-        trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDTIKNET),
+        trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDTIKNET, sweeps=_CD_SWEEPS),
         seed=42, verbose=False)
     sel_tik.select()
 
@@ -206,7 +213,8 @@ def test_group_mean_k_matches_gvs_ien_tcdienet(lambda_2):
         warnings.simplefilter("ignore", UserWarning)   # lambda_2 = 0 is deliberate
         sel_gvs = tsn.TRexGVSSelector(
             X.copy(), y.copy(), gvs_control=gvs,
-            trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDIENET),
+            trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDIENET,
+                                       sweeps=_CD_SWEEPS),
             seed=42, verbose=False)
     sel_gvs.select()
 
@@ -223,7 +231,7 @@ def test_identity_k_with_both_escape_hatches_collapses_onto_tcdenet():
                        cluster_dummies=False, fold_dummy_coupling=False)
     sel_tik = tsn.TRexTikhonovSelector(
         X.copy(), y.copy(), tik_control=tik,
-        trex_control=_base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDTIKNET),
+        trex_control=_base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDTIKNET, sweeps=_CD_SWEEPS),
         seed=42, verbose=False)
     sel_tik.select()
 
@@ -232,7 +240,7 @@ def test_identity_k_with_both_escape_hatches_collapses_onto_tcdenet():
         tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik,
                                  trex_control=_base_control(K=5, mult=2), seed=42, verbose=False)
 
-    base = _base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDENET)
+    base = _base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDENET, sweeps=_CD_SWEEPS)
     base.solver_params.lambda2 = lambda_2
     sel_en = tsn.TRexSelector(X.copy(), y.copy(), trex_control=base, seed=42, verbose=False)
     sel_en.select()

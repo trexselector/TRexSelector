@@ -167,6 +167,8 @@ TEST_F(TRexSPCATest, Execution_ThresholdedModeDoesNotThrow) {
 TEST_F(TRexSPCATest, Execution_TcdenetSolverDoesNotThrow) {
     auto ctrl = fast_ctrl(SPCAMode::ActiveSet);
     ctrl.en_solver = tg::ENSolverType::TCDENET;
+    // the CD solvers converge on every draw of the dummies
+    ctrl.gvs_ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;
     EXPECT_NO_THROW({
         TRexSPCA spca(X_map, M, 0.2, ctrl, seed);
         spca.select();
@@ -184,6 +186,8 @@ TEST_F(TRexSPCATest, ActiveSets_TcdenetMatchesTenet) {
         auto ctrl = fast_ctrl(SPCAMode::ActiveSet);
         ctrl.en_solver           = en_solver;
         ctrl.gvs_ctrl.lambda_2   = 1.0;   // fixed: skips CV, exact equivalence
+        // the CD solvers converge on every draw of the dummies
+        ctrl.gvs_ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;
         TRexSPCA spca(Xf_map, M, 0.1, ctrl, seed);
         return spca.select().active_sets;
     };

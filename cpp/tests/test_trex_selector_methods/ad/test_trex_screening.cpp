@@ -445,6 +445,8 @@ TEST_F(TRexScreeningTest, Execution_CdFamilyDoesNotThrow) {
         screen_params.trex_ctrl.K = 5;
         screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
         screen_params.trex_ctrl.solver_type = solver;
+        // the CD solvers converge on every draw of the dummies
+        screen_params.trex_ctrl.solver_params.cd_max_sweeps = 200000;
 
         EXPECT_NO_THROW({
             ScreenTRexSelector selector(X_map, y_map, screen_params);

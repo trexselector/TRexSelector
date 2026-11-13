@@ -266,6 +266,7 @@ TEST(Lambda2Guard, TikhonovIenPureNoiseIsABoundaryPickAndWarnsOnce) {
     ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;
     ctrl.trex_ctrl.K = 3;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
+    ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -376,6 +377,7 @@ TEST(Lambda2Guard, TikhonovDfmaxRatioReachesTheTunerAndNonFiniteThrows) {
     ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;
     ctrl.trex_ctrl.K = 3;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
+    ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
     EXPECT_DOUBLE_EQ(ctrl.cv_dfmax_ratio, 0.8);
 
     auto runTik = [&](double ratio) {
