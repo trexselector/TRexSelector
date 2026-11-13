@@ -31,6 +31,12 @@
   `use_max_T_stop` in `trex_control()` names the bound, `ceiling(n / 2)`.
 * The help of `trex_da_control(da_method = )` and the vignette "T-Rex+DA" say which dependency model
   each method is made for.
+* The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
+  which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
+  centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a
+  coefficient and needs `prior_groups`, the penalty carries the factor one half of the code, and
+  `tikhonov_K` is optional under `"GROUP_CENTERING"`. The vignette no longer runs the deprecated solver
+  `"TCDTIKNET"` with the decoupled dummy block.
 
 ## New
 

@@ -122,24 +122,6 @@ int main() {
     std::cout << '\n';
     //! [power-rule]
 
-    doc.begin("elastic-net");
-    //! [elastic-net]
-    Eigen::SparseMatrix<double> identity(p, p);
-    identity.setIdentity();
-
-    TRexTikhonovControlParameter en_ctrl;
-    en_ctrl.tikhonov_K = identity;
-    en_ctrl.lambda_2 = 1.0;
-    en_ctrl.cluster_dummies = false;
-    en_ctrl.fold_dummy_coupling = false;
-    en_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDTIKNET;   // the solver with this mode
-    en_ctrl.trex_ctrl.K = 10;
-
-    TRexTikhonovSelector en(X_map, y_map, 0.1, en_ctrl, 4, false);
-    en.select();
-    print_indices("selected:", en.getSelectedIndices());
-    //! [elastic-net]
-
     doc.begin("group-centering");
     //! [group-centering]
     std::vector<Eigen::Index> groups(p);

@@ -178,7 +178,7 @@ inline void bind_trex_tikhonov(py::module& m) {
         .value("SPARSE_GENERAL",  tik::TikPenaltyStructure::SPARSE_GENERAL,  "tik_control.tikhonov_K is the p x p PSD "
             "penalty matrix (dense array, converted to sparse).")
         .value("GROUP_CENTERING", tik::TikPenaltyStructure::GROUP_CENTERING, "K = I - J/p_m per group, built from "
-            "prior_groups (or the HAC clusters).")
+            "prior_groups, which this structure requires.")
         .export_values();
 
     py::class_<tik::Lambda2PickInfo>(m, "Lambda2PickInfo",
@@ -249,7 +249,8 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readonly("K_pilot",           &tik::Lambda2PilotResult::K_pilot,           "Pilot experiments per grid "
             "value.")
         .def_readonly("T_pilot",           &tik::Lambda2PilotResult::T_pilot,           "Pilot T-steps.")
-        .def_readonly("L_0",               &tik::Lambda2PilotResult::L_0,               "Pilot dummy multiplier.")
+        .def_readonly("L_0",               &tik::Lambda2PilotResult::L_0,               "Number of dummies of "
+            "the pilot, pilot_L_multiplier times p.")
         .def_readonly("dummy_tag",         &tik::Lambda2PilotResult::dummy_tag,         "Dummy stream tag the pilot "
             "drew under.")
         .def_readonly("seconds",           &tik::Lambda2PilotResult::seconds,           "Wall-clock seconds of the "
@@ -270,7 +271,9 @@ inline void bind_trex_tikhonov(py::module& m) {
                 c.tikhonov_K = K.sparseView();
             },
             "The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). "
-                "Required under SPARSE_GENERAL.")
+                "Required under SPARSE_GENERAL. Optional under GROUP_CENTERING, where the selector builds the "
+                "centering matrix from prior_groups when it is left out. A supplied matrix has to be that "
+                "matrix.")
         .def_readwrite("lambda_2",        &tik::TRexTikhonovControlParameter::lambda_2,        "Tikhonov penalty "
             "(solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed.")
         .def_readwrite("lambda2_method",  &tik::TRexTikhonovControlParameter::lambda2_method,  "Rule for resolving "
@@ -318,7 +321,7 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Group assignment "
             "(0-based, length p; empty = HAC clusters from corr_max / hc_linkage).")
         .def_readwrite("corr_max",        &tik::TRexTikhonovControlParameter::corr_max,        "HAC cut: maximum "
-            "within-cluster correlation when prior_groups is empty.")
+            "correlation between variables of different clusters when prior_groups is empty.")
         .def_readwrite("hc_linkage",      &tik::TRexTikhonovControlParameter::hc_linkage,      "HAC linkage "
             "(ml_methods.clustering.LinkageMethod).")
         .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControlParameter::trex_ctrl,       "Nested base T-Rex "

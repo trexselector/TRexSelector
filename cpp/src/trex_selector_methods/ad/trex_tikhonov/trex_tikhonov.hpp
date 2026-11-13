@@ -20,7 +20,7 @@
  *  the quadratic penalty is (lambda_2 / 2) * beta^T K beta for a
  *  user-supplied PSD matrix K = Gamma^T Gamma (p x p).
  *  This generalizes:
- *    - K = I                     -> plain elastic net (TCDENET),
+ *    - K = I                     -> the ridge penalty of the elastic net,
  *    - K = sum_m 1_m 1_m^T / p_m -> the group-informed IEN penalty that
  *      TRexGVSSelector builds from a clustering (kept separate on purpose:
  *      GVS owns the cluster-aware K-experiment loop; this class runs the

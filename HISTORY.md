@@ -16,6 +16,32 @@ until the release is prepared.
 
 ### 2026-11-13
 
+#### The documentation of the Tikhonov selector says which penalty is which
+
+- The penalty of the informed elastic net is the group-mean matrix, K = sum_m 1_m 1_m^T / p_m. The header
+  and the R help of the control said so. Guide page 08 on the three surfaces called the block-diagonal
+  centering matrix I - J / p_m "the penalty of the informed elastic net". The page now says that a
+  group-mean matrix reproduces that penalty and that a centering matrix asks the members of a group to
+  share a coefficient.
+- `GROUP_CENTERING` needs `prior_groups`, and the constructor refuses it without them. Page 08, the R
+  help and the Python text of the structure said that the groups come "from `prior_groups` or from the
+  clustering".
+- Page 08 wrote the penalty as lambda_2 ||Gamma beta||^2. The solvers use (lambda_2 / 2) beta^T K beta,
+  and the elastic net (lambda_2 / 2) ||beta||^2. Both formulas carry the factor now, so a `lambda_2` of
+  the page means what the code does.
+- "K = I is the elastic net" and "K = I collapses to the plain elastic net" stood on page 08, in the R
+  help and in the header. K = I gives the ridge penalty of the elastic net. The run of the selector
+  equals the elastic-net selector only with the decoupled dummy block, which the deprecated TCDTIKNET
+  alone has. The three texts name the penalty, and the example of page 08 that ran TCDTIKNET with the
+  decoupled dummy block leaves the page on the three surfaces. The page shows the default solver TIKNET.
+- The R help called `tikhonov_K` "ignored under GROUP_CENTERING". It is optional there. Left out, the
+  selector builds the centering matrix from `prior_groups`, and a supplied matrix is used as it is by
+  TIKNET and by the cross-validation tuners.
+- Two Python texts of the control and of the pilot result. `L_0` is the number of dummies of the pilot,
+  `pilot_L_multiplier` times p, and was called a multiplier. `corr_max` is the maximum correlation
+  between variables of different clusters and was called a within-cluster correlation.
+- No code changes.
+
 #### The documentation says what each dependency-aware method is made for
 
 - Each method of the dependency-aware selector stands for the dependency model of its paper. The binary

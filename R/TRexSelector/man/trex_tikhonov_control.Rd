@@ -34,13 +34,15 @@ trex_tikhonov_control(
 \item{tikhonov_K}{Penalty matrix K (p x p): a base \code{matrix} or a
 sparse \code{Matrix::dgCMatrix}. Build it from a regularization
 operator Gamma with \code{\link{trex_gamma_to_k}}. Required for
-\code{penalty_structure = "SPARSE_GENERAL"}; ignored under
-\code{"GROUP_CENTERING"}.}
+\code{penalty_structure = "SPARSE_GENERAL"}. Optional under
+\code{"GROUP_CENTERING"}: left out, the selector builds the centering
+matrix from \code{prior_groups}. A supplied matrix is used as it is
+and has to be that centering matrix.}
 
 \item{penalty_structure}{\code{"SPARSE_GENERAL"} (default): the
 user-supplied K. \code{"GROUP_CENTERING"}: K is the block-diagonal
-centering penalty over the dummy clusters (\code{prior_groups}, or the
-HAC clustering). An all-singleton partition is legitimate there: K
+centering penalty over the groups of \code{prior_groups}, which this
+structure requires. An all-singleton partition is legitimate there: K
 vanishes and the path is the plain lasso on per-variable cluster
 dummies. With \code{solver = "TCDTIKNET"} this path runs through the
 group-centering hooks of TCDIENET, so its warnings (sweep budget,
@@ -161,11 +163,11 @@ the general-Tikhonov T-Rex: a penalty matrix
 \code{K = t(Gamma) \%*\% Gamma} drives the Tikhonov-net solvers
 (TIKNET by default; TCDTIKNET through the \code{solver} field
 of \code{\link{trex_control}}, deprecated and removed in TRexSelector
-2.1.0). \code{K = I} collapses to the plain
-elastic net; a group-mean K reproduces the GVS-IEN penalty;
-banded/Laplacian K encode smoothness. With
+2.1.0). \code{K = I} gives the ridge penalty of the
+elastic net, a group-mean K reproduces the GVS-IEN penalty, and a
+banded or Laplacian K encodes smoothness. With
 \code{penalty_structure = "GROUP_CENTERING"} the selector builds K
-itself from the dummy clustering (block-diagonal \code{I - J / p_m}:
+itself from \code{prior_groups} (block-diagonal \code{I - J / p_m}:
 the members of a group share a coefficient).
 }
 \examples{

@@ -16,18 +16,20 @@ trexselector.utils.set_num_threads(min(2, trexselector.utils.get_max_threads()))
 
 ## From the elastic net to a penalty matrix
 
-The elastic net adds the ridge penalty $\lambda_2 \|\boldsymbol\beta\|_2^2$ to the lasso. Tikhonov
-regularization in general form {cite}`tikhonov1963regularization,park2018tikhonov` replaces it by
-$\lambda_2 \|\boldsymbol\Gamma \boldsymbol\beta\|_2^2 = \lambda_2 \boldsymbol\beta^\top \boldsymbol
-K \boldsymbol\beta$ with $\boldsymbol K = \boldsymbol\Gamma^\top \boldsymbol\Gamma$. The matrix
-encodes what the analyst knows about the coefficients. $\boldsymbol K = \boldsymbol I$ is the
-elastic net, a first-difference operator $\boldsymbol\Gamma$ gives the graph Laplacian of a chain
-and asks neighbouring coefficients to be equal (smoothness), a graph Laplacian in general
-{cite}`smola2003graphkernels,chung1997spectral` couples the variables along the edges of a graph,
-and a block-diagonal centering matrix reproduces the penalty of the informed elastic net. The
-Tikhonov T-Rex selector runs the terminating Tikhonov-net solvers (TIKNET by the pathwise homotopy
-algorithm, the default, and the deprecated TCDTIKNET by coordinate descent) with such a matrix inside
-the random experiments.
+The elastic net adds the ridge penalty $\frac{\lambda_2}{2} \|\boldsymbol\beta\|_2^2$ to the lasso.
+Tikhonov regularization in general form {cite}`tikhonov1963regularization,park2018tikhonov` replaces
+it by
+$\frac{\lambda_2}{2} \|\boldsymbol\Gamma \boldsymbol\beta\|_2^2 =
+\frac{\lambda_2}{2} \boldsymbol\beta^\top \boldsymbol K \boldsymbol\beta$
+with $\boldsymbol K = \boldsymbol\Gamma^\top \boldsymbol\Gamma$. The matrix encodes what the analyst
+knows about the coefficients. $\boldsymbol K = \boldsymbol I$ gives the ridge penalty of the elastic
+net, a first-difference operator $\boldsymbol\Gamma$ gives the graph Laplacian of a chain and asks
+neighbouring coefficients to be equal (smoothness), a graph Laplacian in general
+{cite}`smola2003graphkernels,chung1997spectral` couples the variables along the edges of a graph, a
+group-mean matrix reproduces the penalty of the informed elastic net, and a block-diagonal centering
+matrix asks the members of a group to share a coefficient. The Tikhonov T-Rex selector runs the
+terminating Tikhonov-net solvers (TIKNET by the pathwise homotopy algorithm, the default, and the
+deprecated TCDTIKNET by coordinate descent) with such a matrix inside the random experiments.
 
 ## A smooth coefficient profile
 
@@ -129,42 +131,24 @@ print("counts:  ", profile.counts())
 
 ## Dummies for a structured penalty
 
-The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables under
-the penalty. Two defaults take care of that. `cluster_dummies = True` draws the dummies as per-cluster
-coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical clustering
-with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = True` lets every dummy join the
-$\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist for
-validation runs, and the decoupled dummy block exists with the solver `TCDTIKNET` only. With
-$\boldsymbol K = \boldsymbol I$, independent dummies and the decoupled dummy block, the selector
-reduces to the plain elastic net. That solver is deprecated, so the run below raises a
-`FutureWarning`, and `fold_dummy_coupling` will be removed with it in the next minor release.
-
-```{code-cell} python
-en_ctrl = tsn.TRexTikhonovControlParameter()
-en_ctrl.tikhonov_K = np.eye(p)
-en_ctrl.lambda_2 = 1.0
-en_ctrl.cluster_dummies = False
-en_ctrl.fold_dummy_coupling = False
-cd_ctrl = tsn.TRexControlParameter()
-cd_ctrl.K = 10
-cd_ctrl.solver_type = tsn.SolverTypeForTRex.TCDTIKNET
-
-en = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=en_ctrl, trex_control=cd_ctrl,
-                              seed=4, verbose=False)
-en.select()
-en.selected_indices
-```
+The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables
+under the penalty. Two defaults take care of that. `cluster_dummies = True` draws the dummies as
+per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or
+hierarchical clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = True` lets
+every dummy join the $\boldsymbol K$-coupling of the variable it mirrors (the FOLDED coupling).
+`cluster_dummies = False` exists for validation runs. The decoupled dummy block,
+`fold_dummy_coupling = False`, exists with the deprecated solver `TCDTIKNET` only and will be
+removed with it in the next minor release.
 
 ## Group centering
 
 `penalty_structure = TikPenaltyStructure.GROUP_CENTERING` lets the selector build $\boldsymbol K$
-itself as the block-diagonal centering penalty $\boldsymbol I - \boldsymbol J / p_m$ over the dummy
-clusters, so the members of a group share a coefficient, the penalty of the informed elastic net.
-The groups come from `prior_groups` (0-based group ids, one per variable) or from the clustering. An
-all-singleton partition is legitimate, the penalty vanishes and the path is the lasso on
-per-variable cluster dummies. With the solver `TCDTIKNET` this path runs through the
-group-centering hooks of TCDIENET, so its warnings (sweep budget, certification fallback) carry the
-tag `[TCDIENET]`.
+itself as the block-diagonal centering penalty $\boldsymbol I - \boldsymbol J / p_m$ over the groups
+of `prior_groups`, so the members of a group share a coefficient. The structure needs `prior_groups`
+(0-based group ids, one per variable), and the selector refuses it without them. An all-singleton
+partition is legitimate, the penalty vanishes and the path is the lasso on per-variable cluster
+dummies. With the solver `TCDTIKNET` this path runs through the group-centering hooks of TCDIENET,
+so its warnings (sweep budget, certification fallback) carry the tag `[TCDIENET]`.
 
 ```{code-cell} python
 groups = np.repeat(np.arange(6), 10)
@@ -191,6 +175,10 @@ unconverged path. `TCDTIKNET` is deprecated and will be removed with the coordin
 the next minor release. The selector raises a `FutureWarning` for it, as the run below shows.
 
 ```{code-cell} python
+cd_ctrl = tsn.TRexControlParameter()
+cd_ctrl.K = 10
+cd_ctrl.solver_type = tsn.SolverTypeForTRex.TCDTIKNET
+
 cd = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=tik_ctrl, trex_control=cd_ctrl,
                               seed=4, verbose=False)
 cd.select()

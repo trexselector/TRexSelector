@@ -4,16 +4,18 @@
 
 ## From the elastic net to a penalty matrix
 
-The elastic net adds the ridge penalty \f$\lambda_2 \|\boldsymbol\beta\|_2^2\f$ to the lasso.
-Tikhonov regularization in general form \cite tikhonov1963regularization and
-\cite park2018tikhonov replaces it by \f$\lambda_2 \|\boldsymbol\Gamma \boldsymbol\beta\|_2^2 =
-\lambda_2 \boldsymbol\beta^\top \boldsymbol K \boldsymbol\beta\f$ with \f$\boldsymbol K =
-\boldsymbol\Gamma^\top \boldsymbol\Gamma\f$. The matrix encodes what the analyst knows about the
-coefficients. \f$\boldsymbol K = \boldsymbol I\f$ is the elastic net, a first-difference operator
-\f$\boldsymbol\Gamma\f$ gives the graph Laplacian of a chain and asks neighbouring coefficients to
-be equal (smoothness), a graph Laplacian in general \cite smola2003graphkernels and
-\cite chung1997spectral couples the variables along the edges of a graph, and a block-diagonal
-centering matrix reproduces the penalty of the informed elastic net. The Tikhonov T-Rex selector
+The elastic net adds the ridge penalty \f$\frac{\lambda_2}{2} \|\boldsymbol\beta\|_2^2\f$ to the
+lasso. Tikhonov regularization in general form \cite tikhonov1963regularization and
+\cite park2018tikhonov replaces it by
+\f$\frac{\lambda_2}{2} \|\boldsymbol\Gamma \boldsymbol\beta\|_2^2 =
+\frac{\lambda_2}{2} \boldsymbol\beta^\top \boldsymbol K \boldsymbol\beta\f$
+with \f$\boldsymbol K = \boldsymbol\Gamma^\top \boldsymbol\Gamma\f$. The matrix encodes what the
+analyst knows about the coefficients. \f$\boldsymbol K = \boldsymbol I\f$ gives the ridge penalty of
+the elastic net, a first-difference operator \f$\boldsymbol\Gamma\f$ gives the graph Laplacian of a
+chain and asks neighbouring coefficients to be equal (smoothness), a graph Laplacian in general
+\cite smola2003graphkernels and \cite chung1997spectral couples the variables along the edges of a
+graph, a group-mean matrix reproduces the penalty of the informed elastic net, and a block-diagonal
+centering matrix asks the members of a group to share a coefficient. The Tikhonov T-Rex selector
 runs the terminating Tikhonov-net solvers (TIKNET_Solver by the pathwise homotopy algorithm, the
 default, and the deprecated TCDTIKNET_Solver by coordinate descent) with such a matrix inside the
 random experiments.
@@ -79,29 +81,25 @@ exist.
 
 ## Dummies for a structured penalty
 
-The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables under
-the penalty. Two defaults take care of that. `cluster_dummies = true` draws the dummies as per-cluster
-coloured layers on a correlation clustering of the variables (`prior_groups`, or hierarchical clustering
-with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = true` lets every dummy join the
-\f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling). Both switches exist
-for validation runs, and the decoupled dummy block exists with `SolverTypeForTRex::TCDTIKNET` only.
-With \f$\boldsymbol K = \boldsymbol I\f$, independent dummies and the decoupled dummy block, the
-selector reduces to the plain elastic net. That solver is deprecated, and `fold_dummy_coupling` will
-be removed with it in the next minor release.
-
-\snippet{trimleft} trex_tikhonov.cpp elastic-net
-\output{trex_tikhonov.elastic-net.txt}
+The false discovery rate (FDR) guarantee needs dummies that are exchangeable with the null variables
+under the penalty. Two defaults take care of that. `cluster_dummies = true` draws the dummies as
+per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`, or
+hierarchical clustering with `corr_max` and `hc_linkage`), and `fold_dummy_coupling = true` lets
+every dummy join the \f$\boldsymbol K\f$-coupling of the variable it mirrors (the FOLDED coupling).
+`cluster_dummies = false` exists for validation runs. The decoupled dummy block,
+`fold_dummy_coupling = false`, exists with the deprecated `SolverTypeForTRex::TCDTIKNET` only and
+will be removed with it in the next minor release.
 
 ## Group centering
 
 `penalty_structure = TikPenaltyStructure::GROUP_CENTERING` lets the selector build
-\f$\boldsymbol K\f$ itself as the block-diagonal centering penalty \f$\boldsymbol I - \boldsymbol J
-/ p_m\f$ over the dummy clusters, so the members of a group share a coefficient, the penalty of the
-informed elastic net. The groups come from `prior_groups` (0-based group ids, one per variable) or
-from the clustering. An all-singleton partition is legitimate, the penalty vanishes and the path is
-the lasso on per-variable cluster dummies. With `SolverTypeForTRex::TCDTIKNET` this path runs
-through the group-centering hooks of TCDIENET_Solver, so its warnings (sweep budget, certification
-fallback) carry the tag `[TCDIENET]`.
+\f$\boldsymbol K\f$ itself as the block-diagonal centering penalty
+\f$\boldsymbol I - \boldsymbol J / p_m\f$ over the groups of `prior_groups`, so the members of a
+group share a coefficient. The structure needs `prior_groups` (0-based group ids, one per variable),
+and the selector refuses it without them. An all-singleton partition is legitimate, the penalty
+vanishes and the path is the lasso on per-variable cluster dummies. With
+`SolverTypeForTRex::TCDTIKNET` this path runs through the group-centering hooks of TCDIENET_Solver,
+so its warnings (sweep budget, certification fallback) carry the tag `[TCDIENET]`.
 
 \snippet{trimleft} trex_tikhonov.cpp group-centering
 \output{trex_tikhonov.group-centering.txt}

@@ -782,7 +782,7 @@ class Lambda2PilotResult:
     @property
     def L_0(self) -> int:
         """
-        Pilot dummy multiplier.
+        Number of dummies of the pilot, pilot_L_multiplier times p.
         """
     @property
     def T_pilot(self) -> int:
@@ -2335,7 +2335,7 @@ class TRexTikhonovControlParameter:
     @property
     def corr_max(self) -> float:
         """
-        HAC cut: maximum within-cluster correlation when prior_groups is empty.
+        HAC cut: maximum correlation between variables of different clusters when prior_groups is empty.
         """
     @corr_max.setter
     def corr_max(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2503,7 +2503,7 @@ class TRexTikhonovControlParameter:
     @property
     def tikhonov_K(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). Required under SPARSE_GENERAL.
+        The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). Required under SPARSE_GENERAL. Optional under GROUP_CENTERING, where the selector builds the centering matrix from prior_groups when it is left out. A supplied matrix has to be that matrix.
         """
     @tikhonov_K.setter
     def tikhonov_K(self, arg1: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> None:
@@ -2626,7 +2626,7 @@ class TikPenaltyStructure:
     
       SPARSE_GENERAL : tik_control.tikhonov_K is the p x p PSD penalty matrix (dense array, converted to sparse).
     
-      GROUP_CENTERING : K = I - J/p_m per group, built from prior_groups (or the HAC clusters).
+      GROUP_CENTERING : K = I - J/p_m per group, built from prior_groups, which this structure requires.
     """
     GROUP_CENTERING: typing.ClassVar[TikPenaltyStructure]  # value = <TikPenaltyStructure.GROUP_CENTERING: 1>
     SPARSE_GENERAL: typing.ClassVar[TikPenaltyStructure]  # value = <TikPenaltyStructure.SPARSE_GENERAL: 0>
