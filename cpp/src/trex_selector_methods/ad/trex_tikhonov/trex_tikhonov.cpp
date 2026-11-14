@@ -155,23 +155,22 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     }
 
     // ---- Solver gate ------------------------------------------------------
-    // Two solvers implement the general sparse-K mode: TIKNET (native LARS
-    // homotopy, the default, FOLDED-only) and TCDTIKNET (CCD; FOLDED or
-    // INDEPENDENT_RIDGE dummy coupling). The shared dispatch would reject
-    // anything K-aware for other enumerators anyway, so fail fast with a
-    // precise message.
-    if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TCDTIKNET &&
-        trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIKNET) {
+    // TIKNET, the homotopy solver, is the one solver of the selector. The
+    // coordinate-descent solver TCDTIKNET is no longer accepted, and with it
+    // goes the decoupled dummy block, which only that solver had.
+    if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIKNET) {
+        const bool was_cd = trex_ctrl_.solver_type == disp::SolverTypeForTRex::TCDTIKNET;
         throw std::invalid_argument(
-            "TRexTikhonovSelector: solver_type must be TCDTIKNET or TIKNET "
-            "(the only solvers with a general Tikhonov-K mode).");
+            std::string("TRexTikhonovSelector: solver_type must be TIKNET, the "
+                        "solver of the general Tikhonov penalty.") +
+            (was_cd ? " The deprecated coordinate-descent solver TCDTIKNET is no "
+                      "longer accepted by the selector." : ""));
     }
-    if (!trex_tik_ctrl_.fold_dummy_coupling &&
-        trex_ctrl_.solver_type != disp::SolverTypeForTRex::TCDTIKNET) {
+    if (!trex_tik_ctrl_.fold_dummy_coupling) {
         throw std::invalid_argument(
-            "TRexTikhonovSelector: fold_dummy_coupling = false "
-            "(INDEPENDENT_RIDGE) exists only on the TCDTIKNET path; TIKNET "
-            "implements FOLDED coupling exclusively.");
+            "TRexTikhonovSelector: fold_dummy_coupling = false is no longer "
+            "available. The decoupled dummy block existed with the solver "
+            "TCDTIKNET only, which the selector no longer accepts.");
     }
 
     // ---- Cluster-aware dummy gates ----------------------------------------

@@ -1791,10 +1791,9 @@ TCDIENET_Solver <- R6::R6Class(
 #' minimizers per dummy crossing under the general quadratic penalty
 #' \code{lambda2 * t(beta) K beta} with a sparse PSD \code{K}. Dummy coupling
 #' per \code{fold_dummies} in the options (\code{FALSE}: independent
-#' \code{kappa_dummy} ridge; \code{TRUE}: FOLDED layered convention). The
-#' solver used internally by \code{TRexTikhonovSelector} for
-#' \code{solver = "TCDTIKNET"}. Not finally developed: under the FOLDED
-#' coupling its sweeps grow with \code{lambda2}, and on saturating designs as
+#' \code{kappa_dummy} ridge; \code{TRUE}: FOLDED layered convention).
+#' \code{TRexTikhonovSelector} no longer runs it. Not finally developed: under
+#' the FOLDED coupling its sweeps grow with \code{lambda2}, and on saturating designs as
 #' well, and a solve that does not converge within \code{cd_max_sweeps}
 #' raises an error. The homotopy solver \code{\link{TIKNET_Solver}} has no
 #' such limit. Inherits the CD getters from

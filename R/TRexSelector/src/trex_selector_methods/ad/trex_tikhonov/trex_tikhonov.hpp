@@ -211,8 +211,7 @@ enum class TikPenaltyStructure {
     /** @brief K = blockdiag(I_{p_m} - 1_m 1_m^T / p_m) over `prior_groups`:
      *  the members of a group share a coefficient. The groups are required.
      *  `tikhonov_K` may be left empty, the selector builds the matrix for
-     *  the cross-validation rules. With TCDTIKNET the solver runs on the
-     *  O(1) group-centering hooks, the same penalty at a constant cost. */
+     *  the solver and for the cross-validation rules. */
     GROUP_CENTERING
 };
 
@@ -228,8 +227,7 @@ struct TRexTikhonovControlParameter {
 
     /** @brief Structural form of the penalty (see TikPenaltyStructure).
      *  Default SPARSE_GENERAL (matrix-passing). GROUP_CENTERING requires
-     *  non-empty `prior_groups` and routes the solver through the O(1)
-     *  group-centering hooks. */
+     *  non-empty `prior_groups` and builds the centering matrix from them. */
     TikPenaltyStructure penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
 
     /** @brief General Tikhonov matrix K = Gamma^T Gamma (p x p, sparse,
@@ -241,10 +239,9 @@ struct TRexTikhonovControlParameter {
      *  diag(K) = 1 so the real columns carry the same ridge as the dummies
      *  (kappa_dummy = 1).
      *  OPTIONAL for GROUP_CENTERING: when empty, the selector builds
-     *  K_GC = blockdiag(I - J/p_m) from `prior_groups` internally (the CV
-     *  tuners consume it). A supplied matrix is compared with K_GC, and
-     *  another matrix is refused at construction. The solver runs on the
-     *  O(1) hooks either way. */
+     *  K_GC = blockdiag(I - J/p_m) from `prior_groups` internally (the
+     *  solver and the CV tuners consume it). A supplied matrix is compared
+     *  with K_GC, and another matrix is refused at construction. */
     Eigen::SparseMatrix<double> tikhonov_K;
 
     /** @brief User-supplied lambda_2.
@@ -346,19 +343,14 @@ struct TRexTikhonovControlParameter {
      *  PERMUTATION family is refused). */
     bool pilot_shared_dummies = false;
 
-    /** @brief Dummy-coupling mode of the sparse-K penalty.
-     *  Default: true (FOLDED) — dummy copy t joins its originating
-     *  variable (t - p) mod p in the K-coupling, the exact generalization
-     *  of GVS's layered group convention; dummy/null exchangeability then
-     *  holds for arbitrary K (with K = sum_m 1_m 1_m^T / p_m the solver
-     *  reproduces GVS-TCDIENET bit-exactly). Set to false
-     *  (INDEPENDENT_RIDGE: decoupled unit-ridge dummy block) ONLY for
-     *  validation / equivalence runs, and with solver_type TCDTIKNET, the
-     *  one solver that has this mode — it preserves the K = I ≡ TCDENET
-     *  collapse but deforms exchangeability whenever K has off-diagonals
-     *  (conservative for positive off-diagonals such as group-mean K,
-     *  anti-conservative for negative ones such as Laplacians).
-     *  @deprecated Will be removed with TCDTIKNET and the coordinate descent
+    /** @brief Dummy-coupling mode of the sparse-K penalty. true (default,
+     *  FOLDED): dummy copy t joins its originating variable (t - p) mod p in
+     *  the K-coupling, the exact generalization of GVS's layered group
+     *  convention, so dummies and null variables stay exchangeable for
+     *  every K. false (a decoupled unit-ridge dummy block) is refused: it
+     *  existed with the solver TCDTIKNET only, which the selector no longer
+     *  accepts.
+     *  @deprecated The field will be removed with the coordinate descent
      *  family in the next minor release. */
     bool fold_dummy_coupling = true;
 
@@ -400,21 +392,14 @@ struct TRexTikhonovControlParameter {
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
-     *  `solver_type` must be one of the general-K solvers: TIKNET (native
-     *  LARS homotopy, the default, FOLDED coupling only) or TCDTIKNET (CCD).
-     *  The CCD solver is not finally developed: once lambda_2 times K is
-     *  large it can stop at its sweep budget (cd_max_sweeps) before it has
-     *  converged. It then throws instead of continuing on an unconverged
-     *  path. TCDTIKNET is deprecated and will be removed in the next minor
-     *  release.
-     *  With penalty_structure = GROUP_CENTERING, the TCDTIKNET dispatch
-     *  routes to TCDIENET's O(1) group-centering hooks, so the solver's
-     *  warnings (sweep budget, certification fallback) carry the tag
-     *  [TCDIENET]. TIKNET consumes the internally built K_GC on its sparse
-     *  path (the O(1) fast-path hooks are CCD-only). The default here
-     *  overrides the base class's own default (TLARS) accordingly. All other
-     *  base knobs (K, L-loop strategy, warm starts, memory mapping, CD
-     *  hyperparameters, ...) apply unchanged. */
+     *  `solver_type` must be TIKNET, the homotopy solver of the general
+     *  Tikhonov penalty, and the default here names it, where the base
+     *  class's own default is TLARS. Every other solver is refused at
+     *  construction. Among them is TCDTIKNET, the deprecated
+     *  coordinate-descent solver, which the selector accepted up to 1.0.0:
+     *  it is not finally developed and can stop at its sweep budget before
+     *  it has converged. All other base knobs (K, L-loop strategy, warm
+     *  starts, memory mapping, ...) apply unchanged. */
     tc::TRexControlParameter trex_ctrl = [] {
         tc::TRexControlParameter t;
         t.solver_type = disp::SolverTypeForTRex::TIKNET;
@@ -447,8 +432,10 @@ struct TRexTikhonovControlParameter {
  *    - a banded matrix or a graph Laplacian: neighbouring coefficients are
  *      smooth.
  *
- *  The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the
- *  coordinate-descent solver, is deprecated.
+ *  The solver. TIKNET, the homotopy solver, is the one solver of the
+ *  selector and the default of the nested base control. Every other solver
+ *  is refused, also TCDTIKNET, the deprecated coordinate-descent solver,
+ *  which the selector accepted up to 1.0.0.
  *
  *  The dummies. By default they are drawn per cluster of correlated
  *  variables, as in TRexGVSSelector (`cluster_dummies`): the clusters are
@@ -548,8 +535,9 @@ public:
      *         `tikhonov_K`, a `tikhonov_K` that is not finite, not symmetric
      *         or not positive semi-definite, a supplied `tikhonov_K` under
      *         GROUP_CENTERING that is not the centering matrix, a `lambda_2`
-     *         that is not finite, a `solver_type` other than TCDTIKNET /
-     *         TIKNET, malformed `prior_groups` / `corr_max`, an unsupported
+     *         that is not finite, a `solver_type` other than TIKNET,
+     *         `fold_dummy_coupling = false`, malformed `prior_groups` /
+     *         `corr_max`, an unsupported
      *         `hc_linkage`, wrong sizes of the cross-validation or of the
      *         pilot rule, or — with `cluster_dummies` on — a
      *         PERMUTATION-family L-loop strategy.
@@ -570,8 +558,8 @@ public:
     /** @brief Build the within-group centering matrix
      *  K_GC = blockdiag(I_{p_m} - 1_m 1_m^T / p_m) from a 0-based
      *  contiguous group assignment (length p; singleton groups contribute
-     *  nothing). The canonical GROUP_CENTERING penalty representation
-     *  (used by the CV tuners; the solver runs on the O(1) hooks). */
+     *  nothing). The GROUP_CENTERING penalty, as the solver and the CV
+     *  tuners consume it. */
     static Eigen::SparseMatrix<double> buildGroupCenteringK(
         const std::vector<Eigen::Index>& prior_groups);
 

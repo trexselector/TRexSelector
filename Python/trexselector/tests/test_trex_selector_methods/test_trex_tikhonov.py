@@ -51,19 +51,12 @@ def _tik_control(K=None, lambda_2=1.0, **fields):
     return ctrl
 
 
-# Sweep budget of the coordinate-descent selector runs. At the default budget such a run can end with
-# the convergence error on some draws of the dummies, and the dummies differ per platform.
-_CD_SWEEPS = 200000
-
-
-def _base_control(K=5, mult=2, solver=None, sweeps=None):
+def _base_control(K=5, mult=2, solver=None):
     ctrl = tsn.TRexControlParameter()
     ctrl.K = K
     ctrl.max_dummy_multiplier = mult
     # A base control that is passed has to name the solver of the selector.
     ctrl.solver_type = solver if solver is not None else tsn.SolverTypeForTRex.TIKNET
-    if sweeps is not None:
-        ctrl.solver_params.cd_max_sweeps = sweeps
     return ctrl
 
 
@@ -155,13 +148,50 @@ def test_a_solver_outside_the_family_is_refused(solver):
     X0 = X.copy(order="F")
     tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
     base = _base_control(solver=getattr(tsn.SolverTypeForTRex, solver))
-    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+    with pytest.raises(ValueError, match="solver_type must be TIKNET"):
         tsn.TRexTikhonovSelector(X, y, tik_control=tik, trex_control=base, seed=1, verbose=False)
-    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+    with pytest.raises(ValueError, match="solver_type must be TIKNET"):
         core.TRexTikhonovSelector(X, y, 0.1, tik, base, 1, False)
-    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+    with pytest.raises(ValueError, match="solver_type must be TIKNET"):
         tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, seed=1, grid=[0.0, 1.0])
     np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
+
+
+def test_the_coordinate_descent_solver_is_refused():
+    """TCDTIKNET, which the selector accepted up to 1.0.0, is an error on every entry point, without a
+    deprecation warning before it."""
+    from trexselector.trex_selector_methods import ad as core
+
+    X, y, groups = _grouped_data()
+    X = np.asfortranarray(X)
+    X0 = X.copy(order="F")
+    tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
+    base = _base_control(solver=tsn.SolverTypeForTRex.TCDTIKNET)
+    refused = "TCDTIKNET is no longer accepted by the selector"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ValueError, match=refused):
+            tsn.TRexTikhonovSelector(X, y, tik_control=tik, trex_control=base, seed=1, verbose=False)
+        with pytest.raises(ValueError, match=refused):
+            core.TRexTikhonovSelector(X, y, 0.1, tik, base, 1, False)
+        with pytest.raises(ValueError, match=refused):
+            tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, seed=1, grid=[0.0, 1.0])
+        # Also when it is named on the nested control
+        tik.trex_ctrl.solver_type = tsn.SolverTypeForTRex.TCDTIKNET
+        with pytest.raises(ValueError, match=refused):
+            tsn.TRexTikhonovSelector(X, y, tik_control=tik, seed=1, verbose=False)
+    np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
+
+
+def test_the_decoupled_dummy_block_is_refused():
+    """fold_dummy_coupling = False existed with TCDTIKNET only, so it has no solver left."""
+    X, y, _ = _grouped_data(seed=5)
+    tik = _tik_control(np.eye(X.shape[1]), 1.5, fold_dummy_coupling=False)
+    with pytest.raises(ValueError, match="fold_dummy_coupling = false is no longer available"):
+        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik, seed=42, verbose=False)
+    with pytest.raises(ValueError, match="fold_dummy_coupling = false is no longer available"):
+        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik, trex_control=_base_control(),
+                                 seed=42, verbose=False)
 
 
 def test_the_nested_base_control_applies_without_trex_control():
@@ -192,7 +222,7 @@ def test_the_default_of_the_base_control_is_refused():
     tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
     base = tsn.TRexControlParameter()
     assert base.solver_type == tsn.SolverTypeForTRex.TLARS
-    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+    with pytest.raises(ValueError, match="solver_type must be TIKNET"):
         tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik, trex_control=base,
                                  verbose=False)
     base.solver_type = tsn.SolverTypeForTRex.TIKNET
@@ -228,67 +258,6 @@ def test_group_centering_structure_runs():
                                    trex_control=_base_control(), seed=1, verbose=False)
     sel.select()
     assert sel.selected_var.shape == (X.shape[1],)
-
-
-# ---------------------------------------------------------------------------
-# Equivalences pinned in C++ and R
-# ---------------------------------------------------------------------------
-
-@pytest.mark.parametrize("lambda_2", [10.0, 0.0])
-def test_group_mean_k_matches_gvs_ien_tcdienet(lambda_2):
-    """Folded group-mean K with prior groups is the GVS-IEN TCDIENET run."""
-    X, y, groups = _grouped_data(seed=11, n=80, p=16)
-    K = _group_mean_k(groups)
-
-    # The coordinate-descent solver is the exact counterpart of GVS-TCDIENET.
-    tik = _tik_control(K, lambda_2, prior_groups=groups)
-    sel_tik = tsn.TRexTikhonovSelector(
-        X.copy(), y.copy(), tik_control=tik,
-        trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDTIKNET, sweeps=_CD_SWEEPS),
-        seed=42, verbose=False)
-    sel_tik.select()
-
-    gvs = tsn.TRexGVSControlParameter()
-    gvs.gvs_type = tsn.GVSType.IEN
-    gvs.prior_groups = groups
-    gvs.lambda_2 = lambda_2
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)   # lambda_2 = 0 is deliberate
-        sel_gvs = tsn.TRexGVSSelector(
-            X.copy(), y.copy(), gvs_control=gvs,
-            trex_control=_base_control(K=5, mult=3, solver=tsn.SolverTypeForTRex.TCDIENET,
-                                       sweeps=_CD_SWEEPS),
-            seed=42, verbose=False)
-    sel_gvs.select()
-
-    np.testing.assert_array_equal(sel_tik.selected_var, sel_gvs.selected_var)
-
-
-def test_identity_k_with_both_escape_hatches_collapses_onto_tcdenet():
-    """K = I, i.i.d. dummies, no folding: the TCDENET run at the same lambda_2."""
-    X, y, _ = _grouped_data(seed=5)
-    lambda_2 = 1.5
-
-    # The decoupled dummy block exists with the coordinate-descent solver only.
-    tik = _tik_control(np.eye(X.shape[1]), lambda_2,
-                       cluster_dummies=False, fold_dummy_coupling=False)
-    sel_tik = tsn.TRexTikhonovSelector(
-        X.copy(), y.copy(), tik_control=tik,
-        trex_control=_base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDTIKNET, sweeps=_CD_SWEEPS),
-        seed=42, verbose=False)
-    sel_tik.select()
-
-    # The default solver, the homotopy, has the folded coupling only.
-    with pytest.raises(ValueError, match="fold_dummy_coupling = false"):
-        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik,
-                                 trex_control=_base_control(K=5, mult=2), seed=42, verbose=False)
-
-    base = _base_control(K=5, mult=2, solver=tsn.SolverTypeForTRex.TCDENET, sweeps=_CD_SWEEPS)
-    base.solver_params.lambda2 = lambda_2
-    sel_en = tsn.TRexSelector(X.copy(), y.copy(), trex_control=base, seed=42, verbose=False)
-    sel_en.select()
-
-    np.testing.assert_array_equal(sel_tik.selected_var, sel_en.selected_var)
 
 
 # ---------------------------------------------------------------------------
@@ -454,33 +423,6 @@ def test_default_run_on_a_chain_laplacian_selects_the_planted_block():
     assert np.isin(support, selected).sum() >= 8
     assert np.setdiff1d(selected, support).size <= 4
     assert sel.lambda2_used < 1000.0   # not the top of the pilot grid
-
-
-def test_unconverged_coordinate_descent_raises_and_gives_the_design_back():
-    """TCDTIKNET at a lambda_2 beyond its sweep budget.
-
-    select() ends with an error instead of a selection from an unconverged path, the design is
-    given back at once and the selector is retired.
-    """
-    rng = np.random.default_rng(2718)
-    n, p = 120, 60
-    X = np.asfortranarray(rng.standard_normal((n, p)))
-    y = X[:, 20:30].sum(axis=1) + rng.standard_normal(n)
-    X0 = X.copy(order="F")
-
-    tik = tsn.TRexTikhonovControlParameter()
-    tik.tikhonov_K = np.eye(p)
-    tik.lambda_2 = 3000.0
-    sel = tsn.TRexTikhonovSelector(
-        X, y, tFDR=0.1, tik_control=tik,
-        trex_control=_base_control(K=10, mult=10, solver=tsn.SolverTypeForTRex.TCDTIKNET),
-        seed=4, verbose=False)
-    assert not np.allclose(X, X0)                     # standardized in place
-    with pytest.raises(RuntimeError, match="sweep budget.*before it converged.*cd_max_sweeps"):
-        sel.select()
-    np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
-    with pytest.raises(RuntimeError, match="can no longer run"):
-        sel.select()                                  # retired
 
 
 # ---------------------------------------------------------------------------

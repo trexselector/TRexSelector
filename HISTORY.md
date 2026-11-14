@@ -16,6 +16,46 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Tikhonov selector accepts TIKNET alone, on the three surfaces
+
+Fabian, 2026-11-14: the deprecated TCDTIKNET is refused now, in C++, R and Python ("I would prefer for
+stability that we accept only Tiknet"). Up to here the selector took it with a deprecation warning, and
+its removal was announced for the next minor release.
+
+- C++. The constructor of `TRexTikhonovSelector` refuses every `solver_type` other than TIKNET. For
+  TCDTIKNET the message adds that the deprecated solver is no longer accepted by the selector.
+  `fold_dummy_coupling = false`, the decoupled dummy block that only TCDTIKNET had, is refused as well
+  ("is no longer available"). The field stays until the removal of the family. The solver class
+  `TCDTIKNET_Solver`, the enumerator and the dispatch stay as they are, deprecated: no selector reaches
+  them any more, and the paths for it in the selector (the group-centering hooks, the flag of the
+  decoupled block) are dead until the family is removed.
+- R. `.check_tikhonov_solver()` accepts "TIKNET" alone and words the refusal of "TCDTIKNET". The plain
+  selector said that "TCDTIKNET" needs a penalty matrix and pointed to `TRexTikhonovSelector`. It says
+  now that no selector accepts it. Python: the binding no longer raises the deprecation warning for the
+  name (the error of C++ comes instead), and the root check of the plain selector words it as R does.
+- The documentation of the three surfaces says that TIKNET is the one solver and that `false` for the
+  dummy coupling is an error. The sentences on the hooks of TCDIENET under GROUP_CENTERING are gone,
+  because that route needed TCDTIKNET. NEWS of R has the change under "Changed" and the exception in
+  "Deprecated".
+- Tests, C++. The folded-coupling anchors against the GVS selector (group-mean K, singletons, the demo
+  control with L capped at p over 80 cases, the six seeds of the L-growth) run TIKNET against
+  GVS-TCDIENET and hold. GROUP_CENTERING is compared with SPARSE_GENERAL on the built matrix, and the
+  all-singleton case checks that lambda_2 has no effect. The two tests of the lambda_2 guard run the
+  default solver.
+- The anchor "K = I equals the TCDENET base run" needed the decoupled dummy block and has no
+  counterpart: with the FOLDED coupling a dummy shares the penalty of its variable, so K = I is the
+  elastic net in the penalty and not in the run. A probe over 40 seeds (notes/handover_2026-11-14/
+  tcdtiknet_refused/) shows it: at lambda_2 = 5 the run differs from the base selector with TENET,
+  TENET_AUG and TCDENET in every seed, at lambda_2 = 0.5 in none, and at lambda_2 = 0 it equals them and
+  TLASSO in all 40. The new anchor is the last one: at lambda_2 = 0 with i.i.d. dummies the selector
+  selects what the plain selector selects with TLASSO.
+- The test that a `select()` ending with an error gives X back and retires the selector used an
+  unconverged TCDTIKNET solve. It runs the same problem through the GVS selector with TCDIENET and one
+  group per variable now (C++ in the restore tests, R and Python in the GVS tests).
+- Removed without a replacement in R and Python: the two equivalences of the coordinate-descent solver
+  (K = I against TCDENET, group-mean K against GVS-TCDIENET). C++ holds the anchors.
+- C++ 751 of 751, R 2,198, Python 797.
+
 #### The GVS selectors of R and Python refuse a solver that does not fit, as C++ does
 
 Finding 1 of TIKHONOV_findings.md, second half (Fabian, 2026-11-14: "we fix now"). His three decisions

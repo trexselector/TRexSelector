@@ -294,8 +294,9 @@ void validate_core_solver_type(const TRexControlParameter& params) {
             Rcpp::stop("solver = \"TCDIENET\" needs a group assignment; use "
                        "TRexGVSSelector with gvs_type = \"IEN\".");
         case SolverTypeForTRex::TCDTIKNET:
-            Rcpp::stop("solver = \"TCDTIKNET\" needs a Tikhonov penalty "
-                       "matrix; use TRexTikhonovSelector.");
+            Rcpp::stop("solver = \"TCDTIKNET\" is no longer accepted by a "
+                       "selector; use TRexTikhonovSelector, whose solver is "
+                       "\"TIKNET\".");
         case SolverTypeForTRex::TIKNET:
             Rcpp::stop("solver = \"TIKNET\" needs a Tikhonov penalty "
                        "matrix; use TRexTikhonovSelector.");

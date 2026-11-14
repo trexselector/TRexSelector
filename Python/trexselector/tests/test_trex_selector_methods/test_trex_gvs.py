@@ -476,3 +476,32 @@ def test_gvs_refuses_the_permutation_strategies(signal_data, strategy):
         sel = trexselector.TRexGVSSelector(X, y, trex_control=ctrl, verbose=False)
         sel.select()
 
+
+def test_unconverged_coordinate_descent_raises_and_gives_the_design_back():
+    """TCDIENET at a lambda_2 beyond its sweep budget, one group per variable.
+
+    select() ends with an error instead of a selection from an unconverged path, the design is
+    given back at once and the selector is retired.
+    """
+    rng = np.random.default_rng(2718)
+    n, p = 120, 60
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, 20:30].sum(axis=1) + rng.standard_normal(n)
+    X0 = X.copy(order="F")
+
+    gvs_ctrl = trexselector.TRexGVSControlParameter()
+    gvs_ctrl.gvs_type = trexselector.GVSType.IEN
+    gvs_ctrl.prior_groups = list(range(p))
+    gvs_ctrl.lambda_2 = 3000.0
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", FutureWarning)      # the solver is deprecated
+        sel = trexselector.TRexGVSSelector(X, y, tFDR=0.1, gvs_control=gvs_ctrl,
+                                           trex_control=_base(trexselector.SolverTypeForTRex.TCDIENET, K=10),
+                                           seed=4, verbose=False)
+    assert not np.allclose(X, X0)                     # standardized in place
+    with pytest.raises(RuntimeError, match="sweep budget.*before it converged.*cd_max_sweeps"):
+        sel.select()
+    np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
+    with pytest.raises(RuntimeError, match="can no longer run"):
+        sel.select()                                  # retired
+

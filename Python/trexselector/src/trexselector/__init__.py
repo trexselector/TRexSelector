@@ -69,10 +69,14 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
         raise ValueError(
             'solver_type = TCDIENET needs a group assignment; use '
             'TRexGVSSelector with gvs_type = IEN.')
-    if st in (SolverTypeForTRex.TCDTIKNET, SolverTypeForTRex.TIKNET):
+    if st == SolverTypeForTRex.TIKNET:
         raise ValueError(
-            f'solver_type = {st.name} needs a Tikhonov penalty matrix; use '
+            'solver_type = TIKNET needs a Tikhonov penalty matrix; use '
             'TRexTikhonovSelector.')
+    if st == SolverTypeForTRex.TCDTIKNET:
+        raise ValueError(
+            'solver_type = TCDTIKNET is no longer accepted by a selector; use '
+            'TRexTikhonovSelector, whose solver is TIKNET.')
 
 
 def _with_core_notes(core_cls):
@@ -107,11 +111,12 @@ class TRexSelector:
     writable, for example the view of a file opened with ``AccessMode.ReadOnly``.
     The selectors derived from this class follow the same rule.
 
-    The coordinate-descent solver types ``TCDLASSO``, ``TCDENET``, ``TCDIENET``
-    and ``TCDTIKNET`` are deprecated and will be removed in the next minor
-    release: a selector that receives one of them raises ``FutureWarning``. Use
-    ``TLASSO``, ``TENET``, ``TIENET`` and ``TIKNET``, the homotopy solvers of the
-    same problems.
+    The coordinate-descent solver types ``TCDLASSO``, ``TCDENET`` and
+    ``TCDIENET`` are deprecated and will be removed in the next minor release:
+    a selector that receives one of them raises ``FutureWarning``.
+    ``TCDTIKNET`` is deprecated as well, and no selector accepts it any more.
+    Use ``TLASSO``, ``TENET``, ``TIENET`` and ``TIKNET``, the homotopy solvers
+    of the same problems.
 
     Parameters
     ----------
@@ -431,12 +436,9 @@ class TRexTikhonovSelector(TRexSelector):
     The solver is TIKNET, the homotopy solver. Any other solver raises
     ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
     a base control that is passed has to name the solver. TCDTIKNET, the
-    coordinate-descent solver, is deprecated and will be removed in the next
-    minor release: the selector raises ``FutureWarning`` for it. It is not
-    finally developed: once lambda_2 times K is large it can stop at its sweep
-    budget (``cd_max_sweeps``) before it has converged, and ``select()`` then
-    raises ``RuntimeError`` instead of returning a selection from an
-    unconverged path.
+    deprecated coordinate-descent solver, is refused as well. The selector
+    accepted it up to 1.0.0, where it could stop at its sweep budget before
+    it had converged once lambda_2 times K was large.
 
     Parameters
     ----------

@@ -115,8 +115,8 @@ test_that("construction gates translate as R errors", {
     "prior_groups"
   )
 
-  # fold_dummy_coupling = FALSE exists only on the TCDTIKNET path, so the
-  # default control and an explicit TIKNET refuse it.
+  # fold_dummy_coupling = FALSE existed with TCDTIKNET only, which the selector
+  # no longer accepts, so the decoupled dummy block is refused.
   for (control in list(NULL, trex_control(solver = "TIKNET"))) {
     expect_error(
       TRexTikhonovSelector$new(
@@ -125,7 +125,7 @@ test_that("construction gates translate as R errors", {
                                             lambda_2 = 0.5,
                                             fold_dummy_coupling = FALSE),
         control = control),
-      "TCDTIKNET"
+      "fold_dummy_coupling = false is no longer available"
     )
   }
 })
@@ -152,6 +152,10 @@ test_that("a base control that is passed has to name the solver TIKNET", {
   }
   expect_error(run(trex_control()), "leave control out")
   expect_error(run(trex_control(K = 5)), "TLARS")
+  # The deprecated coordinate-descent solver is refused as well, without a
+  # deprecation warning before the error
+  expect_error(expect_no_warning(run(trex_control(solver = "TCDTIKNET"))),
+               "\"TCDTIKNET\" is no longer accepted by the selector")
   # No selector was built, so the design is untouched
   expect_identical(d$X, X0)
 
@@ -164,6 +168,9 @@ test_that("a base control that is passed has to name the solver TIKNET", {
   expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = tik, seed = 1,
                                                 grid = c(0, 1), control = trex_control()),
                "control\\$solver must be \"TIKNET\"")
+  expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = tik, seed = 1, grid = c(0, 1),
+                                                control = trex_control(solver = "TCDTIKNET")),
+               "\"TCDTIKNET\" is no longer accepted by the selector")
   a <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
                                         grid = c(0, 1))
   b <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
@@ -174,28 +181,25 @@ test_that("a base control that is passed has to name the solver TIKNET", {
 })
 
 
-test_that("TIKNET and TCDTIKNET agree on the zero-K path (all-singleton GROUP_CENTERING)", {
+test_that("GROUP_CENTERING with one group per variable is the zero-K path", {
   d <- .make_tik_data()
 
   # A HAC cut above the within-group correlation yields singletons: K_GC
   # vanishes and the path is the plain lasso on per-variable cluster
-  # dummies. Both solvers must run and select identically.
-  run <- function(solver) {
+  # dummies. The run selects, and lambda_2 has no effect on it.
+  run <- function(lambda_2) {
     sel <- TRexTikhonovSelector$new(
       d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
       tik_control = trex_tikhonov_control(
         penalty_structure = "GROUP_CENTERING",
-        prior_groups = seq_len(d$p), lambda_2 = 10),
-      control = trex_control(solver = solver, K = 5, cd_max_sweeps = cd_test_sweeps,
-                             max_dummy_multiplier = 2))
+        prior_groups = seq_len(d$p), lambda_2 = lambda_2),
+      control = .tik_base(K = 5, max_dummy_multiplier = 2))
     sel$select()
     sel$selected_var
   }
 
-  sel_cd   <- quiet_cd(run("TCDTIKNET"))
-  sel_lars <- run("TIKNET")
-  expect_gt(sum(sel_cd), 0)
-  expect_identical(sel_cd, sel_lars)
+  expect_gt(sum(run(10)), 0)
+  expect_identical(run(10), run(0))
 })
 
 
@@ -238,65 +242,6 @@ test_that("the pilot rule picks lambda_2 from its grid and records the profile",
     control = .tik_base(K = 5, max_dummy_multiplier = 2))
   shared$select()
   expect_identical(shared$lambda2_pilot$dummy_tag, 1)
-})
-
-
-test_that("K = I with both escape hatches collapses onto the TCDENET run", {
-  d <- .make_tik_data()
-
-  run_tik <- function() {
-    sel <- TRexTikhonovSelector$new(
-      d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-      tik_control = trex_tikhonov_control(
-        tikhonov_K = diag(d$p), lambda_2 = 0.5,
-        cluster_dummies = FALSE,       # i.i.d. dummies: base parity
-        fold_dummy_coupling = FALSE),  # independent dummy ridge: TCDENET
-      # The decoupled dummy block exists with the coordinate-descent solver only
-      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2,
-                             cd_max_sweeps = cd_test_sweeps))
-    sel$select()
-    sel$selected_var
-  }
-  run_tcenet <- function() {
-    sel <- TRexSelector$new(
-      d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-      control = trex_control(solver = "TCDENET", lambda2 = 0.5, K = 5,
-                             max_dummy_multiplier = 2, cd_max_sweeps = cd_test_sweeps))
-    sel$select()
-    sel$selected_var
-  }
-
-  expect_identical(quiet_cd(run_tik()), quiet_cd(run_tcenet()))
-})
-
-
-test_that("group-mean K with prior groups matches GVS-IEN TCDIENET", {
-  d <- .make_tik_data()
-
-  run_tik <- function() {
-    sel <- TRexTikhonovSelector$new(
-      d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-      tik_control = trex_tikhonov_control(
-        tikhonov_K = .group_mean_k(d$p), lambda_2 = 1.0,
-        prior_groups = d$groups),
-      # The coordinate-descent solver is the exact counterpart of GVS-TCDIENET
-      control = trex_control(solver = "TCDTIKNET", K = 5, max_dummy_multiplier = 2,
-                             cd_max_sweeps = cd_test_sweeps))
-    sel$select()
-    sel$selected_var
-  }
-  run_gvs <- function() {
-    sel <- TRexGVSSelector$new(
-      d$X + 0, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
-      gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 1.0,
-                                     groups = d$groups),
-      control = trex_control(solver = "TCDIENET", K = 5,
-                             max_dummy_multiplier = 2, cd_max_sweeps = cd_test_sweeps))
-    sel$select()
-    sel$selected_var
-  }
-
-  expect_identical(quiet_cd(run_tik()), quiet_cd(run_gvs()))
 })
 
 
@@ -418,8 +363,7 @@ test_that("the full-profile knee runs one selection per grid value and keeps the
 
 test_that("the default run on a chain Laplacian selects the planted block", {
   # The default control: the homotopy solver and the pilot rule over its default grid up to
-  # 3000. The coordinate-descent solver stops unconverged at the large grid values, the pilot
-  # then takes its count there for the knee, picks 3000 and the selection holds 23 nulls.
+  # 3000. The pick stays below the top of the grid.
   set.seed(2718)
   n <- 120
   p <- 60
@@ -439,26 +383,6 @@ test_that("the default run on a chain Laplacian selects the planted block", {
   expect_lt(sel$lambda2_used, 1000)   # not the top of the pilot grid
 })
 
-
-test_that("an unconverged coordinate descent is an error and the design comes back", {
-  # TCDTIKNET at a lambda_2 beyond its sweep budget: select() ends with an error instead of a
-  # selection from an unconverged path, the design is given back at once and the selector is retired
-  set.seed(2718)
-  n <- 120
-  p <- 60
-  X <- matrix(rnorm(n * p), n, p)
-  y <- as.numeric(rowSums(X[, 21:30]) + rnorm(n))
-  X0 <- X + 0
-
-  sel <- quiet_cd(TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
-                                           tik_control = trex_tikhonov_control(tikhonov_K = diag(p),
-                                                                               lambda_2 = 3000),
-                                           control = trex_control(solver = "TCDTIKNET", K = 10)))
-  expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
-  expect_error(sel$select(), "sweep budget.*before it converged.*cd_max_sweeps")
-  expect_equal(X, X0, tolerance = 1e-12)          # given back
-  expect_error(sel$select(), "can no longer run") # retired
-})
 
 # =============================================================================
 # Checks at construction

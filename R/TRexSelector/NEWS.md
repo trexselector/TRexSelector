@@ -45,8 +45,12 @@
   with the solver `"TIKNET"`. A control that is passed is taken as it is and has to name the solver,
   `trex_control(solver = "TIKNET", ...)`. Up to 2.0.1 the default `"TLARS"` of `trex_control()` gave
   `"TIKNET"` without a word, and every other solver gave a warning and `"TIKNET"`. Both are errors now,
-  so a call that passes `trex_control(K = 10)` needs the solver in it. The deprecated `"TCDTIKNET"` is
-  still accepted. The selections do not change.
+  so a call that passes `trex_control(K = 10)` needs the solver in it. The selections do not change.
+* `TRexTikhonovSelector` no longer accepts the coordinate-descent solver `"TCDTIKNET"`, on any of the
+  three surfaces. It was not finally developed: once `lambda_2` times K is large it stops at its sweep
+  budget before it has converged. A base control that names it is an error. With it goes
+  `fold_dummy_coupling = FALSE` of `trex_tikhonov_control()`, the decoupled dummy block that only this
+  solver had, which is an error as well. The class `TCDTIKNET_Solver` stays, deprecated, until 2.1.0.
 * `TRexGVSSelector` and `trex_gvs_lambda2_power_rule()` take the base control as C++ and Python do.
   `control` defaults to `NULL`, which runs the defaults of `trex_control()` with the solver `"TENET"`. A
   control that is passed is taken as it is and has to name a solver of the track: `"TENET"` or the
@@ -199,7 +203,8 @@
   family brought no gain over them in speed or in the selections, and its two structured members do
   not converge within a practical sweep budget on every design.
 * Constructing one of the four classes raises a deprecation warning, and so does a selector that
-  receives one of the solver names. The warning comes once per call and names the replacement.
+  receives one of the solver names. The warning comes once per call and names the replacement. The name
+  `"TCDTIKNET"` is the exception, because `TRexTikhonovSelector` refuses it (see "Changed").
 * The options that only the family reads go with it. These are `cd_lambda_rel_tol`, `cd_tol_certify`,
   `cd_tol_probe`, `cd_gram_cap`, `cd_max_sweeps` and `cd_certified_localization` of `trex_control()`
   and `tsolver_options()`, `kappa_dummy`, `fold_dummies` and `group_penalty` of `tsolver_options()`,

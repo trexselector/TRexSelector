@@ -45,14 +45,14 @@ runs; it solves with the standard LASSO inner path unless the optional
 (TCDLASSO/TCDENET) records exact penalized-lasso minimizers per dummy
 crossing. The IEN-family names "TIENET", "TIENET_AUG", and "TCDIENET"
 are accepted by the parser but only dispatchable inside
-\code{TRexGVSSelector} with \code{gvs_type = "IEN"}; the
-Tikhonov-family names "TCDTIKNET" and "TIKNET" need a
-penalty matrix and are dispatchable only inside
+\code{TRexGVSSelector} with \code{gvs_type = "IEN"}; "TIKNET" needs a
+penalty matrix and is dispatchable only inside
 \code{TRexTikhonovSelector}. The plain selector rejects both families
 with an informative error. The coordinate-descent names "TCDLASSO",
-"TCDENET", "TCDIENET" and "TCDTIKNET" are deprecated and will be removed
-in TRexSelector 2.1.0: a selector that receives one of them raises a
-deprecation warning. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
+"TCDENET" and "TCDIENET" are deprecated and will be removed in
+TRexSelector 2.1.0: a selector that receives one of them raises a
+deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
+accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
 homotopy solvers of the same problems.}
 
 \item{K}{Number of random experiments (default: 20).}

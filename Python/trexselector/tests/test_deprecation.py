@@ -183,19 +183,19 @@ def test_grouped_selector_warns_on_both_tracks(data):
         assert record == []
 
 
-def test_tikhonov_selector_and_power_rule_warn(data):
+def test_tikhonov_selector_and_power_rule_refuse_the_coordinate_descent_solver(data):
     X, _, y = data
 
-    _, record = _deprecations(
-        lambda: tsn.TRexTikhonovSelector(X.copy(order="F"), y, tik_control=_tik_control(),
-                                         trex_control=_control("TCDTIKNET"), verbose=False))
-    _assert_one(record, "SolverTypeForTRex.TCDTIKNET", "SolverTypeForTRex.TIKNET")
-
-    result, record = _deprecations(
-        lambda: tsn.tikhonov_lambda2_power_rule(X.copy(order="F"), y, tik_control=_tik_control(),
-                                                trex_control=_control("TCDTIKNET"), seed=1, grid=[0.0, 1.0]))
-    _assert_one(record, "SolverTypeForTRex.TCDTIKNET", "SolverTypeForTRex.TIKNET")
-    assert len(result.probes) == 2
+    # The name is no longer accepted: an error, and no deprecation warning before it
+    with pytest.raises(ValueError, match="TCDTIKNET is no longer accepted by the selector"):
+        _deprecations(
+            lambda: tsn.TRexTikhonovSelector(X.copy(order="F"), y, tik_control=_tik_control(),
+                                             trex_control=_control("TCDTIKNET"), verbose=False))
+    with pytest.raises(ValueError, match="TCDTIKNET is no longer accepted by the selector"):
+        _deprecations(
+            lambda: tsn.tikhonov_lambda2_power_rule(X.copy(order="F"), y, tik_control=_tik_control(),
+                                                    trex_control=_control("TCDTIKNET"), seed=1,
+                                                    grid=[0.0, 1.0]))
 
     # The default solver, the homotopy TIKNET, raises none
     _, record = _deprecations(

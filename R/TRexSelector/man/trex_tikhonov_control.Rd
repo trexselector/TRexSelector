@@ -48,9 +48,7 @@ matrix \code{I - J / p_m} over the groups of \code{prior_groups}, which
 this structure requires, so the members of a group share a coefficient
 (\code{\link{trex_build_group_centering_k}} returns the matrix). A
 partition into single variables is allowed: K is then zero and the path
-is the lasso path. With \code{solver = "TCDTIKNET"} the group centering
-runs through the hooks of TCDIENET, so its warnings (sweep budget,
-certification fallback) carry the tag \code{[TCDIENET]}.}
+is the lasso path.}
 
 \item{lambda_2}{Weight of the penalty. A negative value (default: -1) lets
 \code{lambda2_method} choose it, \code{0} is no penalty (the lasso path of
@@ -151,14 +149,10 @@ dummy block of the main strategy (not with the PERMUTATION strategies).}
 \item{fold_dummy_coupling}{Logical (default \code{TRUE}): in the penalty
 every dummy takes the place of the variable it was drawn for (folded
 coupling), so dummies and null variables stay exchangeable for every K.
-\code{FALSE} gives the dummies a unit ridge of their own, decoupled from
-K. It keeps the equality with the elastic net for \code{K = I} and
-deforms the exchangeability whenever K has off-diagonal entries. It is a
-validation switch that only the solver \code{"TCDTIKNET"} offers, so it
-needs \code{solver = "TCDTIKNET"} in \code{\link{trex_control}}, and the
-solver \code{"TIKNET"} raises an error for it. Deprecated: it will be
-removed with TCDTIKNET and the coordinate-descent family in TRexSelector
-2.1.0.}
+\code{FALSE}, a ridge block of the dummies decoupled from K, is an
+error: it existed with the solver \code{"TCDTIKNET"} only, which the
+selector no longer accepts. Deprecated: the argument will be removed
+with the coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{cluster_dummies}{Logical (default \code{TRUE}): draw the dummies per
 cluster of correlated variables, as in \code{\link{TRexGVSSelector}}.

@@ -28,10 +28,11 @@ smooth.
 
 \section{The solver}{
 
-\code{"TIKNET"}, the homotopy solver. It is the solver of the base control
-that applies when \code{control} is left out, and a control that is passed
-has to name it. \code{"TCDTIKNET"}, the coordinate-descent solver, is
-deprecated.
+\code{"TIKNET"}, the homotopy solver, is the one solver of the selector. It
+is the solver of the base control that applies when \code{control} is left
+out, and a control that is passed has to name it. Every other solver is
+refused, also \code{"TCDTIKNET"}, the deprecated coordinate-descent solver,
+which the selector accepted up to TRexSelector 2.0.1.
 }
 
 \section{The dummies}{
@@ -305,13 +306,9 @@ class applies: the defaults of \code{trex_control()} with the solver
 passed is taken as it is, so its \code{solver} must be
 \code{"TIKNET"}: \code{trex_control(solver = "TIKNET", ...)}. Every
 other solver is an error, also \code{"TLARS"}, the default of
-\code{trex_control()}. \code{"TCDTIKNET"}, the coordinate-descent
-solver, is deprecated and will be removed in TRexSelector 2.1.0: the
-selector raises a deprecation warning for it. It is not finally
-developed: once \code{lambda_2} times K is large it can stop at its
-sweep budget (\code{cd_max_sweeps}) before it has converged, and
-\code{select()} then stops with an error instead of a selection from
-an unconverged path.}
+\code{trex_control()}, and \code{"TCDTIKNET"}, the deprecated
+coordinate-descent solver, which the selector accepted up to
+TRexSelector 2.0.1.}
     }
     \if{html}{\out{</div>}}
   }

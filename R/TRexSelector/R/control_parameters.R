@@ -35,14 +35,14 @@
 #'   (TCDLASSO/TCDENET) records exact penalized-lasso minimizers per dummy
 #'   crossing. The IEN-family names "TIENET", "TIENET_AUG", and "TCDIENET"
 #'   are accepted by the parser but only dispatchable inside
-#'   \code{TRexGVSSelector} with \code{gvs_type = "IEN"}; the
-#'   Tikhonov-family names "TCDTIKNET" and "TIKNET" need a
-#'   penalty matrix and are dispatchable only inside
+#'   \code{TRexGVSSelector} with \code{gvs_type = "IEN"}; "TIKNET" needs a
+#'   penalty matrix and is dispatchable only inside
 #'   \code{TRexTikhonovSelector}. The plain selector rejects both families
 #'   with an informative error. The coordinate-descent names "TCDLASSO",
-#'   "TCDENET", "TCDIENET" and "TCDTIKNET" are deprecated and will be removed
-#'   in TRexSelector 2.1.0: a selector that receives one of them raises a
-#'   deprecation warning. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
+#'   "TCDENET" and "TCDIENET" are deprecated and will be removed in
+#'   TRexSelector 2.1.0: a selector that receives one of them raises a
+#'   deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
+#'   accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
 #'   homotopy solvers of the same problems.
 #' @param K Number of random experiments (default: 20).
 #' @param tloop_stagnation_stop Whether to stop the T-loop on stagnation. NULL
@@ -724,9 +724,7 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   this structure requires, so the members of a group share a coefficient
 #'   (\code{\link{trex_build_group_centering_k}} returns the matrix). A
 #'   partition into single variables is allowed: K is then zero and the path
-#'   is the lasso path. With \code{solver = "TCDTIKNET"} the group centering
-#'   runs through the hooks of TCDIENET, so its warnings (sweep budget,
-#'   certification fallback) carry the tag \code{[TCDIENET]}.
+#'   is the lasso path.
 #' @param lambda_2 Weight of the penalty. A negative value (default: -1) lets
 #'   \code{lambda2_method} choose it, \code{0} is no penalty (the lasso path of
 #'   the solver), and a positive value is used as it is. The value must be
@@ -810,14 +808,10 @@ trex_dummy_distribution <- function(type     = "Normal",
 #' @param fold_dummy_coupling Logical (default \code{TRUE}): in the penalty
 #'   every dummy takes the place of the variable it was drawn for (folded
 #'   coupling), so dummies and null variables stay exchangeable for every K.
-#'   \code{FALSE} gives the dummies a unit ridge of their own, decoupled from
-#'   K. It keeps the equality with the elastic net for \code{K = I} and
-#'   deforms the exchangeability whenever K has off-diagonal entries. It is a
-#'   validation switch that only the solver \code{"TCDTIKNET"} offers, so it
-#'   needs \code{solver = "TCDTIKNET"} in \code{\link{trex_control}}, and the
-#'   solver \code{"TIKNET"} raises an error for it. Deprecated: it will be
-#'   removed with TCDTIKNET and the coordinate-descent family in TRexSelector
-#'   2.1.0.
+#'   \code{FALSE}, a ridge block of the dummies decoupled from K, is an
+#'   error: it existed with the solver \code{"TCDTIKNET"} only, which the
+#'   selector no longer accepts. Deprecated: the argument will be removed
+#'   with the coordinate-descent family in TRexSelector 2.1.0.
 #' @param cluster_dummies Logical (default \code{TRUE}): draw the dummies per
 #'   cluster of correlated variables, as in \code{\link{TRexGVSSelector}}.
 #'   \code{FALSE} gives i.i.d. dummies, for validation runs only: with an

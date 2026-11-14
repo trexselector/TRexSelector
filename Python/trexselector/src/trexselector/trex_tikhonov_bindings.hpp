@@ -92,7 +92,6 @@ public:
                                                                   y.size());
         const tik::TRexTikhonovControlParameter tik_ctrl =
             merge_tikhonov_control(tik_control, trex_control);
-        warn_if_cd_solver_type(tik_ctrl.trex_ctrl.solver_type);
         this->selector_ = std::make_unique<tik::TRexTikhonovSelector>(
             *(this->X_map_), *(this->y_map_), tFDR, tik_ctrl, seed, verbose
         );
@@ -301,8 +300,7 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def(py::init<>())
         .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "Structural form "
             "of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from "
-            "prior_groups, which it requires). With the solver TCDTIKNET the group centering runs through the "
-            "hooks of TCDIENET, so its warnings carry the tag [TCDIENET].")
+            "prior_groups, which it requires).")
         .def_property("tikhonov_K",
             [](const tik::TRexTikhonovControlParameter& c) { return c.tikhonov_K; },
             [](tik::TRexTikhonovControlParameter& c, const Eigen::SparseMatrix<double>& K) {
@@ -361,9 +359,11 @@ inline void bind_trex_tikhonov(py::module& m) {
             "do not depend on the pick. True: the pilot uses the first dummy block of the main strategy (not with "
             "the PERMUTATION strategies).")
         .def_readwrite("fold_dummy_coupling", &tik::TRexTikhonovControlParameter::fold_dummy_coupling, "FOLDED dummy "
-            "coupling: dummies take the K block of their real counterpart (default True). False is a validation "
-            "switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it. "
-            "Deprecated: removed with TCDTIKNET and the coordinate-descent family in the next minor release.")
+            "coupling: in the penalty every dummy takes the place of the variable it was drawn for (default True), "
+            "so dummies and null variables stay exchangeable for every K. False, a ridge block of the dummies "
+            "decoupled from K, raises ValueError: it existed with the solver TCDTIKNET only, which the selector no "
+            "longer accepts. Deprecated: the field is removed with the coordinate-descent family in the next "
+            "minor release.")
         .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Draw the dummies per "
             "cluster of correlated variables, as in TRexGVSSelector (default True). False gives i.i.d. dummies, "
             "for validation runs only: with an informed K they deform the exchangeability of dummies and null "
@@ -385,8 +385,8 @@ inline void bind_trex_tikhonov(py::module& m) {
             "distances only and the correlation distance 1 - abs(cor) is not Euclidean. Ignored when prior_groups "
             "is set or cluster_dummies is False.")
         .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControlParameter::trex_ctrl,       "Nested base T-Rex "
-            "control, whose solver is TIKNET. It applies when TRexTikhonovSelector gets no trex_control argument, "
-            "and that argument replaces it otherwise.");
+            "control, whose solver is TIKNET, the one solver of the selector. It applies when TRexTikhonovSelector "
+            "gets no trex_control argument, and that argument replaces it otherwise.");
 
     m.def("gamma_to_k",
           [](const Eigen::SparseMatrix<double>& gamma) {
@@ -453,7 +453,6 @@ inline void bind_trex_tikhonov(py::module& m) {
               cfg.knee_tolerance = knee_tolerance;
               const tik::TRexTikhonovControlParameter tik_ctrl =
                   merge_tikhonov_control(tik_control, trex_control);
-              warn_if_cd_solver_type(tik_ctrl.trex_ctrl.solver_type);
               return tik::tikhonov_lambda2_power_rule(X_map, y_map, tFDR, tik_ctrl, seed, cfg, verbose);
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
@@ -485,8 +484,9 @@ inline void bind_trex_tikhonov(py::module& m) {
         "(TikPenaltyStructure.GROUP_CENTERING) makes the members of a group share a coefficient. A banded\n"
         "matrix or a graph Laplacian makes neighbouring coefficients smooth.\n"
         "\n"
-        "The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the coordinate-descent solver, is\n"
-        "deprecated. Every other solver is refused.\n"
+        "The solver. TIKNET, the homotopy solver, is the one solver of the selector and the default of the\n"
+        "nested base control. Every other solver is refused, also TCDTIKNET, the deprecated\n"
+        "coordinate-descent solver, which the selector accepted up to 1.0.0.\n"
         "\n"
         "The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector\n"
         "(cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the\n"
@@ -549,8 +549,8 @@ inline void bind_trex_tikhonov(py::module& m) {
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without "
              "trex_control the base control nested in tik_control applies, whose solver is TIKNET. A "
-             "trex_control replaces it as it is, and its solver_type must be TIKNET (or the deprecated "
-             "TCDTIKNET): any other solver, TLARS included, raises ValueError.")
+             "trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, "
+             "TLARS and the deprecated TCDTIKNET included, raises ValueError.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double,
                       const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
                       int, bool>(),

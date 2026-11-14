@@ -107,7 +107,7 @@ test_that("GVS-only solvers are rejected by the plain selector with guidance", {
   expect_error(run_with("TIENET"), "GVS-only solver")
   expect_error(run_with("TIENET_AUG"), "GVS-only solver")
   # The Tikhonov family needs a penalty matrix: TRexTikhonovSelector only.
-  expect_error(quiet_cd(run_with("TCDTIKNET")), "Tikhonov penalty matrix")
+  expect_error(quiet_cd(run_with("TCDTIKNET")), "no longer accepted by a selector")
   expect_error(run_with("TIKNET"), "Tikhonov penalty matrix")
 })
 
@@ -243,7 +243,7 @@ test_that("a selector warns once for a coordinate-descent solver name", {
 })
 
 
-test_that("the grouped and the Tikhonov selector warn for their coordinate-descent solvers", {
+test_that("the grouped selector warns for its coordinate-descent solvers, the Tikhonov selector refuses", {
   d <- .make_cd_data(n = 50, p = 10)
   groups <- rep(1:5, each = 2)
   tik <- trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5)
@@ -261,15 +261,11 @@ test_that("the grouped and the Tikhonov selector warn for their coordinate-desce
     control = trex_control(solver = "TCDIENET")))
   expect_identical(w, .cd_name_message("solver", "TCDIENET", "TIENET"))
 
-  w <- cd_deprecations(TRexTikhonovSelector$new(
-    d$X + 0, d$y, verbose = FALSE, tik_control = tik,
-    control = trex_control(solver = "TCDTIKNET")))
-  expect_identical(w, .cd_name_message("solver", "TCDTIKNET", "TIKNET"))
-
-  w <- cd_deprecations(trex_tikhonov_lambda2_power_rule(
-    d$X + 0, d$y, tik_control = tik, seed = 1, grid = c(0, 1),
-    control = trex_control(solver = "TCDTIKNET", K = 3, cd_max_sweeps = cd_test_sweeps)))
-  expect_identical(w, .cd_name_message("solver", "TCDTIKNET", "TIKNET"))
+  # The Tikhonov selector no longer takes the name: an error, without a warning before it
+  expect_error(
+    expect_no_warning(TRexTikhonovSelector$new(d$X + 0, d$y, verbose = FALSE, tik_control = tik,
+                                               control = trex_control(solver = "TCDTIKNET"))),
+    "\"TCDTIKNET\" is no longer accepted by the selector")
 
   # The defaults raise none
   expect_length(cd_deprecations(TRexGVSSelector$new(

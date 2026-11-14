@@ -2525,7 +2525,7 @@ class TRexTikhonovControlParameter:
     @property
     def fold_dummy_coupling(self) -> bool:
         """
-        FOLDED dummy coupling: dummies take the K block of their real counterpart (default True). False is a validation switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it. Deprecated: removed with TCDTIKNET and the coordinate-descent family in the next minor release.
+        FOLDED dummy coupling: in the penalty every dummy takes the place of the variable it was drawn for (default True), so dummies and null variables stay exchangeable for every K. False, a ridge block of the dummies decoupled from K, raises ValueError: it existed with the solver TCDTIKNET only, which the selector no longer accepts. Deprecated: the field is removed with the coordinate-descent family in the next minor release.
         """
     @fold_dummy_coupling.setter
     def fold_dummy_coupling(self, arg0: bool) -> None:
@@ -2557,7 +2557,7 @@ class TRexTikhonovControlParameter:
     @property
     def penalty_structure(self) -> TikPenaltyStructure:
         """
-        Structural form of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from prior_groups, which it requires). With the solver TCDTIKNET the group centering runs through the hooks of TCDIENET, so its warnings carry the tag [TCDIENET].
+        Structural form of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from prior_groups, which it requires).
         """
     @penalty_structure.setter
     def penalty_structure(self, arg0: TikPenaltyStructure) -> None:
@@ -2645,7 +2645,7 @@ class TRexTikhonovControlParameter:
     @property
     def trex_ctrl(self) -> TRexControlParameter:
         """
-        Nested base T-Rex control, whose solver is TIKNET. It applies when TRexTikhonovSelector gets no trex_control argument, and that argument replaces it otherwise.
+        Nested base T-Rex control, whose solver is TIKNET, the one solver of the selector. It applies when TRexTikhonovSelector gets no trex_control argument, and that argument replaces it otherwise.
         """
     @trex_ctrl.setter
     def trex_ctrl(self, arg0: TRexControlParameter) -> None:
@@ -2664,8 +2664,9 @@ class TRexTikhonovSelector(TRexSelector):
     (TikPenaltyStructure.GROUP_CENTERING) makes the members of a group share a coefficient. A banded
     matrix or a graph Laplacian makes neighbouring coefficients smooth.
     
-    The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the coordinate-descent solver, is
-    deprecated. Every other solver is refused.
+    The solver. TIKNET, the homotopy solver, is the one solver of the selector and the default of the
+    nested base control. Every other solver is refused, also TCDTIKNET, the deprecated
+    coordinate-descent solver, which the selector accepted up to 1.0.0.
     
     The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector
     (cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the
@@ -2722,7 +2723,7 @@ class TRexTikhonovSelector(TRexSelector):
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the base control nested in tik_control applies, whose solver is TIKNET. A trex_control replaces it as it is, and its solver_type must be TIKNET (or the deprecated TCDTIKNET): any other solver, TLARS included, raises ValueError.
+        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the base control nested in tik_control applies, whose solver is TIKNET. A trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, TLARS and the deprecated TCDTIKNET included, raises ValueError.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
