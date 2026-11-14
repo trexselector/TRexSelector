@@ -40,12 +40,13 @@ using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
 // =====================================================================================
 
 /**
- * @brief The nested base control merged into the Tikhonov control. The C++
- *        constructor takes one control struct that nests the base parameters
- *        as `trex_ctrl` and rejects any non-Tikhonov solver; the caller-facing
- *        default (TLARS) is neutral, so anything outside TIKNET / TCDTIKNET
- *        becomes TIKNET, mirroring the R glue (the Python wrapper warns
- *        first on an explicit mismatch).
+ * @brief The base control placed into the Tikhonov control. The C++
+ *        constructor takes one control that nests the base control, with
+ *        TIKNET as its solver. Python takes the base control as a second
+ *        argument, whose solver defaults to TLARS. TLARS therefore stands
+ *        for "no solver chosen" and gives TIKNET. Every other solver is
+ *        passed on as it is, and the C++ constructor refuses one outside
+ *        TIKNET and TCDTIKNET.
  */
 inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
     const tik::TRexTikhonovControlParameter& tik_control,
@@ -53,11 +54,7 @@ inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
 {
     tik::TRexTikhonovControlParameter tik_ctrl = tik_control;
     tik_ctrl.trex_ctrl = trex_control;
-    const auto st = tik_ctrl.trex_ctrl.solver_type;
-    const bool tik_family =
-        st == tik_sd::SolverTypeForTRex::TCDTIKNET ||
-        st == tik_sd::SolverTypeForTRex::TIKNET;
-    if (!tik_family) {
+    if (tik_ctrl.trex_ctrl.solver_type == tik_sd::SolverTypeForTRex::TLARS) {
         tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TIKNET;
     }
     return tik_ctrl;

@@ -16,6 +16,29 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Python Tikhonov class refuses a solver outside the family
+
+Step 1 of the rework of the Python class of the Tikhonov selector (Fabian: "next on Python. Afterwards
+R.", notes: TIKHONOV_findings.md, finding 1).
+
+- The difference. C++ refuses a solver other than TIKNET and TCDTIKNET at construction. The Python root
+  class warned and ran TIKNET, and the Python core class ran TIKNET without a word:
+  `merge_tikhonov_control()` in the binding replaced every solver outside the family. A binding does
+  not remap a control (Fabian's rule of 2026-11-14, and on the SPCA selector: "we refuse non-fitting
+  solvers").
+- Why one value still maps. C++ has one control with the base control nested in it, whose solver
+  defaults to TIKNET. Python takes the base control as a second argument, and its solver defaults to
+  TLARS. A user who builds a base control to set K therefore passes TLARS without having chosen it
+  (guide page 08 does so). TLARS stands for "no solver chosen" and gives TIKNET, without a warning.
+- The change. Every other solver is passed on as it is, and the C++ constructor refuses it
+  ("solver_type must be TCDTIKNET or TIKNET"): `ValueError` from the root class, from the core class
+  and from `tikhonov_lambda2_power_rule()`. The root class and the root function no longer carry their
+  own warning. X is left alone by a refused control.
+- Tests. Python pins the refusal for four solvers on the three entry points, and that TLARS gives the
+  run of TIKNET without a warning. Python tests 777.
+- The R class has the same pattern and follows with its rework. So has the GVS selector in R and
+  Python (a non-matching solver is replaced with a warning), which is not part of this step.
+
 #### The documentation of the Tikhonov selector sits at the class and says what the code does
 
 Step 6 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 9 to 20, 22

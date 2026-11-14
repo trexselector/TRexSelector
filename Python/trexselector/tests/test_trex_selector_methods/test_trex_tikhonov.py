@@ -145,16 +145,39 @@ def test_empty_or_misdimensioned_k_raises():
                                  trex_control=_base_control(), verbose=False)
 
 
-def test_non_family_solver_warns_and_uses_tiknet():
+@pytest.mark.parametrize("solver", ["TLASSO", "TENET", "TOMP", "TIENET"])
+def test_a_solver_outside_the_family_is_refused(solver):
+    """The root class, the core class and the power rule refuse it, as C++ does."""
+    from trexselector.trex_selector_methods import ad as core
+
+    X, y, groups = _grouped_data()
+    X = np.asfortranarray(X)
+    X0 = X.copy(order="F")
+    tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
+    base = _base_control(solver=getattr(tsn.SolverTypeForTRex, solver))
+    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+        tsn.TRexTikhonovSelector(X, y, tik_control=tik, trex_control=base, seed=1, verbose=False)
+    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+        core.TRexTikhonovSelector(X, y, 0.1, tik, base, 1, False)
+    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+        tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, seed=1, grid=[0.0, 1.0])
+    np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
+
+
+def test_tlars_stands_for_no_solver_chosen():
+    """TLARS is the default of the base control. It gives TIKNET, without a warning."""
     X, y, groups = _grouped_data()
     tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
-    with pytest.warns(UserWarning, match="not a Tikhonov-family solver.*Using TIKNET"):
-        sel = tsn.TRexTikhonovSelector(
-            X, y, tik_control=tik,
-            trex_control=_base_control(solver=tsn.SolverTypeForTRex.TLASSO),
-            seed=1, verbose=False)
-    sel.select()
-    assert sel.selected_var.shape == (X.shape[1],)
+
+    def run(solver):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            sel = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik,
+                                           trex_control=_base_control(solver=solver), seed=1, verbose=False)
+            return np.array(sel.select().selected_var)
+
+    assert tsn.TRexControlParameter().solver_type == tsn.SolverTypeForTRex.TLARS
+    assert np.array_equal(run(None), run(tsn.SolverTypeForTRex.TIKNET))
 
 
 # ---------------------------------------------------------------------------
