@@ -51,7 +51,8 @@ is fixed here.
 \output{trex_tikhonov.run.txt}
 
 TRexTikhonovSelector inherits the getters of TRexSelector and adds `getLambda2Used()`,
-`getLambda2CVDiagnostics()` and `getLambda2PilotResult()`.
+`getLambda2CVDiagnostics()`, `getLambda2PilotResult()` and `getDummyClusters()`. A selector runs once,
+as every selector does.
 
 ## Choosing lambda_2
 
@@ -62,15 +63,23 @@ exist.
   `pilot_grid`, by the selector's own principle: the smallest \f$\lambda_2\f$ whose pilot selection
   count is within `pilot_knee_tolerance` of the largest, the knee of the profile. `pilot_K`,
   `pilot_T` and `pilot_L_multiplier` size the pilot, `pilot_statistic` names the count
-  (`PilotStatistic::MAJORITY`, `CALIBRATED`, `GROUP_MAJORITY`).
-- The k-fold cross-validation rules consume \f$\boldsymbol K\f$ and return \f$\lambda_2\f$ on the
-  solver scale: `CV_1SE_IEN_CCD`, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD` and `CV_MIN_TIK_SVD`.
-  `cv_n_folds`, `cv_n_lambda1`, `cv_n_lambda2`, `cv_dfmax_ratio` and `cv_seed` control them. They
-  judge a fitted estimate, so on structured designs they tend to pick the edges of their grid.
+  (`PilotStatistic::MAJORITY`, `CALIBRATED`, `GROUP_MAJORITY`). `runPilotOnly()` runs the pilot
+  without the selection.
+- The k-fold cross-validation rules consume \f$\boldsymbol K\f$: `CV_1SE_IEN_CCD`, `CV_MIN_IEN_CCD`,
+  `CV_1SE_TIK_SVD` and `CV_MIN_TIK_SVD`. `cv_n_folds`, `cv_n_lambda1`, `cv_n_lambda2`,
+  `cv_dfmax_ratio` and `cv_seed` control them. They judge a fitted estimate, so on structured
+  designs they tend to pick the edges of their grid.
 - `tikhonov_lambda2_power_rule()` runs one full selection per grid value with common dummies and
   takes the knee of that profile. It is the reference rule behind the pilot, at the cost of one
   selection per grid value, and it returns every probe's selection. Its grid and tolerance come in a
-  `Lambda2PowerRuleConfig`.
+  `Lambda2PowerRuleConfig`, whose grid defaults to `default_lambda2_grid()`, the grid of the pilot
+  rule. `gvs_lambda2_power_rule()` is the same rule on the T-Rex+GVS selector.
+
+A supplied `lambda_2` is used as it is, on the scale of the standardized columns. A grid, `pilot_grid`
+or the grid of a power rule, is stated for columns of unit norm. Under `ScalingMode::ZSCORE` the
+columns have the squared norm \f$n - 1\f$, so the rules run at the grid times \f$n - 1\f$, and one
+grid means the same shrinkage under every scaling mode. Every rule reports its pick on the scale of a
+supplied value, so `getLambda2Used()` can be passed as `lambda_2`.
 
 \snippet{trimleft} trex_tikhonov.cpp pilot
 \output{trex_tikhonov.pilot.txt}
@@ -85,7 +94,7 @@ under the penalty. Two mechanisms take care of that. `cluster_dummies = true` (d
 dummies as per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`,
 or hierarchical clustering with `corr_max` and `hc_linkage`), and every dummy joins the
 \f$\boldsymbol K\f$-coupling of the variable it mirrors (the folded coupling). `cluster_dummies =
-false` exists for validation runs.
+false` exists for validation runs. `getDummyClusters()` reports the clusters of a run.
 
 ## Group centering
 
@@ -95,6 +104,7 @@ false` exists for validation runs.
 group share a coefficient. The structure needs `prior_groups` (0-based group ids, one per variable),
 and the selector refuses it without them. An all-singleton partition is legitimate, the penalty
 vanishes and the path is the lasso on per-variable cluster dummies.
+`TRexTikhonovSelector::buildGroupCenteringK()` returns this matrix for a group assignment.
 
 \snippet{trimleft} trex_tikhonov.cpp group-centering
 \output{trex_tikhonov.group-centering.txt}
@@ -102,4 +112,6 @@ vanishes and the path is the lasso on per-variable cluster dummies.
 ## The solver
 
 The selector runs `SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. It is
-the default of the control.
+the solver of the base control nested in the Tikhonov control, `trex_ctrl`. A fresh
+`TRexControlParameter` names `TLARS`, which the constructor refuses as every other solver, so a base
+control that is assigned to `trex_ctrl` has to set `solver_type` to `TIKNET`.

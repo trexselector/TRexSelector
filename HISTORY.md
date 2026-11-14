@@ -16,6 +16,25 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The C++ guide page of the Tikhonov selector follows the class
+
+Guide page 08 of C++ ("T-Rex Tikhonov: a general penalty matrix"), texts only. 771a6a7 had corrected the
+documentation of the class and had left the page.
+
+- The cross-validation rules no longer "return lambda_2 on the solver scale". The page gains the
+  paragraph on the scale: a supplied `lambda_2` is used as it is, a grid is stated for columns of unit
+  norm and runs at the grid times n - 1 under `ScalingMode::ZSCORE`, and every rule reports its pick on
+  the scale of a supplied value.
+- The page names what the class has: `runPilotOnly()`, `getDummyClusters()`,
+  `buildGroupCenteringK()`, `gvs_lambda2_power_rule()` and `default_lambda2_grid()` as the default
+  grid of `Lambda2PowerRuleConfig`. A selector runs once.
+- The section "The solver" said "It is the default of the control". It says now that TIKNET is the
+  solver of the nested base control and that the constructor refuses every other solver, so a base
+  control that is assigned to `trex_ctrl` has to name it.
+- The compiled example and its outputs are unchanged. Doxygen gives the one warning it gave before, a
+  missing example output of page 11, which this change does not touch. The three guide pages 08 now
+  agree.
+
 #### The texts of the R Tikhonov class mirror the C++ class
 
 Step 3 of the rework of the R class of the Tikhonov selector, the last one of the class. Texts only.
