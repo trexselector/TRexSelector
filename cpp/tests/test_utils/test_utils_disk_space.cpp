@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <random>
 #include <stdexcept>
 #include <string>
 
@@ -31,19 +32,45 @@ namespace trex::test::utils::disk_space {
 
 namespace ds = trex::utils::disk_space;
 namespace fs = std::filesystem;
+namespace txfs = trex::trex_selector_methods::ad::utils::filesystem;
 
 // Far beyond any real volume, still representable
 constexpr std::uintmax_t HUGE_BYTES = std::numeric_limits<std::uintmax_t>::max() / 2;
 
-/** @brief Number of entries in dir whose name starts with prefix. */
-static std::size_t countWithPrefix(const fs::path& dir, const std::string& prefix) {
-    std::size_t count = 0;
-    std::error_code ec;
-    for (fs::directory_iterator it(dir, ec), end; it != end && !ec; it.increment(ec)) {
-        if (it->path().filename().string().rfind(prefix, 0) == 0) ++count;
+/**
+ * @brief Directory of one test, with a random name under the temp folder.
+ *
+ * @details Another process can create or remove an entry of the shared temp
+ *  folder between two looks, so each test works in a folder of its own. With
+ *  `as_temp_base` it is also the base directory of TempDirManager.
+ */
+class PrivateTempDir {
+public:
+    explicit PrivateTempDir(bool as_temp_base = false) : as_temp_base_(as_temp_base) {
+        std::random_device rd;
+        dir_ = fs::temp_directory_path() /
+               ("trex_disk_space_test_" + std::to_string(rd()) + "_" + std::to_string(rd()));
+        fs::create_directory(dir_);
+        if (as_temp_base_) { txfs::TempDirManager::setCustomTempDir(dir_.string()); }
     }
-    return count;
-}
+
+    ~PrivateTempDir() {
+        // An empty string restores the default base directory.
+        if (as_temp_base_) { txfs::TempDirManager::setCustomTempDir(""); }
+        std::error_code ec;
+        fs::remove_all(dir_, ec);
+    }
+
+    PrivateTempDir(const PrivateTempDir&) = delete;
+    PrivateTempDir& operator=(const PrivateTempDir&) = delete;
+
+    /** @brief Path of the directory. */
+    const fs::path& path() const noexcept { return dir_; }
+
+private:
+    fs::path dir_;
+    bool as_temp_base_;
+};
 
 // ========================================================================================
 // Helper functions
@@ -87,8 +114,8 @@ TEST(DiskSpace, HugeRequirementThrowsWithActionableMessage) {
 
 /** @brief A matrix too large for its volume throws and leaves no file behind. */
 TEST(DiskSpace, MemoryMappedMatrixTooLargeThrowsBeforeCreatingTheFile) {
-    const fs::path file = fs::temp_directory_path() / "trex_disk_space_test_matrix.bin";
-    fs::remove(file);
+    const PrivateTempDir dir;
+    const fs::path file = dir.path() / "matrix.bin";
     // 2^20 x 2^30 doubles = 8 PiB: no size_t overflow, but no disk holds it
     const std::size_t rows = std::size_t{1} << 20;
     const std::size_t cols = std::size_t{1} << 30;
@@ -96,37 +123,53 @@ TEST(DiskSpace, MemoryMappedMatrixTooLargeThrowsBeforeCreatingTheFile) {
                      file.string(), rows, cols, trex::utils::memmap::AccessMode::ReadWrite)),
                  std::runtime_error);
     EXPECT_FALSE(fs::exists(file));
+    EXPECT_TRUE(fs::is_empty(dir.path()));
 }
 
 /** @brief A matrix that fits is still created as before. */
 TEST(DiskSpace, MemoryMappedMatrixThatFitsIsCreated) {
-    const fs::path file = fs::temp_directory_path() / "trex_disk_space_test_small.bin";
-    fs::remove(file);
+    const PrivateTempDir dir;
+    const fs::path file = dir.path() / "small.bin";
     {
         trex::utils::memmap::MemoryMappedMatrix<double> mm(
             file.string(), 8, 4, trex::utils::memmap::AccessMode::ReadWrite);
         mm.getMap().setConstant(1.0);
     }
     EXPECT_EQ(fs::file_size(file), 8u * 4u * sizeof(double));
-    fs::remove(file);
 }
 
 /** @brief TempDirManager refuses to create a directory it cannot fill. */
 TEST(DiskSpace, TempDirManagerChecksBeforeCreating) {
-    namespace txfs = trex::trex_selector_methods::ad::utils::filesystem;
-    const fs::path base = txfs::TempDirManager::baseDir();
-    const std::size_t before = countWithPrefix(base, "trex_disk_space_test_");
+    const PrivateTempDir base(true);
+    ASSERT_EQ(fs::canonical(txfs::TempDirManager::baseDir()), fs::canonical(base.path()));
     EXPECT_THROW(txfs::TempDirManager::create("trex_disk_space_test_", HUGE_BYTES, "The test dir"),
                  std::runtime_error);
-    EXPECT_EQ(countWithPrefix(base, "trex_disk_space_test_"), before);
+    EXPECT_TRUE(fs::is_empty(base.path()));
+
+    // A directory that fits is created inside the base
+    const std::string created = txfs::TempDirManager::create("trex_disk_space_test_");
+    EXPECT_EQ(fs::canonical(fs::path(created).parent_path()), fs::canonical(base.path()));
+    txfs::TempDirManager::remove(created);
+    EXPECT_TRUE(fs::is_empty(base.path()));
+}
+
+/** @brief The private directory hands the base directory back. */
+TEST(DiskSpace, PrivateTempDirRestoresTheBaseDirectory) {
+    const fs::path before = txfs::TempDirManager::baseDir();
+    fs::path used;
+    {
+        const PrivateTempDir base(true);
+        used = base.path();
+        EXPECT_TRUE(fs::is_directory(used));
+    }
+    EXPECT_EQ(txfs::TempDirManager::baseDir(), before);
+    EXPECT_FALSE(fs::exists(used));
 }
 
 /** @brief The dummy-matrix manager checks the worst case at the dummy cap. */
 TEST(DiskSpace, MemmapManagerChecksWorstCaseBeforeCreating) {
     namespace mmm = trex::trex_selector_methods::ad::utils::memmap_manager;
-    namespace txfs = trex::trex_selector_methods::ad::utils::filesystem;
-    const fs::path base = txfs::TempDirManager::baseDir();
-    const std::size_t before = countWithPrefix(base, "trex_memmap_");
+    const PrivateTempDir base(true);
 
     // K = 20 files of 2^20 x 2^24 doubles (128 TiB each): too large for any disk
     mmm::MemmapManager manager(std::size_t{1} << 20, std::size_t{1} << 24, 20, false, false);
@@ -140,13 +183,15 @@ TEST(DiskSpace, MemmapManagerChecksWorstCaseBeforeCreating) {
         EXPECT_NE(msg.find("max_dummy_multiplier"), std::string::npos) << msg;
     }
     EXPECT_FALSE(manager.isInitialized());
-    EXPECT_EQ(countWithPrefix(base, "trex_memmap_"), before);
+    EXPECT_TRUE(fs::is_empty(base.path()));
 
     // A small manager still initializes and cleans up
     mmm::MemmapManager small(10, 20, 2, false, false);
     EXPECT_NO_THROW(small.initialize());
     EXPECT_EQ(small.numFiles(), 2u);
+    EXPECT_FALSE(fs::is_empty(base.path()));
     small.cleanup();
+    EXPECT_TRUE(fs::is_empty(base.path()));
 }
 
 // ========================================================================================

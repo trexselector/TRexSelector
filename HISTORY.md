@@ -16,6 +16,25 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The disk-space tests no longer depend on other processes in the temp folder
+
+- `DiskSpace.TempDirManagerChecksBeforeCreating` failed once in a parallel run of the C++ tests. It
+  counted the entries of the temp folder that start with `trex_disk_space_test_` before and after a
+  refused create, and two other cases of the file wrote files with that prefix into the same folder.
+  ctest runs every case as its own process, so the count could change in between.
+  `DiskSpace.MemmapManagerChecksWorstCaseBeforeCreating` counted the `trex_memmap_` folders the same
+  way, which every test with a memory-mapped dummy store creates.
+- Fabian, 2026-11-14: "I don't accept failing tests, either we can fix it, or we rethink the test."
+- Every test of the file that writes now works in a folder of its own with a random name, created and
+  removed by a small guard class. For the two manager tests the folder is the base directory of
+  `TempDirManager` for the time of the test. The checks are stricter than before: the folder must be
+  empty after a refused create. One new test pins that the guard hands the base directory back.
+- Evidence. With the old executable the first test failed 5 times in 300 raced runs and the second 137
+  times in 300. With the new one both fail 0 times in 300, four executables at once fail 0 times in 600,
+  and nothing is left in the temp folder. The full suite passes five times in a row, C++ tests 722 of
+  722. No other test of the C++, R or Python trees lists the shared temp folder. No library code
+  changes.
+
 #### The reference element of the grid rounds a half up, and the documentation says so
 
 - The reference threshold of BT, NN and the prior groups is element round(0.75 * L) of a grid of length
