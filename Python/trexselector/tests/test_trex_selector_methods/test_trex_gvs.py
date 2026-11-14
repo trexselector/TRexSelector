@@ -352,3 +352,47 @@ def test_gvs_ien_tuner_grids_and_diagnostics(signal_data):
     assert isinstance(diag.at_grid_edge, bool) and isinstance(diag.profile_at_edge, bool)
     assert diag.boundary_pick == (diag.at_grid_edge or diag.profile_at_edge)
     assert diag.at_grid_edge == (diag.grid_index in (0, diag.grid_size - 1))
+
+
+def test_gvs_result_names_the_origin_of_the_groups(signal_data, fast_control):
+    """Supplied groups give "prior", their number and their names, and the supplied lambda_2."""
+    X, y, n, p = signal_data
+    gvs_ctrl = trexselector.TRexGVSControlParameter()
+    gvs_ctrl.prior_groups = [i % 4 for i in range(p)]
+    gvs_ctrl.group_labels = ["a", "b", "c", "d"]
+    gvs_ctrl.lambda_2 = 1.0
+    sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl, trex_control=fast_control, verbose=False)
+    res = sel.select()
+    assert res.hc_method_used == "prior"
+    assert res.max_clusters == 4
+    assert res.group_labels == ["a", "b", "c", "d"]
+    assert res.lambda2_used == 1.0
+    assert not res.lambda2_cv.ran
+
+
+@pytest.mark.parametrize("linkage", ["Single", "Complete", "Average", "WPGMA"])
+def test_gvs_result_names_the_linkage_in_lower_case(signal_data, fast_control, linkage):
+    """Without groups hc_method_used holds the linkage of the clustering in lower case."""
+    from trexselector.ml_methods.clustering import LinkageMethod
+
+    X, y, n, p = signal_data
+    gvs_ctrl = trexselector.TRexGVSControlParameter()
+    gvs_ctrl.hc_linkage = getattr(LinkageMethod, linkage)
+    gvs_ctrl.lambda_2 = 1.0
+    sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl, trex_control=fast_control, verbose=False)
+    res = sel.select()
+    assert res.hc_method_used == linkage.lower()
+    assert res.group_labels == []
+
+
+@pytest.mark.parametrize("strategy", ["PERMUTATION", "PERMUTATION_SEEDED"])
+def test_gvs_refuses_the_permutation_strategies(signal_data, strategy):
+    """A row permutation destroys the covariance of the dummies within a cluster."""
+    X, y, n, p = signal_data
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 3
+    ctrl.lloop_strategy = getattr(trexselector.LLoopStrategy, strategy)
+    with pytest.raises(ValueError, match="PERMUTATION and PERMUTATION_SEEDED"):
+        sel = trexselector.TRexGVSSelector(X, y, trex_control=ctrl, verbose=False)
+        sel.select()
+

@@ -219,24 +219,21 @@ test_that("TRexGVSSelector handles manual grouping vectors correctly", {
   # Wrong length for groups
   expect_error(
     TRexGVSSelector$new(X, y, gvs_control = trex_gvs_control(gvs_type = "EN", groups = c(1, 2)), verbose = FALSE),
-    "length must equal p"
+    "groups must have one entry per variable (p = 10). Got: 2.", fixed = TRUE
   )
 
-  # Missing clusters (non-contiguous IDs)
-  # Trying to assign clusters 1 and 3 (R 1-based indexing, skips 2)
-  bad_groups <- rep(c(1, 3), length.out = p)
-  expect_error(
-    TRexGVSSelector$new(X, y, gvs_control = trex_gvs_control(gvs_type = "EN", groups = bad_groups), verbose = FALSE),
-    "non-contiguous"
-  )
+  # The control checks the numbering with the words of the R argument:
+  # a gap (1 and 3, no 2), a start at 0, a fraction and a missing value
+  numbering <- "groups must number the groups 1 to M without gaps"
+  expect_error(trex_gvs_control(groups = rep(c(1, 3), length.out = p)), numbering, fixed = TRUE)
+  expect_error(trex_gvs_control(groups = rep(c(0, 1), length.out = p)), numbering, fixed = TRUE)
+  expect_error(trex_gvs_control(groups = rep(c(1, 1.5), length.out = p)), numbering, fixed = TRUE)
+  expect_error(trex_gvs_control(groups = c(1, NA, 2)), numbering, fixed = TRUE)
+  expect_error(trex_gvs_control(groups = "a"), numbering, fixed = TRUE)
 
-  # Negative or zero group IDs from R
-  # (R uses 1-based indexing; sending 0 becomes -1 in C++)
-  zero_groups <- rep(c(0, 1), length.out = p)
-  expect_error(
-    TRexGVSSelector$new(X, y, gvs_control = trex_gvs_control(gvs_type = "EN", groups = zero_groups), verbose = FALSE),
-    "non-negative"
-  )
+  # Valid numberings pass, in any order
+  expect_no_error(trex_gvs_control(groups = rep(c(2, 1, 3), length.out = p)))
+  expect_no_error(trex_gvs_control(groups = rep(1L, p)))
 })
 
 
@@ -459,6 +456,102 @@ test_that("TRexGVSSelector exposes per-variable cluster labels (groups)", {
   # Real HAC-style purity is now computable from groups (no fabricated number).
   purity <- max(table(g)) / p
   expect_gte(purity, 0); expect_lte(purity, 1)
+})
+
+
+test_that("TRexGVSSelector names the origin of its groups and the supplied lambda_2", {
+  set.seed(42)
+  n <- 60
+  p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 3 + X[, 5] * -2 + rnorm(n)
+
+  s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
+                           gvs_control = trex_gvs_control(groups = rep(1:4, each = 3), lambda_2 = 1),
+                           control = trex_control(K = 3))
+  s$select()
+  expect_identical(s$hc_method_used, "prior")
+  expect_equal(s$max_clusters, 4)
+  expect_identical(s$lambda2_used, 1)
+  expect_false(s$lambda2_cv_diagnostics$ran)
+
+  # Without groups the field holds the linkage, spelled as the control takes it
+  for (linkage in c("single", "complete", "average", "wpgma")) {
+    s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
+                             gvs_control = trex_gvs_control(hc_linkage = linkage, lambda_2 = 1),
+                             control = trex_control(K = 3))
+    s$select()
+    expect_identical(s$hc_method_used, linkage)
+    expect_length(s$group_labels, 0L)
+  }
+})
+
+
+test_that("the controls take the linkage in lower case and accept the names of 2.0.1", {
+  # The default and the stored spelling of the three controls
+  expect_identical(trex_da_control()$hc_linkage, "single")
+  expect_identical(trex_gvs_control()$hc_linkage, "single")
+  expect_identical(trex_tikhonov_control(tikhonov_K = diag(4))$hc_linkage, "single")
+  for (old in c("Single", "Complete", "Average", "WPGMA")) {
+    expect_identical(trex_da_control(hc_linkage = old)$hc_linkage, tolower(old))
+    expect_identical(trex_gvs_control(hc_linkage = old)$hc_linkage, tolower(old))
+    expect_identical(trex_tikhonov_control(tikhonov_K = diag(4), hc_linkage = old)$hc_linkage, tolower(old))
+  }
+  expect_error(trex_tikhonov_control(tikhonov_K = diag(4), hc_linkage = "ward"), "arg")
+
+  # Both spellings give the same run, also for a control list built by hand
+  set.seed(42)
+  n <- 60
+  p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 3 + X[, 5] * -2 + rnorm(n)
+  run_gvs <- function(gc) {
+    s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE, gvs_control = gc, control = trex_control(K = 3))
+    s$select()
+    list(s$selected_var, s$groups, s$hc_method_used)
+  }
+  by_hand <- trex_gvs_control(lambda_2 = 1)
+  by_hand$hc_linkage <- "Complete"
+  expect_identical(run_gvs(trex_gvs_control(hc_linkage = "complete", lambda_2 = 1)),
+                   run_gvs(trex_gvs_control(hc_linkage = "Complete", lambda_2 = 1)))
+  expect_identical(run_gvs(trex_gvs_control(hc_linkage = "complete", lambda_2 = 1)), run_gvs(by_hand))
+
+  run_da <- function(dc) {
+    s <- TRexDASelector$new(X, y, seed = 1, verbose = FALSE, da_control = dc, control = trex_control(K = 3))
+    s$select()
+    list(s$selected_var, s$rho_grid)
+  }
+  expect_identical(run_da(trex_da_control(hc_linkage = "average")), run_da(trex_da_control(hc_linkage = "Average")))
+
+  tik <- function(linkage) {
+    s <- TRexTikhonovSelector$new(X, y, seed = 1, verbose = FALSE,
+                                  tik_control = trex_tikhonov_control(tikhonov_K = diag(p), lambda_2 = 1,
+                                                                      hc_linkage = linkage),
+                                  control = trex_control(K = 3))
+    s$select()
+    s$selected_var
+  }
+  expect_identical(tik("complete"), tik("Complete"))
+})
+
+
+test_that("TRexGVSSelector refuses the permutation strategies and reads SEEDED as STANDARD", {
+  set.seed(42)
+  n <- 60
+  p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 3 + X[, 5] * -2 + rnorm(n)
+  run <- function(strategy) {
+    s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
+                             gvs_control = trex_gvs_control(lambda_2 = 1),
+                             control = trex_control(K = 3, lloop_strategy = strategy))
+    s$select()
+    s$selected_var
+  }
+  for (strategy in c("PERMUTATION", "PERMUTATION_SEEDED")) {
+    expect_error(run(strategy), "PERMUTATION and PERMUTATION_SEEDED", fixed = TRUE)
+  }
+  expect_identical(run("SEEDED"), run("STANDARD"))
 })
 
 

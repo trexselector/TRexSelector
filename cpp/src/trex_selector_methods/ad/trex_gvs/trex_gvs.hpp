@@ -70,8 +70,8 @@
  *                         BEFORE augmentation, and runs an inner T-LASSO.
  *                         GVS passes the RAW MVN dummy block (the wrapper
  *                         centers it itself).
- *                     Both receive the 0-based cluster assignment from the
- *                     one-time clustering of X.
+ *                     All three receive the 0-based cluster assignment from
+ *                     the one-time clustering of X.
  *
  *    Reassembly rule (ALL variants): the per-experiment cluster-aware MVN
  *    dummy block D_k is (re)assembled every L-iteration because num_dummies
@@ -94,8 +94,8 @@
  *      reused (re-allocated in `onSelectBegin()` with n rows, and torn down
  *      by the base class at the end of `select()`); see `gvs_use_mmap_`.
  *
- *    - Support L-looop strategies:
- *.     `LLoopStrategy::STANDARD`, `HCONCAT`, `SKIPL`, and `SEEDED`.
+ *    - Supported L-loop strategies:
+ *      `LLoopStrategy::STANDARD`, `HCONCAT`, `SKIPL`, and `SEEDED`.
  *      `STANDARD` and `SEEDED` are equivalent inside GVS (the overridden
  *      `evaluateStep` consumes `D_solver_bufs_` rather than streaming dummies from disk).
  *      This equivalence includes the MEMORY profile: GVS keeps one dummy
@@ -113,10 +113,11 @@
  *      via `assembleDummyBlock`.
  *
  *    - The lambda_2 ridge parameter is resolved as follows:
- *        * lambda_2 <  0 (default -1): "not supplied" sentinel (R's NULL
- *          equivalent) -> auto-computed via k-fold CV on the centered +
+ *        * lambda_2 <  0 (default -1): "not supplied" sentinel ->
+ *          auto-computed via k-fold CV on the centered +
  *          z-score/L2-normalised (X, y). The EN-shaped tuners (CV_*_SVD /
- *          CV_*_CCD) convert by p / 2 to LARS units (as in R's lm_dummy);
+ *          CV_*_CCD) convert by p / 2 to LARS units (as `lm_dummy` of the
+ *          1.x versions of the R package does);
  *          the IEN-geometry tuners (CV_*_IEN_CCD / CV_*_TIK_SVD) return
  *          lambda_2 on the SOLVER scale directly (no p/2 conversion, only
  *          the ZSCORE working-scale factor);
@@ -170,7 +171,7 @@ namespace ms  = trex::ml_methods::model_selection;
 // ===================================================================================
 
 /**
- * @brief Variable selection policy for T-Rex+GVS.
+ * @brief Penalty of the grouped selection of T-Rex+GVS.
  */
 enum class GVSType {
     /** @brief Ordinary Elastic Net; solver variant controlled by ENSolverType. */
@@ -240,15 +241,15 @@ inline constexpr disp::SolverTypeForTRex toSolverType(ENSolverType en_solver) {
  *        when no user-supplied value is given.
  *
  * @details
- *   Active methods:
- *   - `CV_1SE_SVD` / `CV_MIN_SVD` : same semantics but via `ridge_cv_svd`
- *                 (JacobiSVD); for numerical validation.
+ *   EN-shaped methods (both tracks):
+ *   - `CV_1SE_SVD` / `CV_MIN_SVD` : ridge CV via `ridge_cv_svd` (JacobiSVD);
+ *                 for numerical validation.
  *   - `CV_1SE_CCD` / `CV_MIN_CCD` : glmnet-faithful coordinate-descent ridge CV
  *                 (`enet_cv_ccd`, alpha=0) with glmnet's fdev/devmax path
  *                 early-termination. Reproduces `cv.glmnet(alpha=0)` lambda.min exactly
  *                 and lambda.1se within CV fold noise; returns lambda on glmnet's
- *                 reported scale (like the GLMNET variants), so the p/2 factor converts
- *                 to LARS units as in R's `lm_dummy`.
+ *                 reported scale, so the p/2 factor converts to LARS units as
+ *                 `lm_dummy` of the 1.x versions of the R package does.
  *
  *   IEN-geometry methods (`gvs_type == IEN` only — they consume the group
  *   structure; the selected lambda_2 is on the SOLVER scale and needs NO p/2
@@ -293,7 +294,9 @@ enum class LambdaSelectionMethod {
  */
 struct TRexGVSControlParameter {
 
-    /** @brief GVS selection policy algorithm (default: EN). */
+    /** @brief Penalty of the grouped selection: EN (elastic net) or IEN
+     *  (informed elastic net). Default: EN.
+     */
     GVSType gvs_type = GVSType::EN;
 
     /** @brief EN solver variant when gvs_type == GVSType::EN.
@@ -304,32 +307,41 @@ struct TRexGVSControlParameter {
      */
     ENSolverType en_solver = ENSolverType::TENET;
 
-    /** @brief Maximum allowed pairwise correlation between variables from
-     *  different clusters (only when groups are not provided); the dendrogram
-     *  is cut at height 1 - corr_max.
+    /** @brief Correlation threshold of the automatic clustering (only when
+     *  groups are not provided). The dendrogram is cut at the height
+     *  1 - corr_max. With Single linkage (default) no two variables of
+     *  different clusters correlate above corr_max. With Complete linkage
+     *  every two variables of one cluster correlate at least at corr_max,
+     *  and variables of different clusters can exceed it.
      *
-     *  Default 0.5 matches the R reference (`trex(..., corr_max = 0.5)`).
-     *  Note: the EUSIPCO 2022 T-Rex+GVS paper used rho_thr = 1/3 for its
-     *  GWAS experiments; supply that value explicitly to reproduce them.
+     *  Default 0.5 matches the 1.x versions of the R package
+     *  (`trex(..., corr_max = 0.5)`). The EUSIPCO 2022 T-Rex+GVS paper used
+     *  rho_thr = 1/3 for its GWAS experiments. Supply that value to
+     *  reproduce them.
      */
     double corr_max = 0.5;
 
-    /** @brief Linkage method for hierarchical clustering.
-     *  Supported: Single (default), Complete, Average, WPGMA.
-     *  All other linkage methods are rejected bcauase:
-     *  Ward is rejected because the d = 1 - |cor| metric is non-Euclidean.
-     *  Mean and Median centroids are non-reducible.
+    /** @brief Linkage of the hierarchical clustering (default: Single). Used
+     *  when no groups are supplied.
+     *  Supported: Single, Complete, Average (UPGMA), WPGMA (McQuitty).
+     *  Ward is rejected, because its update is valid for squared Euclidean
+     *  distances only and the correlation distance 1 - |cor| is not Euclidean.
+     *  The centroid and median linkages are rejected as well, because they
+     *  are not reducible.
      */
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
-    /** @brief User-supplied lambda_2 (in the working column scale).
-     *  - `< 0` (default `-1.0`): sentinel meaning "not supplied" (the C++
-     *    equivalent of R's `NULL`); triggers auto-computation via
-     *    `lambda2_method`. The EN-shaped tuners scale the CV pick by p / 2
-     *    to LARS units; the IEN-geometry tuners return it on the solver
-     *    scale directly (see `LambdaSelectionMethod`).
+    /** @brief User-supplied lambda_2.
+     *  - `< 0` (default `-1.0`): sentinel meaning "not supplied"; triggers
+     *    auto-computation via `lambda2_method`. The EN-shaped tuners scale
+     *    the CV pick by p / 2 to LARS units; the IEN-geometry tuners return
+     *    it on the solver scale directly (see `LambdaSelectionMethod`).
      *  - `== 0`: fixed degenerate case -> pure TLASSO (no ridge penalty).
      *  - `> 0` : fixed ridge penalty.
+     *
+     *  A supplied value refers to the scale of the standardized columns.
+     *  Under ScalingMode::ZSCORE the columns have the squared norm n - 1, so
+     *  the same shrinkage needs the value times n - 1.
      *
      *  A negative sentinel (rather than NaN) is used so the value stays
      *  well-defined under aggressive floating-point optimisation.
@@ -359,8 +371,9 @@ struct TRexGVSControlParameter {
      */
     int cv_n_folds = 10;
 
-    /** @brief Number of points on the geometric lambda grid searched by
-     *  the auto-computation. Default: 1000. Applies to CV paths.
+    /** @brief Number of points on the lambda_2 grid of the rules CV_*_SVD,
+     *  CV_*_CCD and CV_*_TIK_SVD. Default: 1000. The rules CV_*_IEN_CCD use
+     *  cv_n_lambda2.
      */
     Eigen::Index cv_n_lambda = 1000;
 
@@ -403,8 +416,9 @@ struct TRexGVSControlParameter {
      */
     int cv_seed = -1;
 
-    /** @brief Optional prior cluster assignment (length p, 0-based, contiguous
-     *  IDs in [0, M-1]). Empty (default) triggers Route 2 (auto-cluster).
+    /** @brief Optional prior cluster assignment: one ID per variable (length
+     *  p), numbered 0 to M - 1 without gaps. Empty (default) triggers
+     *  Route 2 (auto-cluster).
      */
     std::vector<Eigen::Index> prior_groups;
 
@@ -413,13 +427,13 @@ struct TRexGVSControlParameter {
      */
     std::vector<std::string> group_labels;
 
-    /** @brief Diagnostic / R-parity option for the augmented solvers
+    /** @brief Diagnostic option for the augmented solvers
      *  (`en_solver == TENET_AUG`, or `gvs_type == IEN` with
      *  `solver_type == TIENET_AUG`). When true, the augmented system is
      *  solved with a pure-LARS inner solver (never drops variables, matching
-     *  R's `trex(type="lar")`) instead of the default LARS-LASSO inner
-     *  solver. Ignored for plain TENET and the native pathwise TIENET.
-     *  Default: false.
+     *  `trex(type = "lar")` of the 1.x versions of the R package) instead of
+     *  the default LARS-LASSO inner solver. Ignored for plain TENET and the
+     *  native pathwise TIENET. Default: false.
      */
     bool tenet_aug_use_lars = false;
 
@@ -491,9 +505,14 @@ struct GVSSetupResult {
 // ===================================================================================
 
 /**
- * @brief Grouped Variable Selection T-Rex Selector.
+ * @brief T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled
+ *        variable selection for groups of highly correlated variables.
  *
  * @details
+ *  L-loop strategies: STANDARD, HCONCAT, SKIPL and SEEDED are supported, and SEEDED
+ *  equals STANDARD here. PERMUTATION and PERMUTATION_SEEDED are refused, because a
+ *  row permutation destroys the covariance of the dummies within a cluster.
+ *
  *  Inherits from TRexSelector. The base `select()` orchestration is reused;
  *  GVS plugs in via the variant hooks:
  *  `onSelectBegin()`,
@@ -533,20 +552,23 @@ public:
      */
     struct GVSSelectionResult : public SelectionResult {
 
-        /** @brief lambda_2 actually used (resolved from user or GCV). */
+        /** @brief lambda_2 of the last select(): the supplied value, or the
+         *  pick of the cross-validation rule `lambda2_method`. */
         double lambda2_used = 0.0;
 
         /** @brief What the lambda_2 tuner did to arrive at `lambda2_used`
          *  (`ran == false`: the value came from the caller). */
         ms::lambda2_cv_diagnostics lambda2_cv;
 
-        /** @brief Augmentation policy that was applied. */
+        /** @brief Penalty of the grouped selection that was applied. */
         GVSType gvs_type = GVSType::EN;
 
-        /** @brief Number of clusters M. */
+        /** @brief Number of groups M, supplied or found by the clustering. */
         std::size_t max_clusters = 0;
 
-        /** @brief Linkage method used; "prior" if Route 1. */
+        /** @brief Origin of the groups: "prior" when they were supplied, else
+         *  the linkage of the clustering, "single", "complete", "average" or
+         *  "wpgma". */
         std::string hc_method_used;
 
         /** @brief 0-based cluster assignment per variable (length p). */
@@ -573,7 +595,8 @@ public:
      * @param trex_gvs_ctrl  GVS-specific control parameters, nesting the base
      *                       T-Rex algorithmic control parameters as
      *                       `trex_gvs_ctrl.trex_ctrl`.
-     * @param seed         Random seed (< 0 for random).
+     * @param seed         Random seed. A negative value (default: -1) gives a run
+     *                     that is not reproducible.
      * @param verbose      Enable verbose output (default: true).
      *
      * @throws std::invalid_argument on incompatible solver / strategy choice

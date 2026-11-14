@@ -287,10 +287,11 @@ trex_control <- function(solver = "TLARS",
 #'   first lag whose correlation \code{abs(cor_coef)^lag} has fallen to the threshold,
 #'   range \code{[0, 1)}. EQUI: the correction is skipped when \code{abs(cor_coef)} does
 #'   not exceed the threshold, range \code{[0, 1]}.
-#' @param hc_linkage Hierarchical clustering linkage: "Single", "Complete", "Average",
-#'   "WPGMA" (default: "Single"). Used by BT and by prior groups. "Ward" is rejected,
+#' @param hc_linkage Hierarchical clustering linkage: "single", "complete", "average",
+#'   "wpgma" (default: "single"). Used by BT and by prior groups. "ward" is rejected,
 #'   because its update is valid for squared Euclidean distances only and the correlation
-#'   distance \code{1 - abs(cor)} is not Euclidean.
+#'   distance \code{1 - abs(cor)} is not Euclidean. The capitalized names of
+#'   TRexSelector 2.0.1 ("Single") are accepted as well.
 #' @param hc_grid_length Number of correlation thresholds on the calibration grid of BT,
 #'   NN and prior groups. \code{0} (default) takes \code{min(20, p)}.
 #' @param prior_groups Optional prior grouping constraints: a list of integer
@@ -315,7 +316,7 @@ trex_control <- function(solver = "TLARS",
 #'
 #' @examples
 #' trex_da_control()
-#' trex_da_control(da_method = "BT", hc_linkage = "Average")
+#' trex_da_control(da_method = "BT", hc_linkage = "average")
 #' # Prior-groups path (constraints over p = 4 variables):
 #' trex_da_control(prior_groups = list(c(1, 1, 2, 2)))
 #'
@@ -324,7 +325,7 @@ trex_control <- function(solver = "TLARS",
 trex_da_control <- function(da_method = "BT",
                             cor_coef = -2.0,
                             rho_thr_DA = 0.02,
-                            hc_linkage = "Single",
+                            hc_linkage = "single",
                             hc_grid_length = 0,
                             prior_groups = NULL,
                             bt_selection_mode = "FeasibleOnly") {
@@ -333,7 +334,7 @@ trex_da_control <- function(da_method = "BT",
     da_method         = da_method,
     cor_coef          = cor_coef,
     rho_thr_DA        = rho_thr_DA,
-    hc_linkage        = hc_linkage,
+    hc_linkage        = tolower(hc_linkage),
     hc_grid_length    = hc_grid_length,
     prior_groups      = prior_groups,
     bt_selection_mode = bt_selection_mode
@@ -345,7 +346,7 @@ trex_da_control <- function(da_method = "BT",
 #'
 #' @title TRex GVS Control Parameters
 #'
-#' @description Build a control list for group variable selection augmentation policy in
+#' @description Build a control list for the grouped variable selection of
 #'   TRexGVSSelector. The solver is determined automatically from \code{gvs_type}:
 #'   "EN" selects the T-Elastic-Net solver via \code{en_solver} — TENET
 #'   (default), with TENET_AUG and TCDENET as optional variants; "IEN" honors
@@ -359,15 +360,25 @@ trex_da_control <- function(da_method = "BT",
 #'   family in TRexSelector 2.1.0: the selector raises a deprecation warning
 #'   for them. Use TENET and TIENET.
 #'
-#' @param gvs_type Augmentation policy: "EN" (Elastic Net) or "IEN" (Informed Elastic Net)
-#'   (default: "EN").
-#' @param corr_max Maximum pairwise correlation for automatic cluster formation (default: 0.5).
-#' @param hc_linkage Hierarchical clustering linkage: "Single", "Complete", "Average",
-#'   "WPGMA" (default: "Single").
-#' @param lambda_2 L2 penalty weight for group structure, in LARS units.
+#' @param gvs_type Penalty of the grouped selection: "EN" (elastic net) or "IEN" (informed
+#'   elastic net) (default: "EN").
+#' @param corr_max Correlation threshold of the automatic clustering (default: 0.5). The
+#'   dendrogram is cut at the height \code{1 - corr_max}. With "single" linkage (default)
+#'   no two variables of different clusters correlate above \code{corr_max}. With
+#'   "complete" linkage every two variables of one cluster correlate at least at
+#'   \code{corr_max}, and variables of different clusters can exceed it.
+#' @param hc_linkage Hierarchical clustering linkage: "single", "complete", "average",
+#'   "wpgma" (default: "single"). Used when no \code{groups} are supplied. "ward" is
+#'   rejected, because its update is valid for squared Euclidean distances only and the
+#'   correlation distance \code{1 - abs(cor)} is not Euclidean. The capitalized names of
+#'   TRexSelector 2.0.1 ("Single") are accepted as well.
+#' @param lambda_2 L2 penalty weight for group structure.
 #'   A negative value (default \code{-1}) triggers automatic determination via
 #'   the method selected by \code{lambda2_method}; \code{0} is the degenerate
-#'   pure T-LASSO case (no ridge); a positive value is used as-is.
+#'   pure T-LASSO case (no ridge); a positive value is used as-is. A supplied value
+#'   refers to the scale of the standardized columns. Under
+#'   \code{scaling_mode = "ZSCORE"} the columns have the squared norm \code{n - 1}, so the
+#'   same shrinkage needs the value times \code{n - 1}.
 #' @param lambda2_method Auto-determination strategy for \code{lambda_2} when
 #'   \code{lambda_2 < 0}. \code{NULL} (default) resolves by track:
 #'   \code{"CV_1SE_CCD"} for \code{gvs_type = "EN"} and
@@ -391,21 +402,25 @@ trex_da_control <- function(da_method = "BT",
 #'   differences; the switch exists to validate solver equivalence,
 #'   \strong{not} to choose a LARS vs LASSO path (for that, see
 #'   \code{tenet_aug_use_lars}).
-#' @param tenet_aug_use_lars Logical. When \code{en_solver = "TENET_AUG"}, run
+#' @param tenet_aug_use_lars Logical. For the augmented solvers, \code{en_solver =
+#'   "TENET_AUG"} or \code{gvs_type = "IEN"} with the solver \code{"TIENET_AUG"}: run
 #'   the augmented system with a pure-LARS inner path that never drops variables
 #'   (\code{TRUE}) instead of the default LASSO inner path that can
 #'   (\code{FALSE}, default). This is the LARS-vs-LASSO distinction. Ignored for
-#'   \code{en_solver = "TENET"}.
-#' @param groups Integer vector of manually specified group assignments (1-based, default: NULL).
+#'   \code{"TENET"} and \code{"TIENET"}.
+#' @param groups Integer vector of manually specified group assignments, one entry per
+#'   variable, numbered 1 to M without gaps (default: NULL).
 #' @param group_labels Optional character vector with a name per group of \code{groups}, in
 #'   the order of the group numbers. Its length must equal the number of groups. The names
 #'   are returned in the field \code{group_labels} of the selector (default: NULL).
 #' @param cv_n_folds Number of folds for the k-fold cross-validation used by the
 #'   CV \code{lambda2_method} paths (default: 10, matching \code{cv.glmnet}).
 #'   Ignored when \code{lambda_2 >= 0}.
-#' @param cv_n_lambda Number of points on the geometric lambda grid searched by
-#'   the CV auto-computation of \code{lambda_2} (default: 1000). Ignored when
-#'   \code{lambda_2 >= 0}.
+#' @param cv_n_lambda Number of points on the \code{lambda_2} grid of the rules
+#'   \code{"CV_1SE_SVD"}, \code{"CV_MIN_SVD"}, \code{"CV_1SE_CCD"}, \code{"CV_MIN_CCD"},
+#'   \code{"CV_1SE_TIK_SVD"} and \code{"CV_MIN_TIK_SVD"} (default: 1000). The rules
+#'   \code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"} use \code{cv_n_lambda2}.
+#'   Ignored when \code{lambda_2 >= 0}.
 #' @param cv_n_lambda1 IEN-geometry coordinate-descent tuners
 #'   (\code{"CV_1SE_IEN_CCD"}, \code{"CV_MIN_IEN_CCD"}) only: points on the
 #'   profiled lambda_1 path per lambda_2 value (default: 40, the shortest
@@ -438,7 +453,7 @@ trex_da_control <- function(da_method = "BT",
 #' @export
 trex_gvs_control <- function(gvs_type = "EN",
                              corr_max = 0.5,
-                             hc_linkage = "Single",
+                             hc_linkage = "single",
                              lambda_2 = -1.0,
                              lambda2_method = NULL,
                              en_solver = "TENET",
@@ -470,6 +485,14 @@ trex_gvs_control <- function(gvs_type = "EN",
          "gvs_type = \"IEN\".")
   }
   en_solver <- match.arg(en_solver, c("TENET", "TENET_AUG", "TCDENET"))
+  if (!is.null(groups)) {
+    whole <- is.numeric(groups) && length(groups) > 0 && !anyNA(groups) &&
+      all(groups == round(groups))
+    if (!whole || min(groups) < 1 || length(unique(groups)) != max(groups)) {
+      stop("groups must number the groups 1 to M without gaps, with one whole ",
+           "number per variable.")
+    }
+  }
   dfmax_ok <- is.numeric(cv_dfmax_ratio) && length(cv_dfmax_ratio) == 1 &&
     is.finite(cv_dfmax_ratio)
   if (!dfmax_ok) {
@@ -479,7 +502,7 @@ trex_gvs_control <- function(gvs_type = "EN",
   list(
     gvs_type           = gvs_type,
     corr_max           = corr_max,
-    hc_linkage         = hc_linkage,
+    hc_linkage         = tolower(hc_linkage),
     lambda_2           = lambda_2,
     lambda2_method     = lambda2_method,
     en_solver          = en_solver,
@@ -768,9 +791,10 @@ trex_dummy_distribution <- function(type     = "Normal",
 #' @param corr_max Maximum cross-cluster |correlation| for the HAC dummy
 #'   clustering (default: 0.5). Ignored when \code{prior_groups} is set or
 #'   \code{cluster_dummies = FALSE}.
-#' @param hc_linkage HAC linkage: "Single" (default), "Complete",
-#'   "Average", "WPGMA". Ignored under \code{prior_groups} or
-#'   \code{cluster_dummies = FALSE}.
+#' @param hc_linkage HAC linkage: "single" (default), "complete",
+#'   "average", "wpgma". Ignored under \code{prior_groups} or
+#'   \code{cluster_dummies = FALSE}. The capitalized names of TRexSelector 2.0.1
+#'   ("Single") are accepted as well.
 #'
 #' @return A named list for use in TRexTikhonovSelector.
 #'
@@ -807,7 +831,7 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
                                   cluster_dummies = TRUE,
                                   prior_groups = NULL,
                                   corr_max = 0.5,
-                                  hc_linkage = "Single") {
+                                  hc_linkage = "single") {
   penalty_structure <- match.arg(penalty_structure,
                                  c("SPARSE_GENERAL", "GROUP_CENTERING"))
   lambda2_method <- match.arg(lambda2_method,
@@ -816,8 +840,8 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
                                 "CV_1SE_TIK_SVD", "CV_MIN_TIK_SVD"))
   pilot_statistic <- match.arg(pilot_statistic,
                                c("MAJORITY", "CALIBRATED", "GROUP_MAJORITY"))
-  hc_linkage <- match.arg(hc_linkage,
-                          c("Single", "Complete", "Average", "WPGMA"))
+  hc_linkage <- match.arg(tolower(hc_linkage),
+                          c("single", "complete", "average", "wpgma"))
   if (penalty_structure == "SPARSE_GENERAL" && is.null(tikhonov_K)) {
     stop("tikhonov_K is required (p x p penalty matrix; use trex_gamma_to_k() ",
          "to build K from a regularization operator Gamma) unless ",

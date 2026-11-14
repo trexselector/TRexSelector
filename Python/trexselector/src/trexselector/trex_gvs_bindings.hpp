@@ -147,9 +147,9 @@ public:
  * @param m The Python module to bind against.
  */
 inline void bind_trex_gvs(py::module& m) {
-    py::enum_<GVSType>(m, "GVSType", "Group Variable Selection method variants.")
-        .value("EN", GVSType::EN, "Elastic-Net group variable selection (uses TENET solver).")
-        .value("IEN", GVSType::IEN, "Informed Elastic-Net using group structure from clustering (solver via "
+    py::enum_<GVSType>(m, "GVSType", "Penalty of the grouped selection of T-Rex+GVS.")
+        .value("EN", GVSType::EN, "Elastic net. en_solver chooses the solver.")
+        .value("IEN", GVSType::IEN, "Informed elastic net, with the groups in the penalty (solver via "
             "trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its "
             "sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within "
             "cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor "
@@ -229,22 +229,29 @@ inline void bind_trex_gvs(py::module& m) {
 
     py::class_<TRexGVSControlParameter>(m, "TRexGVSControlParameter", "Control parameters for TRexGVSSelector.")
         .def(py::init<>())
-        .def_readwrite("gvs_type",    &TRexGVSControlParameter::gvs_type,    "GVS method variant (EN = Elastic Net, "
-            "IEN "
-            "= Informed Elastic Net).")
+        .def_readwrite("gvs_type",    &TRexGVSControlParameter::gvs_type,    "Penalty of the grouped selection: EN "
+            "(elastic net, default) or IEN (informed elastic net).")
         .def_readwrite("en_solver",   &TRexGVSControlParameter::en_solver,   "EN solver variant when gvs_type == EN: "
             "TENET (default), TENET_AUG, or TCDENET (deprecated, removed in the next minor release).")
-        .def_readwrite("corr_max",    &TRexGVSControlParameter::corr_max,    "Maximum pairwise correlation for "
-            "automatic cluster formation.")
-        .def_readwrite("hc_linkage",  &TRexGVSControlParameter::hc_linkage,  "Hierarchical clustering linkage method.")
-        .def_readwrite("lambda_2", &TRexGVSControlParameter::lambda_2, "Ridge L2 penalty in LARS units (< 0 = "
-            "auto-select, 0 = pure TLASSO, > 0 = fixed).")
+        .def_readwrite("corr_max",    &TRexGVSControlParameter::corr_max,    "Correlation threshold of the automatic "
+            "clustering (default 0.5). The dendrogram is cut at the height 1 - corr_max. With Single linkage "
+            "(default) no two variables of different clusters correlate above corr_max. With Complete linkage every "
+            "two variables of one cluster correlate at least at corr_max, and variables of different clusters can "
+            "exceed it.")
+        .def_readwrite("hc_linkage",  &TRexGVSControlParameter::hc_linkage,
+            "Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Used when no\n"
+            "groups are supplied. Ward is rejected, because the correlation distance 1 - |cor| is not Euclidean.")
+        .def_readwrite("lambda_2", &TRexGVSControlParameter::lambda_2, "Ridge L2 penalty (< 0 = auto-select, 0 = "
+            "pure TLASSO, > 0 = fixed). A supplied value refers to the scale of the standardized columns. Under "
+            "ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value "
+            "times n - 1.")
         .def_readwrite("lambda2_method", &TRexGVSControlParameter::lambda2_method, "Rule for auto-selecting lambda_2 "
             "when lambda_2 < 0.")
         .def_readwrite("cv_n_folds", &TRexGVSControlParameter::cv_n_folds, "Number of folds for cross-validated "
             "lambda_2 selection.")
-        .def_readwrite("cv_n_lambda", &TRexGVSControlParameter::cv_n_lambda, "Number of points on the lambda grid "
-            "searched during CV (EN-shaped rules).")
+        .def_readwrite("cv_n_lambda", &TRexGVSControlParameter::cv_n_lambda, "Number of points on the lambda_2 grid "
+            "of the rules CV_*_SVD, CV_*_CCD and CV_*_TIK_SVD (default 1000). The rules CV_*_IEN_CCD use "
+            "cv_n_lambda2.")
         .def_readwrite("cv_n_lambda1", &TRexGVSControlParameter::cv_n_lambda1, "IEN-geometry CD tuners (CV_*_IEN_CCD): "
             "points on the profiled lambda_1 path per lambda_2 value (default 40).")
         .def_readwrite("cv_dfmax_ratio", &TRexGVSControlParameter::cv_dfmax_ratio, "IEN-geometry CD tuners "
@@ -256,12 +263,14 @@ inline void bind_trex_gvs(py::module& m) {
         .def_readwrite("cv_seed", &TRexGVSControlParameter::cv_seed, "Seed for the CV fold-permutation RNG (-1 = "
             "derive "
             "from the T-Rex seed).")
-        .def_readwrite("prior_groups", &TRexGVSControlParameter::prior_groups, "Manually specified group assignments "
-            "(0-based; empty = auto-cluster).")
+        .def_readwrite("prior_groups", &TRexGVSControlParameter::prior_groups, "Manually specified group assignments: "
+            "one entry per variable, numbered 0 to M - 1 without gaps. Empty (default) clusters the variables.")
         .def_readwrite("group_labels", &TRexGVSControlParameter::group_labels, "Optional human-readable cluster names "
             "(size must equal number of clusters).")
-        .def_readwrite("tenet_aug_use_lars", &TRexGVSControlParameter::tenet_aug_use_lars, "For TENET_AUG: use a "
-            "pure-LARS inner solver (R-parity diagnostic).")
+        .def_readwrite("tenet_aug_use_lars", &TRexGVSControlParameter::tenet_aug_use_lars, "For the augmented "
+            "solvers, en_solver = TENET_AUG or gvs_type = IEN with the solver TIENET_AUG: use a pure-LARS inner "
+            "solver that never drops variables, as trex(type = \"lar\") of the 1.x versions of the R package does "
+            "(default False). Ignored for TENET and TIENET.")
         .def_readwrite("trex_ctrl", &TRexGVSControlParameter::trex_ctrl, "Nested base T-Rex algorithmic control "
             "parameters (used directly by TRexSPCASelector; overridden by the separate trex_control argument in "
             "TRexGVSSelector).");
@@ -270,23 +279,32 @@ inline void bind_trex_gvs(py::module& m) {
         "SelectionResult "
         ""
         "extended with GVS-specific fields.")
-        .def_readonly("lambda2_used", &TRexGVSSelector::GVSSelectionResult::lambda2_used, "L2 penalty lambda2 used "
-            "(auto-selected via GCV if not specified).")
-        .def_readonly("gvs_type", &TRexGVSSelector::GVSSelectionResult::gvs_type, "GVS method used (EN or IEN).")
-        .def_readonly("max_clusters", &TRexGVSSelector::GVSSelectionResult::max_clusters, "Number of variable groups "
-            "identified by hierarchical clustering.")
-        .def_readonly("hc_method_used", &TRexGVSSelector::GVSSelectionResult::hc_method_used, "Hierarchical clustering "
-            "linkage method used.")
+        .def_readonly("lambda2_used", &TRexGVSSelector::GVSSelectionResult::lambda2_used, "lambda_2 of the last "
+            "select(): the supplied value, or the pick of the cross-validation rule lambda2_method.")
+        .def_readonly("gvs_type", &TRexGVSSelector::GVSSelectionResult::gvs_type, "Penalty of the grouped selection "
+            "that was applied, EN or IEN.")
+        .def_readonly("max_clusters", &TRexGVSSelector::GVSSelectionResult::max_clusters, "Number of groups M, "
+            "supplied or found by the clustering.")
+        .def_readonly("hc_method_used", &TRexGVSSelector::GVSSelectionResult::hc_method_used, "Origin of the groups: "
+            "\"prior\" when they were supplied, else the linkage of the clustering, \"single\", \"complete\", "
+            "\"average\" or \"wpgma\".")
         .def_readonly("groups_vec", &TRexGVSSelector::GVSSelectionResult::groups_vec, "Group assignment vector "
             "(0-based "
             "group index per predictor).")
-        .def_readonly("group_labels", &TRexGVSSelector::GVSSelectionResult::group_labels, "Unique group label "
-            "integers.")
+        .def_readonly("group_labels", &TRexGVSSelector::GVSSelectionResult::group_labels, "Names of the groups "
+            "(length max_clusters), or an empty list when none were supplied.")
         .def_readonly("lambda2_cv", &TRexGVSSelector::GVSSelectionResult::lambda2_cv, "Health record of the lambda_2 "
             "tuner (Lambda2CVDiagnostics).");
 
     py::class_<PyTRexGVSSelector, PyTRexSelector>(m, "TRexGVSSelector",
-        "TRex Selector with Group Variable Selection support.\n"
+        "T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled variable\n"
+        "selection for groups of highly correlated variables.\n"
+        "\n"
+        "Notes\n"
+        "-----\n"
+        "L-loop strategies. The selector supports STANDARD, HCONCAT, SKIPL and SEEDED, and SEEDED\n"
+        "equals STANDARD here. PERMUTATION and PERMUTATION_SEEDED are refused, because a row\n"
+        "permutation destroys the covariance of the dummies within a cluster.\n"
         "\n"
         "References\n"
         "----------\n"
@@ -308,7 +326,8 @@ inline void bind_trex_gvs(py::module& m) {
              py::arg("trex_control") = TRexControlParameter(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map.")
+             "Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. A negative seed\n"
+             "(default: -1) gives a run that is not reproducible.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexGVSControlParameter&,
             const TRexControlParameter&, int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,

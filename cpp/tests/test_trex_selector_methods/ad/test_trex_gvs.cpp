@@ -794,6 +794,51 @@ TEST_F(TRexGVSTest, ScalingModeParity_IEN_FixedLambda2) {
     }
 }
 
+/** @brief The result names the origin of the groups, their number and the
+ *         supplied lambda_2. */
+TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
+    namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
+    const Eigen::Index n = 150, p = 40;
+    auto run = [&](TRexGVSControlParameter ctrl) {
+        GroupedData d(n, p, 0.75, 1.0, 7);
+        Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
+        Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
+        ctrl.lambda_2 = 1.0;
+        ctrl.trex_ctrl.K = 5;
+        ctrl.trex_ctrl.max_dummy_multiplier = 2;
+        TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
+        trex.select();
+        return trex.getGVSResult();
+    };
+
+    // Supplied groups: eight groups of five, numbered 0 to 7
+    TRexGVSControlParameter prior;
+    for (Eigen::Index j = 0; j < p; ++j) { prior.prior_groups.push_back(j / 5); }
+    prior.group_labels = {"a", "b", "c", "d", "e", "f", "g", "h"};
+    const auto with_prior = run(prior);
+    EXPECT_EQ(with_prior.hc_method_used, "prior");
+    EXPECT_EQ(with_prior.max_clusters, 8u);
+    EXPECT_EQ(with_prior.group_labels, prior.group_labels);
+    EXPECT_DOUBLE_EQ(with_prior.lambda2_used, 1.0);
+    EXPECT_FALSE(with_prior.lambda2_cv.ran);
+
+    // Clustering: the linkage in lower case
+    const std::pair<hac::LinkageMethod, const char*> linkages[] = {
+        {hac::LinkageMethod::Single, "single"},
+        {hac::LinkageMethod::Complete, "complete"},
+        {hac::LinkageMethod::Average, "average"},
+        {hac::LinkageMethod::WPGMA, "wpgma"},
+    };
+    for (const auto& [linkage, name] : linkages) {
+        TRexGVSControlParameter ctrl;
+        ctrl.hc_linkage = linkage;
+        const auto res = run(ctrl);
+        EXPECT_EQ(res.hc_method_used, name);
+        EXPECT_TRUE(res.group_labels.empty());
+    }
+}
+
+
 /** @brief The lambda_2 rule resolves by track in the constructor: the struct
  *  default CV_1SE_CCD stands for CV_1SE_IEN_CCD on the IEN track (the run
  *  equals an explicit CV_1SE_IEN_CCD run), and the IEN-geometry tuners are

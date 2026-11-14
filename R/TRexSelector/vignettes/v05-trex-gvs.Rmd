@@ -103,7 +103,7 @@ str(cv$lambda2_cv_diagnostics)
 # The informed elastic net
 
 `gvs_type = "IEN"` encodes the groups in the penalty. The groups come from `groups` in the control
-(1-based labels of length $p$) or from the correlation clustering. The solver is set in
+(one label per variable, numbered 1 to $M$ without gaps) or from the correlation clustering. The solver is set in
 `trex_control(solver = )`: `"TIENET"` (default, the native pathwise form) or `"TIENET_AUG"` (row
 augmented). The IEN rules of `lambda2_method` (`"CV_1SE_IEN_CCD"`, the default on this track,
 `"CV_MIN_IEN_CCD"`, `"CV_1SE_TIK_SVD"`, `"CV_MIN_TIK_SVD"`) consume the group structure and return

@@ -210,14 +210,14 @@ test_that("TRexDASelector correctly guards against invalid DA parameters", {
   # Invalid Hierarchical Linkage Options (rejected at Rcpp mapping)
   expect_error(
     TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "BT", hc_linkage = "UNKNOWN"), verbose = FALSE),
-    "Unsupported linkage method for the dependency-aware selector: UNKNOWN"
+    "Unsupported linkage method for the dependency-aware selector: unknown"
   )
 
   # Ward is not offered: its update needs squared Euclidean distances, and the
   # correlation distance is not Euclidean. The message names the supported linkages.
   expect_error(
-    TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "BT", hc_linkage = "Ward"), verbose = FALSE),
-    "Unsupported linkage method for the dependency-aware selector: Ward\\nSupported: Single, Complete, Average, WPGMA"
+    TRexDASelector$new(X, y, da_control = trex_da_control(da_method = "BT", hc_linkage = "ward"), verbose = FALSE),
+    "Unsupported linkage method for the dependency-aware selector: ward\\nSupported: single, complete, average, wpgma"
   )
 
 })
@@ -364,7 +364,7 @@ test_that("TRexDASelector handles concurrent execution properly (OpenMP with DA)
   # DA creates nested 3D calibrations; multithreaded runs ensure no race conditions
   selector_openmp <- expect_no_error(
     TRexDASelector$new(X, y,
-                       da_control = trex_da_control(da_method = "BT", hc_linkage = "Average"),
+                       da_control = trex_da_control(da_method = "BT", hc_linkage = "average"),
                        control = trex_control(K = 5, parallel_rnd_experiments = TRUE, max_inner_threads = 2,
                            max_outer_threads = 2),
                        verbose = FALSE)

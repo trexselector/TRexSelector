@@ -6,7 +6,6 @@
 using namespace Rcpp;
 using namespace trex::trex_selector_methods::ad::trex_core;
 using namespace trex::trex_selector_methods::ad::trex_da;
-using trx_ml_hac_LinkageMethod = trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod;
 
 // Expose the parse_control_parameter from rcpp_trex_selector.cpp
 extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
@@ -50,14 +49,8 @@ TRexDAControlParameter parse_da_parameter(const Rcpp::List& control) {
     }
 
     if (control.containsElementNamed("hc_linkage")) {
-        std::string linkage = control["hc_linkage"];
-        if (linkage == "Single") params.hc_linkage = trx_ml_hac_LinkageMethod::Single;
-        else if (linkage == "Complete") params.hc_linkage = trx_ml_hac_LinkageMethod::Complete;
-        else if (linkage == "Average") params.hc_linkage = trx_ml_hac_LinkageMethod::Average;
-        else if (linkage == "WPGMA") params.hc_linkage = trx_ml_hac_LinkageMethod::WPGMA;
-        else
-            Rcpp::stop("Unsupported linkage method for the dependency-aware selector: " + linkage +
-                       "\nSupported: Single, Complete, Average, WPGMA.");
+        params.hc_linkage = parse_hc_linkage(Rcpp::as<std::string>(control["hc_linkage"]),
+                                             "the dependency-aware selector");
     }
 
     // Prior-groups constraints: a list of integer label vectors, each of

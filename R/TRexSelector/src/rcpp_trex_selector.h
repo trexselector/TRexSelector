@@ -12,13 +12,17 @@
 // ==============================================================================
 
 // std includes
+#include <algorithm>
+#include <cctype>
 #include <memory>
+#include <string>
 
 // [[Rcpp::depends(RcppEigen)]]
 #include <RcppEigen.h>
 
 // TRex includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
+#include <ml_methods/clustering/hierarchical/agglomerative/agglomerative_types.hpp>
 #include <utils/memmap/memory_mapped_matrix.hpp>
 
 // ==============================================================================
@@ -173,5 +177,31 @@ public:
     /** @brief Get dummy multiplier L. */
     std::size_t getDummyMultiplierL() const noexcept { return selector_->getDummyMultiplierL(); }
 };
+
+// ==============================================================================
+
+/**
+ * @brief Linkage of an R control, from its name.
+ *
+ * @details The controls spell the names in lower case. The capitalized names
+ *  of TRexSelector 2.0.1 are accepted as well.
+ *
+ * @param name  Linkage name: "single", "complete", "average" or "wpgma".
+ * @param owner Selector named in the error message.
+ *
+ * @return The linkage method.
+ */
+inline trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod
+parse_hc_linkage(std::string name, const std::string& owner) {
+    namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
+    std::transform(name.begin(), name.end(), name.begin(),
+                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+    if (name == "single")   { return hac::LinkageMethod::Single; }
+    if (name == "complete") { return hac::LinkageMethod::Complete; }
+    if (name == "average")  { return hac::LinkageMethod::Average; }
+    if (name == "wpgma")    { return hac::LinkageMethod::WPGMA; }
+    Rcpp::stop("Unsupported linkage method for " + owner + ": " + name +
+               "\nSupported: single, complete, average, wpgma.");
+}
 // ==============================================================================
 #endif /* End of RCPP_TREX_SELECTOR_H */

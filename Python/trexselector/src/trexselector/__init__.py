@@ -301,7 +301,8 @@ class TRexDASelector(TRexSelector):
 @_with_core_notes(PyTRexGVSSelector)
 class TRexGVSSelector(TRexSelector):
     """
-    TRex Selector with Group Variable Selection support.
+    T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled
+    variable selection for groups of highly correlated variables.
 
     The coordinate-descent solvers of the two tracks, ``ENSolverType.TCDENET``
     and ``SolverTypeForTRex.TCDIENET``, are deprecated and will be removed in
@@ -317,7 +318,7 @@ class TRexGVSSelector(TRexSelector):
     tFDR : float, default 0.1
         Target FDR level.
     gvs_control : TRexGVSControlParameter, optional
-        Control parameters of the group variable selection. The defaults
+        Control parameters of the grouped variable selection. The defaults
         apply when it is omitted.
     trex_control : TRexControlParameter, optional
         Control parameters of the T-Rex selector. The defaults apply when it

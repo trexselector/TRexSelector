@@ -8,7 +8,7 @@ trex_da_control(
   da_method = "BT",
   cor_coef = -2,
   rho_thr_DA = 0.02,
-  hc_linkage = "Single",
+  hc_linkage = "single",
   hc_grid_length = 0,
   prior_groups = NULL,
   bt_selection_mode = "FeasibleOnly"
@@ -35,10 +35,11 @@ first lag whose correlation \code{abs(cor_coef)^lag} has fallen to the threshold
 range \code{[0, 1)}. EQUI: the correction is skipped when \code{abs(cor_coef)} does
 not exceed the threshold, range \code{[0, 1]}.}
 
-\item{hc_linkage}{Hierarchical clustering linkage: "Single", "Complete", "Average",
-"WPGMA" (default: "Single"). Used by BT and by prior groups. "Ward" is rejected,
+\item{hc_linkage}{Hierarchical clustering linkage: "single", "complete", "average",
+"wpgma" (default: "single"). Used by BT and by prior groups. "ward" is rejected,
 because its update is valid for squared Euclidean distances only and the correlation
-distance \code{1 - abs(cor)} is not Euclidean.}
+distance \code{1 - abs(cor)} is not Euclidean. The capitalized names of
+TRexSelector 2.0.1 ("Single") are accepted as well.}
 
 \item{hc_grid_length}{Number of correlation thresholds on the calibration grid of BT,
 NN and prior groups. \code{0} (default) takes \code{min(20, p)}.}
@@ -70,7 +71,7 @@ Build a control list for the dependency-aware correction of TRexDASelector.
 }
 \examples{
 trex_da_control()
-trex_da_control(da_method = "BT", hc_linkage = "Average")
+trex_da_control(da_method = "BT", hc_linkage = "average")
 # Prior-groups path (constraints over p = 4 variables):
 trex_da_control(prior_groups = list(c(1, 1, 2, 2)))
 

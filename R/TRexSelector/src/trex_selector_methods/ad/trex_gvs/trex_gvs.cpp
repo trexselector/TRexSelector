@@ -261,9 +261,9 @@ void TRexGVSSelector::validateGVSParameters() const {
             "Supported: Single, Complete, Average, WPGMA.");
     }
 
-    // Note: lambda_2 < 0 is the "auto-compute" sentinel (R's NULL); it is a
-    // valid input, so it is not rejected here. lambda_2 == 0 is the degenerate
-    // (pure-TLASSO) case; lambda_2 > 0 is a fixed ridge penalty.
+    // Note: lambda_2 < 0 is the "auto-compute" sentinel. It is a valid input,
+    // so it is not rejected here. lambda_2 == 0 is the degenerate (pure-TLASSO)
+    // case, lambda_2 > 0 is a fixed ridge penalty.
 
     // Support cap of the IEN-geometry tuner: any finite value (<= 0 disables).
     if (!std::isfinite(trex_gvs_ctrl_.cv_dfmax_ratio)) {
@@ -501,8 +501,8 @@ double TRexGVSSelector::computeLambda2() const {
     //     standardises X/y internally (overwriting the base-class L2-normalisation),
     //     anchors at glmnet's alpha=0 lambda_max and applies fdev/devmax early-termination.
     //     Returns lambda on glmnet's reported scale (matches cv.glmnet(alpha=0)); the p/2
-    //     factor below converts to LARS units exactly as R's lm_dummy does
-    //     (lambda_2_lars = lambda * ncol(X) / 2).
+    //     factor below converts to LARS units exactly as lm_dummy of the 1.x
+    //     versions of the R package does (lambda_2_lars = lambda * ncol(X) / 2).
     //
     // Both EN and IEN fit on the original (X, y).  Fitting on the IEN augmented reference
     // system [X; G_ref] was investigated and reverted: for high-correlation DGPs (rho ≈ 0.99)
@@ -510,10 +510,10 @@ double TRexGVSSelector::computeLambda2() const {
     // near-identical normalised structure (bottom row ≈ 0.97), which collapses T-Rex FDR
     // control in the same way as small lambda_2.
     //
-    // IEN lambda_2 sensitivity (inherited from the R reference, which uses the
-    // SAME CV value and the SAME * p/2 conversion for both EN and IEN even
-    // though the IEN appends only M << p ridge rows): the IEN group-indicator
-    // rows scale with sqrt(lambda_2), so a large CV-chosen lambda_2 (typical
+    // IEN lambda_2 sensitivity (inherited from the 1.x versions of the R
+    // package, which use the SAME CV value and the SAME * p/2 conversion for both
+    // EN and IEN even though the IEN appends only M << p ridge rows): the IEN
+    // group-indicator rows scale with sqrt(lambda_2), so a large CV-chosen lambda_2 (typical
     // for n > p designs) can make the shared bottom rows dominate the
     // augmented column geometry — each active's group-aligned dummies become
     // nearly collinear with the active itself and the FDP estimate never
@@ -1241,9 +1241,9 @@ void TRexGVSSelector::prepareDummiesForLStep(LStepContext& ctx)
             // unit-normalizing each dummy column erased that fluctuation and
             // made dummies systematically less competitive in the EN path --
             // measured on the trex_spca rdump10 head-to-head (identical X and
-            // lambda_2): PC1 FDR inflated from ~0.10 (CRAN R reference, which
-            // keeps the fluctuation) to ~0.13. Center-only matches the R
-            // pipeline (dummies are centered by the augmented scale() there).
+            // lambda_2): PC1 FDR inflated from ~0.10 (the 1.x versions of the R
+            // package, which keep the fluctuation) to ~0.13. Center-only matches
+            // their pipeline (dummies are centered by the augmented scale() there).
             // Applies to the EN variants AND the native-convention IEN
             // solvers (TIENET / TCDIENET); only the TIENETAug wrapper takes
             // the block raw and reaches the same state via its own centering.

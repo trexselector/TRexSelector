@@ -2,11 +2,18 @@
 % Please edit documentation in R/trex_gvs_selector.R
 \name{TRexGVSSelector}
 \alias{TRexGVSSelector}
-\title{T-Rex Selector with Group Variable Selection (TRex GVS)}
+\title{T-Rex Selector for Grouped Variable Selection (T-Rex+GVS)}
 \description{
-FDR-controlled variable selection algorithm utilizing group-based structural
-augmentation.
+FDR-controlled variable selection for groups of highly correlated variables.
 }
+\section{L-loop strategies}{
+
+The selector supports the strategies \code{"STANDARD"}, \code{"HCONCAT"}, \code{"SKIPL"} and
+\code{"SEEDED"} of \code{\link{trex_control}()}, and \code{"SEEDED"} equals \code{"STANDARD"}
+here. \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} are refused, because a row permutation
+destroys the covariance of the dummies within a cluster.
+}
+
 \examples{
 \donttest{
 data(Gauss_data)
@@ -69,7 +76,8 @@ Other T-Rex selectors and controls:
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{lambda2_used}}{Lambda2 regularization term selected/applied.}
+    \item{\code{lambda2_used}}{\code{lambda_2} of the last \code{select()}: the supplied value,
+or the pick of the cross-validation rule \code{lambda2_method}.}
 
     \item{\code{lambda2_cv_diagnostics}}{Health record of the lambda_2 tuner of
 the last \code{select()}: a list with \code{ran}, \code{seconds},
@@ -88,21 +96,22 @@ lambda_1 optimum of the chosen lambda_2 sat on the truncation edge),
 (\code{at_grid_edge} or \code{profile_at_edge}; the selector warned
 once and returned the pick unchanged).}
 
-    \item{\code{gvs_type}}{The augmentation policy name used (e.g., "EN", "IEN").}
+    \item{\code{gvs_type}}{Penalty of the grouped selection that was applied, \code{"EN"} or
+\code{"IEN"}.}
 
-    \item{\code{max_clusters}}{The number of unique clusters dynamically formulated.}
+    \item{\code{max_clusters}}{Number of groups M, supplied or found by the clustering.}
 
-    \item{\code{groups}}{Integer vector of length \code{p} giving the 1-based cluster
-label assigned to each variable (prior groups for Route 1, or the
-hierarchical-clustering assignment for Route 2). Enables computing
-cluster diagnostics (e.g. purity) on the R side.}
+    \item{\code{groups}}{Integer vector of length \code{p} giving the group of each
+variable, numbered from 1: the supplied groups, or the assignment of the
+clustering.}
 
     \item{\code{group_labels}}{Optional human-readable cluster names (length
 \code{max_clusters}), or an empty character vector when none were
 supplied.}
 
-    \item{\code{hc_method_used}}{The hierarchical-clustering linkage the GVS
-augmentation actually used.}
+    \item{\code{hc_method_used}}{Origin of the groups: \code{"prior"} when they were
+supplied, else the linkage of the clustering, \code{"single"},
+\code{"complete"}, \code{"average"} or \code{"wpgma"}.}
   }
   \if{html}{\out{</div>}}
 }
@@ -147,7 +156,8 @@ needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
 writes nothing and \code{"readonly"} mode suffices.}
       \item{\code{y}}{Response vector.}
       \item{\code{tFDR}}{Target FDR level (default: 0.1).}
-      \item{\code{seed}}{Random seed (default: -1).}
+      \item{\code{seed}}{Random seed. A negative value (default: -1) gives a run that is not
+reproducible.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{gvs_control}}{A GVS control list from \code{\link{trex_gvs_control}()} (default:
 \code{trex_gvs_control()}). For \code{gvs_type = "EN"} the solver is

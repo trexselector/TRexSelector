@@ -7,7 +7,7 @@
 trex_gvs_control(
   gvs_type = "EN",
   corr_max = 0.5,
-  hc_linkage = "Single",
+  hc_linkage = "single",
   lambda_2 = -1,
   lambda2_method = NULL,
   en_solver = "TENET",
@@ -23,18 +23,28 @@ trex_gvs_control(
 )
 }
 \arguments{
-\item{gvs_type}{Augmentation policy: "EN" (Elastic Net) or "IEN" (Informed Elastic Net)
-(default: "EN").}
+\item{gvs_type}{Penalty of the grouped selection: "EN" (elastic net) or "IEN" (informed
+elastic net) (default: "EN").}
 
-\item{corr_max}{Maximum pairwise correlation for automatic cluster formation (default: 0.5).}
+\item{corr_max}{Correlation threshold of the automatic clustering (default: 0.5). The
+dendrogram is cut at the height \code{1 - corr_max}. With "single" linkage (default)
+no two variables of different clusters correlate above \code{corr_max}. With
+"complete" linkage every two variables of one cluster correlate at least at
+\code{corr_max}, and variables of different clusters can exceed it.}
 
-\item{hc_linkage}{Hierarchical clustering linkage: "Single", "Complete", "Average",
-"WPGMA" (default: "Single").}
+\item{hc_linkage}{Hierarchical clustering linkage: "single", "complete", "average",
+"wpgma" (default: "single"). Used when no \code{groups} are supplied. "ward" is
+rejected, because its update is valid for squared Euclidean distances only and the
+correlation distance \code{1 - abs(cor)} is not Euclidean. The capitalized names of
+TRexSelector 2.0.1 ("Single") are accepted as well.}
 
-\item{lambda_2}{L2 penalty weight for group structure, in LARS units.
+\item{lambda_2}{L2 penalty weight for group structure.
 A negative value (default \code{-1}) triggers automatic determination via
 the method selected by \code{lambda2_method}; \code{0} is the degenerate
-pure T-LASSO case (no ridge); a positive value is used as-is.}
+pure T-LASSO case (no ridge); a positive value is used as-is. A supplied value
+refers to the scale of the standardized columns. Under
+\code{scaling_mode = "ZSCORE"} the columns have the squared norm \code{n - 1}, so the
+same shrinkage needs the value times \code{n - 1}.}
 
 \item{lambda2_method}{Auto-determination strategy for \code{lambda_2} when
 \code{lambda_2 < 0}. \code{NULL} (default) resolves by track:
@@ -61,21 +71,25 @@ differences; the switch exists to validate solver equivalence,
 \strong{not} to choose a LARS vs LASSO path (for that, see
 \code{tenet_aug_use_lars}).}
 
-\item{tenet_aug_use_lars}{Logical. When \code{en_solver = "TENET_AUG"}, run
+\item{tenet_aug_use_lars}{Logical. For the augmented solvers, \code{en_solver =
+"TENET_AUG"} or \code{gvs_type = "IEN"} with the solver \code{"TIENET_AUG"}: run
 the augmented system with a pure-LARS inner path that never drops variables
 (\code{TRUE}) instead of the default LASSO inner path that can
 (\code{FALSE}, default). This is the LARS-vs-LASSO distinction. Ignored for
-\code{en_solver = "TENET"}.}
+\code{"TENET"} and \code{"TIENET"}.}
 
-\item{groups}{Integer vector of manually specified group assignments (1-based, default: NULL).}
+\item{groups}{Integer vector of manually specified group assignments, one entry per
+variable, numbered 1 to M without gaps (default: NULL).}
 
 \item{cv_n_folds}{Number of folds for the k-fold cross-validation used by the
 CV \code{lambda2_method} paths (default: 10, matching \code{cv.glmnet}).
 Ignored when \code{lambda_2 >= 0}.}
 
-\item{cv_n_lambda}{Number of points on the geometric lambda grid searched by
-the CV auto-computation of \code{lambda_2} (default: 1000). Ignored when
-\code{lambda_2 >= 0}.}
+\item{cv_n_lambda}{Number of points on the \code{lambda_2} grid of the rules
+\code{"CV_1SE_SVD"}, \code{"CV_MIN_SVD"}, \code{"CV_1SE_CCD"}, \code{"CV_MIN_CCD"},
+\code{"CV_1SE_TIK_SVD"} and \code{"CV_MIN_TIK_SVD"} (default: 1000). The rules
+\code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"} use \code{cv_n_lambda2}.
+Ignored when \code{lambda_2 >= 0}.}
 
 \item{cv_n_lambda1}{IEN-geometry coordinate-descent tuners
 (\code{"CV_1SE_IEN_CCD"}, \code{"CV_MIN_IEN_CCD"}) only: points on the
@@ -110,7 +124,7 @@ are returned in the field \code{group_labels} of the selector (default: NULL).}
 A named list for use in TRexGVSSelector.
 }
 \description{
-Build a control list for group variable selection augmentation policy in
+Build a control list for the grouped variable selection of
 TRexGVSSelector. The solver is determined automatically from \code{gvs_type}:
 "EN" selects the T-Elastic-Net solver via \code{en_solver} — TENET
 (default), with TENET_AUG and TCDENET as optional variants; "IEN" honors

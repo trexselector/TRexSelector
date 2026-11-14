@@ -17,6 +17,9 @@
   solvers. Up to 2.0.1 they were 0 and 1. A stand-alone elastic-net solver built without `lambda2` no
   longer equals its lasso, and a stand-alone `TAFS_Solver` no longer runs forward stepwise. `lambda2 = 0`
   and `rho_afs = 1` give the earlier behaviour. The selectors do not change.
+* `hc_linkage` of `trex_da_control()`, `trex_gvs_control()` and `trex_tikhonov_control()` takes the
+  linkage in lower case, `"single"`, `"complete"`, `"average"` or `"wpgma"`, as the field
+  `hc_method_used` returns it. The capitalized names of 2.0.1 (`"Single"`) are still accepted.
 
 ## Fixed
 
@@ -52,6 +55,16 @@
 * The help of `TRexDASelector` says how the reference threshold is rounded. The package rounds a half
   up, while the 1.x versions rounded it to the even number, so they took one element lower for the grid
   lengths 6, 14, 22, 30 and so on. The default length 20 is not affected.
+* `trex_gvs_control()` checks `groups` with the words of R: "groups must number the groups 1 to M
+  without gaps". The errors of the core had asked for 0-based labels and had named a missing group
+  by its 0-based number. A wrong length of `groups` is reported with the name of the argument.
+* The help of `trex_gvs_control()` and of `TRexGVSSelector` is corrected. `corr_max` bounds the
+  correlation between clusters with `"Single"` linkage only. A supplied `lambda_2` refers to the scale
+  of the standardized columns, not to LARS units, so `scaling_mode = "ZSCORE"` needs the value times
+  `n - 1`. `tenet_aug_use_lars` also acts for `gvs_type = "IEN"` with the solver `"TIENET_AUG"`.
+  `gvs_type` is the penalty of the grouped selection. The fields `lambda2_used`, `max_clusters`,
+  `hc_method_used` and `groups` say what they hold, and the help names the L-loop strategies the
+  selector takes.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

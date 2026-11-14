@@ -44,18 +44,7 @@ TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("corr_max")) params.corr_max = control["corr_max"];
 
     if (control.containsElementNamed("hc_linkage")) {
-        std::string linkage = control["hc_linkage"];
-        if (linkage == "Single")
-            params.hc_linkage = trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Single;
-        else if (linkage == "Complete")
-            params.hc_linkage = trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Complete;
-        else if (linkage == "Average")
-            params.hc_linkage = trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Average;
-        else if (linkage == "WPGMA")
-            params.hc_linkage = trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::WPGMA;
-        else
-            Rcpp::stop("Unsupported linkage method for GVS: " + linkage +
-                       "\nSupported: Single, Complete, Average, WPGMA.");
+        params.hc_linkage = parse_hc_linkage(Rcpp::as<std::string>(control["hc_linkage"]), "GVS");
     }
 
     if (control.containsElementNamed("lambda_2")) params.lambda_2 = control["lambda_2"];

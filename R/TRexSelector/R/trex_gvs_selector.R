@@ -1,9 +1,14 @@
 #' @name TRexGVSSelector
 #'
-#' @title T-Rex Selector with Group Variable Selection (TRex GVS)
+#' @title T-Rex Selector for Grouped Variable Selection (T-Rex+GVS)
 #'
-#' @description FDR-controlled variable selection algorithm utilizing group-based structural
-#'              augmentation.
+#' @description FDR-controlled variable selection for groups of highly correlated variables.
+#'
+#' @section L-loop strategies:
+#' The selector supports the strategies \code{"STANDARD"}, \code{"HCONCAT"}, \code{"SKIPL"} and
+#' \code{"SEEDED"} of \code{\link{trex_control}()}, and \code{"SEEDED"} equals \code{"STANDARD"}
+#' here. \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} are refused, because a row permutation
+#' destroys the covariance of the dummies within a cluster.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -47,7 +52,8 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     #'   writes nothing and \code{"readonly"} mode suffices.
     #' @param y Response vector.
     #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1).
+    #' @param seed Random seed. A negative value (default: -1) gives a run that is not
+    #'   reproducible.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param gvs_control A GVS control list from \code{\link{trex_gvs_control}()} (default:
     #'   \code{trex_gvs_control()}). For \code{gvs_type = "EN"} the solver is
@@ -117,6 +123,12 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
                 "Use lambda_2 < 0 (e.g. -1) to auto-determine lambda_2 via CV.")
       }
 
+      # One group entry per variable, checked here with the name of the R argument.
+      if (!is.null(gvs_control$groups) && length(gvs_control$groups) != ncol(X)) {
+        stop("gvs_control$groups must have one entry per variable (p = ", ncol(X),
+             "). Got: ", length(gvs_control$groups), ".")
+      }
+
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
@@ -140,7 +152,8 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     }
   ),
   active = list(
-    #' @field lambda2_used Lambda2 regularization term selected/applied.
+    #' @field lambda2_used \code{lambda_2} of the last \code{select()}: the supplied value,
+    #'   or the pick of the cross-validation rule \code{lambda2_method}.
     lambda2_used = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -171,7 +184,8 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       trex_gvs_get_lambda2_cv_diagnostics(private$ptr)
     },
 
-    #' @field gvs_type The augmentation policy name used (e.g., "EN", "IEN").
+    #' @field gvs_type Penalty of the grouped selection that was applied, \code{"EN"} or
+    #'   \code{"IEN"}.
     gvs_type = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -179,7 +193,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       trex_gvs_get_gvs_type(private$ptr)
     },
 
-    #' @field max_clusters The number of unique clusters dynamically formulated.
+    #' @field max_clusters Number of groups M, supplied or found by the clustering.
     max_clusters = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -187,10 +201,9 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       trex_gvs_get_max_clusters(private$ptr)
     },
 
-    #' @field groups Integer vector of length \code{p} giving the 1-based cluster
-    #'   label assigned to each variable (prior groups for Route 1, or the
-    #'   hierarchical-clustering assignment for Route 2). Enables computing
-    #'   cluster diagnostics (e.g. purity) on the R side.
+    #' @field groups Integer vector of length \code{p} giving the group of each
+    #'   variable, numbered from 1: the supplied groups, or the assignment of the
+    #'   clustering.
     groups = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -208,8 +221,9 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       trex_gvs_get_group_labels(private$ptr)
     },
 
-    #' @field hc_method_used The hierarchical-clustering linkage the GVS
-    #'   augmentation actually used.
+    #' @field hc_method_used Origin of the groups: \code{"prior"} when they were
+    #'   supplied, else the linkage of the clustering, \code{"single"},
+    #'   \code{"complete"}, \code{"average"} or \code{"wpgma"}.
     hc_method_used = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       trex_gvs_get_hc_method_used(private$ptr)

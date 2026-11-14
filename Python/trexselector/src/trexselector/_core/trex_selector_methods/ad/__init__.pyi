@@ -543,7 +543,7 @@ class GVSSelectionResult(SelectionResult):
     @property
     def group_labels(self) -> list[str]:
         """
-        Unique group label integers.
+        Names of the groups (length max_clusters), or an empty list when none were supplied.
         """
     @property
     def groups_vec(self) -> typing.Annotated[numpy.typing.NDArray[numpy.int32], "[m, 1]"]:
@@ -553,12 +553,12 @@ class GVSSelectionResult(SelectionResult):
     @property
     def gvs_type(self) -> GVSType:
         """
-        GVS method used (EN or IEN).
+        Penalty of the grouped selection that was applied, EN or IEN.
         """
     @property
     def hc_method_used(self) -> str:
         """
-        Hierarchical clustering linkage method used.
+        Origin of the groups: "prior" when they were supplied, else the linkage of the clustering, "single", "complete", "average" or "wpgma".
         """
     @property
     def lambda2_cv(self) -> Lambda2CVDiagnostics:
@@ -568,22 +568,22 @@ class GVSSelectionResult(SelectionResult):
     @property
     def lambda2_used(self) -> float:
         """
-        L2 penalty lambda2 used (auto-selected via GCV if not specified).
+        lambda_2 of the last select(): the supplied value, or the pick of the cross-validation rule lambda2_method.
         """
     @property
     def max_clusters(self) -> int:
         """
-        Number of variable groups identified by hierarchical clustering.
+        Number of groups M, supplied or found by the clustering.
         """
 class GVSType:
     """
-    Group Variable Selection method variants.
+    Penalty of the grouped selection of T-Rex+GVS.
     
     Members:
     
-      EN : Elastic-Net group variable selection (uses TENET solver).
+      EN : Elastic net. en_solver chooses the solver.
     
-      IEN : Informed Elastic-Net using group structure from clustering (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TIENET.
+      IEN : Informed elastic net, with the groups in the penalty (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TIENET.
     """
     EN: typing.ClassVar[GVSType]  # value = <GVSType.EN: 0>
     IEN: typing.ClassVar[GVSType]  # value = <GVSType.IEN: 1>
@@ -1928,7 +1928,7 @@ class TRexGVSControlParameter:
     @property
     def corr_max(self) -> float:
         """
-        Maximum pairwise correlation for automatic cluster formation.
+        Correlation threshold of the automatic clustering (default 0.5). The dendrogram is cut at the height 1 - corr_max. With Single linkage (default) no two variables of different clusters correlate above corr_max. With Complete linkage every two variables of one cluster correlate at least at corr_max, and variables of different clusters can exceed it.
         """
     @corr_max.setter
     def corr_max(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1952,7 +1952,7 @@ class TRexGVSControlParameter:
     @property
     def cv_n_lambda(self) -> int:
         """
-        Number of points on the lambda grid searched during CV (EN-shaped rules).
+        Number of points on the lambda_2 grid of the rules CV_*_SVD, CV_*_CCD and CV_*_TIK_SVD (default 1000). The rules CV_*_IEN_CCD use cv_n_lambda2.
         """
     @cv_n_lambda.setter
     def cv_n_lambda(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2000,7 +2000,7 @@ class TRexGVSControlParameter:
     @property
     def gvs_type(self) -> GVSType:
         """
-        GVS method variant (EN = Elastic Net, IEN = Informed Elastic Net).
+        Penalty of the grouped selection: EN (elastic net, default) or IEN (informed elastic net).
         """
     @gvs_type.setter
     def gvs_type(self, arg0: GVSType) -> None:
@@ -2008,7 +2008,8 @@ class TRexGVSControlParameter:
     @property
     def hc_linkage(self) -> ...:
         """
-        Hierarchical clustering linkage method.
+        Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Used when no
+        groups are supplied. Ward is rejected, because the correlation distance 1 - |cor| is not Euclidean.
         """
     @hc_linkage.setter
     def hc_linkage(self, arg0: ...) -> None:
@@ -2024,7 +2025,7 @@ class TRexGVSControlParameter:
     @property
     def lambda_2(self) -> float:
         """
-        Ridge L2 penalty in LARS units (< 0 = auto-select, 0 = pure TLASSO, > 0 = fixed).
+        Ridge L2 penalty (< 0 = auto-select, 0 = pure TLASSO, > 0 = fixed). A supplied value refers to the scale of the standardized columns. Under ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value times n - 1.
         """
     @lambda_2.setter
     def lambda_2(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2032,7 +2033,7 @@ class TRexGVSControlParameter:
     @property
     def prior_groups(self) -> list[int]:
         """
-        Manually specified group assignments (0-based; empty = auto-cluster).
+        Manually specified group assignments: one entry per variable, numbered 0 to M - 1 without gaps. Empty (default) clusters the variables.
         """
     @prior_groups.setter
     def prior_groups(self, arg0: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]) -> None:
@@ -2040,7 +2041,7 @@ class TRexGVSControlParameter:
     @property
     def tenet_aug_use_lars(self) -> bool:
         """
-        For TENET_AUG: use a pure-LARS inner solver (R-parity diagnostic).
+        For the augmented solvers, en_solver = TENET_AUG or gvs_type = IEN with the solver TIENET_AUG: use a pure-LARS inner solver that never drops variables, as trex(type = "lar") of the 1.x versions of the R package does (default False). Ignored for TENET and TIENET.
         """
     @tenet_aug_use_lars.setter
     def tenet_aug_use_lars(self, arg0: bool) -> None:
@@ -2055,7 +2056,14 @@ class TRexGVSControlParameter:
         ...
 class TRexGVSSelector(TRexSelector):
     """
-    TRex Selector with Group Variable Selection support.
+    T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled variable
+    selection for groups of highly correlated variables.
+    
+    Notes
+    -----
+    L-loop strategies. The selector supports STANDARD, HCONCAT, SKIPL and SEEDED, and SEEDED
+    equals STANDARD here. PERMUTATION and PERMUTATION_SEEDED are refused, because a row
+    permutation destroys the covariance of the dummies within a cluster.
     
     References
     ----------
@@ -2074,7 +2082,8 @@ class TRexGVSSelector(TRexSelector):
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map.
+        Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. A negative seed
+        (default: -1) gives a run that is not reproducible.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:

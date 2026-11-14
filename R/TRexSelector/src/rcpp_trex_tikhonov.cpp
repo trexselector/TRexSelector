@@ -180,14 +180,8 @@ TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control)
     }
 
     if (control.containsElementNamed("hc_linkage")) {
-        namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
-        std::string linkage = control["hc_linkage"];
-        if (linkage == "Single") params.hc_linkage = hac::LinkageMethod::Single;
-        else if (linkage == "Complete") params.hc_linkage = hac::LinkageMethod::Complete;
-        else if (linkage == "Average") params.hc_linkage = hac::LinkageMethod::Average;
-        else if (linkage == "WPGMA") params.hc_linkage = hac::LinkageMethod::WPGMA;
-        else Rcpp::stop("Unsupported linkage method: " + linkage +
-                        "\nSupported: Single, Complete, Average, WPGMA.");
+        params.hc_linkage = parse_hc_linkage(Rcpp::as<std::string>(control["hc_linkage"]),
+                                             "the Tikhonov selector");
     }
 
     return params;

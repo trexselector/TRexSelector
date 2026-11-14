@@ -16,6 +16,55 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The help of the GVS selector agrees on the three surfaces and with the code
+
+- The help texts of the selector, of its control and of its result were read side by side in C++, R
+  and Python and checked against the code, as for the dependency-aware selector before.
+- R: the error texts for `groups` spoke the language of the core. Labels that start at 0 gave
+  "prior_groups must be 0-based non-negative integers", a gap gave "Cluster ID 1 is missing" for the
+  group number 2 of R, and a wrong length named `prior_groups`. `trex_gvs_control()` now checks the
+  numbering itself ("groups must number the groups 1 to M without gaps"), and the selector checks the
+  length with the name of the R argument.
+- `corr_max` was called the largest correlation between variables of different clusters. That holds
+  for Single linkage only. On an autoregressive design with `corr_max = 0.5`, Complete, Average and
+  WPGMA left correlations up to 0.82 between clusters. The texts now say what the cut at
+  1 - corr_max means for Single and for Complete linkage.
+- A supplied `lambda_2` was described as "in LARS units" in R and Python. It is used as it is, on the
+  scale of the standardized columns, so the same shrinkage needs the value times n - 1 under ZSCORE.
+  The three surfaces say so. The C++ test `ScalingModeParity_IEN_FixedLambda2` has pinned this fact
+  since it was written.
+- `gvs_type` was an "augmentation policy" in R, a "selection policy" in C++ and a "method variant" in
+  Python, while all augmentation lives in the solvers. Fabian, 2026-11-14: it is the "penalty of the
+  grouped selection: EN (elastic net) or IEN (informed elastic net)".
+- The result fields. `lambda2_used` named a "GCV" that the selector does not have, the rules are k-fold
+  cross-validations. `max_clusters` counts supplied groups as well. `hc_method_used` is "prior" for
+  supplied groups and otherwise the linkage in lower case, which the texts now state. Python called
+  the group names "unique group label integers".
+- R: `hc_linkage` takes the linkage in lower case, "single", "complete", "average" or "wpgma", in
+  `trex_da_control()`, `trex_gvs_control()` and `trex_tikhonov_control()`, as `hc_method_used` returns
+  it (Fabian, 2026-11-14: "make them also lower case. For ver 2.0.2"). The controls store the lower-case
+  name, and the capitalized names of 2.0.1 are still accepted, so code written for 2.0.1 keeps running.
+  One function of the R bindings reads the name for the three selectors. Python and C++ take the
+  enumerators of `LinkageMethod` and do not change.
+- The control. `tenet_aug_use_lars` also acts on the IEN track with TIENET_AUG, which R and Python did
+  not say. `cv_n_lambda` serves the rules CV_*_SVD, CV_*_CCD and CV_*_TIK_SVD, and Python had limited
+  it to the "EN-shaped rules". The numbering of the groups without gaps, the users of `hc_linkage`
+  and the meaning of a negative `seed` are stated on every surface. Python's `GVSType.EN` no longer
+  says that it "uses the TENET solver", because `en_solver` chooses it.
+- The class documentation of the three surfaces says which L-loop strategies the selector takes:
+  STANDARD, HCONCAT, SKIPL and SEEDED, with SEEDED equal to STANDARD, while PERMUTATION and
+  PERMUTATION_SEEDED are refused. Only the C++ file header had said so.
+- Names and repairs. The short form is T-Rex+GVS, and the class opens with "T-Rex selector for grouped
+  variable selection (T-Rex+GVS): FDR-controlled variable selection for groups of highly correlated
+  variables". "The R reference" and its relatives are "the 1.x versions of the R package". The C++
+  header lost two sentences on rules that no longer exist, a "Both" after three solver variants and
+  three typing errors. Guide page 05 states the numbering of the groups.
+- Tests. C++, R and Python pin the values of `hc_method_used`, the number and the names of supplied
+  groups and the supplied `lambda_2`. R and Python pin the refusal of the permutation strategies. R
+  pins the new error texts and that both spellings of a linkage give the same run for the three
+  selectors, also for a control list built by hand. C++ tests 723 of 723, R tests 1,956, Python tests
+  727.
+
 #### The Python reference builds without the warning on the penalty formula
 
 - The Sphinx build reported "Undefined substitution referenced" for the penalty formula of the

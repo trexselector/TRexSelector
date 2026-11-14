@@ -27,7 +27,7 @@ trex_tikhonov_control(
   cluster_dummies = TRUE,
   prior_groups = NULL,
   corr_max = 0.5,
-  hc_linkage = "Single"
+  hc_linkage = "single"
 )
 }
 \arguments{
@@ -150,9 +150,10 @@ are discovered by correlation-HAC with \code{corr_max} /
 clustering (default: 0.5). Ignored when \code{prior_groups} is set or
 \code{cluster_dummies = FALSE}.}
 
-\item{hc_linkage}{HAC linkage: "Single" (default), "Complete",
-"Average", "WPGMA". Ignored under \code{prior_groups} or
-\code{cluster_dummies = FALSE}.}
+\item{hc_linkage}{HAC linkage: "single" (default), "complete",
+"average", "wpgma". Ignored under \code{prior_groups} or
+\code{cluster_dummies = FALSE}. The capitalized names of TRexSelector 2.0.1
+("Single") are accepted as well.}
 }
 \value{
 A named list for use in TRexTikhonovSelector.
