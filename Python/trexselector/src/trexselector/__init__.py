@@ -443,9 +443,9 @@ class TRexTikhonovSelector(TRexSelector):
     T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated
     TCDTIKNET) and cluster-aware dummies.
 
-    The penalty comes from ``tik_control``: a dense p x p PSD matrix
-    ``tikhonov_K`` (``penalty_structure = SPARSE_GENERAL``, converted to sparse
-    internally) or ``GROUP_CENTERING`` built from the groups. lambda_2 < 0
+    The penalty comes from ``tik_control``: a p x p PSD matrix ``tikhonov_K``
+    (``penalty_structure = SPARSE_GENERAL``), a scipy.sparse matrix or a dense
+    array, or ``GROUP_CENTERING`` built from the groups. lambda_2 < 0
     resolves by ``tik_control.lambda2_method`` (CV tuners or the pilot power
     rules); the dummies are cluster-aware by default. Solver: TIKNET, the
     pathwise homotopy solver (default), or TCDTIKNET, the coordinate-descent

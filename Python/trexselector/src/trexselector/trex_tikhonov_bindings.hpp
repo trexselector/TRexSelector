@@ -173,7 +173,7 @@ inline void bind_trex_tikhonov(py::module& m) {
     py::enum_<tik::TikPenaltyStructure>(m, "TikPenaltyStructure",
         "Where the penalty matrix comes from.")
         .value("SPARSE_GENERAL",  tik::TikPenaltyStructure::SPARSE_GENERAL,  "tik_control.tikhonov_K is the p x p PSD "
-            "penalty matrix (dense array, converted to sparse).")
+            "penalty matrix (a scipy.sparse matrix or a dense array).")
         .value("GROUP_CENTERING", tik::TikPenaltyStructure::GROUP_CENTERING, "K = I - J/p_m per group, built from "
             "prior_groups, which this structure requires.")
         .export_values();
@@ -261,20 +261,19 @@ inline void bind_trex_tikhonov(py::module& m) {
             "whole pilot.");
 
     py::class_<tik::TRexTikhonovControlParameter>(m, "TRexTikhonovControlParameter",
-        "Control parameters for TRexTikhonovSelector: the penalty (a dense p x p PSD matrix tikhonov_K, or "
-            "GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.")
+        "Control parameters for TRexTikhonovSelector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, "
+            "or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.")
         .def(py::init<>())
         .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "SPARSE_GENERAL "
             "(tikhonov_K given) or GROUP_CENTERING (K from the groups; with the TCDTIKNET solver this path runs "
             "through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).")
         .def_property("tikhonov_K",
-            [](const tik::TRexTikhonovControlParameter& c) {
-                return Eigen::MatrixXd(c.tikhonov_K);
+            [](const tik::TRexTikhonovControlParameter& c) { return c.tikhonov_K; },
+            [](tik::TRexTikhonovControlParameter& c, const Eigen::SparseMatrix<double>& K) {
+                c.tikhonov_K = K;
             },
-            [](tik::TRexTikhonovControlParameter& c, const Eigen::MatrixXd& K) {
-                c.tikhonov_K = K.sparseView();
-            },
-            "The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). "
+            "The p x p PSD penalty matrix K. It is held sparse: assign a scipy.sparse matrix of any format, or a "
+                "dense array, which is converted. It is read back as a scipy.sparse.csc_matrix. "
                 "Required under SPARSE_GENERAL, where the selector checks its content at construction (finite "
                 "entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the "
                 "selector builds the centering matrix from prior_groups when it is left out. A supplied matrix "
@@ -336,18 +335,20 @@ inline void bind_trex_tikhonov(py::module& m) {
             "control (overridden by the separate trex_control argument of TRexTikhonovSelector).");
 
     m.def("gamma_to_k",
-          [](const Eigen::MatrixXd& gamma) {
-              return Eigen::MatrixXd(tik::TRexTikhonovSelector::gammaToK(gamma.sparseView()));
+          [](const Eigen::SparseMatrix<double>& gamma) {
+              return tik::TRexTikhonovSelector::gammaToK(gamma);
           },
           py::arg("gamma"),
-          "Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma (dense in, dense out).");
+          "Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma, a scipy.sparse "
+          "matrix or a dense array. Returns a scipy.sparse.csc_matrix (p x p).");
 
     m.def("build_group_centering_k",
           [](const std::vector<Eigen::Index>& prior_groups) {
-              return Eigen::MatrixXd(tik::TRexTikhonovSelector::buildGroupCenteringK(prior_groups));
+              return tik::TRexTikhonovSelector::buildGroupCenteringK(prior_groups);
           },
           py::arg("prior_groups"),
-          "Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment (dense out).");
+          "Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment. Returns a "
+          "scipy.sparse.csc_matrix (p x p).");
 
     m.def("tikhonov_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,

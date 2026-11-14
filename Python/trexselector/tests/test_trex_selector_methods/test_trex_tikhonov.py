@@ -86,7 +86,7 @@ def test_control_fields_roundtrip():
 
     K = _group_mean_k([0, 0, 1, 1])
     ctrl.tikhonov_K = K
-    np.testing.assert_allclose(ctrl.tikhonov_K, K)   # dense round trip through sparse
+    np.testing.assert_allclose(ctrl.tikhonov_K.toarray(), K)   # a dense array is held sparse
 
     ctrl.penalty_structure = tsn.TikPenaltyStructure.GROUP_CENTERING
     ctrl.lambda2_method = tsn.TikLambda2Method.PILOT_KNEE
@@ -283,7 +283,7 @@ def test_gamma_to_k_builds_the_chain_laplacian():
         gamma[i, i + 1] = 1.0
     K = tsn.gamma_to_k(gamma)
     expected = gamma.T @ gamma
-    np.testing.assert_allclose(K, expected)
+    np.testing.assert_allclose(K.toarray(), expected)
     assert K[0, 0] == pytest.approx(1.0) and K[1, 1] == pytest.approx(2.0)
     assert K[0, 1] == pytest.approx(-1.0)
 
@@ -293,7 +293,7 @@ def test_build_group_centering_k():
     expected = np.zeros((5, 5))
     expected[:2, :2] = np.eye(2) - np.ones((2, 2)) / 2.0
     expected[2:, 2:] = np.eye(3) - np.ones((3, 3)) / 3.0
-    np.testing.assert_allclose(K, expected)
+    np.testing.assert_allclose(K.toarray(), expected)
 
 
 # ---------------------------------------------------------------------------
@@ -604,4 +604,57 @@ def test_a_lambda_2_grid_means_the_same_shrinkage_under_zscore():
     assert np.allclose([pr.lambda2 for pr in b.probes], np.array(grid) * (n - 1))
     assert list(b.counts()) == list(a.counts())
     assert list(b.selection()) == list(a.selection())
+
+
+# ---------------------------------------------------------------------------
+# The penalty matrix is sparse
+# ---------------------------------------------------------------------------
+
+def test_the_penalty_matrix_is_held_and_returned_sparse():
+    import scipy.sparse as sp
+
+    K = _group_mean_k([0, 0, 1, 1, 1])
+    for given in (K, sp.csc_matrix(K), sp.csr_matrix(K), sp.coo_matrix(K)):
+        ctrl = tsn.TRexTikhonovControlParameter()
+        ctrl.tikhonov_K = given
+        back = ctrl.tikhonov_K
+        assert isinstance(back, sp.csc_matrix)
+        np.testing.assert_allclose(back.toarray(), K)
+    assert isinstance(tsn.TRexTikhonovControlParameter().tikhonov_K, sp.csc_matrix)
+
+    gamma = np.diff(np.eye(6), axis=0)
+    for given in (gamma, sp.csr_matrix(gamma)):
+        built = tsn.gamma_to_k(given)
+        assert isinstance(built, sp.csc_matrix)
+        np.testing.assert_allclose(built.toarray(), gamma.T @ gamma)
+    assert isinstance(tsn.build_group_centering_k([0, 0, 1, 1, 1]), sp.csc_matrix)
+
+
+def test_a_sparse_and_a_dense_penalty_matrix_give_the_same_run():
+    import scipy.sparse as sp
+
+    X, y, groups = _grouped_data()
+    K = _group_mean_k(groups)
+
+    def run(matrix):
+        sel = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tFDR=0.2,
+                                       tik_control=_tik_control(matrix, 1.0, prior_groups=groups),
+                                       trex_control=_base_control(), seed=3, verbose=False)
+        return np.array(sel.select().selected_var)
+
+    assert np.array_equal(run(K), run(sp.csr_matrix(K)))
+
+
+def test_a_large_penalty_matrix_stays_sparse():
+    """The centering matrix of 20,000 variables has a million entries, where a dense array has 3.2 GB."""
+    p, size = 20_000, 50
+    groups = [j // size for j in range(p)]
+    K = tsn.build_group_centering_k(groups)
+    assert K.shape == (p, p)
+    assert K.nnz == p * size
+    ctrl = tsn.TRexTikhonovControlParameter()
+    ctrl.tikhonov_K = K
+    assert ctrl.tikhonov_K.nnz == p * size
+    chain = tsn.gamma_to_k(K[:1000, :1000])
+    assert chain.shape == (1000, 1000)
 

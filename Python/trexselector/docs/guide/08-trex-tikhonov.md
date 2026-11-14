@@ -50,15 +50,14 @@ X = rng.standard_normal((n, p))
 y = X @ beta + rng.standard_normal(n)
 ```
 
-`gamma_to_k()` builds $\boldsymbol K$ from an operator $\boldsymbol\Gamma$ and returns it as a dense
-array. The selector converts the matrix to a sparse one internally, so a dense array is accepted
-everywhere a penalty matrix is.
+`gamma_to_k()` builds $\boldsymbol K$ from an operator $\boldsymbol\Gamma$ and returns a sparse
+matrix of SciPy. A dense array is accepted everywhere a penalty matrix is.
 
 ```{code-cell} python
 gamma = np.diff(np.eye(p), axis=0)    # first differences, (p - 1) x p
 K = tsn.gamma_to_k(gamma)
-print(K.shape)
-print(K[:4, :4])
+print(type(K).__name__, K.shape, "with", K.nnz, "non-zero entries")
+print(K[:4, :4].toarray())
 ```
 
 ## Running the selector

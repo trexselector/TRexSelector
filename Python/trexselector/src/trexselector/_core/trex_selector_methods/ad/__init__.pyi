@@ -5,6 +5,7 @@ from __future__ import annotations
 import collections.abc
 import numpy
 import numpy.typing
+import scipy.sparse
 import typing
 __all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'gamma_to_k', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
@@ -2424,7 +2425,7 @@ class TRexSelector:
         """
 class TRexTikhonovControlParameter:
     """
-    Control parameters for TRexTikhonovSelector: the penalty (a dense p x p PSD matrix tikhonov_K, or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.
+    Control parameters for TRexTikhonovSelector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.
     """
     def __init__(self) -> None:
         ...
@@ -2605,12 +2606,12 @@ class TRexTikhonovControlParameter:
     def prior_groups(self, arg0: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]) -> None:
         ...
     @property
-    def tikhonov_K(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
+    def tikhonov_K(self) -> scipy.sparse.csc_matrix:
         """
-        The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). Required under SPARSE_GENERAL, where the selector checks its content at construction (finite entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the selector builds the centering matrix from prior_groups when it is left out. A supplied matrix is compared with that matrix, and another matrix raises ValueError.
+        The p x p PSD penalty matrix K. It is held sparse: assign a scipy.sparse matrix of any format, or a dense array, which is converted. It is read back as a scipy.sparse.csc_matrix. Required under SPARSE_GENERAL, where the selector checks its content at construction (finite entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the selector builds the centering matrix from prior_groups when it is left out. A supplied matrix is compared with that matrix, and another matrix raises ValueError.
         """
     @tikhonov_K.setter
-    def tikhonov_K(self, arg1: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> None:
+    def tikhonov_K(self, arg1: scipy.sparse.csc_matrix) -> None:
         ...
     @property
     def trex_ctrl(self) -> TRexControlParameter:
@@ -2728,7 +2729,7 @@ class TikPenaltyStructure:
     
     Members:
     
-      SPARSE_GENERAL : tik_control.tikhonov_K is the p x p PSD penalty matrix (dense array, converted to sparse).
+      SPARSE_GENERAL : tik_control.tikhonov_K is the p x p PSD penalty matrix (a scipy.sparse matrix or a dense array).
     
       GROUP_CENTERING : K = I - J/p_m per group, built from prior_groups, which this structure requires.
     """
@@ -2769,13 +2770,13 @@ class TikPenaltyStructure:
     @property
     def value(self) -> int:
         ...
-def build_group_centering_k(prior_groups: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
+def build_group_centering_k(prior_groups: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]) -> scipy.sparse.csc_matrix:
     """
-    Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment (dense out).
+    Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment. Returns a scipy.sparse.csc_matrix (p x p).
     """
-def gamma_to_k(gamma: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
+def gamma_to_k(gamma: scipy.sparse.csc_matrix) -> scipy.sparse.csc_matrix:
     """
-    Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma (dense in, dense out).
+    Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma, a scipy.sparse matrix or a dense array. Returns a scipy.sparse.csc_matrix (p x p).
     """
 def normalize_design(X: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, 1]"], scaling_mode: ScalingMode = ..., eps: typing.SupportsFloat | typing.SupportsIndex = 1e-06, n_threads: typing.SupportsInt | typing.SupportsIndex | None = None) -> dict:
     """

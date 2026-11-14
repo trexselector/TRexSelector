@@ -30,7 +30,7 @@ pip install trexselector
 ```
 
 * PyPI provides binary wheels for Linux (x86_64), macOS (arm64) and Windows (x86_64) for Python 3.10 to 3.15, so no
-  compiler is needed there. NumPy ≥ 1.26 is installed alongside.
+  compiler is needed there. NumPy ≥ 1.26 and SciPy ≥ 1.11 are installed alongside.
 * Every wheel bundles the OpenMP runtime of its platform, so the package runs on several threads out of the box.
   `trexselector.utils.get_max_threads()` reports the threads available, which is also the check after an
   installation.

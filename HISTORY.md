@@ -16,6 +16,34 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The penalty matrix of the Python Tikhonov class is sparse
+
+Step 2 of the rework of the Python class of the Tikhonov selector (notes: TIKHONOV_findings.md, finding
+4, TIKHONOV_python_rework.md).
+
+- The difference. C++ holds the penalty matrix K sparse. R takes a base matrix or a sparse matrix of the
+  Matrix package and returns a sparse one from `trex_gamma_to_k()`. Python took and returned dense
+  arrays only: `tikhonov_K`, `gamma_to_k()` and `build_group_centering_k()` converted on the way in and
+  on the way out, a scipy sparse matrix raised TypeError, and a read of `tikhonov_K` built a dense copy.
+  A dense K for p = 20,000 has 3.2 GB.
+- The decision (Fabian: "From an efficiency perspective the scipy inclusion would make sense ... Since
+  we use in R also Matrix, that should be fair."). scipy becomes a dependency of the package
+  (`scipy>=1.11`), and the matrix is sparse on the Python surface. `tikhonov_K` takes a scipy.sparse
+  matrix of any format or a dense array, which is converted, and is read back as a
+  `scipy.sparse.csc_matrix`. `gamma_to_k()` takes a sparse or a dense operator and returns a
+  `csc_matrix`, and `build_group_centering_k()` returns one.
+- What changes for code written for 1.0.0. An assignment of a dense array works as before. A read of
+  `tikhonov_K` and the results of the two builders are sparse matrices now, where they were arrays:
+  `.toarray()` gives the array.
+- The wheels. scipy has binary wheels for every target the package is built for: Python 3.10 to 3.15 on
+  Linux x86_64, macOS arm64 and Windows x86_64 (checked with pip download, scipy 1.15.3 for 3.10 and
+  1.18.1 for 3.12 to 3.15). The test environments of the wheel build install it with the package.
+- Texts. The README names SciPy beside NumPy, guide page 08 says that `gamma_to_k()` returns a sparse
+  matrix and prints its type, and the docstrings state the types.
+- Tests. Python pins the four input formats, the type that is read back and returned, that a sparse
+  and a dense matrix give the same run, and that the centering matrix of 20,000 variables stays sparse
+  (a million entries). Python tests 780.
+
 #### The Python Tikhonov class refuses a solver outside the family
 
 Step 1 of the rework of the Python class of the Tikhonov selector (Fabian: "next on Python. Afterwards
