@@ -228,9 +228,10 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readonly("probes",       &tik::Lambda2PowerRuleResult::probes,       "Every grid value's selection, "
             "ascending in lambda_2.")
         .def_readonly("pick",         &tik::Lambda2PowerRuleResult::pick,         "Lambda2PickInfo of the pick.")
-        .def_readonly("at_lower_end", &tik::Lambda2PowerRuleResult::at_lower_end, "The pick is the first grid value "
-            "(widen the grid before trusting it).")
-        .def_readonly("at_upper_end", &tik::Lambda2PowerRuleResult::at_upper_end, "The pick is the last grid value.")
+        .def_readonly("at_lower_end", &tik::Lambda2PowerRuleResult::at_lower_end, "The pick sits on the first "
+            "grid value.")
+        .def_readonly("at_upper_end", &tik::Lambda2PowerRuleResult::at_upper_end, "The pick sits on the last grid "
+            "value, a boundary solution: widen the grid before trusting it.")
         .def_readonly("seconds",      &tik::Lambda2PowerRuleResult::seconds,      "Wall-clock seconds of the whole "
             "profile.")
         .def("selection", [](const tik::Lambda2PowerRuleResult& r) { return r.selection(); },

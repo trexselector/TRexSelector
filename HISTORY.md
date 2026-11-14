@@ -16,6 +16,20 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Python record of the power rule flags the upper end of the grid, as C++ does
+
+Found while the R help of the power rule was written from the C++ record. A text of the Python
+binding, no behaviour.
+
+- `Lambda2PowerRuleResult.at_lower_end` read "The pick is the first grid value (widen the grid before
+  trusting it)" and `at_upper_end` "The pick is the last grid value". The hint stood at the wrong
+  flag. C++ had one comment for both flags, and since 771a6a7 it has one per member: the pick on the
+  last grid value is the boundary solution that asks for a wider grid, and the first grid value is
+  usually 0, the answer "no penalty". The two Python texts are the C++ texts now. 6f9cdce had missed
+  them.
+- The record of the pilot rule (`Lambda2PilotResult`) had the two texts right.
+- The stub is regenerated. Python tests 786, Sphinx 0 warnings.
+
 #### The C++ guide page of the Tikhonov selector follows the class
 
 Guide page 08 of C++ ("T-Rex Tikhonov: a general penalty matrix"), texts only. 771a6a7 had corrected the

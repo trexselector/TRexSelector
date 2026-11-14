@@ -913,12 +913,12 @@ class Lambda2PowerRuleResult:
     @property
     def at_lower_end(self) -> bool:
         """
-        The pick is the first grid value (widen the grid before trusting it).
+        The pick sits on the first grid value.
         """
     @property
     def at_upper_end(self) -> bool:
         """
-        The pick is the last grid value.
+        The pick sits on the last grid value, a boundary solution: widen the grid before trusting it.
         """
     @property
     def grid_scale(self) -> float:
