@@ -2,7 +2,7 @@
 % Please edit documentation in R/trex_tikhonov_selector.R
 \name{trex_tikhonov_lambda2_power_rule}
 \alias{trex_tikhonov_lambda2_power_rule}
-\title{The knee of the full lambda_2 profile of the Tikhonov T-Rex}
+\title{The knee of the full lambda_2 profile of the T-Rex+Tikhonov selector}
 \usage{
 trex_tikhonov_lambda2_power_rule(
   X,
@@ -28,8 +28,8 @@ memory-mapped design needs \code{"readwrite"} mode for that, and
 \item{tFDR}{Target FDR level (default: 0.1).}
 
 \item{tik_control}{A Tikhonov control list from
-\code{\link{trex_tikhonov_control}()}; its \code{lambda_2} is
-overwritten per probe, everything else is shared by every probe.}
+\code{\link{trex_tikhonov_control}()}. Its \code{lambda_2} is replaced
+per probe, everything else is shared by every probe.}
 
 \item{control}{A control list from \code{\link{trex_control}()}, or
 \code{NULL} (default), taken as by \code{\link{TRexTikhonovSelector}}:
@@ -47,38 +47,53 @@ these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
 grid so that "no penalty" is an admissible answer.}
 
 \item{knee_tolerance}{Selections below the largest count that still
-count as "on the plateau" (default: 1); 0 reads the largest selection,
-ties toward the smallest lambda_2.}
+count as "on the plateau" (default: 1). \code{0} reads the largest
+selection, ties toward the smallest lambda_2.}
 
 \item{verbose}{Whether the probes print their progress (default:
 \code{FALSE}).}
 }
 \value{
-A list: \code{lambda2} (the pick, on the working scale: supplied as
-\code{lambda_2} it reproduces the selection), \code{index} (1-based, into
-\code{grid}), \code{selected} (the 1-based selection at the pick),
-\code{grid} (the values the probes ran at, ascending and de-duplicated),
-\code{grid_scale} (the factor between the supplied grid and \code{grid},
-\code{n - 1} under \code{"ZSCORE"} and 1 otherwise), \code{counts} (selection sizes
-per grid value), \code{probes} (one list per grid value with
-\code{lambda2}, \code{selected}, \code{T_stop} and \code{seconds}),
-\code{max_selected}, \code{n_ties} (grid values within the tolerance
-of the maximum), the boundary flags \code{at_lower_end} /
-\code{at_upper_end} (widen the grid before trusting a boundary pick)
-and \code{seconds}.
+A list:
+\describe{
+\item{\code{lambda2}}{The pick, on the working scale of the runs.
+Supplied as \code{lambda_2}, it reproduces the selection at the pick.}
+\item{\code{index}}{Index of the pick into \code{grid}, counted from 1.}
+\item{\code{selected}}{The selection at the pick (indices from 1,
+ascending).}
+\item{\code{grid}}{The values the probes ran at, ascending and without
+duplicates: the supplied grid times \code{grid_scale}.}
+\item{\code{grid_scale}}{The factor between the supplied grid and
+\code{grid}: \code{n - 1} under \code{scaling_mode = "ZSCORE"}, 1
+otherwise.}
+\item{\code{counts}}{The selection sizes per grid value.}
+\item{\code{probes}}{One list per grid value with \code{lambda2},
+\code{selected}, \code{T_stop} (the stopping time of the run) and
+\code{seconds}.}
+\item{\code{max_selected}}{The largest selection on the grid.}
+\item{\code{n_ties}}{Grid values within the tolerance of the largest
+selection.}
+\item{\code{at_lower_end}}{The pick sits on the first grid value.}
+\item{\code{at_upper_end}}{The pick sits on the last grid value, a
+boundary solution: widen the grid before trusting it.}
+\item{\code{seconds}}{Wall-clock seconds of the whole profile.}
+}
 }
 \description{
-Runs one FDR-controlled Tikhonov T-Rex selection per value of
-\code{grid} with the same seed, so the probes share their dummies and
-differ by the penalty weight alone, and picks the smallest lambda_2 whose
-selection is within \code{knee_tolerance} selections of the largest (the
-knee of the profile). This is the reference rule behind the default
+Runs one FDR-controlled selection of
+\code{\link{TRexTikhonovSelector}} per value of \code{grid} with the same
+seed, so the probes share their dummies and differ by the penalty weight
+alone, and picks the smallest lambda_2 whose selection is within
+\code{knee_tolerance} selections of the largest (the knee of the profile).
+This is the reference rule behind the default
 \code{lambda2_method = "PILOT_KNEE"} of
 \code{\link{trex_tikhonov_control}}, which reads the same knee off a few
-random experiments per grid value at a fraction of the cost; the full
+random experiments per grid value at a fraction of the cost. The full
 profile costs one selection per grid value and returns every probe's
 selection. The pick depends on y and lies outside the fixed-lambda_2 FDR
 guarantee that each probe carries.
+\code{\link{trex_gvs_lambda2_power_rule}} is the same rule on the
+T-Rex+GVS selector.
 }
 \examples{
 \donttest{

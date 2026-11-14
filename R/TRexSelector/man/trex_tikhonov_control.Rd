@@ -31,154 +31,172 @@ trex_tikhonov_control(
 )
 }
 \arguments{
-\item{tikhonov_K}{Penalty matrix K (p x p): a base \code{matrix} or a
-sparse \code{Matrix::dgCMatrix}. Build it from a regularization
-operator Gamma with \code{\link{trex_gamma_to_k}}. Required for
-\code{penalty_structure = "SPARSE_GENERAL"}, where the selector checks
-its content at construction (finite entries, symmetry, positive
-semi-definiteness). Optional under \code{"GROUP_CENTERING"}: left out,
-the selector builds the centering matrix from \code{prior_groups}. A
-supplied matrix is compared with that centering matrix, and another
-matrix is an error.}
+\item{tikhonov_K}{Penalty matrix K (p x p), symmetric and positive
+semi-definite: a base \code{matrix} or a sparse \code{Matrix::dgCMatrix}.
+\code{\link{trex_gamma_to_k}} builds it from a regularization operator
+Gamma. Required for \code{penalty_structure = "SPARSE_GENERAL"}, where the
+selector checks its content once at construction (finite entries,
+symmetry, positive semi-definiteness). Optional under
+\code{"GROUP_CENTERING"}: left out, the selector builds the centering
+matrix from \code{prior_groups}. A supplied matrix is compared with that
+centering matrix, and another matrix is an error.}
 
-\item{penalty_structure}{\code{"SPARSE_GENERAL"} (default): the
-user-supplied K. \code{"GROUP_CENTERING"}: K is the block-diagonal
-centering penalty over the groups of \code{prior_groups}, which this
-structure requires. An all-singleton partition is legitimate there: K
-vanishes and the path is the plain lasso on per-variable cluster
-dummies. With \code{solver = "TCDTIKNET"} this path runs through the
-group-centering hooks of TCDIENET, so its warnings (sweep budget,
+\item{penalty_structure}{Structural form of the penalty.
+\code{"SPARSE_GENERAL"} (default): the supplied \code{tikhonov_K} is the
+penalty. \code{"GROUP_CENTERING"}: K is the block-diagonal centering
+matrix \code{I - J / p_m} over the groups of \code{prior_groups}, which
+this structure requires, so the members of a group share a coefficient
+(\code{\link{trex_build_group_centering_k}} returns the matrix). A
+partition into single variables is allowed: K is then zero and the path
+is the lasso path. With \code{solver = "TCDTIKNET"} the group centering
+runs through the hooks of TCDIENET, so its warnings (sweep budget,
 certification fallback) carry the tag \code{[TCDIENET]}.}
 
-\item{lambda_2}{Penalty weight, solver scale. A negative value (default
-\code{-1}) triggers auto-determination via \code{lambda2_method};
-\code{0} is the degenerate pure-lasso case; a positive value is used
-as-is. The value must be finite.}
+\item{lambda_2}{Weight of the penalty. A negative value (default: -1) lets
+\code{lambda2_method} choose it, \code{0} is no penalty (the lasso path of
+the solver), and a positive value is used as it is. The value must be
+finite. A supplied value refers to the scale of the standardized columns.
+Under \code{scaling_mode = "ZSCORE"} the columns have the squared norm
+\code{n - 1}, so the same shrinkage needs the value times \code{n - 1}.
+The rules report their pick on this scale.}
 
-\item{lambda2_method}{Auto-determination strategy when
-\code{lambda_2 < 0}. \code{"PILOT_KNEE"} (default) reads lambda_2 off
-a few random experiments per candidate of \code{pilot_grid}, by the
-selector's own principle: the smallest lambda_2 whose pilot selection
-count is within \code{pilot_knee_tolerance} of the largest (the knee
-of the profile). The pilot record is available as \code{lambda2_pilot}
-on the selector. The k-fold CV rules consume K and return lambda_2 on
-the solver scale (no p/2 conversion): \code{"CV_1SE_IEN_CCD"}
-(well-posed in any p/n regime), \code{"CV_MIN_IEN_CCD"},
-\code{"CV_1SE_TIK_SVD"}, \code{"CV_MIN_TIK_SVD"}. The knee of the full
-selection profile, one selection per grid value, is
+\item{lambda2_method}{Rule that chooses \code{lambda_2} when
+\code{lambda_2 < 0}. \code{"PILOT_KNEE"} (default), the pilot rule, reads
+it off a few random experiments per value of \code{pilot_grid}: the
+smallest lambda_2 whose pilot selection count is within
+\code{pilot_knee_tolerance} of the largest, the knee of the profile. The
+field \code{lambda2_pilot} of the selector holds its record. The
+cross-validation rules tune on the normalized data before the random
+experiments. \code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"} profile
+the lambda_1 path out per lambda_2 candidate and are well-posed for every
+p and n. \code{"CV_1SE_TIK_SVD"} and \code{"CV_MIN_TIK_SVD"} are an
+analytic ridge cross-validation (lambda_1 = 0), exact for n > p and
+refused when the unpenalized null space interpolates the training folds.
+The knee of the full selection profile, one selection per grid value, is
 \code{\link{trex_tikhonov_lambda2_power_rule}}.}
 
-\item{cv_n_folds}{Folds for the CV paths, 2 to n (default: 10).}
+\item{cv_n_folds}{Folds of the cross-validation rules, 2 to n (default: 10).}
 
-\item{cv_n_lambda}{Points on the CV lambda grid of the SVD rules
-(default: 100).}
+\item{cv_n_lambda}{\code{"CV_1SE_TIK_SVD"} and \code{"CV_MIN_TIK_SVD"}:
+points on the lambda_2 grid (default: 100).}
 
-\item{cv_n_lambda1}{IEN-geometry coordinate-descent rules: points on the
-profiled lambda_1 path per lambda_2 value (default: 40).}
+\item{cv_n_lambda1}{\code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"}:
+points on the profiled lambda_1 path per lambda_2 value (default: 40).}
 
-\item{cv_n_lambda2}{IEN-geometry coordinate-descent rules: points on the
-lambda_2 grid (default: 100).}
+\item{cv_n_lambda2}{\code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"}:
+points on the lambda_2 grid (default: 100).}
 
-\item{cv_dfmax_ratio}{IEN-geometry coordinate-descent rules: support cap
-as a fraction of the smallest fold's training size; each lambda_1 path
-stops once more than \code{floor(cv_dfmax_ratio * n_train)}
-coefficients are nonzero (default: 0.8). A value \code{<= 0} disables
-the cap. Larger values allow larger supports at a higher tuner cost.
-Must be finite.}
+\item{cv_dfmax_ratio}{\code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"}:
+support cap as a fraction of the smallest fold's training size. Each
+lambda_1 path stops once more than
+\code{floor(cv_dfmax_ratio * n_train)} coefficients are nonzero (default:
+0.8). A value \code{<= 0} disables the cap. Larger values allow larger
+supports at a higher cost. Must be finite.}
 
-\item{cv_seed}{Seed for the CV fold permutation; \code{-1} (default)
-derives it from the selector seed, \code{>= 0} overrides it for CV
-folds only.}
+\item{cv_seed}{Seed of the fold permutation of the cross-validation rules.
+\code{-1} (default) derives it from the seed of the selector, a value
+\code{>= 0} replaces it for the folds only.}
 
 \item{pilot_grid}{Pilot rule: lambda_2 candidates, stated for columns of
 unit norm, sorted and de-duplicated internally. The default is the grid
 of the C++ core, \code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10,
-30, 100, 300, 1000, 3000. Under
-\code{scaling_mode = "ZSCORE"} the pilot runs at these values times
-\code{n - 1}, as the CV rules return their pick, so one grid means the
-same shrinkage under every scaling mode. The pick is reported on the
-working scale and can be supplied as \code{lambda_2}. Keep 0 on the
-grid so that "no penalty" is an admissible answer.}
+30, 100, 300, 1000, 3000. Under \code{scaling_mode = "ZSCORE"} the pilot
+runs at these values times \code{n - 1}, as the cross-validation rules
+return their pick, so one grid means the same shrinkage under every
+scaling mode. The pick is reported on the working scale and can be
+supplied as \code{lambda_2}. Keep 0 on the grid so that "no penalty" is
+an admissible answer: a penalty that misfits the truth loses power as
+lambda_2 grows, and the rule then switches it off.}
 
-\item{pilot_K}{Pilot rule: pilot experiments per grid point (default:
-10; at least 2, capped at \code{K} of \code{\link{trex_control}}).}
+\item{pilot_K}{Pilot rule: pilot experiments per grid value (default: 10;
+at least 2, capped at \code{K} of \code{\link{trex_control}}). The
+majority count has the resolution \code{1 / pilot_K}.}
 
-\item{pilot_T}{Pilot rule: stopping time of the pilot paths (default:
-5; at least 1, capped at \code{min(L_0, ceiling(n / 2))}).}
+\item{pilot_T}{Pilot rule: stopping time of the pilot paths (default: 5;
+at least 1, capped at \code{min(L_0, ceiling(n / 2))}, as the T-loop caps
+its stopping time). The pick reads the count at this stopping time.}
 
 \item{pilot_L_multiplier}{Pilot rule: pilot dummies
 \code{L_0 = pilot_L_multiplier * p} (default: 1; at most
-\code{max_dummy_multiplier}).}
+\code{max_dummy_multiplier} of \code{\link{trex_control}}).}
 
 \item{pilot_knee_tolerance}{Pilot rule: selections below the largest
-pilot count that still count as "on the plateau" (default: 1; 0
-reads the largest count, ties toward the smallest lambda_2).}
+pilot count that still count as "on the plateau" (default: 1). \code{0}
+reads the largest count, ties toward the smallest lambda_2.}
 
-\item{pilot_statistic}{Pilot rule, the count the pick is read off:
-\code{"MAJORITY"} (default; originals ahead of the T-th dummy in more
-than half of the pilot experiments), \code{"CALIBRATED"} (the T-Rex
-selection rule applied to the pilot data), or \code{"GROUP_MAJORITY"}
-(the majority count restricted to the groups of \code{prior_groups}
-in which at least \code{pilot_group_fraction} of the members are
-ahead; needs \code{prior_groups}).}
+\item{pilot_statistic}{Pilot rule: the count the pick is read off, per grid
+value. \code{"MAJORITY"} (default) is the number of variables ahead of
+the last pilot dummy (the \code{pilot_T}-th) in more than half of the
+pilot experiments, the count of the T-Rex selector at the voting level
+1/2. It is zero under the global null. \code{"CALIBRATED"} is the T-Rex
+selection rule applied to the pilot data, the largest selection whose
+estimated FDP stays within the target. It is coarser at a small
+\code{pilot_K}. \code{"GROUP_MAJORITY"} is the majority count restricted
+to the groups of \code{prior_groups} in which at least
+\code{pilot_group_fraction} of the members are ahead. A group that enters
+as a whole counts with its members, a group that enters as a minority
+counts nothing. It needs \code{prior_groups}. The record
+\code{lambda2_pilot} holds all three counts.}
 
 \item{pilot_group_fraction}{\code{"GROUP_MAJORITY"}: the share of a
-group's members that must be ahead, in (0, 1] (default: 0.5).}
+group's members that must be ahead for the group to count, in (0, 1]
+(default: 0.5).}
 
 \item{pilot_shared_dummies}{Logical (default \code{FALSE}): the pilot
-draws its dummies from a reserved seed stream, independent of the
-main run's. \code{TRUE} reuses the main strategy's first dummy block
-(not available under the PERMUTATION strategies).}
+draws its dummies from a seed stream of its own, so the dummies of the
+main run do not depend on the pick, and the main run equals a run at the
+picked lambda_2 with the same seed. \code{TRUE}: the pilot uses the first
+dummy block of the main strategy (not with the PERMUTATION strategies).}
 
-\item{fold_dummy_coupling}{Logical (default \code{TRUE}): dummy copies
-join their originating variable's K-coupling (FOLDED — the exact
-generalization of the GVS layered convention; dummy/null
-exchangeability holds for arbitrary K). \code{FALSE} restores the
-decoupled unit-ridge dummy block (INDEPENDENT_RIDGE) — a validation
-escape hatch that preserves the \code{K = I} == TCDENET collapse but
-deforms exchangeability whenever K has off-diagonals. Only the
-TCDTIKNET solver offers it, so it needs \code{solver = "TCDTIKNET"} in
-\code{\link{trex_control}}; the default solver TIKNET raises an error.
-Deprecated: it will be removed with TCDTIKNET and the coordinate-descent
-family in TRexSelector 2.1.0.}
+\item{fold_dummy_coupling}{Logical (default \code{TRUE}): in the penalty
+every dummy takes the place of the variable it was drawn for (folded
+coupling), so dummies and null variables stay exchangeable for every K.
+\code{FALSE} gives the dummies a unit ridge of their own, decoupled from
+K. It keeps the equality with the elastic net for \code{K = I} and
+deforms the exchangeability whenever K has off-diagonal entries. It is a
+validation switch that only the solver \code{"TCDTIKNET"} offers, so it
+needs \code{solver = "TCDTIKNET"} in \code{\link{trex_control}}, and the
+solver \code{"TIKNET"} raises an error for it. Deprecated: it will be
+removed with TCDTIKNET and the coordinate-descent family in TRexSelector
+2.1.0.}
 
-\item{cluster_dummies}{Logical (default \code{TRUE}): draw dummies as
-per-cluster colored MVN layers (GVS parity) on the clustering below.
-\code{FALSE} restores canonical i.i.d. dummies — validation runs only;
-with an informed K, i.i.d. dummies deform the dummy/null
-exchangeability the FDR calibration relies on.}
+\item{cluster_dummies}{Logical (default \code{TRUE}): draw the dummies per
+cluster of correlated variables, as in \code{\link{TRexGVSSelector}}.
+\code{FALSE} gives i.i.d. dummies, for validation runs only: with an
+informed K they deform the exchangeability of dummies and null variables
+that the FDR calibration relies on.}
 
-\item{prior_groups}{Integer vector of 1-based cluster IDs per variable
-(length p, numbered 1 to M without gaps) for the dummy clustering.
-\code{\link{trex_build_group_centering_k}} builds the centering matrix
-of such groups. \code{NULL} (default): clusters
-are discovered by correlation-HAC with \code{corr_max} /
-\code{hc_linkage}. Ignored when \code{cluster_dummies = FALSE}.}
+\item{prior_groups}{Groups of the variables: an integer vector with the
+group of each variable, numbered 1 to M without gaps (length p). They
+define the clusters of the dummies (with \code{cluster_dummies}), the
+penalty under \code{"GROUP_CENTERING"} and the count
+\code{"GROUP_MAJORITY"} of the pilot rule. \code{NULL} (default): the
+clusters of the dummies are found by clustering the correlations with
+\code{corr_max} and \code{hc_linkage}.}
 
-\item{corr_max}{Maximum cross-cluster |correlation| for the HAC dummy
-clustering (default: 0.5). Ignored when \code{prior_groups} is set or
-\code{cluster_dummies = FALSE}.}
+\item{corr_max}{Correlation threshold of the automatic clustering, between
+0 and 1 (default: 0.5). The dendrogram is cut at the height
+\code{1 - corr_max}. With "single" linkage (default) no two variables of
+different clusters correlate above \code{corr_max}. With "complete"
+linkage every two variables of one cluster correlate at least at
+\code{corr_max}, and variables of different clusters can exceed it.
+Ignored when \code{prior_groups} is set or \code{cluster_dummies = FALSE}.}
 
-\item{hc_linkage}{HAC linkage: "single" (default), "complete",
-"average", "wpgma". Ignored under \code{prior_groups} or
-\code{cluster_dummies = FALSE}. The capitalized names of TRexSelector 2.0.1
-("Single") are accepted as well.}
+\item{hc_linkage}{Hierarchical clustering linkage: "single", "complete",
+"average", "wpgma" (default: "single"). "ward" is rejected, because its
+update is valid for squared Euclidean distances only and the correlation
+distance \code{1 - abs(cor)} is not Euclidean. Ignored when
+\code{prior_groups} is set or \code{cluster_dummies = FALSE}. The
+capitalized names of TRexSelector 2.0.1 ("Single") are accepted as well.}
 }
 \value{
-A named list for use in TRexTikhonovSelector.
+A named list for use in \code{\link{TRexTikhonovSelector}}.
 }
 \description{
-Build a control list for \code{\link{TRexTikhonovSelector}},
-the general-Tikhonov T-Rex: a penalty matrix
-\code{K = t(Gamma) \%*\% Gamma} drives the Tikhonov-net solvers
-(TIKNET by default; TCDTIKNET through the \code{solver} field
-of \code{\link{trex_control}}, deprecated and removed in TRexSelector
-2.1.0). \code{K = I} gives the ridge penalty of the
-elastic net, a group-mean K reproduces the GVS-IEN penalty, and a
-banded or Laplacian K encodes smoothness. With
-\code{penalty_structure = "GROUP_CENTERING"} the selector builds K
-itself from \code{prior_groups} (block-diagonal \code{I - J / p_m}:
-the members of a group share a coefficient).
+Build the control list of \code{\link{TRexTikhonovSelector}}, the
+T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov). The list
+carries the penalty, the rule that chooses its weight \code{lambda_2}, and
+how the dummies are drawn. The help of the class describes the method.
 }
 \examples{
 trex_tikhonov_control(tikhonov_K = diag(10))

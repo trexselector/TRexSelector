@@ -30,17 +30,94 @@
 
 #' @name TRexTikhonovSelector
 #'
-#' @title T-Rex Selector with a general Tikhonov penalty
+#' @title T-Rex Selector with a General Tikhonov Penalty (T-Rex+Tikhonov)
 #'
-#' @description FDR-controlled variable selection with a Tikhonov penalty
-#'   matrix \code{K = t(Gamma) \%*\% Gamma} driving the Tikhonov-net solvers
-#'   (TIKNET by default, or the deprecated TCDTIKNET). \code{K = I} collapses to
-#'   the plain elastic net; a group-mean K reproduces the GVS-IEN penalty;
-#'   banded / Laplacian K encode smoothness-informed selection;
-#'   \code{penalty_structure = "GROUP_CENTERING"} builds the centering
-#'   penalty from the dummy clustering. lambda_2 comes from the caller, a
-#'   CV tuner, or the pilot rule (see \code{\link{trex_tikhonov_control}}).
-#'   Dummies are cluster-aware and FOLDED-coupled by default.
+#' @description FDR-controlled variable selection with the penalty
+#'   \code{(lambda_2 / 2) * t(beta) \%*\% K \%*\% beta}, whose positive
+#'   semi-definite matrix K carries the structure among the variables.
+#'
+#' @section The penalty:
+#' \code{K = t(Gamma) \%*\% Gamma} (p x p) for a regularization operator Gamma,
+#' see \code{\link{trex_gamma_to_k}}. Special cases:
+#' \itemize{
+#'   \item \code{K = I}: the ridge part of the elastic net.
+#'   \item The group-mean matrix, with the block \code{J / p_m} for every
+#'     group m of size \code{p_m} (J is the matrix of ones): the penalty of the
+#'     informed elastic net of \code{\link{TRexGVSSelector}}.
+#'   \item The centering matrix, with the block \code{I - J / p_m} for every
+#'     group (\code{penalty_structure = "GROUP_CENTERING"},
+#'     \code{\link{trex_build_group_centering_k}}): the members of a group
+#'     share a coefficient.
+#'   \item A banded matrix or a graph Laplacian: neighbouring coefficients are
+#'     smooth.
+#' }
+#'
+#' @section The solver:
+#' \code{"TIKNET"}, the homotopy solver. It is the solver of the base control
+#' that applies when \code{control} is left out, and a control that is passed
+#' has to name it. \code{"TCDTIKNET"}, the coordinate-descent solver, is
+#' deprecated.
+#'
+#' @section The dummies:
+#' By default they are drawn per cluster of correlated variables, as in
+#' \code{\link{TRexGVSSelector}} (\code{cluster_dummies}): the clusters are
+#' \code{prior_groups}, or come from a hierarchical clustering of the
+#' correlations (\code{corr_max}, \code{hc_linkage}). The field
+#' \code{dummy_clusters} reports them. With an informed K, i.i.d. dummies would
+#' be less competitive than correlated null variables, which deforms the
+#' exchangeability the FDR calibration relies on. In the penalty every dummy
+#' takes the place of the variable it was drawn for (folded coupling,
+#' \code{fold_dummy_coupling}), so dummies and null variables stay exchangeable
+#' for every K.
+#'
+#' @section L-loop strategies:
+#' With cluster dummies the strategies \code{"STANDARD"}, \code{"HCONCAT"},
+#' \code{"SKIPL"} and \code{"SEEDED"} of \code{\link{trex_control}()} are
+#' supported, and \code{"SEEDED"} equals \code{"STANDARD"}.
+#' \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} are refused, because a
+#' row permutation destroys the covariance of the dummies within a cluster.
+#' With \code{cluster_dummies = FALSE} the two run as well.
+#'
+#' @section lambda_2:
+#' A supplied value is used as it is. Otherwise \code{lambda2_method} of
+#' \code{\link{trex_tikhonov_control}()} chooses it before the L-loop, on the
+#' normalized data:
+#' \itemize{
+#'   \item \code{"PILOT_KNEE"} (default), the pilot rule. For every value of
+#'     \code{pilot_grid}, \code{pilot_K} random experiments run with
+#'     \code{L_0 = p} dummies to the stopping time \code{pilot_T}, on one set
+#'     of dummies, and the variables ahead of the dummies in more than half of
+#'     the experiments are counted (\code{pilot_statistic}). The pick is the
+#'     knee of this profile, the smallest lambda_2 whose count is within
+#'     \code{pilot_knee_tolerance} of the largest. It costs about the length of
+#'     the grid times \code{pilot_K} paths, a fraction of one selection per
+#'     grid value. The pilot dummies come from a seed stream of their own, so
+#'     the main run is a T-Rex run at a fixed lambda_2 whose dummies do not
+#'     depend on the pick. The pick itself depends on y and lies outside the
+#'     FDR guarantee of a fixed lambda_2. In simulations the pick cost nothing
+#'     under the global null and at most 0.02 of true positive rate against
+#'     the best fixed value under the alternatives. The record is the field
+#'     \code{lambda2_pilot}, and
+#'     \code{\link{trex_tikhonov_lambda2_power_rule}()} runs the same rule on
+#'     full selections.
+#'   \item \code{"CV_1SE_IEN_CCD"} and \code{"CV_MIN_IEN_CCD"}:
+#'     cross-validation with the lambda_1 path profiled out per lambda_2
+#'     candidate, well-posed for every p and n.
+#'   \item \code{"CV_1SE_TIK_SVD"} and \code{"CV_MIN_TIK_SVD"}: analytic ridge
+#'     cross-validation (lambda_1 = 0), exact for n > p and refused when the
+#'     unpenalized null space interpolates the training folds.
+#' }
+#' The scale. A supplied \code{lambda_2} refers to the scale of the
+#' standardized columns: under \code{scaling_mode = "ZSCORE"} the columns have
+#' the squared norm \code{n - 1}, so the same shrinkage needs the value times
+#' \code{n - 1}. \code{pilot_grid} is stated for columns of unit norm, and the
+#' pilot rule and the cross-validation rules apply the factor \code{n - 1}
+#' themselves. Every rule reports its pick on the scale of a supplied value
+#' (the field \code{lambda2_used}).
+#'
+#' @section A selector runs once:
+#' \code{select()} and \code{run_pilot_only()} exclude each other, and neither
+#' runs a second time. Construct a new selector to run again.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -90,12 +167,13 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
     #'   writes nothing and \code{"readonly"} mode suffices.
     #' @param y Response vector.
-    #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1).
+    #' @param tFDR Target FDR level between 0 and 1 (default: 0.1).
+    #' @param seed Random seed. A negative value (default: -1) gives a run that
+    #'   is not reproducible.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param tik_control A Tikhonov control list from
-    #'   \code{\link{trex_tikhonov_control}()} (required — it carries the
-    #'   penalty matrix K).
+    #'   \code{\link{trex_tikhonov_control}()}. Required, because it carries the
+    #'   penalty matrix \code{tikhonov_K} or the penalty structure.
     #' @param control A control list from \code{\link{trex_control}()}, or
     #'   \code{NULL} (default). With \code{NULL} the base control of the C++
     #'   class applies: the defaults of \code{trex_control()} with the solver
@@ -140,8 +218,9 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
       }
     },
 
-    #' @description Run the Tikhonov T-Rex algorithm. A selector runs once: a second call is an
-    #'   error, see \code{\link{TRexSelector}}.
+    #' @description Run the T-Rex+Tikhonov selection. A selector runs once: a
+    #'   second call is an error, and so is a call after
+    #'   \code{run_pilot_only()}, see \code{\link{TRexSelector}}.
     select = function() {
       trex_tikhonov_select(private$ptr)
       invisible(self)
@@ -162,9 +241,9 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     }
   ),
   active = list(
-    #' @field lambda2_used The lambda_2 actually used by the last
-    #'   \code{select()} run (user-supplied or CV-resolved; solver scale).
-    #'   \code{-1} before \code{select()}.
+    #' @field lambda2_used The lambda_2 the last run used: the supplied value,
+    #'   or the pick of the pilot rule or of a cross-validation rule, on the
+    #'   scale of a supplied value. \code{-1} before a run.
     lambda2_used = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -172,19 +251,19 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
       trex_tikhonov_get_lambda2_used(private$ptr)
     },
 
-    #' @field lambda2_cv_diagnostics Health record of the lambda_2 tuner of
-    #'   the last \code{select()}: a list with \code{ran} (a tuner or the
-    #'   pilot ran), \code{seconds}, \code{n_profile_at_edge} (lambda_2
-    #'   values whose profiled lambda_1 optimum sat on a truncation edge; 0
-    #'   is healthy), \code{support_cap} (-1 = disabled),
-    #'   \code{dfmax_ratio} (IEN tuner: the \code{cv_dfmax_ratio} it was
-    #'   called with; 0 otherwise), \code{low_dimensional}, and the
-    #'   boundary-pick guard fields \code{grid_index} / \code{grid_size},
-    #'   \code{at_grid_edge}, \code{profile_at_edge},
-    #'   \code{profile_at_support_cap} and \code{boundary_pick} (see
-    #'   \code{TRexGVSSelector}; the CV methods warn once on a boundary pick
-    #'   and return it unchanged; the pilot rule leaves them at their
-    #'   defaults).
+    #' @field lambda2_cv_diagnostics Health record of the rule that chose
+    #'   lambda_2 in the last run: a list with \code{ran} (a cross-validation
+    #'   rule or the pilot ran, \code{FALSE} when the value was supplied),
+    #'   \code{seconds}, \code{n_profile_at_edge} (lambda_2 values whose
+    #'   profiled lambda_1 optimum sat on a truncation edge; 0 is healthy),
+    #'   \code{support_cap} (-1 = disabled), \code{dfmax_ratio} (the
+    #'   \code{cv_dfmax_ratio} the IEN rules were called with; 0 otherwise),
+    #'   \code{low_dimensional}, and the fields of the boundary-pick guard,
+    #'   \code{grid_index} and \code{grid_size}, \code{at_grid_edge},
+    #'   \code{profile_at_edge}, \code{profile_at_support_cap} and
+    #'   \code{boundary_pick} (see \code{\link{TRexGVSSelector}}). The
+    #'   cross-validation rules warn once on a boundary pick and return it
+    #'   unchanged. The pilot rule leaves the guard fields at their defaults.
     lambda2_cv_diagnostics = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -192,21 +271,51 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
       trex_tikhonov_get_lambda2_cv_diagnostics(private$ptr)
     },
 
-    #' @field lambda2_pilot Record of the lambda_2 pilot rule of the last
-    #'   \code{select()} (\code{ran == FALSE} when no pilot ran): the
-    #'   \code{grid} of the values the pilot ran at (\code{pilot_grid} times
-    #'   \code{grid_scale}, which is \code{n - 1} under
-    #'   \code{scaling_mode = "ZSCORE"} and 1 otherwise), the \code{counts}
-    #'   the pick was read off, the
-    #'   per-grid-point curves over the pilot stopping times
-    #'   (\code{curve_majority}, \code{curve_soft}; G x T matrices), the
-    #'   \code{calibrated} and \code{group_majority} counts, the 1-based
-    #'   \code{index} of the pick, the picked \code{lambda2},
-    #'   \code{max_selected}, \code{n_ties}, the boundary flags
-    #'   \code{at_lower_end} / \code{at_upper_end} (widen the grid before
-    #'   trusting a boundary pick), the budget actually used (\code{K_pilot},
-    #'   \code{T_pilot}, \code{L_0}), the seed tag under which the pilot
-    #'   dummies were drawn (\code{dummy_tag}) and the timings.
+    #' @field lambda2_pilot Record of the lambda_2 pilot of the last
+    #'   \code{select()} or \code{run_pilot_only()}, a list:
+    #'   \describe{
+    #'     \item{\code{ran}}{A pilot ran. \code{FALSE}: lambda_2 came from the
+    #'       caller or from a cross-validation rule.}
+    #'     \item{\code{grid}}{The lambda_2 values the pilot ran at, ascending
+    #'       and without duplicates: \code{pilot_grid} times \code{grid_scale}.}
+    #'     \item{\code{grid_scale}}{The factor between \code{pilot_grid} and
+    #'       \code{grid}: \code{n - 1} under \code{scaling_mode = "ZSCORE"}, 1
+    #'       otherwise.}
+    #'     \item{\code{counts}}{The count the pick was read off, per grid
+    #'       value: the count of \code{pilot_statistic}.}
+    #'     \item{\code{curve_majority}}{The majority count per grid value (row)
+    #'       and pilot stopping time 1 to \code{T_pilot} (column).}
+    #'     \item{\code{curve_soft}}{The mean number of variables ahead of the
+    #'       t-th dummy, per grid value (row) and t (column). A diagnostic.}
+    #'     \item{\code{calibrated}}{The calibrated pilot selection count per
+    #'       grid value.}
+    #'     \item{\code{group_majority}}{The group-majority count per grid
+    #'       value: the members ahead, summed over the groups that reach
+    #'       \code{pilot_group_fraction}. Zeros without \code{prior_groups}.}
+    #'     \item{\code{groups_qualifying}}{The number of groups that reach
+    #'       \code{pilot_group_fraction}, per grid value. Zeros without
+    #'       \code{prior_groups}.}
+    #'     \item{\code{probe_seconds}}{Wall-clock seconds per grid value.}
+    #'     \item{\code{index}}{Index of the pick into \code{grid}, counted
+    #'       from 1.}
+    #'     \item{\code{lambda2}}{The picked lambda_2, \code{grid[index]}, on
+    #'       the working scale.}
+    #'     \item{\code{max_selected}}{The largest count on the grid.}
+    #'     \item{\code{n_ties}}{Grid values within the tolerance of the largest
+    #'       count.}
+    #'     \item{\code{at_lower_end}}{The pick sits on the first grid value.}
+    #'     \item{\code{at_upper_end}}{The pick sits on the last grid value:
+    #'       widen the grid before trusting it.}
+    #'     \item{\code{K_pilot}}{Pilot experiments per grid value that ran:
+    #'       \code{pilot_K}, capped at \code{K}.}
+    #'     \item{\code{T_pilot}}{Stopping time of the pilot paths that was
+    #'       used: \code{pilot_T}, capped at \code{min(L_0, ceiling(n / 2))}.}
+    #'     \item{\code{L_0}}{Number of pilot dummies, \code{pilot_L_multiplier}
+    #'       times p.}
+    #'     \item{\code{dummy_tag}}{Seed tag under which the pilot dummies were
+    #'       drawn.}
+    #'     \item{\code{seconds}}{Wall-clock seconds of the whole pilot.}
+    #'   }
     lambda2_pilot = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -234,19 +343,22 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 
 #' @name trex_tikhonov_lambda2_power_rule
 #'
-#' @title The knee of the full lambda_2 profile of the Tikhonov T-Rex
+#' @title The knee of the full lambda_2 profile of the T-Rex+Tikhonov selector
 #'
-#' @description Runs one FDR-controlled Tikhonov T-Rex selection per value of
-#'   \code{grid} with the same seed, so the probes share their dummies and
-#'   differ by the penalty weight alone, and picks the smallest lambda_2 whose
-#'   selection is within \code{knee_tolerance} selections of the largest (the
-#'   knee of the profile). This is the reference rule behind the default
+#' @description Runs one FDR-controlled selection of
+#'   \code{\link{TRexTikhonovSelector}} per value of \code{grid} with the same
+#'   seed, so the probes share their dummies and differ by the penalty weight
+#'   alone, and picks the smallest lambda_2 whose selection is within
+#'   \code{knee_tolerance} selections of the largest (the knee of the profile).
+#'   This is the reference rule behind the default
 #'   \code{lambda2_method = "PILOT_KNEE"} of
 #'   \code{\link{trex_tikhonov_control}}, which reads the same knee off a few
-#'   random experiments per grid value at a fraction of the cost; the full
+#'   random experiments per grid value at a fraction of the cost. The full
 #'   profile costs one selection per grid value and returns every probe's
 #'   selection. The pick depends on y and lies outside the fixed-lambda_2 FDR
 #'   guarantee that each probe carries.
+#'   \code{\link{trex_gvs_lambda2_power_rule}} is the same rule on the
+#'   T-Rex+GVS selector.
 #'
 #' @param X Feature matrix (n x p) in memory, or an \code{mmap_matrix}, the
 #'   handle of a memory-mapped file. Every probe normalizes it in place and
@@ -256,8 +368,8 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #' @param y Response vector (length n).
 #' @param tFDR Target FDR level (default: 0.1).
 #' @param tik_control A Tikhonov control list from
-#'   \code{\link{trex_tikhonov_control}()}; its \code{lambda_2} is
-#'   overwritten per probe, everything else is shared by every probe.
+#'   \code{\link{trex_tikhonov_control}()}. Its \code{lambda_2} is replaced
+#'   per probe, everything else is shared by every probe.
 #' @param control A control list from \code{\link{trex_control}()}, or
 #'   \code{NULL} (default), taken as by \code{\link{TRexTikhonovSelector}}:
 #'   with \code{NULL} the base control of the C++ class applies, and a
@@ -271,23 +383,35 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #'   these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
 #'   grid so that "no penalty" is an admissible answer.
 #' @param knee_tolerance Selections below the largest count that still
-#'   count as "on the plateau" (default: 1); 0 reads the largest selection,
-#'   ties toward the smallest lambda_2.
+#'   count as "on the plateau" (default: 1). \code{0} reads the largest
+#'   selection, ties toward the smallest lambda_2.
 #' @param verbose Whether the probes print their progress (default:
 #'   \code{FALSE}).
 #'
-#' @return A list: \code{lambda2} (the pick, on the working scale: supplied as
-#'   \code{lambda_2} it reproduces the selection), \code{index} (1-based, into
-#'   \code{grid}), \code{selected} (the 1-based selection at the pick),
-#'   \code{grid} (the values the probes ran at, ascending and de-duplicated),
-#'   \code{grid_scale} (the factor between the supplied grid and \code{grid},
-#'   \code{n - 1} under \code{"ZSCORE"} and 1 otherwise), \code{counts} (selection sizes
-#'   per grid value), \code{probes} (one list per grid value with
-#'   \code{lambda2}, \code{selected}, \code{T_stop} and \code{seconds}),
-#'   \code{max_selected}, \code{n_ties} (grid values within the tolerance
-#'   of the maximum), the boundary flags \code{at_lower_end} /
-#'   \code{at_upper_end} (widen the grid before trusting a boundary pick)
-#'   and \code{seconds}.
+#' @return A list:
+#'   \describe{
+#'     \item{\code{lambda2}}{The pick, on the working scale of the runs.
+#'       Supplied as \code{lambda_2}, it reproduces the selection at the pick.}
+#'     \item{\code{index}}{Index of the pick into \code{grid}, counted from 1.}
+#'     \item{\code{selected}}{The selection at the pick (indices from 1,
+#'       ascending).}
+#'     \item{\code{grid}}{The values the probes ran at, ascending and without
+#'       duplicates: the supplied grid times \code{grid_scale}.}
+#'     \item{\code{grid_scale}}{The factor between the supplied grid and
+#'       \code{grid}: \code{n - 1} under \code{scaling_mode = "ZSCORE"}, 1
+#'       otherwise.}
+#'     \item{\code{counts}}{The selection sizes per grid value.}
+#'     \item{\code{probes}}{One list per grid value with \code{lambda2},
+#'       \code{selected}, \code{T_stop} (the stopping time of the run) and
+#'       \code{seconds}.}
+#'     \item{\code{max_selected}}{The largest selection on the grid.}
+#'     \item{\code{n_ties}}{Grid values within the tolerance of the largest
+#'       selection.}
+#'     \item{\code{at_lower_end}}{The pick sits on the first grid value.}
+#'     \item{\code{at_upper_end}}{The pick sits on the last grid value, a
+#'       boundary solution: widen the grid before trusting it.}
+#'     \item{\code{seconds}}{Wall-clock seconds of the whole profile.}
+#'   }
 #'
 #' @examples
 #' \donttest{

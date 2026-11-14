@@ -129,6 +129,19 @@
   coefficient and needs `prior_groups`, the penalty carries the factor one half of the code, and
   `tikhonov_K` is optional under `"GROUP_CENTERING"`. The vignette no longer runs the deprecated solver
   `"TCDTIKNET"` with the decoupled dummy block.
+* The help of `TRexTikhonovSelector`, of `trex_tikhonov_control()` and of
+  `trex_tikhonov_lambda2_power_rule()` is rewritten after the C++ class. The class gains the sections on
+  the penalty, the solver, the dummies, the L-loop strategies and the rules for `lambda_2`. Wrong
+  statements are corrected. The class no longer "drives the Tikhonov-net solvers" with TCDTIKNET as an
+  equal choice. `lambda_2` and `lambda2_used` were "on the solver scale" and refer to the scale of the
+  standardized columns. `lambda2_used` named a supplied value and a cross-validation only, the default
+  is the pick of the pilot rule. `prior_groups` was "ignored when `cluster_dummies = FALSE`", although
+  the groups also define the penalty under `"GROUP_CENTERING"` and the count `"GROUP_MAJORITY"`.
+  `corr_max` bounded the correlation between clusters, which holds for single linkage only. `"ward"`
+  linkage is named as rejected. The record `lambda2_pilot` and the result of the power rule say what
+  every field holds, among them `curve_soft`, `calibrated`, `group_majority`, `groups_qualifying` and
+  `probe_seconds`. The vignette "T-Rex Tikhonov" gains the paragraph on the scale of `lambda_2` and of
+  the grids.
 * Three vignettes say why they copy the design with `X + 0`.
 * The help of `tol` in `trex_control()` and in `tsolver_options()` says that the selector and the
   stand-alone solver have different defaults on purpose.

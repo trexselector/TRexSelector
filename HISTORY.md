@@ -16,6 +16,30 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The texts of the R Tikhonov class mirror the C++ class
+
+Step 3 of the rework of the R class of the Tikhonov selector, the last one of the class. Texts only.
+It is the R side of 6f9cdce.
+
+- The class. The help opens with the sentence of C++, "FDR-controlled variable selection with the
+  penalty (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix K carries the structure
+  among the variables", under the title with the short form T-Rex+Tikhonov. It gains the sections of
+  the C++ class: the penalty and its special cases, the solver, the dummies, the L-loop strategies, the
+  rules for lambda_2 with the scale, and that a selector runs once. Before, it had one paragraph.
+- Wrong texts. The class "drove the Tikhonov-net solvers (TIKNET by default, or the deprecated
+  TCDTIKNET)". `lambda_2` and `lambda2_used` were "solver scale". `lambda2_used` was "user-supplied or
+  CV-resolved", the default is the pick of the pilot rule. `prior_groups` was "for the dummy
+  clustering" and "ignored when cluster_dummies = FALSE", the groups also define the penalty under
+  GROUP_CENTERING and the count GROUP_MAJORITY. `corr_max` was the "maximum cross-cluster correlation",
+  which holds for single linkage only. `seed` was "Random seed (default: -1)".
+- Gaps. `hc_linkage` names why Ward is rejected. `pilot_statistic` says what the three counts are. The
+  record `lambda2_pilot` and the result of the power rule are lists of their fields with what each
+  holds, among them `curve_soft`, `calibrated`, `group_majority`, `groups_qualifying` and
+  `probe_seconds`, which the help had named without a word or not at all.
+- The vignette "T-Rex Tikhonov" gains the paragraph on the scale of lambda_2 and of the grids and no
+  longer says that the cross-validation rules return lambda_2 "on the solver scale". Its title and the
+  titles of the other pages wait for the page review.
+
 #### The R Tikhonov class has what the C++ class has
 
 Step 2 of the rework of the R class of the Tikhonov selector (notes: TIKHONOV_findings.md, findings 3,

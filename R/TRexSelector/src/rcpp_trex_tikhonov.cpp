@@ -291,7 +291,7 @@ void trex_tikhonov_select(XPtr<RTRexTikhonovSelector> r_ptr) {
 }
 
 
-//' @title Get the resolved lambda_2 (solver scale)
+//' @title Get the lambda_2 the last run used
 //' @noRd
 // [[Rcpp::export]]
 double trex_tikhonov_get_lambda2_used(XPtr<RTRexTikhonovSelector> r_ptr) {

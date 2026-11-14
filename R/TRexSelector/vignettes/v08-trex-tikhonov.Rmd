@@ -87,7 +87,8 @@ tik$lambda2_used
 ```
 
 `TRexTikhonovSelector` inherits the fields of `TRexSelector` and adds `lambda2_used`,
-`lambda2_cv_diagnostics`, `lambda2_pilot` and `dummy_clusters`.
+`lambda2_cv_diagnostics`, `lambda2_pilot` and `dummy_clusters`. A selector runs once, as every selector
+does.
 
 # Choosing lambda_2
 
@@ -99,16 +100,22 @@ tik$lambda2_used
   `pilot_L_multiplier` size the pilot, `pilot_statistic` names the count (`"MAJORITY"`, `"CALIBRATED"`,
   `"GROUP_MAJORITY"`). The method `run_pilot_only()` runs the pilot without the selection and returns its
   record.
-- The k-fold cross-validation rules consume $\boldsymbol K$ and return $\lambda_2$ on the solver scale:
-  `"CV_1SE_IEN_CCD"`, `"CV_MIN_IEN_CCD"`, `"CV_1SE_TIK_SVD"` and `"CV_MIN_TIK_SVD"`. `cv_n_folds`,
-  `cv_n_lambda1`, `cv_n_lambda2`, `cv_dfmax_ratio` and `cv_seed` control them. They judge a fitted
-  estimate, so on structured designs they tend to pick the edges of their grid.
+- The k-fold cross-validation rules consume $\boldsymbol K$: `"CV_1SE_IEN_CCD"`, `"CV_MIN_IEN_CCD"`,
+  `"CV_1SE_TIK_SVD"` and `"CV_MIN_TIK_SVD"`. `cv_n_folds`, `cv_n_lambda1`, `cv_n_lambda2`,
+  `cv_dfmax_ratio` and `cv_seed` control them. They judge a fitted estimate, so on structured designs
+  they tend to pick the edges of their grid.
 - `trex_tikhonov_lambda2_power_rule()` runs one full selection per grid value with common dummies and takes
   the knee of that profile. It is the reference rule behind the pilot, at the cost of one selection per
   grid value, and it returns every probe's selection. `trex_gvs_lambda2_power_rule()` is the same rule on
   the T-Rex+GVS selector.
 
 Without a grid the rules run on `trex_default_lambda2_grid()`, the grid the C++ core holds for them.
+
+A supplied `lambda_2` is used as it is, on the scale of the standardized columns. A grid, `pilot_grid` or
+the grid of a power rule, is stated for columns of unit norm. Under `scaling_mode = "ZSCORE"` the columns
+have the squared norm $n - 1$, so the rules run at the grid times $n - 1$, and one grid means the same
+shrinkage under every scaling mode. Every rule reports its pick on the scale of a supplied value, so
+`lambda2_used` can be passed as `lambda_2`.
 
 ```{r pilot}
 pilot <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
@@ -143,10 +150,10 @@ exists for validation runs. The field `dummy_clusters` reports the clusters of a
 
 `penalty_structure = "GROUP_CENTERING"` lets the selector build $\boldsymbol K$ itself as the
 block-diagonal centering penalty $\boldsymbol I - \boldsymbol J / p_m$ over the groups of `prior_groups`,
-so the members of a group share a coefficient. The structure needs `prior_groups`, and the selector
-refuses it without them. An all-singleton partition is legitimate, the penalty vanishes and the path is
-the lasso on per-variable cluster dummies. `trex_build_group_centering_k()` returns this matrix for a
-group assignment.
+so the members of a group share a coefficient. The structure needs `prior_groups` (group numbers from
+1, one per variable), and the selector refuses it without them. An all-singleton partition is legitimate,
+the penalty vanishes and the path is the lasso on per-variable cluster dummies.
+`trex_build_group_centering_k()` returns this matrix for a group assignment.
 
 ```{r centering}
 groups <- rep(1:6, each = 10)

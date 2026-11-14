@@ -1289,7 +1289,7 @@ trex_tikhonov_select <- function(r_ptr) {
     invisible(.Call(`_TRexSelector_trex_tikhonov_select`, r_ptr))
 }
 
-#' @title Get the resolved lambda_2 (solver scale)
+#' @title Get the lambda_2 the last run used
 #' @noRd
 trex_tikhonov_get_lambda2_used <- function(r_ptr) {
     .Call(`_TRexSelector_trex_tikhonov_get_lambda2_used`, r_ptr)
