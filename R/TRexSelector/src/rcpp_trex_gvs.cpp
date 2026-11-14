@@ -137,6 +137,21 @@ Rcpp::List lambda2_cv_diagnostics_to_list(
     );
 }
 
+/**
+ * @brief The control of a GVS run from the two R lists. A NULL base control
+ *        leaves the one nested in the GVS control in place.
+ */
+TRexGVSControlParameter gvs_run_control(
+    const Rcpp::List& gvs_control_list,
+    const Rcpp::Nullable<Rcpp::List>& trex_control_list) {
+    std::optional<TRexControlParameter> trex_control;
+    if (trex_control_list.isNotNull()) {
+        trex_control = parse_control_parameter(Rcpp::List(trex_control_list));
+    }
+    return merge_gvs_control(parse_gvs_parameter(gvs_control_list), trex_control);
+}
+
+
 //' @title Create TRexGVSSelector
 //' @noRd
 // [[Rcpp::export]]
@@ -145,17 +160,16 @@ XPtr<RTRexGVSSelector> trex_gvs_create(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List gvs_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     bool verbose
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexGVSControlParameter gvs_control = parse_gvs_parameter(gvs_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
-    return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(X_map, y_map, tFDR, gvs_control, trex_control, seed, verbose),
+    return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(X_map, y_map, tFDR, gvs_ctrl, seed, verbose),
                                   true, R_NilValue, Rcpp::List::create(X, y));
 }
 
@@ -167,17 +181,16 @@ XPtr<RTRexGVSSelector> trex_gvs_mmap_create(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List gvs_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexGVSControlParameter gvs_control = parse_gvs_parameter(gvs_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
-    return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(mapped_design_for(*X_ptr, trex_control), y_map, tFDR,
-        gvs_control, trex_control, seed, verbose),
-                                  true, R_NilValue, Rcpp::List::create(X_ptr, y));
+    return XPtr<RTRexGVSSelector>(
+        new RTRexGVSSelector(mapped_design_for(*X_ptr, gvs_ctrl.trex_ctrl), y_map, tFDR, gvs_ctrl, seed, verbose),
+        true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }
 
 //' @title Run TRexGVSSelector

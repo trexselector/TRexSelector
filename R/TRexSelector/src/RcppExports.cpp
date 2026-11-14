@@ -1320,7 +1320,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_gvs_create
-XPtr<RTRexGVSSelector> trex_gvs_create(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
+XPtr<RTRexGVSSelector> trex_gvs_create(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, bool verbose);
 RcppExport SEXP _TRexSelector_trex_gvs_create(SEXP XSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -1329,7 +1329,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type trex_control_list(trex_control_listSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
     rcpp_result_gen = Rcpp::wrap(trex_gvs_create(X, y, tFDR, gvs_control_list, trex_control_list, seed, verbose));
@@ -1337,7 +1337,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_gvs_mmap_create
-XPtr<RTRexGVSSelector> trex_gvs_mmap_create(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, bool verbose);
+XPtr<RTRexGVSSelector> trex_gvs_mmap_create(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, bool verbose);
 RcppExport SEXP _TRexSelector_trex_gvs_mmap_create(SEXP X_ptrSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -1346,7 +1346,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type trex_control_list(trex_control_listSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
     rcpp_result_gen = Rcpp::wrap(trex_gvs_mmap_create(X_ptr, y, tFDR, gvs_control_list, trex_control_list, seed, verbose));
@@ -2012,7 +2012,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_gvs_lambda2_power_rule_impl
-Rcpp::List trex_gvs_lambda2_power_rule_impl(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
+Rcpp::List trex_gvs_lambda2_power_rule_impl(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
 RcppExport SEXP _TRexSelector_trex_gvs_lambda2_power_rule_impl(SEXP XSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -2021,7 +2021,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type trex_control_list(trex_control_listSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type grid(gridSEXP);
     Rcpp::traits::input_parameter< double >::type knee_tolerance(knee_toleranceSEXP);
@@ -2031,7 +2031,7 @@ BEGIN_RCPP
 END_RCPP
 }
 // trex_gvs_lambda2_power_rule_mmap_impl
-Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
+Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
 RcppExport SEXP _TRexSelector_trex_gvs_lambda2_power_rule_mmap_impl(SEXP X_ptrSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
@@ -2040,7 +2040,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
     Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type trex_control_list(trex_control_listSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< std::vector<double> >::type grid(gridSEXP);
     Rcpp::traits::input_parameter< double >::type knee_tolerance(knee_toleranceSEXP);

@@ -11,6 +11,9 @@
  */
 // =====================================================================================
 
+// std includes
+#include <optional>
+
 // pybind11 includes
 #include <pybind11/pybind11.h>
 #include <pybind11/eigen.h>
@@ -31,46 +34,22 @@ namespace gvs_sd = trex::trex_selector_methods::ad::utils::solver_dispatch;
 // =====================================================================================
 
 /**
- * @brief The control of a GVS run from the two controls of Python. The C++
- *        constructor takes one control that nests the base control as
- *        `trex_ctrl`. The solver is set as GVS requires:
- *        EN  -> derived from en_solver (TENET / TENET_AUG / TCDENET),
- *        IEN -> an IEN-family solver of the base control (TIENET /
- *               TIENET_AUG / TCDIENET), and TIENET for any other.
- *        A deprecated coordinate-descent solver raises its warning here.
+ * @brief The control of a GVS run. The C++ constructor takes one control that
+ *        nests the base control. Python can pass a base control as a second
+ *        argument: it then replaces the nested one, as it is. Nothing is
+ *        changed in either, and the C++ constructor derives or refuses the
+ *        solver. A deprecated coordinate-descent solver raises its warning.
  */
 inline TRexGVSControlParameter merge_gvs_control(
     const TRexGVSControlParameter& gvs_control,
-    const TRexControlParameter& trex_control)
+    const std::optional<TRexControlParameter>& trex_control)
 {
     TRexGVSControlParameter gvs_ctrl = gvs_control;
-    gvs_ctrl.trex_ctrl = trex_control;
+    if (trex_control) { gvs_ctrl.trex_ctrl = *trex_control; }
     if (gvs_ctrl.gvs_type == GVSType::IEN) {
-        const auto st = gvs_ctrl.trex_ctrl.solver_type;
-        const bool ien_family =
-            st == gvs_sd::SolverTypeForTRex::TIENET ||
-            st == gvs_sd::SolverTypeForTRex::TIENET_AUG ||
-            st == gvs_sd::SolverTypeForTRex::TCDIENET;
-        if (!ien_family) {
-            gvs_ctrl.trex_ctrl.solver_type =
-                gvs_sd::SolverTypeForTRex::TIENET;
-        }
         warn_if_cd_solver_type(gvs_ctrl.trex_ctrl.solver_type);
-    } else { // EN
+    } else {
         warn_if_cd_en_solver(gvs_ctrl.en_solver);
-        switch (gvs_ctrl.en_solver) {
-            case ENSolverType::TENET_AUG:
-                gvs_ctrl.trex_ctrl.solver_type =
-                    gvs_sd::SolverTypeForTRex::TENET_AUG;
-                break;
-            case ENSolverType::TCDENET:
-                gvs_ctrl.trex_ctrl.solver_type =
-                    gvs_sd::SolverTypeForTRex::TCDENET;
-                break;
-            default:
-                gvs_ctrl.trex_ctrl.solver_type =
-                    gvs_sd::SolverTypeForTRex::TENET;
-        }
     }
     return gvs_ctrl;
 }
@@ -88,7 +67,7 @@ public:
      * @param y Reference to the response vector (n × 1).
      * @param tFDR Target False Discovery Rate threshold.
      * @param gvs_control Configuration parameters specific to the Group Variable Selection method.
-     * @param trex_control General configuration parameters for the TRex algorithm.
+     * @param trex_control Base control that replaces the nested one of gvs_control, or none.
      * @param seed Random seed for reproducible computations.
      * @param verbose If true, prompts standard out messaging during select().
      */
@@ -97,7 +76,7 @@ public:
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
         const TRexGVSControlParameter& gvs_control,
-        const TRexControlParameter& trex_control,
+        const std::optional<TRexControlParameter>& trex_control,
         int seed,
         bool verbose
     ) {
@@ -127,11 +106,11 @@ public:
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
         const TRexGVSControlParameter& gvs_control,
-        const TRexControlParameter& trex_control,
+        const std::optional<TRexControlParameter>& trex_control,
         int seed,
         bool verbose
-    ) : PyTRexGVSSelector(selector_design_ref(X, trex_control), y, tFDR, gvs_control, trex_control, seed,
-                          verbose) {}
+    ) : PyTRexGVSSelector(selector_design_ref(X, trex_control ? *trex_control : gvs_control.trex_ctrl), y, tFDR,
+                          gvs_control, trex_control, seed, verbose) {}
 
     /**
      * @brief Get the complete GVS selection result.
@@ -281,9 +260,10 @@ inline void bind_trex_gvs(py::module& m) {
             "solvers, en_solver = TENET_AUG or gvs_type = IEN with the solver TIENET_AUG: use a pure-LARS inner "
             "solver that never drops variables, as trex(type = \"lar\") of the 1.x versions of the R package does "
             "(default False). Ignored for TENET and TIENET.")
-        .def_readwrite("trex_ctrl", &TRexGVSControlParameter::trex_ctrl, "Nested base T-Rex algorithmic control "
-            "parameters (used directly by TRexSPCASelector; overridden by the separate trex_control argument in "
-            "TRexGVSSelector).");
+        .def_readwrite("trex_ctrl", &TRexGVSControlParameter::trex_ctrl, "Nested base T-Rex control, whose solver "
+            "is TENET. It applies when TRexGVSSelector gets no trex_control argument, and that argument replaces it "
+            "otherwise. On the EN track its solver_type stays TENET or names the solver of en_solver. On the IEN "
+            "track it has to name TIENET or TIENET_AUG. TRexSPCASelector uses it directly.");
 
     py::class_<TRexGVSSelector::GVSSelectionResult, TRexSelector::SelectionResult>(m, "GVSSelectionResult",
         "SelectionResult "
@@ -312,6 +292,12 @@ inline void bind_trex_gvs(py::module& m) {
         "\n"
         "Notes\n"
         "-----\n"
+        "The solver. On the EN track en_solver of the GVS control chooses it, TENET by default, and\n"
+        "the solver_type of the base control stays TENET or names the same solver. On the IEN track\n"
+        "the solver_type of the base control names it, TIENET or TIENET_AUG. Every other solver is\n"
+        "refused at construction, also TLARS, the default of TRexControlParameter, and the default\n"
+        "TENET of the nested base control on the IEN track.\n"
+        "\n"
         "L-loop strategies. The selector supports STANDARD, HCONCAT, SKIPL and SEEDED, and SEEDED\n"
         "equals STANDARD here. PERMUTATION and PERMUTATION_SEEDED are refused, because a row\n"
         "permutation destroys the covariance of the dummies within a cluster.\n"
@@ -330,19 +316,21 @@ inline void bind_trex_gvs(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
         .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, double, const TRexGVSControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+            const std::optional<TRexControlParameter>&, int, bool>(),
              py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
              py::arg("gvs_control") = TRexGVSControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. A negative seed\n"
-             "(default: -1) gives a run that is not reproducible.")
+             "Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the\n"
+             "base control nested in gvs_control applies. A trex_control that is passed replaces it as it is, and\n"
+             "a solver that does not fit the track raises ValueError. A negative seed (default: -1) gives a run\n"
+             "that is not reproducible.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexGVSControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+            const std::optional<TRexControlParameter>&, int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
              py::arg("gvs_control") = TRexGVSControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              kReaderSelectorDoc.c_str())

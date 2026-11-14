@@ -11,10 +11,15 @@ from trexselector.trex_selector_methods import ad
 from trexselector.utils import AccessMode, MemoryMappedMatrix, numpy_to_memmap
 
 
-def _control(mode, K=10):
+TENET = tsn.SolverTypeForTRex.TENET
+
+
+def _control(mode, K=10, solver=None):
     ctrl = tsn.TRexControlParameter()
     ctrl.K = K
     ctrl.scaling_mode = mode
+    if solver is not None:
+        ctrl.solver_type = solver
     return ctrl
 
 
@@ -56,7 +61,8 @@ def test_readonly_view_serves_every_selector_under_none(readonly_design):
     assert np.flatnonzero(ref.selected_var).size > 0
 
     tsn.TRexDASelector(view, y, tFDR=0.2, trex_control=none, seed=11, verbose=False).select()
-    tsn.TRexGVSSelector(view, y, tFDR=0.2, trex_control=none, seed=11, verbose=False).select()
+    tsn.TRexGVSSelector(view, y, tFDR=0.2, trex_control=_control(tsn.ScalingMode.NONE, solver=TENET), seed=11,
+                        verbose=False).select()
     tik_ctrl = tsn.TRexTikhonovControlParameter()
     tik_ctrl.tikhonov_K = np.eye(d["p"])
     tik_ctrl.lambda_2 = 0.5
@@ -90,7 +96,7 @@ def test_readonly_view_is_refused_where_the_design_is_written(readonly_design, m
     with pytest.raises(ValueError, match="not writable"):
         tsn.TRexDASelector(view, y, trex_control=ctrl, verbose=False)
     with pytest.raises(ValueError, match="not writable"):
-        tsn.TRexGVSSelector(view, y, trex_control=ctrl, verbose=False)
+        tsn.TRexGVSSelector(view, y, trex_control=_control(mode, solver=TENET), verbose=False)
     tik_ctrl = tsn.TRexTikhonovControlParameter()
     tik_ctrl.tikhonov_K = np.eye(d["p"])
     tik_ctrl.trex_ctrl.scaling_mode = mode                   # the nested base control of the run

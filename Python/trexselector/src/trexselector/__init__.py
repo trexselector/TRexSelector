@@ -309,6 +309,13 @@ class TRexGVSSelector(TRexSelector):
     T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled
     variable selection for groups of highly correlated variables.
 
+    The solver follows the penalty. On the EN track ``gvs_control.en_solver``
+    chooses it, ``TENET`` by default. On the IEN track the base control names
+    it, ``SolverTypeForTRex.TIENET`` or ``TIENET_AUG``, so ``gvs_type = IEN``
+    needs a base control with one of them. Every other solver raises
+    ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
+    a base control that is passed has to name a solver of the track.
+
     The coordinate-descent solvers of the two tracks, ``ENSolverType.TCDENET``
     and ``SolverTypeForTRex.TCDIENET``, are deprecated and will be removed in
     the next minor release: the selector raises ``FutureWarning`` for them.
@@ -326,8 +333,12 @@ class TRexGVSSelector(TRexSelector):
         Control parameters of the grouped variable selection. The defaults
         apply when it is omitted.
     trex_control : TRexControlParameter, optional
-        Control parameters of the T-Rex selector. The defaults apply when it
-        is omitted.
+        Control parameters of the T-Rex selector. When it is omitted, the
+        base control nested in ``gvs_control`` applies
+        (``gvs_control.trex_ctrl``, whose solver is TENET). A control that is
+        passed replaces the nested one as it is. On the EN track its
+        ``solver_type`` must be ``TENET`` or the solver of ``en_solver``, on
+        the IEN track ``TIENET`` or ``TIENET_AUG``.
     seed : int, default -1
         Random seed. A negative value gives a run that is not reproducible.
     verbose : bool, default True
@@ -343,44 +354,9 @@ class TRexGVSSelector(TRexSelector):
 
         if gvs_control is None:
             gvs_control = TRexGVSControlParameter()
-        if trex_control is None:
-            trex_control = TRexControlParameter()
 
-        # Solver selection mirrors the R surface:
-        #   EN  -> derived from en_solver (TENET / TENET_AUG / TCDENET);
-        #          trex_control.solver_type is ignored (warn on an explicit
-        #          non-matching value; TLARS is the default and cannot be
-        #          distinguished from an explicit choice, so it never warns).
-        #   IEN -> trex_control.solver_type IS the IEN-solver choice:
-        #          TIENET (native pathwise, default), TIENET_AUG, TCDIENET.
-        #          The default TLARS maps to TIENET; any other value warns
-        #          and falls back to TIENET (in the C++ glue).
-        _ien_family = (SolverTypeForTRex.TIENET, SolverTypeForTRex.TIENET_AUG,
-                       SolverTypeForTRex.TCDIENET)
-        if gvs_control.gvs_type == GVSType.IEN:
-            if trex_control.solver_type not in (SolverTypeForTRex.TLARS,) + _ien_family:
-                warnings.warn(
-                    f"trex_control.solver_type = {trex_control.solver_type.name} "
-                    f"is not an IEN-family solver; gvs_type = IEN accepts "
-                    f"TIENET, TIENET_AUG, or TCDIENET. Using TIENET.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-        else:
-            if gvs_control.en_solver == ENSolverType.TENET_AUG:
-                derived_solver = SolverTypeForTRex.TENET_AUG
-            elif gvs_control.en_solver == ENSolverType.TCDENET:
-                derived_solver = SolverTypeForTRex.TCDENET
-            else:
-                derived_solver = SolverTypeForTRex.TENET
-            if trex_control.solver_type not in (SolverTypeForTRex.TLARS, derived_solver):
-                warnings.warn(
-                    f"trex_control.solver_type = {trex_control.solver_type.name} is "
-                    f"ignored by TRexGVSSelector: gvs_type = EN "
-                    f"derives solver {derived_solver.name} from en_solver.",
-                    UserWarning,
-                    stacklevel=2,
-                )
+        # The core builds the control of the run and validates its solver:
+        # without trex_control the base control nested in gvs_control applies.
 
         # lambda2_method resolves by track in the C++ constructor: the struct
         # default CV_1SE_CCD becomes CV_1SE_IEN_CCD on the IEN track, and the
@@ -624,8 +600,10 @@ def gvs_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
     the probes run at its values times n - 1, and the pick is reported on that
     working scale (``grid_scale`` of the result holds the factor).
 
-    ``gvs_control`` and ``trex_control`` are taken as by ``TRexGVSSelector``,
-    and ``lambda_2`` of ``gvs_control`` is replaced per probe. ``X`` and ``y``
+    ``gvs_control`` and ``trex_control`` are taken as by ``TRexGVSSelector``:
+    without ``trex_control`` the base control nested in ``gvs_control``
+    applies, and a control that is passed has to name a solver of the track.
+    ``lambda_2`` of ``gvs_control`` is replaced per probe. ``X`` and ``y``
     are converted to Fortran-ordered float64 arrays once (no copy when they
     already are): every probe normalizes X in place and hands it back, so X is
     unchanged on return. A negative seed would draw fresh dummies per probe
@@ -633,8 +611,6 @@ def gvs_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
     """
     if gvs_control is None:
         gvs_control = TRexGVSControlParameter()
-    if trex_control is None:
-        trex_control = TRexControlParameter()
     if seed < 0:
         raise ValueError("seed must be non-negative: the probes share their dummies.")
     X = np.asfortranarray(X, dtype=np.float64)

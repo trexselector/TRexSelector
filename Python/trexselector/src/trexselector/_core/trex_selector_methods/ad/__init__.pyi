@@ -2099,7 +2099,7 @@ class TRexGVSControlParameter:
     @property
     def trex_ctrl(self) -> TRexControlParameter:
         """
-        Nested base T-Rex algorithmic control parameters (used directly by TRexSPCASelector; overridden by the separate trex_control argument in TRexGVSSelector).
+        Nested base T-Rex control, whose solver is TENET. It applies when TRexGVSSelector gets no trex_control argument, and that argument replaces it otherwise. On the EN track its solver_type stays TENET or names the solver of en_solver. On the IEN track it has to name TIENET or TIENET_AUG. TRexSPCASelector uses it directly.
         """
     @trex_ctrl.setter
     def trex_ctrl(self, arg0: TRexControlParameter) -> None:
@@ -2111,6 +2111,12 @@ class TRexGVSSelector(TRexSelector):
     
     Notes
     -----
+    The solver. On the EN track en_solver of the GVS control chooses it, TENET by default, and
+    the solver_type of the base control stays TENET or names the same solver. On the IEN track
+    the solver_type of the base control names it, TIENET or TIENET_AUG. Every other solver is
+    refused at construction, also TLARS, the default of TRexControlParameter, and the default
+    TENET of the nested base control on the IEN track.
+    
     L-loop strategies. The selector supports STANDARD, HCONCAT, SKIPL and SEEDED, and SEEDED
     equals STANDARD here. PERMUTATION and PERMUTATION_SEEDED are refused, because a row
     permutation destroys the covariance of the dummies within a cluster.
@@ -2130,13 +2136,15 @@ class TRexGVSSelector(TRexSelector):
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
     @typing.overload
-    def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+    def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. A negative seed
-        (default: -1) gives a run that is not reproducible.
+        Construct the GVS selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the
+        base control nested in gvs_control applies. A trex_control that is passed replaces it as it is, and
+        a solver that does not fit the track raises ValueError. A negative seed (default: -1) gives a run
+        that is not reproducible.
         """
     @typing.overload
-    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
@@ -2856,9 +2864,9 @@ def gamma_to_k(gamma: scipy.sparse.csc_matrix) -> scipy.sparse.csc_matrix:
     """
     Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma, a scipy.sparse matrix or a dense array. Returns a scipy.sparse.csc_matrix (p x p).
     """
-def gvs_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
+def gvs_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
     """
-    The power rule on the GVS selector: one FDR-controlled selection per value of grid for lambda_2, the ridge part of the elastic net or of the informed elastic net, with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1. gvs_control and trex_control are taken as by TRexGVSSelector, and lambda_2 of gvs_control is replaced per probe. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries. A negative seed is refused.
+    The power rule on the GVS selector: one FDR-controlled selection per value of grid for lambda_2, the ridge part of the elastic net or of the informed elastic net, with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1. gvs_control and trex_control are taken as by TRexGVSSelector (without trex_control the base control nested in gvs_control applies), and lambda_2 of gvs_control is replaced per probe. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries. A negative seed is refused.
     """
 def normalize_design(X: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, 1]"], scaling_mode: ScalingMode = ..., eps: typing.SupportsFloat | typing.SupportsIndex = 1e-06, n_threads: typing.SupportsInt | typing.SupportsIndex | None = None) -> dict:
     """

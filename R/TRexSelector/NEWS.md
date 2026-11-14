@@ -47,6 +47,15 @@
   `"TIKNET"` without a word, and every other solver gave a warning and `"TIKNET"`. Both are errors now,
   so a call that passes `trex_control(K = 10)` needs the solver in it. The deprecated `"TCDTIKNET"` is
   still accepted. The selections do not change.
+* `TRexGVSSelector` and `trex_gvs_lambda2_power_rule()` take the base control as C++ and Python do.
+  `control` defaults to `NULL`, which runs the defaults of `trex_control()` with the solver `"TENET"`. A
+  control that is passed is taken as it is and has to name a solver of the track: `"TENET"` or the
+  solver of `en_solver` for `gvs_type = "EN"`, and `"TIENET"` or `"TIENET_AUG"` for `gvs_type = "IEN"`.
+  Up to 2.0.1 the default `"TLARS"` of `trex_control()` gave the solver of the track without a word, and
+  every other solver gave a warning and was replaced. Both are errors now, so a call that passes
+  `trex_control(K = 10)` needs the solver in it, and `gvs_type = "IEN"` needs a base control,
+  `trex_control(solver = "TIENET", ...)`, where 2.0.1 ran `"TIENET"` on its own. The selections do not
+  change.
 
 ## Fixed
 

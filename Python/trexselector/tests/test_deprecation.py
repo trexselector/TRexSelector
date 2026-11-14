@@ -159,7 +159,8 @@ def test_grouped_selector_warns_on_both_tracks(data):
     gvs.en_solver = tsn.ENSolverType.TCDENET
     gvs.lambda_2 = 1.0
     _, record = _deprecations(
-        lambda: tsn.TRexGVSSelector(X.copy(order="F"), y, gvs_control=gvs, trex_control=_control(), verbose=False))
+        lambda: tsn.TRexGVSSelector(X.copy(order="F"), y, gvs_control=gvs, trex_control=_control("TENET"),
+                                    verbose=False))
     _assert_one(record, "ENSolverType.TCDENET", "ENSolverType.TENET")
 
     # Informed elastic-net track: the solver comes from the base control
@@ -171,13 +172,13 @@ def test_grouped_selector_warns_on_both_tracks(data):
                                     verbose=False))
     _assert_one(record, "SolverTypeForTRex.TCDIENET", "SolverTypeForTRex.TIENET")
 
-    # The defaults of both tracks raise none
-    for gvs_type in (tsn.GVSType.EN, tsn.GVSType.IEN):
+    # The homotopy solvers of both tracks raise none
+    for gvs_type, solver in ((tsn.GVSType.EN, "TENET"), (tsn.GVSType.IEN, "TIENET")):
         gvs = tsn.TRexGVSControlParameter()
         gvs.gvs_type = gvs_type
         gvs.lambda_2 = 1.0
         _, record = _deprecations(
-            lambda: tsn.TRexGVSSelector(X.copy(order="F"), y, gvs_control=gvs, trex_control=_control(),
+            lambda: tsn.TRexGVSSelector(X.copy(order="F"), y, gvs_control=gvs, trex_control=_control(solver),
                                         verbose=False))
         assert record == []
 

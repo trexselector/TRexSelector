@@ -54,13 +54,17 @@ linkage, cut at `corr_max`), draws its dummies per cluster and runs the T-ENET s
 `en_solver` (`ENSolverType.TENET` by default and `TENET_AUG`, the row-augmented form, which select
 the same variables). The elastic-net penalty $\lambda_2$ is fixed here. The group control is a
 `TRexGVSControlParameter`, the base control a `TRexControlParameter`, and `select()` returns a
-`GVSSelectionResult`.
+`GVSSelectionResult`. A base control that is passed has to name a solver of the selector, on this track
+`TENET`, because a fresh `TRexControlParameter()` names `TLARS`, which the selector refuses. Without a
+base control the one nested in the group control applies, `gvs_ctrl.trex_ctrl`, whose solver is `TENET`
+already.
 
 ```{code-cell} python
 gvs_ctrl = tsn.TRexGVSControlParameter()
 gvs_ctrl.gvs_type = tsn.GVSType.EN
 gvs_ctrl.lambda_2 = 1.0
 ctrl = tsn.TRexControlParameter()
+ctrl.solver_type = tsn.SolverTypeForTRex.TENET
 ctrl.K = 10
 
 gvs = tsn.TRexGVSSelector(X, y, tFDR=0.1, gvs_control=gvs_ctrl, trex_control=ctrl,
@@ -114,11 +118,12 @@ print("boundary_pick:    ", diag.boundary_pick)
 
 `gvs_type = GVSType.IEN` encodes the groups in the penalty. The groups come from `prior_groups` in
 the control (one label per variable, numbered 0 to $M - 1$ without gaps) or from the correlation
-clustering. The solver is set in `TRexControlParameter.solver_type`:
-`SolverTypeForTRex.TIENET` (default, the native pathwise form)
-or `TIENET_AUG` (row augmented). The IEN rules of `lambda2_method` (`CV_1SE_IEN_CCD`, the default on
-this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`) consume the group structure and
-return $\lambda_2$ on the solver scale. The penalty is left to the IEN rule here.
+clustering. The solver of this track is named in the base control, `TRexControlParameter.solver_type`:
+`SolverTypeForTRex.TIENET` (the native pathwise form) or `TIENET_AUG` (row augmented). The selector
+refuses every other solver there, so `gvs_type = GVSType.IEN` needs a base control. The IEN rules of
+`lambda2_method` (`CV_1SE_IEN_CCD`, the default on this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`,
+`CV_MIN_TIK_SVD`) consume the group structure and return $\lambda_2$ on the solver scale. The penalty
+is left to the IEN rule here.
 
 ```{code-cell} python
 ien_ctrl = tsn.TRexGVSControlParameter()

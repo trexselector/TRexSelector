@@ -171,7 +171,7 @@ test_that("GVS runs the CCD family: en_solver = TCDENET and IEN solver choices",
     fresh(), y, tFDR = 0.2, seed = 42, verbose = FALSE,
     gvs_control = trex_gvs_control(gvs_type = "EN", en_solver = "TCDENET",
                                    lambda_2 = 1.0),
-    control = trex_control(K = 5, cd_max_sweeps = cd_test_sweeps)
+    control = trex_control(solver = "TENET", K = 5, cd_max_sweeps = cd_test_sweeps)
   ))
   sel_en$select()
   expect_length(sel_en$selected_var, p)
@@ -185,24 +185,24 @@ test_that("GVS runs the CCD family: en_solver = TCDENET and IEN solver choices",
   sel_ien$select()
   expect_length(sel_ien$selected_var, p)
 
-  # EN track warns when control$solver conflicts with the en_solver axis.
-  expect_warning(
+  # EN track: a base control that names another solver than en_solver is refused.
+  expect_error(
     TRexGVSSelector$new(
       fresh(), y, tFDR = 0.2, seed = 42, verbose = FALSE,
       gvs_control = trex_gvs_control(gvs_type = "EN", lambda_2 = 1.0),
       control = trex_control(solver = "TCDENET", K = 5)
     ),
-    "derives solver"
+    "control\\$solver must be \"TENET\" for gvs_type = \"EN\""
   )
 
-  # IEN track warns on a non-IEN-family control$solver and falls back.
-  expect_warning(
+  # IEN track: a solver outside its family is refused.
+  expect_error(
     TRexGVSSelector$new(
       fresh(), y, tFDR = 0.2, seed = 42, verbose = FALSE,
       gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 1.0),
       control = trex_control(solver = "TOMP", K = 5)
     ),
-    "not an IEN-family solver"
+    "gvs_type = \"IEN\" needs a base control that names its solver"
   )
 })
 

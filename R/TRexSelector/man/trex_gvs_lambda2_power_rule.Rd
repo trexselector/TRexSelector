@@ -9,7 +9,7 @@ trex_gvs_lambda2_power_rule(
   y,
   tFDR = 0.1,
   gvs_control = trex_gvs_control(),
-  control = trex_control(),
+  control = NULL,
   seed = 0,
   grid = trex_default_lambda2_grid(),
   knee_tolerance = 1,
@@ -31,8 +31,10 @@ memory-mapped design needs \code{"readwrite"} mode for that, and
 (default: \code{trex_gvs_control()}); its \code{lambda_2} is replaced
 per probe, everything else is shared by every probe.}
 
-\item{control}{A control list from \code{\link{trex_control}()} (default:
-\code{trex_control()}), taken as by \code{\link{TRexGVSSelector}}.}
+\item{control}{A control list from \code{\link{trex_control}()}, or
+\code{NULL} (default), taken as by \code{\link{TRexGVSSelector}}: with
+\code{NULL} the base control of the C++ class applies, and a control
+that is passed has to name a solver of the track.}
 
 \item{seed}{Selector seed, the same for every probe (default: 0). A
 negative seed would draw fresh dummies per probe and is refused.}

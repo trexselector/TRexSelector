@@ -197,8 +197,10 @@ TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control)
 // Shared parser from rcpp_trex_selector.cpp
 extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
 
-// Shared parser from rcpp_trex_gvs.cpp
-extern TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control);
+// The control of a GVS run from the two R lists, from rcpp_trex_gvs.cpp
+extern TRexGVSControlParameter gvs_run_control(
+    const Rcpp::List& gvs_control_list,
+    const Rcpp::Nullable<Rcpp::List>& trex_control_list);
 
 // Shared tuner-diagnostics converter from rcpp_trex_gvs.cpp
 extern Rcpp::List lambda2_cv_diagnostics_to_list(
@@ -496,7 +498,7 @@ Rcpp::List trex_gvs_lambda2_power_rule_impl(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List gvs_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     std::vector<double> grid,
     double knee_tolerance,
@@ -504,8 +506,7 @@ Rcpp::List trex_gvs_lambda2_power_rule_impl(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = merge_gvs_control(
-        parse_gvs_parameter(gvs_control_list), parse_control_parameter(trex_control_list));
+    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     return power_rule_result_to_list(gvs_lambda2_power_rule(
         X_map, y_map, tFDR, gvs_ctrl, seed,
         power_rule_config(std::move(grid), knee_tolerance), verbose));
@@ -520,15 +521,14 @@ Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List gvs_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     std::vector<double> grid,
     double knee_tolerance,
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = merge_gvs_control(
-        parse_gvs_parameter(gvs_control_list), parse_control_parameter(trex_control_list));
+    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     return power_rule_result_to_list(gvs_lambda2_power_rule(
         mapped_design_for(*X_ptr, gvs_ctrl.trex_ctrl), y_map, tFDR, gvs_ctrl, seed,
         power_rule_config(std::move(grid), knee_tolerance), verbose));

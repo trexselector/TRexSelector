@@ -771,6 +771,7 @@ def test_the_gvs_power_rule_runs_the_grid():
     gvs = tsn.TRexGVSControlParameter()
     gvs.prior_groups = list(groups)
     base = tsn.TRexControlParameter()
+    base.solver_type = tsn.SolverTypeForTRex.TENET      # a base control names the solver of the track
     base.K = 5
     base.max_dummy_multiplier = 2
     grid = [0.0, 1.0, 10.0]

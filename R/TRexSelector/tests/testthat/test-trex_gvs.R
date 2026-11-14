@@ -2,6 +2,11 @@
 # TRexGVSSelector - Unit tests
 # =======================================================================================
 
+# A base control for the GVS selector: a control that is passed names a solver of the track.
+.gvs_base <- function(gvs_type = "EN", ...) {
+  trex_control(solver = if (gvs_type == "IEN") "TIENET" else "TENET", ...)
+}
+
 test_that("TRexGVSSelector instantiation and dimensional validation work", {
 
   set.seed(42)
@@ -53,7 +58,7 @@ test_that("TRexGVSSelector executes correctly with valid data", {
   # Instantiate TRex selector
   selector <- TRexGVSSelector$new(X, y, tFDR = 0.1, verbose = FALSE,
                                   gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                                  control = trex_control(K = 5))
+                                  control = .gvs_base("IEN", K = 5))
 
   # Execute variable selection
   selector$select()
@@ -84,8 +89,8 @@ test_that("TRexGVSSelector handles concurrent execution properly (OpenMP)", {
   selector_openmp <- expect_no_error(
     TRexGVSSelector$new(X, y,
                         gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                        control = trex_control(K = 5, parallel_rnd_experiments = TRUE, max_inner_threads = 2,
-                                              max_outer_threads = 2),
+                        control = .gvs_base("IEN", K = 5, parallel_rnd_experiments = TRUE,
+                                            max_inner_threads = 2, max_outer_threads = 2),
                         verbose = FALSE)
   )
 
@@ -113,7 +118,7 @@ test_that("TRexGVSSelector correctly guards against invalid parameters", {
   # Unsupported L-Loop Strategy
   expect_error(
     TRexGVSSelector$new(X, y, gvs_control = trex_gvs_control(gvs_type = "EN"),
-                        control = trex_control(lloop_strategy = "PERMUTATION"), verbose = FALSE),
+                        control = .gvs_base("EN", lloop_strategy = "PERMUTATION"), verbose = FALSE),
     "are not supported"
   )
 
@@ -141,42 +146,66 @@ test_that("TRexGVSSelector correctly guards against invalid parameters", {
 })
 
 
-test_that("TRexGVSSelector warns when control$solver does not match the derived solver", {
+test_that("TRexGVSSelector refuses a base control whose solver does not fit the track", {
   set.seed(42)
   n <- 50
   p <- 10
+  X <- matrix(rnorm(n * p), n, p)
   y <- rnorm(n)
-  # A live selector holds its X buffer normalized in place, so each selector
-  # needs its own copy (see the shared-buffer claim guard). fresh() supplies one.
-  fresh <- function() matrix(rnorm(n * p), n, p)
+  X0 <- X + 0
+  new_gvs <- function(gvs_control, control = NULL) {
+    TRexGVSSelector$new(X, y, gvs_control = gvs_control, control = control, verbose = FALSE)
+  }
+  en <- trex_gvs_control(gvs_type = "EN")
+  aug <- trex_gvs_control(gvs_type = "EN", en_solver = "TENET_AUG")
+  ien <- trex_gvs_control(gvs_type = "IEN")
 
-  # IEN: control$solver now selects the IEN solver, so a non-IEN-family
-  # value warns and falls back to TIENET_AUG; an IEN-family value is honored
-  # silently.
-  expect_warning(
-    TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                        control = trex_control(solver = "TOMP"), verbose = FALSE),
-    "not an IEN-family solver"
-  )
-  expect_no_warning(
-    quiet_cd(TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                                 control = trex_control(solver = "TCDIENET"), verbose = FALSE))
-  )
-  expect_warning(
-    TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "EN"),
-                        control = trex_control(solver = "TLASSO"), verbose = FALSE),
-    'derives solver "TENET"'
-  )
+  # EN: the base control keeps "TENET" or names the solver of en_solver. Every
+  # other solver is an error, also "TLARS", the default of trex_control()
+  for (solver in c("TLARS", "TLASSO", "TOMP", "TIENET", "TENET_AUG")) {
+    expect_error(new_gvs(en, trex_control(solver = solver)),
+                 "control\\$solver must be \"TENET\" for gvs_type = \"EN\". Got: \"", info = solver)
+    expect_error(new_gvs(en, trex_control(solver = solver)), solver, fixed = TRUE, info = solver)
+  }
+  expect_error(new_gvs(en, trex_control()), "leave control out")
+  expect_error(new_gvs(aug, trex_control(solver = "TLARS")),
+               "control\\$solver must be \"TENET\" or \"TENET_AUG\" for gvs_type = \"EN\"")
 
-  # Default solver ("TLARS") and matching solver stay silent
-  expect_no_warning(
-    TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                        verbose = FALSE)
-  )
-  expect_no_warning(
-    TRexGVSSelector$new(fresh(), y, gvs_control = trex_gvs_control(gvs_type = "EN"),
-                        control = trex_control(solver = "TENET"), verbose = FALSE)
-  )
+  # IEN: the base control names the solver, so the track needs a base control
+  for (solver in c("TLARS", "TOMP", "TENET", "TENET_AUG")) {
+    expect_error(new_gvs(ien, trex_control(solver = solver)),
+                 "gvs_type = \"IEN\" needs a base control that names its solver", info = solver)
+  }
+  expect_error(new_gvs(ien), "No control was passed")
+
+  # The power rule takes the two controls the same way
+  expect_error(trex_gvs_lambda2_power_rule(X, y, gvs_control = en, control = trex_control(), grid = c(0, 1)),
+               "control\\$solver must be \"TENET\"")
+  expect_error(trex_gvs_lambda2_power_rule(X, y, gvs_control = ien, grid = c(0, 1)), "No control was passed")
+
+  # No selector was built, so the design is untouched
+  expect_identical(X, X0)
+
+  # What fits the track is taken without a warning
+  fits <- list(list(en, NULL), list(en, trex_control(solver = "TENET")),
+               list(aug, NULL), list(aug, trex_control(solver = "TENET")),
+               list(aug, trex_control(solver = "TENET_AUG")),
+               list(ien, trex_control(solver = "TIENET")), list(ien, trex_control(solver = "TIENET_AUG")))
+  for (case in fits) {
+    expect_no_warning(new_gvs(case[[1]], case[[2]])$restore())
+  }
+  expect_no_warning(quiet_cd(new_gvs(ien, trex_control(solver = "TCDIENET"))$restore()))
+  expect_equal(X, X0, tolerance = 1e-12)
+
+  # Without a base control the one of the C++ class applies, whose solver is
+  # TENET: the run equals the one with the defaults of trex_control() and TENET
+  run <- function(control) {
+    s <- TRexGVSSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
+                             gvs_control = trex_gvs_control(lambda_2 = 1), control = control)
+    s$select()
+    s$selected_var
+  }
+  expect_identical(run(NULL), run(trex_control(solver = "TENET")))
 })
 
 
@@ -248,7 +277,7 @@ test_that("TRexGVSSelector behaves memory safe with memory mapping enabled", {
   # Use use_memory_mapping = TRUE to confirm tempdir() doesn't crash
   selector <- TRexGVSSelector$new(X, y, verbose = FALSE,
                                   gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                                  control = trex_control(K = 3, use_memory_mapping = TRUE))
+                                  control = .gvs_base("IEN", K = 3, use_memory_mapping = TRUE))
   selector$select()
 
   res_indices <- selector$selected_indices
@@ -269,7 +298,7 @@ test_that("TRexGVSSelector selected_var and selected_indices are consistent (1-b
   for (gvs in c("EN", "IEN")) {
     sel <- TRexGVSSelector$new(X, y, tFDR = 0.1, verbose = FALSE,
                                gvs_control = trex_gvs_control(gvs_type = gvs),
-                               control = trex_control(K = 3))
+                               control = .gvs_base(gvs, K = 3))
     sel$select()
 
     idx <- sel$selected_indices
@@ -293,7 +322,7 @@ test_that("TRexGVSSelector phi_prime is at most 1 and phi_mat has correct dimens
 
   selector <- TRexGVSSelector$new(X, y, tFDR = 0.1, verbose = FALSE,
                                   gvs_control = trex_gvs_control(gvs_type = "IEN"),
-                                  control = trex_control(K = 3))
+                                  control = .gvs_base("IEN", K = 3))
   selector$select()
 
   phi_p <- selector$phi_prime
@@ -319,7 +348,7 @@ test_that("TRexGVSSelector GVS-specific fields have valid values", {
   for (gvs in c("EN", "IEN")) {
     sel <- TRexGVSSelector$new(X, y, verbose = FALSE,
                                gvs_control = trex_gvs_control(gvs_type = gvs),
-                               control = trex_control(K = 3))
+                               control = .gvs_base(gvs, K = 3))
     sel$select()
 
     expect_equal(sel$gvs_type, gvs, label = paste(gvs, "gvs_type roundtrip"))
@@ -468,7 +497,7 @@ test_that("TRexGVSSelector names the origin of its groups and the supplied lambd
 
   s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
                            gvs_control = trex_gvs_control(groups = rep(1:4, each = 3), lambda_2 = 1),
-                           control = trex_control(K = 3))
+                           control = .gvs_base(K = 3))
   s$select()
   expect_identical(s$hc_method_used, "prior")
   expect_equal(s$max_clusters, 4)
@@ -479,7 +508,7 @@ test_that("TRexGVSSelector names the origin of its groups and the supplied lambd
   for (linkage in c("single", "complete", "average", "wpgma")) {
     s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
                              gvs_control = trex_gvs_control(hc_linkage = linkage, lambda_2 = 1),
-                             control = trex_control(K = 3))
+                             control = .gvs_base(K = 3))
     s$select()
     expect_identical(s$hc_method_used, linkage)
     expect_length(s$group_labels, 0L)
@@ -506,7 +535,7 @@ test_that("the controls take the linkage in lower case and accept the names of 2
   X <- matrix(rnorm(n * p), n, p)
   y <- X[, 1] * 3 + X[, 5] * -2 + rnorm(n)
   run_gvs <- function(gc) {
-    s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE, gvs_control = gc, control = trex_control(K = 3))
+    s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE, gvs_control = gc, control = .gvs_base(K = 3))
     s$select()
     list(s$selected_var, s$groups, s$hc_method_used)
   }
@@ -544,7 +573,7 @@ test_that("TRexGVSSelector refuses the permutation strategies and reads SEEDED a
   run <- function(strategy) {
     s <- TRexGVSSelector$new(X, y, seed = 1, verbose = FALSE,
                              gvs_control = trex_gvs_control(lambda_2 = 1),
-                             control = trex_control(K = 3, lloop_strategy = strategy))
+                             control = .gvs_base(K = 3, lloop_strategy = strategy))
     s$select()
     s$selected_var
   }
@@ -647,7 +676,7 @@ test_that("GVS-IEN auto-calibrates lambda_2 with the IEN-geometry default", {
   sel <- TRexGVSSelector$new(
     X, y, tFDR = 0.2, seed = 42, verbose = FALSE,
     gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = -1),
-    control = trex_control(K = 5)
+    control = .gvs_base("IEN", K = 5)
   )
   sel$select()
   expect_length(sel$selected_var, p)
@@ -674,7 +703,7 @@ test_that("the IEN tuner grids pass through and the tuner diagnostics are expose
     X + 0, y, tFDR = 0.2, seed = 42, verbose = FALSE,
     gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 1.0,
                                    groups = groups),
-    control = trex_control(K = 5))
+    control = .gvs_base("IEN", K = 5))
   sel_fixed$select()
   expect_false(sel_fixed$lambda2_cv_diagnostics$ran)
 
@@ -692,7 +721,7 @@ test_that("the IEN tuner grids pass through and the tuner diagnostics are expose
   expect_identical(ctrl$cv_dfmax_ratio, 0.9)
   sel_cv <- TRexGVSSelector$new(
     X + 0, y, tFDR = 0.2, seed = 42, verbose = FALSE,
-    gvs_control = ctrl, control = trex_control(K = 5))
+    gvs_control = ctrl, control = .gvs_base("IEN", K = 5))
   sel_cv$select()
   diag <- sel_cv$lambda2_cv_diagnostics
   expect_true(diag$ran)
@@ -734,7 +763,7 @@ test_that("the GVS power rule runs the grid and keeps the contract", {
   y <- as.numeric(rowSums(X[, 1:3]) * 3 + rnorm(n))
   X0 <- X + 0
   gvs <- trex_gvs_control(groups = rep(1:6, each = 5))
-  base <- trex_control(K = 5, max_dummy_multiplier = 2)
+  base <- .gvs_base(K = 5, max_dummy_multiplier = 2)
   grid <- c(10, 0, 1, 10)
   rule <- function(seed = 3, ...) {
     trex_gvs_lambda2_power_rule(X, y, tFDR = 0.2, gvs_control = gvs, control = base,
@@ -767,8 +796,8 @@ test_that("the GVS power rule runs the grid and keeps the contract", {
 
   # Under ZSCORE the probes run at the grid times n - 1 (the equal selections are pinned in C++)
   z_rule <- trex_gvs_lambda2_power_rule(X, y, tFDR = 0.2, gvs_control = gvs, seed = 3, grid = grid,
-                                        control = trex_control(K = 5, max_dummy_multiplier = 2,
-                                                               scaling_mode = "ZSCORE"))
+                                        control = .gvs_base(K = 5, max_dummy_multiplier = 2,
+                                                            scaling_mode = "ZSCORE"))
   expect_identical(z_rule$grid_scale, n - 1)
   expect_equal(z_rule$grid, c(0, 1, 10) * (n - 1))
   expect_identical(z_rule$lambda2, z_rule$grid[z_rule$index])

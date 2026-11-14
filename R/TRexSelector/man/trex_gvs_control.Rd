@@ -125,18 +125,18 @@ A named list for use in TRexGVSSelector.
 }
 \description{
 Build a control list for the grouped variable selection of
-TRexGVSSelector. The solver is determined automatically from \code{gvs_type}:
-"EN" selects the T-Elastic-Net solver via \code{en_solver} — TENET
-(default), with TENET_AUG and TCDENET as optional variants; "IEN" honors
-an IEN-family \code{solver} field in \code{\link{trex_control}} —
-TIENET (default, native pathwise), with TIENET_AUG and TCDIENET as
-optional variants. For \code{gvs_type = "EN"} the \code{solver} field
-is ignored. TCDIENET is not finally developed: its sweeps grow with
-\code{lambda_2} and on saturating designs, and a solve that does not
-converge within \code{cd_max_sweeps} raises an error. TCDENET and
-TCDIENET are deprecated and will be removed with the coordinate-descent
-family in TRexSelector 2.1.0: the selector raises a deprecation warning
-for them. Use TENET and TIENET.
+\code{\link{TRexGVSSelector}}. The solver follows \code{gvs_type}. For
+"EN" \code{en_solver} chooses it: TENET (default), TENET_AUG or the
+deprecated TCDENET. For "IEN" the \code{solver} of
+\code{\link{trex_control}} names it, TIENET (native pathwise),
+TIENET_AUG or the deprecated TCDIENET, so the IEN track needs a base
+control with one of them. The selector refuses a base control whose
+solver does not fit the track. TCDIENET is not finally developed: its
+sweeps grow with \code{lambda_2} and on saturating designs, and a solve
+that does not converge within \code{cd_max_sweeps} raises an error.
+TCDENET and TCDIENET are deprecated and will be removed with the
+coordinate-descent family in TRexSelector 2.1.0: the selector raises a
+deprecation warning for them. Use TENET and TIENET.
 }
 \examples{
 trex_gvs_control()

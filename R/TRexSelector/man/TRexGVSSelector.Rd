@@ -145,7 +145,7 @@ supplied, else the linkage of the clustering, \code{"single"},
   seed = -1,
   verbose = TRUE,
   gvs_control = trex_gvs_control(),
-  control = trex_control()
+  control = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -163,18 +163,19 @@ writes nothing and \code{"readonly"} mode suffices.}
 reproducible.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{gvs_control}}{A GVS control list from \code{\link{trex_gvs_control}()} (default:
-\code{trex_gvs_control()}). For \code{gvs_type = "EN"} the solver is
-derived from \code{en_solver} (TENET, TENET_AUG, or TCDENET) and the
-\code{solver} field in \code{control} is ignored (a warning is issued
-if it is set to a non-matching solver). For \code{gvs_type = "IEN"}
-the \code{solver} field selects the IEN solver: "TIENET"
-(default, native pathwise), "TIENET_AUG", or "TCDIENET" (not finally
-developed, see \code{\link{trex_gvs_control}}). "TCDENET" and
-"TCDIENET" are deprecated and will be removed in TRexSelector 2.1.0:
-the selector raises a deprecation warning for them.}
-      \item{\code{control}}{A control list from \code{\link{trex_control}()} (default:
-\code{trex_control()}). For \code{gvs_type = "EN"} the \code{solver}
-field is overridden; for "IEN" it selects the IEN-family solver.}
+\code{trex_gvs_control()}). For \code{gvs_type = "EN"} its \code{en_solver}
+chooses the solver, "TENET" by default. "TCDENET" and "TCDIENET" are
+deprecated and will be removed in TRexSelector 2.1.0: the selector raises a
+deprecation warning for them.}
+      \item{\code{control}}{A control list from \code{\link{trex_control}()}, or \code{NULL}
+(default). With \code{NULL} the base control of the C++ class applies: the
+defaults of \code{trex_control()} with the solver "TENET". A control that is
+passed is taken as it is, so it has to name a solver of the track. For
+\code{gvs_type = "EN"} its \code{solver} must be "TENET" or the solver of
+\code{en_solver}. For \code{gvs_type = "IEN"} it must be "TIENET" (native
+pathwise) or "TIENET_AUG" (row-augmented), so the IEN track needs a base
+control: \code{trex_control(solver = "TIENET", ...)}. Every other solver is an
+error, also "TLARS", the default of \code{trex_control()}.}
     }
     \if{html}{\out{</div>}}
   }

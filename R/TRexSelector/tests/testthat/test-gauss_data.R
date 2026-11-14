@@ -75,7 +75,8 @@ test_that("TRexGVSSelector (EN and IEN) runs on Gauss_data and returns valid sel
   for (gvs in c("EN", "IEN")) {
     sel <- TRexGVSSelector$new(X_g, y_g, tFDR = 0.10, verbose = FALSE,
                                gvs_control = trex_gvs_control(gvs_type = gvs),
-                               control = trex_control(K = 20))
+                               control = trex_control(solver = if (gvs == "IEN") "TIENET" else "TENET",
+                                                      K = 20))
     sel$select()
 
     idx <- sel$selected_indices

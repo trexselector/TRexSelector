@@ -16,6 +16,39 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The GVS selectors of R and Python refuse a solver that does not fit, as C++ does
+
+Finding 1 of TIKHONOV_findings.md, second half (Fabian, 2026-11-14: "we fix now"). His three decisions
+of the same day: the base control follows the Tikhonov pattern, TLARS is refused, and on the IEN track
+the solver has to be named, with no change in C++.
+
+- C++, unchanged. The GVS control nests the base control, whose solver is TENET. On the EN track the
+  constructor derives the solver from `en_solver`: the nested value has to be TENET or that solver, a
+  conflicting elastic-net solver and every solver outside the family (TLARS, TOMP) throw. On the IEN
+  track the nested solver has to be TIENET, TIENET_AUG or TCDIENET, so `gvs_type = IEN` with an
+  untouched control throws.
+- Before, in R and Python. The base control came as a second argument with the solver TLARS. The
+  bindings set the solver themselves: on EN from `en_solver`, on IEN an IEN solver was kept and
+  everything else became TIENET. TLARS passed without a word, another solver gave a warning. So the
+  bindings changed the control they were given, and `gvs_type = "IEN"` alone ran TIENET.
+- Now. R takes `control = NULL` and Python `trex_control = None` by default, and the base control
+  nested in the C++ GVS control applies. A control that is passed replaces it as it is. The glue of
+  both surfaces (`merge_gvs_control()`) no longer touches the solver, and the C++ constructor derives
+  or refuses it. `TRexGVSSelector` and the GVS power rule follow this rule on both surfaces.
+- R words the refusal itself, because the C++ messages name `solver_type` and `trex_ctrl`:
+  `control$solver must be "TENET" for gvs_type = "EN"` with the solver it got and the way out, and
+  `gvs_type = "IEN" needs a base control that names its solver`. Python raises the ValueError of C++.
+- For code written for R 2.0.1 and Python 1.0.0: a base control without a solver is an error for the
+  GVS selector, and the IEN track needs a base control with TIENET or TIENET_AUG. NEWS says so. The
+  selections do not change, because every run that worked before ran the same solver.
+- Tests. R: five solvers outside the track on EN and four on IEN are refused for the selector and the
+  rule and leave the design untouched, what fits runs without a warning, `control = NULL` gives the
+  run of `trex_control(solver = "TENET")`. Python: the same refusals on the two entry points, the
+  nested control applies and is not changed, and IEN runs with the solver named on the nested control.
+  R tests 2,199, Python 798.
+- Vignette "T-Rex GVS" and guide page 05 of Python name the solver in their base controls and no longer
+  call TIENET the default of the IEN track. The C++ page needed no change.
+
 #### The Python record of the power rule flags the upper end of the grid, as C++ does
 
 Found while the R help of the power rule was written from the C++ record. A text of the Python

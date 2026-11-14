@@ -261,7 +261,7 @@ test_that("the derived selectors run once as well", {
                                        control = trex_control(K = 5)),
     gvs = function() TRexGVSSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
                                          gvs_control = trex_gvs_control(lambda_2 = 1),
-                                         control = trex_control(K = 5)),
+                                         control = trex_control(solver = "TENET", K = 5)),
     tikhonov = function() TRexTikhonovSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
                                                    tik_control = trex_tikhonov_control(
                                                      tikhonov_K = diag(p), lambda_2 = 1),

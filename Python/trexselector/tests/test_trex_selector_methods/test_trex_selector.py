@@ -633,8 +633,8 @@ def test_the_derived_selectors_run_once(fast_control):
     def gvs():
         ctrl = trexselector.TRexGVSControlParameter()
         ctrl.lambda_2 = 1.0
-        return trexselector.TRexGVSSelector(X, y, tFDR=0.2, gvs_control=ctrl, trex_control=fast_control,
-                                            seed=3, verbose=False)
+        ctrl.trex_ctrl.K = fast_control.K               # the nested base control of the run
+        return trexselector.TRexGVSSelector(X, y, tFDR=0.2, gvs_control=ctrl, seed=3, verbose=False)
 
     def tikhonov():
         ctrl = trexselector.TRexTikhonovControlParameter()

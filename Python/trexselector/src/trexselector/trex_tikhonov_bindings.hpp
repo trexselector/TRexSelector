@@ -410,7 +410,8 @@ inline void bind_trex_tikhonov(py::module& m) {
 
     m.def("gvs_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
-             const TRexGVSControlParameter& gvs_control, const TRexControlParameter& trex_control,
+             const TRexGVSControlParameter& gvs_control,
+             const std::optional<TRexControlParameter>& trex_control,
              int seed, const std::vector<double>& grid, double knee_tolerance, bool verbose) {
               // Every probe normalizes X in place and hands it back on return,
               // so X and y are read through maps and never copied.
@@ -424,7 +425,7 @@ inline void bind_trex_tikhonov(py::module& m) {
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
           py::arg("gvs_control") = TRexGVSControlParameter(),
-          py::arg("trex_control") = TRexControlParameter(),
+          py::arg("trex_control") = py::none(),
           py::arg("seed") = 0,
           py::arg("grid") = tik::default_lambda2_grid(),
           py::arg("knee_tolerance") = 1.0, py::arg("verbose") = false,
@@ -432,9 +433,10 @@ inline void bind_trex_tikhonov(py::module& m) {
           "ridge part of the elastic net or of the informed elastic net, with the same seed (common dummies), then "
           "the smallest lambda_2 whose selection is within knee_tolerance selections of the largest. The grid is "
           "stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1. "
-          "gvs_control and trex_control are taken as by TRexGVSSelector, and lambda_2 of gvs_control is replaced "
-          "per probe. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and "
-          "hands it back. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe "
+          "gvs_control and trex_control are taken as by TRexGVSSelector (without trex_control the base control "
+          "nested in gvs_control applies), and lambda_2 of gvs_control is replaced per probe. X (F-contiguous "
+          "float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back. The pick "
+          "depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe "
           "carries. A negative seed is refused.");
 
     m.def("tikhonov_lambda2_power_rule",

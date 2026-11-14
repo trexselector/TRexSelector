@@ -158,7 +158,8 @@ test_that("a readonly mmap_matrix serves every selector under NONE", {
     TRexDASelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)$select()
   )
   expect_no_error(
-    TRexGVSSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE, control = none)$select()
+    TRexGVSSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                        control = modifyList(none, list(solver = "TENET")))$select()
   )
   expect_no_error(
     TRexTikhonovSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE,
@@ -196,7 +197,8 @@ test_that("a readonly mmap_matrix is refused where the design is written", {
     expect_error(TRexSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl),
                  "ReadOnly mode.*scaling mode NONE")
     expect_error(TRexDASelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")
-    expect_error(TRexGVSSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")
+    expect_error(TRexGVSSelector$new(d$ro, d$y, verbose = FALSE,
+                                     control = modifyList(ctrl, list(solver = "TENET"))), "ReadOnly")
     expect_error(
       TRexTikhonovSelector$new(d$ro, d$y, verbose = FALSE,
                                tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5),

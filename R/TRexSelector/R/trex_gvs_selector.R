@@ -1,38 +1,33 @@
-# The base control of a GVS run, with the warnings of the solver choice.
-# EN: the solver comes from en_solver. control$solver is ignored, with a
-# warning unless it is "TLARS", the default of trex_control(), or matches.
-# IEN: control$solver names the solver ("TIENET", "TIENET_AUG", "TCDIENET").
-# "TLARS" gives "TIENET", and any other value warns and gives "TIENET".
-.gvs_base_control <- function(gvs_control, control) {
-  if (gvs_control$gvs_type == "IEN") {
-    ien_family <- c("TIENET", "TIENET_AUG", "TCDIENET")
-    if (!(control$solver %in% c("TLARS", ien_family))) {
-      warning("control$solver = \"", control$solver,
-              "\" is not an IEN-family solver; gvs_type = \"IEN\" ",
-              "accepts \"TIENET\", \"TIENET_AUG\", or \"TCDIENET\". ",
-              "Using \"TIENET\".")
-      control$solver <- "TLARS"  # glue defaults it to TIENET
-    }
-    .warn_cd_solver_name(control$solver)
+# The solver of a GVS run, checked in the words of R. NULL stands for the base
+# control of the C++ class, whose solver is "TENET". Nothing is changed: EN
+# takes its solver from en_solver, IEN needs it named in the base control.
+.check_gvs_solver <- function(gvs_control, control) {
+  solver <- if (is.null(control)) "TENET" else control$solver
+  got <- if (is.null(control)) {
+    "No control was passed."
   } else {
-    derived_solver <- if (identical(gvs_control$en_solver, "TENET_AUG")) {
-      "TENET_AUG"
-    } else if (identical(gvs_control$en_solver, "TCDENET")) {
-      "TCDENET"
-    } else {
-      "TENET"
+    paste0("Got: \"", paste(format(solver), collapse = ", "), "\".")
+  }
+  named <- is.character(solver) && length(solver) == 1L
+  if (gvs_control$gvs_type == "IEN") {
+    if (!named || !(solver %in% c("TIENET", "TIENET_AUG", "TCDIENET"))) {
+      stop("gvs_type = \"IEN\" needs a base control that names its solver, ",
+           "control = trex_control(solver = \"TIENET\", ...) or ",
+           "\"TIENET_AUG\". ", got)
     }
-    if (!(control$solver %in% c("TLARS", derived_solver))) {
-      warning("control$solver = \"", control$solver,
-              "\" is ignored by TRexGVSSelector: gvs_type = \"EN\" ",
-              "derives solver \"", derived_solver,
-              "\" from en_solver.")
+    .warn_cd_solver_name(solver)
+  } else {
+    fits <- unique(c("TENET", gvs_control$en_solver))
+    if (!named || !(solver %in% fits)) {
+      stop("control$solver must be ", paste0("\"", fits, "\"", collapse = " or "),
+           " for gvs_type = \"EN\". ", got, " The elastic-net solver is chosen ",
+           "with en_solver of trex_gvs_control(). trex_control() names ",
+           "\"TLARS\" by default, so pass trex_control(solver = \"TENET\", ...), ",
+           "or leave control out to run the default control.")
     }
-    # The C++ glue derives solver_type from en_solver regardless.
-    control$solver <- "TLARS"
     .warn_cd_solver_name(gvs_control$en_solver, "en_solver")
   }
-  control
+  invisible(NULL)
 }
 
 # One group entry per variable, checked with the name of the R argument.
@@ -103,26 +98,27 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     #'   reproducible.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param gvs_control A GVS control list from \code{\link{trex_gvs_control}()} (default:
-    #'   \code{trex_gvs_control()}). For \code{gvs_type = "EN"} the solver is
-    #'   derived from \code{en_solver} (TENET, TENET_AUG, or TCDENET) and the
-    #'   \code{solver} field in \code{control} is ignored (a warning is issued
-    #'   if it is set to a non-matching solver). For \code{gvs_type = "IEN"}
-    #'   the \code{solver} field selects the IEN solver: "TIENET"
-    #'   (default, native pathwise), "TIENET_AUG", or "TCDIENET" (not finally
-    #'   developed, see \code{\link{trex_gvs_control}}). "TCDENET" and
-    #'   "TCDIENET" are deprecated and will be removed in TRexSelector 2.1.0:
-    #'   the selector raises a deprecation warning for them.
-    #' @param control A control list from \code{\link{trex_control}()} (default:
-    #'   \code{trex_control()}). For \code{gvs_type = "EN"} the \code{solver}
-    #'   field is overridden; for "IEN" it selects the IEN-family solver.
+    #'   \code{trex_gvs_control()}). For \code{gvs_type = "EN"} its \code{en_solver}
+    #'   chooses the solver, "TENET" by default. "TCDENET" and "TCDIENET" are
+    #'   deprecated and will be removed in TRexSelector 2.1.0: the selector raises a
+    #'   deprecation warning for them.
+    #' @param control A control list from \code{\link{trex_control}()}, or \code{NULL}
+    #'   (default). With \code{NULL} the base control of the C++ class applies: the
+    #'   defaults of \code{trex_control()} with the solver "TENET". A control that is
+    #'   passed is taken as it is, so it has to name a solver of the track. For
+    #'   \code{gvs_type = "EN"} its \code{solver} must be "TENET" or the solver of
+    #'   \code{en_solver}. For \code{gvs_type = "IEN"} it must be "TIENET" (native
+    #'   pathwise) or "TIENET_AUG" (row-augmented), so the IEN track needs a base
+    #'   control: \code{trex_control(solver = "TIENET", ...)}. Every other solver is an
+    #'   error, also "TLARS", the default of \code{trex_control()}.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,
                           verbose = TRUE,
                           gvs_control = trex_gvs_control(),
-                          control = trex_control()) {
+                          control = NULL) {
 
-      control <- .gvs_base_control(gvs_control, control)
+      .check_gvs_solver(gvs_control, control)
 
       # lambda_2 == 0 is the degenerate no-ridge case, NOT automatic CV
       # (the sentinel for that is lambda_2 < 0). A user passing exactly 0
@@ -264,8 +260,10 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
 #' @param gvs_control A GVS control list from \code{\link{trex_gvs_control}()}
 #'   (default: \code{trex_gvs_control()}); its \code{lambda_2} is replaced
 #'   per probe, everything else is shared by every probe.
-#' @param control A control list from \code{\link{trex_control}()} (default:
-#'   \code{trex_control()}), taken as by \code{\link{TRexGVSSelector}}.
+#' @param control A control list from \code{\link{trex_control}()}, or
+#'   \code{NULL} (default), taken as by \code{\link{TRexGVSSelector}}: with
+#'   \code{NULL} the base control of the C++ class applies, and a control
+#'   that is passed has to name a solver of the track.
 #' @param seed Selector seed, the same for every probe (default: 0). A
 #'   negative seed would draw fresh dummies per probe and is refused.
 #' @param grid lambda_2 candidates, stated for columns of unit norm, sorted
@@ -309,13 +307,13 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
 trex_gvs_lambda2_power_rule <- function(X, y,
                                         tFDR = 0.1,
                                         gvs_control = trex_gvs_control(),
-                                        control = trex_control(),
+                                        control = NULL,
                                         seed = 0,
                                         grid = trex_default_lambda2_grid(),
                                         knee_tolerance = 1,
                                         verbose = FALSE) {
   .check_power_rule_arguments(seed, grid, knee_tolerance)
-  control <- .gvs_base_control(gvs_control, control)
+  .check_gvs_solver(gvs_control, control)
   .check_gvs_groups_length(gvs_control, X)
   y <- .as_double_vector(y)
   if (inherits(X, "MemoryMappedMatrix")) {
