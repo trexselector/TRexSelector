@@ -265,7 +265,7 @@ test_that("the derived selectors run once as well", {
     tikhonov = function() TRexTikhonovSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
                                                    tik_control = trex_tikhonov_control(
                                                      tikhonov_K = diag(p), lambda_2 = 1),
-                                                   control = trex_control(K = 5))
+                                                   control = trex_control(solver = "TIKNET", K = 5))
   )
   for (name in names(makers)) {
     sel <- makers[[name]]()

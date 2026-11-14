@@ -71,11 +71,14 @@ K[1:4, 1:4]
 # Running the selector
 
 The Tikhonov control is required, because it carries $\boldsymbol K$. The penalty weight is fixed here.
+A base control that is passed has to name the solver of the selector, `"TIKNET"`. Without a base control
+the selector runs the defaults of `trex_control()` with that solver.
 
 ```{r run}
+ctrl <- trex_control(solver = "TIKNET", K = 10)
 tik <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                 tik_control = trex_tikhonov_control(tikhonov_K = K, lambda_2 = 1),
-                                control = trex_control(K = 10))
+                                control = ctrl)
 tik$select()
 tik$selected_indices
 trex_fdp(tik$selected_indices, true_support)
@@ -108,7 +111,7 @@ pilot <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                   tik_control = trex_tikhonov_control(
                                     tikhonov_K = K,
                                     pilot_grid = c(0, 1, 10), pilot_K = 4, pilot_T = 2),
-                                  control = trex_control(K = 10))
+                                  control = ctrl)
 pilot$select()
 pilot$lambda2_used
 pilot$lambda2_pilot$grid
@@ -118,7 +121,7 @@ pilot$lambda2_pilot$counts
 ```{r power-rule}
 profile <- trex_tikhonov_lambda2_power_rule(X, y, tFDR = 0.1, seed = 4,
                                             tik_control = trex_tikhonov_control(tikhonov_K = K),
-                                            control = trex_control(K = 10), grid = c(0, 1, 10))
+                                            control = ctrl, grid = c(0, 1, 10))
 profile$lambda2
 profile$counts
 ```
@@ -146,15 +149,16 @@ gc <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                tik_control = trex_tikhonov_control(
                                  penalty_structure = "GROUP_CENTERING", prior_groups = groups,
                                  lambda_2 = 1),
-                               control = trex_control(K = 10))
+                               control = ctrl)
 gc$select()
 gc$selected_indices
 ```
 
 # The solver
 
-The selector runs `"TIKNET"`, the pathwise homotopy algorithm of the Tikhonov net. The neutral default
-`"TLARS"` of `trex_control()` maps to it.
+The selector runs `"TIKNET"`, the pathwise homotopy algorithm of the Tikhonov net. It is the solver of the
+base control that applies when `control` is left out. `trex_control()` names `"TLARS"` by default, which
+the selector refuses as every other solver, so a base control that is passed sets `solver = "TIKNET"`.
 
 ```{r teardown, include = FALSE}
 trex_set_num_threads(old_threads)

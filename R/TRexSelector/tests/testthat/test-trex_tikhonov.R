@@ -37,6 +37,9 @@
   K
 }
 
+# A base control for the Tikhonov selector: a control that is passed names the solver.
+.tik_base <- function(...) trex_control(solver = "TIKNET", ...)
+
 
 test_that("trex_tikhonov_control validates its arguments", {
   expect_error(trex_tikhonov_control(), "tikhonov_K is required")
@@ -99,7 +102,7 @@ test_that("construction gates translate as R errors", {
     TRexTikhonovSelector$new(
       d$X, d$y, verbose = FALSE,
       tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p)),
-      control = trex_control(lloop_strategy = "PERMUTATION")),
+      control = .tik_base(lloop_strategy = "PERMUTATION")),
     "PERMUTATION"
   )
 
@@ -112,25 +115,12 @@ test_that("construction gates translate as R errors", {
     "prior_groups"
   )
 
-  # A non-Tikhonov-family solver choice warns (and falls back to TIKNET).
-  expect_warning(
-    TRexTikhonovSelector$new(
-      d$X, d$y, verbose = FALSE,
-      tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p),
-                                          lambda_2 = 0.5,
-                                          cluster_dummies = FALSE),
-      control = trex_control(solver = "TOMP")),
-    "not a Tikhonov-family solver.*Using \"TIKNET\""
-  )
-
   # fold_dummy_coupling = FALSE exists only on the TCDTIKNET path, so the
-  # default solver (TIKNET, the homotopy) and an explicit TIKNET refuse it.
-  # (The warning case above constructed a live selector on d$X; a fresh copy
-  # keeps the shared-buffer guard out of this check.)
-  for (control in list(trex_control(), trex_control(solver = "TIKNET"))) {
+  # default control and an explicit TIKNET refuse it.
+  for (control in list(NULL, trex_control(solver = "TIKNET"))) {
     expect_error(
       TRexTikhonovSelector$new(
-        d$X + 0, d$y, verbose = FALSE,
+        d$X, d$y, verbose = FALSE,
         tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p),
                                             lambda_2 = 0.5,
                                             fold_dummy_coupling = FALSE),
@@ -138,6 +128,49 @@ test_that("construction gates translate as R errors", {
       "TCDTIKNET"
     )
   }
+})
+
+
+test_that("a base control that is passed has to name the solver TIKNET", {
+  d <- .make_tik_data()
+  X0 <- d$X + 0
+  tik <- trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5)
+  run <- function(control) {
+    sel <- TRexTikhonovSelector$new(d$X, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
+                                    tik_control = tik, control = control)
+    sel$select()
+    sel$selected_indices
+  }
+
+  # Every solver outside the family is an error, in the words of R. TLARS is
+  # one of them, although it is the default of trex_control().
+  for (solver in c("TLARS", "TLASSO", "TENET", "TOMP", "TIENET")) {
+    expect_error(run(trex_control(solver = solver)),
+                 "control\\$solver must be \"TIKNET\" for the Tikhonov selector. Got: \"",
+                 info = solver)
+    expect_error(run(trex_control(solver = solver)), solver, fixed = TRUE, info = solver)
+  }
+  expect_error(run(trex_control()), "leave control out")
+  expect_error(run(trex_control(K = 5)), "TLARS")
+  # No selector was built, so the design is untouched
+  expect_identical(d$X, X0)
+
+  # Without a base control the one of the C++ class applies, whose solver is
+  # TIKNET: the run equals the one with the defaults of trex_control() and TIKNET
+  expect_identical(run(NULL), run(trex_control(solver = "TIKNET")))
+  expect_gt(length(run(NULL)), 0)
+
+  # The power rule takes the base control the same way
+  expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = tik, seed = 1,
+                                                grid = c(0, 1), control = trex_control()),
+               "control\\$solver must be \"TIKNET\"")
+  a <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
+                                        grid = c(0, 1))
+  b <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
+                                        grid = c(0, 1), control = trex_control(solver = "TIKNET"))
+  expect_identical(a$selected, b$selected)
+  expect_identical(a$counts, b$counts)
+  expect_equal(d$X, X0, tolerance = 1e-12)
 })
 
 
@@ -175,7 +208,7 @@ test_that("the pilot rule picks lambda_2 from its grid and records the profile",
       tikhonov_K = .group_mean_k(d$p), prior_groups = d$groups,
       lambda_2 = -1, lambda2_method = "PILOT_KNEE",
       pilot_grid = c(10, 0, 1), pilot_K = 5, pilot_T = 3),
-    control = trex_control(K = 5, max_dummy_multiplier = 2))
+    control = .tik_base(K = 5, max_dummy_multiplier = 2))
   sel$select()
 
   pilot <- sel$lambda2_pilot
@@ -263,7 +296,7 @@ test_that("prior-groups end-to-end recovers the planted signal", {
     tik_control = trex_tikhonov_control(
       tikhonov_K = .group_mean_k(d$p), lambda_2 = 1.0,
       prior_groups = d$groups),
-    control = trex_control(K = 5, max_dummy_multiplier = 2))
+    control = .tik_base(K = 5, max_dummy_multiplier = 2))
   sel$select()
 
   idx <- sel$selected_indices
@@ -284,7 +317,7 @@ test_that("lambda_2 auto-resolves via the IEN-geometry tuner", {
       tikhonov_K = .group_mean_k(d$p), lambda_2 = -1,
       prior_groups = d$groups, lambda2_method = "CV_1SE_IEN_CCD",
       cv_n_lambda1 = 20, cv_n_lambda2 = 10, cv_dfmax_ratio = 0.9),
-    control = trex_control(K = 5, max_dummy_multiplier = 2))
+    control = .tik_base(K = 5, max_dummy_multiplier = 2))
   sel$select()
 
   expect_gt(sel$lambda2_used, 0)
@@ -325,7 +358,7 @@ test_that("the full-profile knee runs one selection per grid value and keeps the
   X_before <- d$X + 0  # a private copy: the probes hand X back unchanged
   tik <- trex_tikhonov_control(tikhonov_K = .group_mean_k(d$p),
                                prior_groups = d$groups)
-  ctrl <- trex_control(K = 5, max_dummy_multiplier = 2)
+  ctrl <- .tik_base(K = 5, max_dummy_multiplier = 2)
 
   prof <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik,
                                            control = ctrl, seed = 42,
@@ -385,7 +418,7 @@ test_that("the default run on a chain Laplacian selects the planted block", {
 
   sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
                                   tik_control = trex_tikhonov_control(tikhonov_K = K),
-                                  control = trex_control(K = 10))
+                                  control = .tik_base(K = 10))
   sel$select()
 
   expect_gte(sum(support %in% sel$selected_indices), 8)
@@ -428,7 +461,7 @@ test_that("the Tikhonov selector checks K, lambda_2 and the CV sizes at construc
   build <- function(...) {
     TRexTikhonovSelector$new(X, y, tFDR = 0.2, seed = 2, verbose = FALSE,
                              tik_control = trex_tikhonov_control(...),
-                             control = trex_control(K = 5))
+                             control = .tik_base(K = 5))
   }
   # The content of K, under the name of the selector
   K_asym <- diag(p); K_asym[1, 2] <- 0.5
@@ -461,7 +494,7 @@ test_that("GROUP_CENTERING refuses a supplied K that is not the centering matrix
                                     tik_control = trex_tikhonov_control(
                                       tikhonov_K = K, penalty_structure = "GROUP_CENTERING",
                                       prior_groups = groups, lambda_2 = 1),
-                                    control = trex_control(K = 5))
+                                    control = .tik_base(K = 5))
     sel$select()
     sel$selected_indices
   }
@@ -490,7 +523,7 @@ test_that("a lambda_2 grid means the same shrinkage under ZSCORE as under L2", {
                                     tik_control = trex_tikhonov_control(
                                       penalty_structure = "GROUP_CENTERING", prior_groups = d$groups,
                                       pilot_grid = grid, pilot_K = 5),
-                                    control = trex_control(K = 10, scaling_mode = mode))
+                                    control = .tik_base(K = 10, scaling_mode = mode))
     sel$select()
     sel
   }
@@ -510,7 +543,7 @@ test_that("a lambda_2 grid means the same shrinkage under ZSCORE as under L2", {
       d$X + 0, d$y, tFDR = 0.2, seed = 5, grid = grid,
       tik_control = trex_tikhonov_control(penalty_structure = "GROUP_CENTERING",
                                           prior_groups = d$groups),
-      control = trex_control(K = 10, scaling_mode = mode))
+      control = .tik_base(K = 10, scaling_mode = mode))
   }
   a <- rule("L2")
   b <- rule("ZSCORE")

@@ -145,7 +145,7 @@ trusting a boundary pick), the budget actually used (\code{K_pilot},
   seed = -1,
   verbose = TRUE,
   tik_control,
-  control = trex_control()
+  control = NULL
 )}
     \if{html}{\out{</div>}}
   }
@@ -164,19 +164,20 @@ writes nothing and \code{"readonly"} mode suffices.}
       \item{\code{tik_control}}{A Tikhonov control list from
 \code{\link{trex_tikhonov_control}()} (required — it carries the
 penalty matrix K).}
-      \item{\code{control}}{A control list from \code{\link{trex_control}()}
-(default: \code{trex_control()}). The \code{solver} field selects
-the Tikhonov-family solver: \code{"TIKNET"}, the pathwise
-homotopy solver (default; the neutral \code{trex_control()}
-default \code{"TLARS"} maps to it), or \code{"TCDTIKNET"}, the
-coordinate-descent solver; any other value warns and falls back to
-\code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
-\code{lambda_2} times K is large it can stop at its sweep budget
-(\code{cd_max_sweeps}) before it has converged. \code{select()}
-then stops with an error instead of a selection from an unconverged
-path. \code{"TCDTIKNET"} is deprecated and will be removed in
-TRexSelector 2.1.0: the selector raises a deprecation warning for
-it.}
+      \item{\code{control}}{A control list from \code{\link{trex_control}()}, or
+\code{NULL} (default). With \code{NULL} the base control of the C++
+class applies: the defaults of \code{trex_control()} with the solver
+\code{"TIKNET"}, the pathwise homotopy solver. A control that is
+passed is taken as it is, so its \code{solver} must be
+\code{"TIKNET"}: \code{trex_control(solver = "TIKNET", ...)}. Every
+other solver is an error, also \code{"TLARS"}, the default of
+\code{trex_control()}. \code{"TCDTIKNET"}, the coordinate-descent
+solver, is deprecated and will be removed in TRexSelector 2.1.0: the
+selector raises a deprecation warning for it. It is not finally
+developed: once \code{lambda_2} times K is large it can stop at its
+sweep budget (\code{cd_max_sweeps}) before it has converged, and
+\code{select()} then stops with an error instead of a selection from
+an unconverged path.}
     }
     \if{html}{\out{</div>}}
   }

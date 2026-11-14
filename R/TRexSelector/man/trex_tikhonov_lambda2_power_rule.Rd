@@ -9,7 +9,7 @@ trex_tikhonov_lambda2_power_rule(
   y,
   tFDR = 0.1,
   tik_control,
-  control = trex_control(),
+  control = NULL,
   seed = 0,
   grid = c(0, 1, 3, 10, 30, 100, 300, 1000, 3000),
   knee_tolerance = 1,
@@ -28,9 +28,10 @@ hands it back, so \code{X} is unchanged on return and never copied.}
 \code{\link{trex_tikhonov_control}()}; its \code{lambda_2} is
 overwritten per probe, everything else is shared by every probe.}
 
-\item{control}{A control list from \code{\link{trex_control}()} (default:
-\code{trex_control()}); the solver maps as in
-\code{\link{TRexTikhonovSelector}}.}
+\item{control}{A control list from \code{\link{trex_control}()}, or
+\code{NULL} (default), taken as by \code{\link{TRexTikhonovSelector}}:
+with \code{NULL} the base control of the C++ class applies, and a
+control that is passed must name the solver \code{"TIKNET"}.}
 
 \item{seed}{Selector seed, the same for every probe (default: 0). A
 negative seed would draw fresh dummies per probe and is refused.}

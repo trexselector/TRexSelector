@@ -7,6 +7,7 @@
 #include "rcpp_trex_tikhonov.h"
 
 // std includes
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,8 +40,8 @@ static Eigen::SparseMatrix<double> as_sparse_matrix(SEXP m) {
 /**
  * @brief Parses an R list into a TRexTikhonovControlParameter struct.
  *
- * The nested trex_ctrl is merged later (in the wrapper constructor) from
- * the separately-supplied trex_control list.
+ * The nested trex_ctrl keeps its C++ default here. merge_tikhonov_control()
+ * replaces it when the caller passes a base control.
  */
 TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control) {
     TRexTikhonovControlParameter params;
@@ -200,6 +201,21 @@ extern Rcpp::List lambda2_cv_diagnostics_to_list(
     const trex::ml_methods::model_selection::lambda2_cv_diagnostics& d);
 
 
+/**
+ * @brief The control of a run from the two R lists. A NULL base control
+ *        leaves the one nested in the Tikhonov control in place.
+ */
+static TRexTikhonovControlParameter tikhonov_run_control(
+    const Rcpp::List& tik_control_list,
+    const Rcpp::Nullable<Rcpp::List>& trex_control_list) {
+    std::optional<TRexControlParameter> trex_control;
+    if (trex_control_list.isNotNull()) {
+        trex_control = parse_control_parameter(Rcpp::List(trex_control_list));
+    }
+    return merge_tikhonov_control(parse_tikhonov_parameter(tik_control_list), trex_control);
+}
+
+
 /** @brief A G x T count table (vector of per-grid-point rows) as an R matrix. */
 template <typename T>
 static Rcpp::NumericMatrix rows_to_matrix(const std::vector<std::vector<T>>& rows) {
@@ -224,21 +240,18 @@ XPtr<RTRexTikhonovSelector> trex_tikhonov_create(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List tik_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     bool verbose
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexTikhonovControlParameter tik_control =
-        parse_tikhonov_parameter(tik_control_list);
-    TRexControlParameter trex_control =
-        parse_control_parameter(trex_control_list);
+    const TRexTikhonovControlParameter tik_ctrl =
+        tikhonov_run_control(tik_control_list, trex_control_list);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
     return XPtr<RTRexTikhonovSelector>(
-        new RTRexTikhonovSelector(X_map, y_map, tFDR, tik_control,
-                                  trex_control, seed, verbose),
+        new RTRexTikhonovSelector(X_map, y_map, tFDR, tik_ctrl, seed, verbose),
         true, R_NilValue, Rcpp::List::create(X, y));
 }
 
@@ -251,19 +264,17 @@ XPtr<RTRexTikhonovSelector> trex_tikhonov_mmap_create(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List tik_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexTikhonovControlParameter tik_control =
-        parse_tikhonov_parameter(tik_control_list);
-    TRexControlParameter trex_control =
-        parse_control_parameter(trex_control_list);
+    const TRexTikhonovControlParameter tik_ctrl =
+        tikhonov_run_control(tik_control_list, trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexTikhonovSelector>(
-        new RTRexTikhonovSelector(mapped_design_for(*X_ptr, trex_control), y_map, tFDR, tik_control,
-                                  trex_control, seed, verbose),
+        new RTRexTikhonovSelector(mapped_design_for(*X_ptr, tik_ctrl.trex_ctrl), y_map, tFDR,
+                                  tik_ctrl, seed, verbose),
         true, R_NilValue, Rcpp::List::create(X_ptr, y));
 }
 
@@ -340,7 +351,7 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
     Rcpp::NumericVector y,
     double tFDR,
     Rcpp::List tik_control_list,
-    Rcpp::List trex_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
     int seed,
     std::vector<double> grid,
     double knee_tolerance,
@@ -350,9 +361,8 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
     // and y are read through their maps and never copied.
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl = merge_tikhonov_control(
-        parse_tikhonov_parameter(tik_control_list),
-        parse_control_parameter(trex_control_list));
+    const TRexTikhonovControlParameter tik_ctrl =
+        tikhonov_run_control(tik_control_list, trex_control_list);
     Lambda2PowerRuleConfig cfg;
     cfg.grid           = std::move(grid);
     cfg.knee_tolerance = knee_tolerance;

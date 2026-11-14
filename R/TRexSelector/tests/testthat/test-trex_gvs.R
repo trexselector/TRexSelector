@@ -527,7 +527,7 @@ test_that("the controls take the linkage in lower case and accept the names of 2
     s <- TRexTikhonovSelector$new(X, y, seed = 1, verbose = FALSE,
                                   tik_control = trex_tikhonov_control(tikhonov_K = diag(p), lambda_2 = 1,
                                                                       hc_linkage = linkage),
-                                  control = trex_control(K = 3))
+                                  control = trex_control(solver = "TIKNET", K = 3))
     s$select()
     s$selected_var
   }

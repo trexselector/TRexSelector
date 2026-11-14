@@ -163,7 +163,7 @@ test_that("a readonly mmap_matrix serves every selector under NONE", {
   expect_no_error(
     TRexTikhonovSelector$new(d$ro, d$y, tFDR = 0.2, seed = 11, verbose = FALSE,
                              tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5),
-                             control = none)$select()
+                             control = modifyList(none, list(solver = "TIKNET")))$select()
   )
   expect_no_error(
     TRexScreeningSelector$new(d$ro, d$y, seed = 11, verbose = FALSE, control = none)$select()
@@ -200,7 +200,7 @@ test_that("a readonly mmap_matrix is refused where the design is written", {
     expect_error(
       TRexTikhonovSelector$new(d$ro, d$y, verbose = FALSE,
                                tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p), lambda_2 = 0.5),
-                               control = ctrl),
+                               control = modifyList(ctrl, list(solver = "TIKNET"))),
       "ReadOnly"
     )
     expect_error(TRexScreeningSelector$new(d$ro, d$y, verbose = FALSE, control = ctrl), "ReadOnly")

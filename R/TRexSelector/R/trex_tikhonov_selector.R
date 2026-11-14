@@ -1,3 +1,22 @@
+# The solver of a base control that is passed to the Tikhonov selector. NULL
+# stands for the base control of the C++ class, whose solver is TIKNET.
+.check_tikhonov_solver <- function(control) {
+  if (is.null(control)) {
+    return(invisible(NULL))
+  }
+  solver <- control$solver
+  if (!is.character(solver) || length(solver) != 1L ||
+      !(solver %in% c("TIKNET", "TCDTIKNET"))) {
+    stop("control$solver must be \"TIKNET\" for the Tikhonov selector. Got: \"",
+         paste(format(solver), collapse = ", "), "\". trex_control() names ",
+         "\"TLARS\" by default, so pass trex_control(solver = \"TIKNET\", ...), ",
+         "or leave control out to run the default control.")
+  }
+  .warn_cd_solver_name(solver)
+  invisible(NULL)
+}
+
+
 #' @name TRexTikhonovSelector
 #'
 #' @title T-Rex Selector with a general Tikhonov penalty
@@ -66,43 +85,32 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #' @param tik_control A Tikhonov control list from
     #'   \code{\link{trex_tikhonov_control}()} (required — it carries the
     #'   penalty matrix K).
-    #' @param control A control list from \code{\link{trex_control}()}
-    #'   (default: \code{trex_control()}). The \code{solver} field selects
-    #'   the Tikhonov-family solver: \code{"TIKNET"}, the pathwise
-    #'   homotopy solver (default; the neutral \code{trex_control()}
-    #'   default \code{"TLARS"} maps to it), or \code{"TCDTIKNET"}, the
-    #'   coordinate-descent solver; any other value warns and falls back to
-    #'   \code{"TIKNET"}. \code{"TCDTIKNET"} is not finally developed: once
-    #'   \code{lambda_2} times K is large it can stop at its sweep budget
-    #'   (\code{cd_max_sweeps}) before it has converged. \code{select()}
-    #'   then stops with an error instead of a selection from an unconverged
-    #'   path. \code{"TCDTIKNET"} is deprecated and will be removed in
-    #'   TRexSelector 2.1.0: the selector raises a deprecation warning for
-    #'   it.
+    #' @param control A control list from \code{\link{trex_control}()}, or
+    #'   \code{NULL} (default). With \code{NULL} the base control of the C++
+    #'   class applies: the defaults of \code{trex_control()} with the solver
+    #'   \code{"TIKNET"}, the pathwise homotopy solver. A control that is
+    #'   passed is taken as it is, so its \code{solver} must be
+    #'   \code{"TIKNET"}: \code{trex_control(solver = "TIKNET", ...)}. Every
+    #'   other solver is an error, also \code{"TLARS"}, the default of
+    #'   \code{trex_control()}. \code{"TCDTIKNET"}, the coordinate-descent
+    #'   solver, is deprecated and will be removed in TRexSelector 2.1.0: the
+    #'   selector raises a deprecation warning for it. It is not finally
+    #'   developed: once \code{lambda_2} times K is large it can stop at its
+    #'   sweep budget (\code{cd_max_sweeps}) before it has converged, and
+    #'   \code{select()} then stops with an error instead of a selection from
+    #'   an unconverged path.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,
                           verbose = TRUE,
                           tik_control,
-                          control = trex_control()) {
+                          control = NULL) {
 
       if (missing(tik_control)) {
         stop("tik_control is required (build it with trex_tikhonov_control(); ",
              "it carries the penalty matrix K or the penalty structure).")
       }
-
-      # Only the Tikhonov family has a general-K mode. "TLARS" is the
-      # trex_control() default and cannot be distinguished from an explicit
-      # choice, so it never warns; the C++ glue maps it to TIKNET.
-      tik_family <- c("TIKNET", "TCDTIKNET")
-      if (!(control$solver %in% c("TLARS", tik_family))) {
-        warning("control$solver = \"", control$solver,
-                "\" is not a Tikhonov-family solver; TRexTikhonovSelector ",
-                "accepts \"TIKNET\" or \"TCDTIKNET\". ",
-                "Using \"TIKNET\".")
-        control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
-      }
-      .warn_cd_solver_name(control$solver)
+      .check_tikhonov_solver(control)
 
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
@@ -205,9 +213,10 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #' @param tik_control A Tikhonov control list from
 #'   \code{\link{trex_tikhonov_control}()}; its \code{lambda_2} is
 #'   overwritten per probe, everything else is shared by every probe.
-#' @param control A control list from \code{\link{trex_control}()} (default:
-#'   \code{trex_control()}); the solver maps as in
-#'   \code{\link{TRexTikhonovSelector}}.
+#' @param control A control list from \code{\link{trex_control}()}, or
+#'   \code{NULL} (default), taken as by \code{\link{TRexTikhonovSelector}}:
+#'   with \code{NULL} the base control of the C++ class applies, and a
+#'   control that is passed must name the solver \code{"TIKNET"}.
 #' @param seed Selector seed, the same for every probe (default: 0). A
 #'   negative seed would draw fresh dummies per probe and is refused.
 #' @param grid lambda_2 candidates, stated for columns of unit norm (default
@@ -250,7 +259,7 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 trex_tikhonov_lambda2_power_rule <- function(X, y,
                                              tFDR = 0.1,
                                              tik_control,
-                                             control = trex_control(),
+                                             control = NULL,
                                              seed = 0,
                                              grid = c(0, 1, 3, 10, 30, 100,
                                                       300, 1000, 3000),
@@ -276,14 +285,7 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
     stop("knee_tolerance must be a single number >= 0. Got: ",
          format(knee_tolerance))
   }
-  tik_family <- c("TIKNET", "TCDTIKNET")
-  if (!(control$solver %in% c("TLARS", tik_family))) {
-    warning("control$solver = \"", control$solver,
-            "\" is not a Tikhonov-family solver; the Tikhonov T-Rex ",
-            "accepts \"TIKNET\" or \"TCDTIKNET\". Using \"TIKNET\".")
-    control$solver <- "TLARS"  # the C++ glue defaults it to TIKNET
-  }
-  .warn_cd_solver_name(control$solver)
+  .check_tikhonov_solver(control)
   X <- .as_double_matrix(X)
   y <- .as_double_vector(y)
   trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,

@@ -40,6 +40,13 @@
 * `TRexSPCASelector` takes `tFDR` in [0, 1], as the other selectors do and as C++ and Python do. Up to
   2.0.1 it refused 0 and 1. An `M` above `min(n, p)` is refused at construction. Up to 2.0.1 that error
   came in `select()`.
+* `TRexTikhonovSelector` and `trex_tikhonov_lambda2_power_rule()` run the solver `"TIKNET"` alone, as
+  C++ and Python do. Their `control` defaults to `NULL`, which runs the defaults of `trex_control()`
+  with the solver `"TIKNET"`. A control that is passed is taken as it is and has to name the solver,
+  `trex_control(solver = "TIKNET", ...)`. Up to 2.0.1 the default `"TLARS"` of `trex_control()` gave
+  `"TIKNET"` without a word, and every other solver gave a warning and `"TIKNET"`. Both are errors now,
+  so a call that passes `trex_control(K = 10)` needs the solver in it. The deprecated `"TCDTIKNET"` is
+  still accepted. The selections do not change.
 
 ## Fixed
 

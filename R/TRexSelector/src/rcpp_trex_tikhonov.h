@@ -5,6 +5,7 @@
 
 // std includes
 #include <memory>
+#include <optional>
 
 // [[Rcpp::depends(RcppEigen)]]
 #include <RcppEigen.h>
@@ -21,23 +22,17 @@ using namespace trex::trex_selector_methods::ad::trex_core;
 // ==============================================================================
 
 /**
- * @brief The nested base control merged into the Tikhonov control. The C++
- *        constructor rejects any non-Tikhonov solver; the caller-facing
- *        default (TLARS) is neutral, so anything outside TIKNET / TCDTIKNET
- *        becomes TIKNET (the R level warns first on an explicit mismatch).
+ * @brief The control of a run. Without a base control the one nested in the
+ *        Tikhonov control applies, whose solver is TIKNET. A base control
+ *        that is passed replaces the nested one as it is, and the C++
+ *        constructor refuses a solver outside TIKNET / TCDTIKNET.
  */
 inline TRexTikhonovControlParameter merge_tikhonov_control(
     const TRexTikhonovControlParameter& tik_control,
-    const tc::TRexControlParameter& trex_control) {
-    namespace tik_sd = trex::trex_selector_methods::ad::utils::solver_dispatch;
+    const std::optional<tc::TRexControlParameter>& trex_control) {
     TRexTikhonovControlParameter tik_ctrl = tik_control;
-    tik_ctrl.trex_ctrl = trex_control;
-    const auto st = tik_ctrl.trex_ctrl.solver_type;
-    const bool tik_family =
-        st == tik_sd::SolverTypeForTRex::TCDTIKNET ||
-        st == tik_sd::SolverTypeForTRex::TIKNET;
-    if (!tik_family) {
-        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TIKNET;
+    if (trex_control) {
+        tik_ctrl.trex_ctrl = *trex_control;
     }
     return tik_ctrl;
 }
@@ -46,9 +41,8 @@ inline TRexTikhonovControlParameter merge_tikhonov_control(
 /**
  * @brief Rcpp wrapper class for TRexTikhonovSelector (general-Tikhonov T-Rex).
  *
- * Maps R objects to the C++ structures for the sparse-K selector. The nested
- * base control is merged from the separately-supplied trex_control by
- * merge_tikhonov_control().
+ * Holds the maps of the design and the response and the selector that works
+ * on them. The control is the one of the run, see merge_tikhonov_control().
  */
 class RTRexTikhonovSelector : public RTRexSelector {
 public:
@@ -56,15 +50,12 @@ public:
         Eigen::Map<Eigen::MatrixXd> X,
         Eigen::Map<Eigen::VectorXd> y,
         double tFDR,
-        const TRexTikhonovControlParameter& tik_control,
-        const tc::TRexControlParameter& trex_control,
+        const TRexTikhonovControlParameter& tik_ctrl,
         int seed,
         bool verbose
     ) {
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X);
         this->y_map_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y);
-        const TRexTikhonovControlParameter tik_ctrl =
-            merge_tikhonov_control(tik_control, trex_control);
         this->selector_ = std::make_unique<TRexTikhonovSelector>(
             *(this->X_map_), *(this->y_map_), tFDR, tik_ctrl, seed, verbose
         );

@@ -16,6 +16,33 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The R Tikhonov class takes TIKNET only, as C++ does
+
+Step 1 of the rework of the R class of the Tikhonov selector (notes: TIKHONOV_findings.md, finding 1).
+It is the R side of what e6705c3 did for Python.
+
+- Before. `TRexTikhonovSelector$new()` and `trex_tikhonov_lambda2_power_rule()` took
+  `control = trex_control()`, whose solver is `"TLARS"`. The R class let `"TLARS"` pass, warned for every
+  other solver outside the family and set it to `"TLARS"`, and the glue (`merge_tikhonov_control()`)
+  turned everything outside TIKNET and TCDTIKNET into TIKNET. So R changed the control it was given, and
+  C++ refuses such a solver at construction.
+- Now. `control` defaults to `NULL`. Without a base control the one nested in the C++ Tikhonov control
+  applies, whose solver is TIKNET. A control that is passed replaces the nested one as it is, and a
+  solver other than `"TIKNET"` (or the deprecated `"TCDTIKNET"`) is an error. `"TLARS"` is among them,
+  as in C++ and Python. The glue no longer touches the solver.
+- The error is raised in R, in the words of R: "control$solver must be "TIKNET" for the Tikhonov
+  selector. Got: "TLARS". trex_control() names "TLARS" by default, so pass trex_control(solver =
+  "TIKNET", ...), or leave control out to run the default control." The C++ message names `solver_type`,
+  a field R does not have.
+- A change of the published interface of 2.0.1: a call that passes `trex_control(K = 10)` is an error
+  until the solver is named. NEWS says so under "Changed". The selections do not change, because every
+  run that worked before ran TIKNET.
+- Tests. Five solvers outside the family and the default of `trex_control()` are refused and leave the
+  design untouched, `control = NULL` gives the run of `trex_control(solver = "TIKNET")` for the selector
+  and for the power rule. The other tests of the selector name the solver. R tests 2,102.
+- Vignette "T-Rex Tikhonov". Its calls name the solver, and the section "The solver" no longer says that
+  `"TLARS"` maps to `"TIKNET"`.
+
 #### The texts of the Python Tikhonov class mirror the C++ class
 
 Step 5 of the rework of the Python class of the Tikhonov selector, the last one. Texts only.
