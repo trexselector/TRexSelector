@@ -1881,6 +1881,13 @@ class TRexDASelector(TRexSelector):
     fdp_hat_array_bt, phi_array_bt and r_array_bt of the result, whose fdp_hat_mat and phi_mat
     are empty for these methods.
     
+    FDR limitation of BT, NN and PRIOR_GROUPS. At a very high correlation within the groups
+    (about 0.9 and above) and with no independent ("white") predictors, the equiangular
+    solver TLARS can exceed the target FDR, because the true signal and its collinear shadows
+    become statistically exchangeable. This is inherent to the method, and it also appears in
+    the 1.x versions of the R package. Mitigate with the default BTSelectionMode.FeasibleOnly
+    and by preferring a greedy solver (TOMP) in designs with high correlation.
+    
     References
     ----------
     J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control

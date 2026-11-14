@@ -46,6 +46,9 @@
   `trex_da_control()` says which methods use `hc_linkage` and `hc_grid_length`, how `cor_coef` is
   estimated, and gives the formula of the AR1 window, `ceiling(log(rho_thr_DA) / log(abs(cor_coef)))`
   columns to each side.
+* The help of `TRexDASelector` gains the section "FDR limitation of BT, NN and prior groups". At a very
+  high correlation within the groups and with no independent predictors the three methods can exceed
+  the target FDR with the solver `"TLARS"`. The C++ documentation carried the paragraph before.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

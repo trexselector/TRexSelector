@@ -30,13 +30,8 @@
  * of the last step. This deviates from the papers, which write one penalty per
  * step (see the class TRexDASelector for the reason and the evidence).
  *
- * FDR limitation (BT-style): at very high-within-group correlation (rho >~ 0.9)
- * and with no independent ("white") predictors, the equiangular TLARS solver
- * can exceed the target FDR because the true signal and its
- * collinear shadows become statistically exchangeable.
- * This is inherent to the method (it also appears in the R reference).
- * Mitigate with the default BTSelectionMode::FeasibleOnly and by preferring
- * a greedy solver (TOMP) in high-correlation designs.
+ * FDR limitation: BT, NN and PRIOR_GROUPS can exceed the target FDR at a very
+ * high correlation within the groups (see the class TRexDASelector).
  */
 // ===================================================================================
 
@@ -286,6 +281,16 @@ struct DACorrectionResult {
  *  belong to rho_thresh. The values at every threshold are in FDP_hat_array_BT,
  *  Phi_array_BT and R_array_BT of the result, whose FDP_hat_mat and Phi_mat are
  *  empty for these methods.
+ *
+ *  FDR limitation (BT, NN and PRIOR_GROUPS):
+ *  -----------------------------------------
+ *  At a very high correlation within the groups (about 0.9 and above) and with no
+ *  independent ("white") predictors, the equiangular solver TLARS can exceed the
+ *  target FDR, because the true signal and its collinear shadows become
+ *  statistically exchangeable. This is inherent to the method, and it also appears
+ *  in the 1.x versions of the R package. Mitigate with the default
+ *  BTSelectionMode::FeasibleOnly and by preferring a greedy solver (TOMP) in designs
+ *  with high correlation.
  *
  *  Penalty of the last step (a deliberate deviation from the papers):
  *  ------------------------------------------------------------------

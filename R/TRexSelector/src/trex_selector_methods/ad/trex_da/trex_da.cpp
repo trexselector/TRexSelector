@@ -1159,8 +1159,8 @@ TRexDASelector::DASelectionResult TRexDASelector::selectVariables_BT(
     // Steps 2-3: scan the R_array for cells equal to val_max and pick the winner
     // by tie-break priority max VV -> max RR (rho) -> max TT. Candidate eligibility
     // depends on trex_da_ctrl_.bt_selection_mode: FeasibleOnly (default) restricts to
-    // FDP-feasible cells (FDR-controlling); RFaithful also admits infeasible cells,
-    // reproducing the R reference (which scans the whole R_array).
+    // FDP-feasible cells (FDR-controlling). RFaithful also admits infeasible cells,
+    // reproducing the 1.x versions of the R package (which scan the whole R_array).
     const bool feasible_only =
         (trex_da_ctrl_.bt_selection_mode == BTSelectionMode::FeasibleOnly);
 

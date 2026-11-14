@@ -16,6 +16,18 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The FDR limitation of BT, NN and the prior groups stands in the help of the three surfaces
+
+- The file header of the dependency-aware selector in C++ carried a paragraph that R and Python lacked.
+  At a very high correlation within the groups (about 0.9 and above) and with no independent predictors,
+  the equiangular solver TLARS can exceed the target FDR with BT, NN and the prior groups, because the
+  true signal and its collinear shadows become statistically exchangeable. The default rule
+  FeasibleOnly and a greedy solver mitigate it.
+- The paragraph is now part of the class documentation in C++, a section of the R help of
+  `TRexDASelector` and a note of the Python class, and the C++ file header points to the class. It names
+  the 1.x versions of the R package where it said "the R reference", so the files of the
+  dependency-aware selector no longer use that name. No code changes.
+
 #### The help of the dependency-aware selector agrees on the three surfaces and with the code
 
 - The help texts of the selector, of its control and of its result were read side by side in C++, R and

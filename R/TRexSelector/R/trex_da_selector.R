@@ -43,6 +43,14 @@
 #' belong to \code{rho_thresh}. The values at every threshold are in \code{FDP_hat_array_BT},
 #' \code{Phi_array_BT} and \code{R_array_BT}.
 #'
+#' @section FDR limitation of BT, NN and prior groups:
+#' At a very high correlation within the groups (about 0.9 and above) and with no independent
+#' ("white") predictors, the equiangular solver \code{"TLARS"} can exceed the target FDR, because
+#' the true signal and its collinear shadows become statistically exchangeable. This is inherent to
+#' the method, and it also appears in the 1.x versions of the package. Mitigate with the default
+#' \code{bt_selection_mode = "FeasibleOnly"} and by preferring a greedy solver (\code{"TOMP"}) in
+#' designs with high correlation.
+#'
 #' @importFrom R6 R6Class
 #'
 #' @references
