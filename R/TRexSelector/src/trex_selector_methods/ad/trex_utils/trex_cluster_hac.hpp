@@ -45,6 +45,22 @@ namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
 
 
 /**
+ * @brief The name under which a selector reports the linkage of its
+ *        clustering: "single", "complete", "average" or "wpgma", and
+ *        "unknown" for a linkage the correlation clustering does not take.
+ */
+inline const char* linkageName(hac::LinkageMethod linkage) noexcept {
+    switch (linkage) {
+        case hac::LinkageMethod::Single:   return "single";
+        case hac::LinkageMethod::Complete: return "complete";
+        case hac::LinkageMethod::Average:  return "average";
+        case hac::LinkageMethod::WPGMA:    return "wpgma";
+        default:                           return "unknown";
+    }
+}
+
+
+/**
  * @brief Run agglomerative clustering on the 1 - |corr| distance.
  *
  * @param X       Working design matrix (columns = variables; centered so the

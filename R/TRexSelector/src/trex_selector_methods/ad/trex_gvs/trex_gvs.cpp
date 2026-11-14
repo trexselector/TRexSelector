@@ -371,13 +371,7 @@ std::vector<hac::MergeStep> TRexGVSSelector::runClustering() const {
 void TRexGVSSelector::setupGVS_Cluster() {
 
     // Linkage tag
-    switch (trex_gvs_ctrl_.hc_linkage) {
-        case hac::LinkageMethod::Single:   gvs_setup_.hc_method_used = "single";   break;
-        case hac::LinkageMethod::Complete: gvs_setup_.hc_method_used = "complete"; break;
-        case hac::LinkageMethod::Average:  gvs_setup_.hc_method_used = "average";  break;
-        case hac::LinkageMethod::WPGMA:    gvs_setup_.hc_method_used = "wpgma";    break;
-        default:                           gvs_setup_.hc_method_used = "unknown";  break;
-    }
+    gvs_setup_.hc_method_used = cdum::linkageName(trex_gvs_ctrl_.hc_linkage);
 
     auto merges = runClustering();
 

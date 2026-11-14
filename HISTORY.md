@@ -16,6 +16,24 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Tikhonov selector reports the clusters of its dummies
+
+Step 5 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, finding 21).
+
+- The gap. The selector draws its dummies per cluster of correlated variables. The clusters were kept
+  in a private member "for diagnostics" and could not be read. Their number stood in the progress
+  lines only. The GVS result reports its groups, their number and their origin.
+- `getDummyClusters()` returns a `DummyClusters` record with the field names of the GVS result:
+  `groups_vec` (the cluster of each variable, 0-based), `max_clusters` and `hc_method_used` ("prior"
+  for supplied groups, else the linkage of the clustering). The record is empty before a run and with
+  `cluster_dummies = false`.
+- `linkageName()` in trex_cluster_hac.hpp holds the names of the linkages once. The GVS selector takes
+  them from there, its results do not change.
+- R and Python get the record with the rework of their two classes.
+- Tests. C++ pins the record for supplied groups, for found clusters (a partition into non-empty
+  clusters, and with single linkage no two variables of different clusters correlate above `corr_max`),
+  before a run and without cluster dummies.
+
 #### A lambda_2 grid means the same shrinkage under every scaling mode
 
 Step 4 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, finding 8).

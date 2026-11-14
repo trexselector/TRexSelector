@@ -318,6 +318,89 @@ TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) 
 }
 
 
+/** @brief getDummyClusters() reports the clusters the dummies were drawn
+ *  for: the supplied groups, or the clusters of the correlation clustering,
+ *  with their number and their origin. */
+TEST_F(TRexTikhonovTest, DummyClusters_AreReported) {
+    namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
+    const GroupedData d(/*n=*/80, /*p=*/20, /*rho=*/0.9, /*sigma=*/1.0, /*seed=*/5);
+    const Eigen::Index p = d.X.cols();
+    const auto control = [&] {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K  = identityK(p);
+        ctrl.lambda_2    = 1.0;
+        ctrl.trex_ctrl.K = 5;
+        return ctrl;
+    };
+    const auto run = [&](const TRexTikhonovControlParameter& ctrl, bool select) {
+        Eigen::MatrixXd X = d.X;
+        Eigen::VectorXd y = d.y;
+        Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
+        Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
+        TRexTikhonovSelector sel(Xm, ym, 0.2, ctrl, 3, false);
+        if (select) { sel.select(); }
+        return sel.getDummyClusters();
+    };
+
+    // Before a run the record is empty.
+    const DummyClusters before = run(control(), /*select=*/false);
+    EXPECT_EQ(before.groups_vec.size(), 0);
+    EXPECT_EQ(before.max_clusters, 0U);
+    EXPECT_TRUE(before.hc_method_used.empty());
+
+    // Supplied groups are reported as they are.
+    auto with_groups = control();
+    for (Eigen::Index j = 0; j < p; ++j) { with_groups.prior_groups.push_back(j / 5); }
+    const DummyClusters prior = run(with_groups, true);
+    ASSERT_EQ(prior.groups_vec.size(), p);
+    for (Eigen::Index j = 0; j < p; ++j) { EXPECT_EQ(prior.groups_vec(j), j / 5); }
+    EXPECT_EQ(prior.max_clusters, 4U);
+    EXPECT_EQ(prior.hc_method_used, "prior");
+
+    // Found clusters: a partition into max_clusters non-empty clusters. With
+    // single linkage no two variables of different clusters correlate above
+    // corr_max, which is what the cut at the height 1 - corr_max means.
+    Eigen::MatrixXd Xc = d.X.rowwise() - d.X.colwise().mean();
+    Xc.colwise().normalize();
+    const Eigen::MatrixXd corr = Xc.transpose() * Xc;
+    for (const auto linkage : {hac::LinkageMethod::Single, hac::LinkageMethod::Complete}) {
+        auto found_ctrl = control();
+        found_ctrl.hc_linkage = linkage;
+        found_ctrl.corr_max   = 0.5;
+        const DummyClusters found = run(found_ctrl, true);
+        ASSERT_EQ(found.groups_vec.size(), p);
+        ASSERT_GE(found.max_clusters, 1U);
+        std::vector<std::size_t> size(found.max_clusters, 0);
+        for (Eigen::Index j = 0; j < p; ++j) {
+            ASSERT_GE(found.groups_vec(j), 0);
+            ASSERT_LT(static_cast<std::size_t>(found.groups_vec(j)), found.max_clusters);
+            ++size[static_cast<std::size_t>(found.groups_vec(j))];
+        }
+        for (const std::size_t s : size) { EXPECT_GE(s, 1U); }
+        if (linkage == hac::LinkageMethod::Single) {
+            EXPECT_EQ(found.hc_method_used, "single");
+            for (Eigen::Index a = 0; a < p; ++a) {
+                for (Eigen::Index b = a + 1; b < p; ++b) {
+                    if (found.groups_vec(a) != found.groups_vec(b)) {
+                        EXPECT_LE(std::abs(corr(a, b)), 0.5 + 1e-9) << "variables " << a << " and " << b;
+                    }
+                }
+            }
+        } else {
+            EXPECT_EQ(found.hc_method_used, "complete");
+        }
+    }
+
+    // Without cluster dummies there are no clusters.
+    auto iid = control();
+    iid.cluster_dummies = false;
+    const DummyClusters none = run(iid, true);
+    EXPECT_EQ(none.groups_vec.size(), 0);
+    EXPECT_EQ(none.max_clusters, 0U);
+    EXPECT_TRUE(none.hc_method_used.empty());
+}
+
+
 /** @brief gammaToK builds K = Gamma^T Gamma (first-difference operator ->
  *  tridiagonal graph Laplacian). */
 TEST_F(TRexTikhonovTest, GammaToK_FirstDifferenceGivesLaplacian) {

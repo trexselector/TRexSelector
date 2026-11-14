@@ -414,6 +414,17 @@ void TRexTikhonovSelector::setupClusterModel() {
             merges, p_, trex_tik_ctrl_.corr_max);
     }
 
+    // The record of getDummyClusters().
+    dummy_clusters_.max_clusters = clusters_list_.size();
+    dummy_clusters_.groups_vec.resize(static_cast<Eigen::Index>(p_));
+    for (std::size_t m = 0; m < clusters_list_.size(); ++m) {
+        for (const Eigen::Index j : clusters_list_[m]) {
+            dummy_clusters_.groups_vec(j) = static_cast<int>(m);
+        }
+    }
+    dummy_clusters_.hc_method_used = trex_tik_ctrl_.prior_groups.empty()
+        ? cdum::linkageName(trex_tik_ctrl_.hc_linkage) : "prior";
+
     auto cholesky_lower_list = cdum::buildClusterCholeskys(
         *X_, clusters_list_, n_, "TRexTikhonovSelector");
 

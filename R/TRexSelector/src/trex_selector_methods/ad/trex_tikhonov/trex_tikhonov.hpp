@@ -109,6 +109,7 @@
 
 // std includes
 #include <cstddef>
+#include <string>
 #include <vector>
 
 // Eigen includes
@@ -253,6 +254,26 @@ struct Lambda2PilotResult {
 
     /** @brief Wall-clock seconds of the whole pilot. */
     double seconds = 0.0;
+};
+
+
+/**
+ * @brief The clusters of the variables in the dummy generation of a run.
+ *        The fields have the names of the GVS result.
+ */
+struct DummyClusters {
+
+    /** @brief Cluster of each variable (0-based, length p). Empty when the
+     *  dummies are not drawn per cluster or no run was made. */
+    Eigen::VectorXi groups_vec;
+
+    /** @brief Number of clusters M (0 when there are none). */
+    std::size_t max_clusters = 0;
+
+    /** @brief Origin of the clusters: "prior" when `prior_groups` was
+     *  supplied, else the linkage of the clustering, "single", "complete",
+     *  "average" or "wpgma". Empty when there are no clusters. */
+    std::string hc_method_used;
 };
 
 
@@ -559,6 +580,14 @@ public:
         return lambda2_pilot_;
     }
 
+    /** @brief The clusters the dummies of the last `select()` /
+     *  `runPilotOnly()` were drawn for: `prior_groups`, or the clusters the
+     *  selector found by clustering the correlations. Without a run and with
+     *  `cluster_dummies = false` the record is empty. */
+    const DummyClusters& getDummyClusters() const noexcept {
+        return dummy_clusters_;
+    }
+
     /**
      * @brief Run ONLY the lambda_2 pilot (cluster model + pilot experiments
      *        + pick) and release X, without the main selection.
@@ -658,6 +687,9 @@ private:
      *  Kept for diagnostics; the Cholesky factors live inside the
      *  DummyGenerator cluster model. */
     std::vector<std::vector<Eigen::Index>> clusters_list_;
+
+    /** @brief The clusters as reported by getDummyClusters(). */
+    DummyClusters dummy_clusters_;
 };
 
 // ===================================================================================
