@@ -150,7 +150,9 @@ def _reflow_references(lines):
     return out
 
 
-_ABS = re.compile(r"\|([A-Za-z_][A-Za-z0-9_]*)\|")
+# An expression between two bars with no blank right inside them, |cor| or |Phi_T(j) - Phi_T(j')|.
+# The bars of a type union "A | None" have blanks and stay.
+_ABS = re.compile(r"\|([^|\s](?:[^|]*[^|\s])?)\|")
 _OVERLOAD = re.compile(r"^(\d+)\. (\w+\(.*\) -> .*)$")
 
 
@@ -161,7 +163,7 @@ def _process_docstring(app, what, name, obj, options, lines):
         lines[:] = (inspect.getdoc(obj) or "").splitlines()
     # pybind11 repeats the signature as the first docstring line of overloaded or wrapped callables and
     # lists the overloads as "1. f(self: T, ...) -> R", shown here as code without self;
-    # |A| in a docstring is an absolute value, not a reStructuredText substitution
+    # |A| in a docstring is an absolute value or a cardinality, not a reStructuredText substitution
     for i, line in enumerate(lines):
         if "typing.Annotated" in line or "trexselector._core" in line or "Supports" in line:
             lines[i] = _shorten(line)

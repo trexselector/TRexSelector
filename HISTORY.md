@@ -16,6 +16,16 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Python reference builds without the warning on the penalty formula
+
+- The Sphinx build reported "Undefined substitution referenced" for the penalty formula of the
+  dependency-aware selector, `|Phi_T(j) - Phi_T(j')|`, once for the core class and once for the
+  selector of the package root. reStructuredText reads a text between two bars as a substitution. The
+  hook of `docs/conf.py` protected a single name between bars (`|cor|`, `|A|`) and no expression.
+- The hook now protects any text between two bars that has no blank right inside them. The bars of a
+  type union such as `A | None` have blanks and stay as they are. The build ends with 0 warnings, and
+  the formula shows its bars on both classes.
+
 #### The disk-space tests no longer depend on other processes in the temp folder
 
 - `DiskSpace.TempDirManagerChecksBeforeCreating` failed once in a parallel run of the C++ tests. It
