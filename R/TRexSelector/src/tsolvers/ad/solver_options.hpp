@@ -161,6 +161,12 @@ struct SolverOptions {
      *  LASSO inner path (false). */
     bool tenet_aug_use_lars = false;
 
+    /** @brief TIKNET and TCDTIKNET: the caller has checked the Tikhonov
+     *  matrix (finite entries, symmetric, positive semi-definite), and the
+     *  solver skips its own check. For a caller that builds many solvers on
+     *  one matrix, as the T-Rex selector does. Default false. */
+    bool tikhonov_validated = false;
+
     /** @brief Ridge weight of the dummy block: TCDENET (kappa * I on the
      *  dummies) and TCDTIKNET under INDEPENDENT_RIDGE coupling (ignored when
      *  fold_dummies is true). Default 1.0.

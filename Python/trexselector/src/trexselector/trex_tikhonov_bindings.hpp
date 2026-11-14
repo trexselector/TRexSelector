@@ -271,15 +271,16 @@ inline void bind_trex_tikhonov(py::module& m) {
                 c.tikhonov_K = K.sparseView();
             },
             "The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). "
-                "Required under SPARSE_GENERAL. Optional under GROUP_CENTERING, where the selector builds the "
-                "centering matrix from prior_groups when it is left out. A supplied matrix has to be that "
-                "matrix.")
+                "Required under SPARSE_GENERAL, where the selector checks its content at construction (finite "
+                "entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the "
+                "selector builds the centering matrix from prior_groups when it is left out. A supplied matrix "
+                "is compared with that matrix, and another matrix raises ValueError.")
         .def_readwrite("lambda_2",        &tik::TRexTikhonovControlParameter::lambda_2,        "Tikhonov penalty "
-            "(solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed.")
+            "(solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed. It must be finite.")
         .def_readwrite("lambda2_method",  &tik::TRexTikhonovControlParameter::lambda2_method,  "Rule for resolving "
             "lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot knee; the CV tuners are the alternatives).")
         .def_readwrite("cv_n_folds",      &tik::TRexTikhonovControlParameter::cv_n_folds,      "Folds of the CV "
-            "tuners.")
+            "tuners, 2 to n.")
         .def_readwrite("cv_n_lambda",     &tik::TRexTikhonovControlParameter::cv_n_lambda,     "SVD tuners: points on "
             "the lambda_2 grid.")
         .def_readwrite("cv_n_lambda1",    &tik::TRexTikhonovControlParameter::cv_n_lambda1,    "IEN-geometry CD "

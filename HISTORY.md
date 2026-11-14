@@ -16,6 +16,44 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Tikhonov selector checks its control at construction, and its penalty matrix once
+
+Step 2 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 2 to 5).
+
+- `lambda_2`. NaN ended in `select()` with std::logic_error "the pilot rule is resolved by
+  runLambda2Pilot(), not here", an internal message, and +infinity was accepted and selected nothing.
+  The constructor refuses a value that is not finite.
+- Late checks. A K that is not finite, not symmetric or not positive semi-definite was refused in
+  `select()` by the solver ("TIKNET_Solver: ..."), an unsupported linkage by the clustering helper
+  ("cluster_dummies::runCorrelationHAC: ..."), and wrong sizes of the cross-validation by the tuners
+  ("ienet_cv_ccd::fit: ..."). The constructor checks them under the name of the selector: the content
+  of K, the linkage when the selector clusters the variables itself, and `cv_n_folds` in [2, n] and the
+  grid sizes when a cross-validation rule will run.
+- The check of K ran in every solver. Each TIKNET solver validated the matrix (finiteness, symmetry, a
+  sparse LDLT factorization), and a default selection builds at least 110 solvers (9 grid values times
+  10 pilot experiments, and 20 experiments per step of the L-loop). Measured per solver: 1.2 ms for a
+  centering matrix at p = 1,000, 97 ms for a dense K at p = 1,000, 661 ms at p = 2,000, so about 73
+  seconds per selection there. The copy of the matrix that each solver also makes costs 0.9 ms at
+  p = 2,000 and stays. `SolverOptions` gains `tikhonov_validated` (default false): the solver skips its
+  check when the caller has checked the matrix. The selector checks K once in its constructor and sets
+  the option for its solvers through `ExperimentRunnerConfig` and `SolverConfig`. The centering matrix
+  that the selector builds itself is valid by construction and is not checked. R (`tsolver_options()`)
+  and Python (`SolverOptions`) carry the option as well, so the solver options stay the same on the
+  three surfaces.
+- A supplied K under GROUP_CENTERING. The header said that it "must equal" the centering matrix, and
+  nothing compared it. With K = I supplied the solver ran on the groups while a cross-validation rule
+  tuned on K = I (lambda_2 0.39 against 1.37 with the matrix left out). The constructor compares the
+  supplied matrix with the centering matrix of the groups and refuses another one (Fabian asked for a
+  proposal, this is it). The right matrix and no matrix give the same run.
+- Texts. The C++ header states the checks at `tikhonov_K`, `lambda_2`, `cv_n_folds`, `hc_linkage` and in
+  the list of exceptions of the constructor. The R help and the Python docstrings of the control follow
+  for the sentences that changed. Their rework comes with the two classes.
+- Tests. C++ pins every refusal at construction with the name of the selector, that unused settings are
+  left alone (a linkage with supplied groups, the sizes with a fixed lambda_2), the comparison under
+  GROUP_CENTERING and the solver option. R and Python pin the refusals and the option on their
+  surface. C++ tests 742 of 742, R tests 2,069, Python tests 770. The pilot probe at lambda_2 = 0 with
+  10 experiments and a dense K at p = 600 takes 32 ms where it took 265 ms (23 ms with the identity).
+
 #### A selector runs once: a second select() is an error
 
 - The defect. `select()` gives X back when it ends (`denormalizeAndReleaseX()`). The guard at the start of

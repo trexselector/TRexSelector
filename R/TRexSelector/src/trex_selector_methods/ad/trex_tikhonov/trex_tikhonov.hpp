@@ -282,20 +282,25 @@ struct TRexTikhonovControlParameter {
 
     /** @brief General Tikhonov matrix K = Gamma^T Gamma (p x p, sparse,
      *  PSD). REQUIRED for SPARSE_GENERAL: an empty matrix throws at
-     *  construction. Build from a regularization operator Gamma (m x p) via
-     *  `TRexTikhonovSelector::gammaToK()`. Prefer diag(K) = 1 so the real
-     *  columns carry the same ridge as the dummies (kappa_dummy = 1).
+     *  construction. The constructor checks its content once (finite
+     *  entries, symmetry, positive semi-definiteness), and the solvers of
+     *  the selector take it as checked. Build from a regularization operator
+     *  Gamma (m x p) via `TRexTikhonovSelector::gammaToK()`. Prefer
+     *  diag(K) = 1 so the real columns carry the same ridge as the dummies
+     *  (kappa_dummy = 1).
      *  OPTIONAL for GROUP_CENTERING: when empty, the selector builds
      *  K_GC = blockdiag(I - J/p_m) from `prior_groups` internally (the CV
-     *  tuners consume it); when supplied it must equal that structure —
-     *  the solver runs on the O(1) hooks either way. */
+     *  tuners consume it). A supplied matrix is compared with K_GC, and
+     *  another matrix is refused at construction. The solver runs on the
+     *  O(1) hooks either way. */
     Eigen::SparseMatrix<double> tikhonov_K;
 
     /** @brief User-supplied lambda_2 on the solver scale.
      *  - `< 0` (default `-1.0`): "not supplied" sentinel; triggers
      *    auto-computation via `lambda2_method`.
      *  - `== 0`: degenerate case -> pure TCDLASSO lasso path (no penalty).
-     *  - `> 0` : fixed penalty weight. */
+     *  - `> 0` : fixed penalty weight.
+     *  The value must be finite. */
     double lambda_2 = -1.0;
 
     /** @brief Selection rule for auto-computing `lambda_2` when
@@ -303,7 +308,7 @@ struct TRexTikhonovControlParameter {
      *  the CV tuners (well-posed in any p/n regime) are the alternatives. */
     TikLambda2Method lambda2_method = TikLambda2Method::PILOT_KNEE;
 
-    /** @brief Number of folds for the lambda_2 CV. Default: 10. */
+    /** @brief Number of folds for the lambda_2 CV, 2 to n. Default: 10. */
     int cv_n_folds = 10;
 
     /** @brief lambda_2 grid size for the CV_*_TIK_SVD analytic scan.
@@ -424,8 +429,10 @@ struct TRexTikhonovControlParameter {
      *  `cluster_dummies == false`. */
     double corr_max = 0.5;
 
-    /** @brief Linkage method for the HAC dummy clustering. Ignored when
-     *  `prior_groups` is set or `cluster_dummies == false`. */
+    /** @brief Linkage method for the HAC dummy clustering: Single (default),
+     *  Complete, Average or WPGMA. Another linkage is refused at
+     *  construction. Ignored when `prior_groups` is set or
+     *  `cluster_dummies == false`. */
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
@@ -499,9 +506,14 @@ public:
      * @param verbose Progress output.
      *
      * @throws std::invalid_argument on an empty or mis-dimensioned
-     *         `tikhonov_K`, a `solver_type` other than TCDTIKNET / TIKNET,
-     *         malformed `prior_groups` / `corr_max`, or — with
-     *         `cluster_dummies` on — a PERMUTATION-family L-loop strategy.
+     *         `tikhonov_K`, a `tikhonov_K` that is not finite, not symmetric
+     *         or not positive semi-definite, a supplied `tikhonov_K` under
+     *         GROUP_CENTERING that is not the centering matrix, a `lambda_2`
+     *         that is not finite, a `solver_type` other than TCDTIKNET /
+     *         TIKNET, malformed `prior_groups` / `corr_max`, an unsupported
+     *         `hc_linkage`, wrong sizes of the cross-validation or of the
+     *         pilot rule, or — with `cluster_dummies` on — a
+     *         PERMUTATION-family L-loop strategy.
      */
     TRexTikhonovSelector(Eigen::Map<Eigen::MatrixXd>& X,
                          Eigen::Map<Eigen::VectorXd>& y,

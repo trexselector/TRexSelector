@@ -182,9 +182,12 @@ public:
                 "to be a multiple of X.cols() (layered dummy convention); "
                 "got L = ", num_dummies_, ", p = ", p_original_));
         }
-        // Finiteness, symmetry, PSD within tolerance (shared trio helper).
-        solver_utils::tikhonov::validateTikhonovK(tikhonov_matrix,
-                                                  "TCDTIKNET_Solver");
+        // Finiteness, symmetry, PSD within tolerance (shared trio helper),
+        // unless the caller has checked the matrix.
+        if (!options.tikhonov_validated) {
+            solver_utils::tikhonov::validateTikhonovK(tikhonov_matrix,
+                                                      "TCDTIKNET_Solver");
+        }
         penalty_kind_ = PenaltyKind::SPARSE;
         fold_dummies_ = fold_dummies;
         tikhonov_K_ = tikhonov_matrix;

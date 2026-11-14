@@ -287,6 +287,14 @@ class SolverOptions:
     def tie_seed(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     @property
+    def tikhonov_validated(self) -> bool:
+        """
+        TIKNET and TCDTIKNET: True says that the Tikhonov matrix was checked by the caller (finite entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller that builds many solvers on one matrix, as the T-Rex selector does. Default False.
+        """
+    @tikhonov_validated.setter
+    def tikhonov_validated(self, arg0: bool) -> None:
+        ...
+    @property
     def tol(self) -> float:
         """
         Numerical tolerance of the solver's internal comparisons. Default: machine epsilon. A

@@ -726,6 +726,10 @@ inline void bind_solver_options(py::module& m) {
        .def_readwrite("tenet_aug_use_lars", &SolverOptions::tenet_aug_use_lars,
             "TENETAug / TIENETAug: pure-LARS inner path that never drops variables (True) instead of the LASSO inner "
                 "path (False, default).")
+       .def_readwrite("tikhonov_validated", &SolverOptions::tikhonov_validated,
+            "TIKNET and TCDTIKNET: True says that the Tikhonov matrix was checked by the caller (finite "
+            "entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller "
+            "that builds many solvers on one matrix, as the T-Rex selector does. Default False.")
        .def_readwrite("kappa_dummy", &SolverOptions::kappa_dummy,
             "Ridge weight of the dummy block (TCDENET; TCDTIKNET under INDEPENDENT_RIDGE). Default 1.0. "
             "Deprecated: removed with the coordinate-descent family in the next minor release.")

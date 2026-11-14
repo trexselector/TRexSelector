@@ -623,3 +623,21 @@ def test_every_solver_class_reads_readonly_views(readonly_solver_data):
         solver.executeStep(2, True)
     np.testing.assert_array_equal(X_view, Xs)
     np.testing.assert_array_equal(D_view, Ds)
+
+
+def test_tikhonov_validated_skips_the_check_of_the_matrix():
+    """A Tikhonov solver trusts a matrix that the caller has checked."""
+    assert SolverOptions().tikhonov_validated is False
+    rng = np.random.default_rng(71)
+    n, p = 30, 6
+    K = np.eye(p)
+    K[0, 1] = 0.5                                     # not symmetric
+
+    def data():
+        return (np.asfortranarray(rng.standard_normal((n, p))), np.asfortranarray(rng.standard_normal((n, p))),
+                rng.standard_normal(n))
+
+    with pytest.raises(ValueError, match="not symmetric"):
+        TIKNET_Solver(*data(), K, SolverOptions(lambda2=1.0))
+    TIKNET_Solver(*data(), K, SolverOptions(lambda2=1.0, tikhonov_validated=True))
+

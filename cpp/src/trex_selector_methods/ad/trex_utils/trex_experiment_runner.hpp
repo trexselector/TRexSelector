@@ -156,6 +156,10 @@ struct ExperimentRunnerConfig {
      *  into SolverConfig::tikhonov_K. Must outlive the run() call. */
     const Eigen::SparseMatrix<double>* tikhonov_K = nullptr;
 
+    /** @brief tikhonov_K was checked by the selector; forwarded verbatim
+     *  into SolverConfig::tikhonov_K_validated. */
+    bool tikhonov_K_validated = false;
+
     /** @brief Dummy-coupling mode for the sparse-K TCDTIKNET dispatch;
      *  forwarded verbatim into SolverConfig::tikhonov_fold_dummies. */
     bool tikhonov_fold_dummies = false;
@@ -708,6 +712,7 @@ private:
             // parallel K-loop the solver's regions stay serial anyway.
             .n_threads = cfg.max_inner_threads,
             .tikhonov_K = cfg.tikhonov_K,
+            .tikhonov_K_validated = cfg.tikhonov_K_validated,
             .tikhonov_fold_dummies = cfg.tikhonov_fold_dummies,
             .tikhonov_group_centering = cfg.tikhonov_group_centering,
             .tikhonov_groups = cfg.tikhonov_groups

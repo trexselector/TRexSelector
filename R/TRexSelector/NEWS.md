@@ -42,6 +42,17 @@
   now, for `TRexSelector`, `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector` and
   `TRexTikhonovSelector`. Construct a new selector to run again. The fields keep the results of the run.
 * A target FDR that is `NaN` is refused. Up to 2.0.1 it was accepted and nothing was selected.
+* `TRexTikhonovSelector` checks its control at construction. A penalty matrix that is not finite, not
+  symmetric or not positive semi-definite, and a wrong number of folds of a cross-validation rule were
+  reported in `select()`, under the name of a solver or a tuner. `lambda_2 = NaN` ended in an internal
+  error, and `lambda_2 = Inf` was accepted and selected nothing. All of them are errors of the
+  constructor now.
+* Under `penalty_structure = "GROUP_CENTERING"` a supplied `tikhonov_K` is compared with the centering
+  matrix of `prior_groups`, and another matrix is an error. Up to 2.0.1 it was taken as it was, and a
+  cross-validation rule then tuned `lambda_2` on a penalty that the solver did not apply.
+* `TRexTikhonovSelector` checks the penalty matrix once. Up to 2.0.1 every solver of a selection
+  checked it again with a matrix factorization, at least 110 times in a default run. For a dense matrix
+  at p = 2,000 these checks alone took about 73 seconds.
 * The help of `trex_da_control()` no longer offers `hc_linkage = "Ward"`, which the selector rejects, and
   the error names the supported linkages. The help of the fields `FDP_hat_array_BT`, `Phi_array_BT` and
   `R_array_BT` of `TRexDASelector` states what the arrays hold. The vignette "T-Rex+DA" is titled
@@ -121,6 +132,8 @@
 
 * `trex_da_control()` gains `bt_selection_mode` and `trex_gvs_control()` gains `group_labels`. Both
   parameters existed in C++ and Python.
+* `tsolver_options()` gains `tikhonov_validated`. With `TRUE` the solvers `TIKNET_Solver` and
+  `TCDTIKNET_Solver` take their penalty matrix as checked by the caller and skip their own check.
 
 ## Deprecated
 

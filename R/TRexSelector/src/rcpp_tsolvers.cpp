@@ -122,6 +122,7 @@ SolverOptions parse_solver_options(const Rcpp::List& o) {
         else Rcpp::stop("tsolver_options: ncgmp_variant must be \"line_search\" or \"fully_corrective\"; got " + v);
     }
     if (has("tenet_aug_use_lars")) opts.tenet_aug_use_lars = Rcpp::as<bool>(o["tenet_aug_use_lars"]);
+    if (has("tikhonov_validated")) opts.tikhonov_validated = Rcpp::as<bool>(o["tikhonov_validated"]);
     if (has("kappa_dummy"))        opts.kappa_dummy        = Rcpp::as<double>(o["kappa_dummy"]);
     if (has("fold_dummies"))       opts.fold_dummies       = Rcpp::as<bool>(o["fold_dummies"]);
     if (has("group_penalty")) {

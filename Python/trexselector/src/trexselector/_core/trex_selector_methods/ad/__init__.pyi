@@ -2445,7 +2445,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_n_folds(self) -> int:
         """
-        Folds of the CV tuners.
+        Folds of the CV tuners, 2 to n.
         """
     @cv_n_folds.setter
     def cv_n_folds(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2509,7 +2509,7 @@ class TRexTikhonovControlParameter:
     @property
     def lambda_2(self) -> float:
         """
-        Tikhonov penalty (solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed.
+        Tikhonov penalty (solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed. It must be finite.
         """
     @lambda_2.setter
     def lambda_2(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2597,7 +2597,7 @@ class TRexTikhonovControlParameter:
     @property
     def tikhonov_K(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). Required under SPARSE_GENERAL. Optional under GROUP_CENTERING, where the selector builds the centering matrix from prior_groups when it is left out. A supplied matrix has to be that matrix.
+        The p x p PSD penalty matrix K as a dense array (converted to sparse internally; read back dense). Required under SPARSE_GENERAL, where the selector checks its content at construction (finite entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the selector builds the centering matrix from prior_groups when it is left out. A supplied matrix is compared with that matrix, and another matrix raises ValueError.
         """
     @tikhonov_K.setter
     def tikhonov_K(self, arg1: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> None:

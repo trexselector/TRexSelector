@@ -63,9 +63,12 @@ TIKNET_Solver::TIKNET_Solver(
             "TIKNET_Solver: D.cols() must be a multiple of X.cols() "
             "(FOLDED layered dummy convention).");
     }
-    // Finiteness, symmetry, PSD within tolerance (shared trio helper).
-    solver_utils::tikhonov::validateTikhonovK(tikhonov_matrix,
-                                              "TIKNET_Solver");
+    // Finiteness, symmetry, PSD within tolerance (shared trio helper),
+    // unless the caller has checked the matrix.
+    if (!options.tikhonov_validated) {
+        solver_utils::tikhonov::validateTikhonovK(tikhonov_matrix,
+                                                  "TIKNET_Solver");
+    }
     tikhonov_K_ = tikhonov_matrix;
     tikhonov_K_.makeCompressed();
 

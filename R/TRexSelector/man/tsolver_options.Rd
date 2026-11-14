@@ -19,6 +19,7 @@ tsolver_options(
   rho_afs = 0.3,
   ncgmp_variant = c("line_search", "fully_corrective"),
   tenet_aug_use_lars = FALSE,
+  tikhonov_validated = FALSE,
   kappa_dummy = 1,
   fold_dummies = FALSE,
   group_penalty = c("MEAN", "CENTERING"),
@@ -88,6 +89,11 @@ selectors; 1 is forward stepwise.}
 \item{tenet_aug_use_lars}{Logical; TENETAug and TIENETAug run the
 augmented system with a pure-LARS inner path that never drops variables
 (default \code{FALSE}: LASSO inner path).}
+
+\item{tikhonov_validated}{Logical; TIKNET and TCDTIKNET. \code{TRUE} says that the
+Tikhonov matrix was checked by the caller (finite entries, symmetric, positive
+semi-definite), and the solver skips its own check. For a caller that builds many
+solvers on one matrix, as the T-Rex selector does. Default \code{FALSE}.}
 
 \item{kappa_dummy}{Ridge weight of the dummy block of TCDENET, and of
 TCDTIKNET with \code{fold_dummies = FALSE}. Default 1. Deprecated: it

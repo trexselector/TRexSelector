@@ -438,3 +438,73 @@ def test_unconverged_coordinate_descent_raises_and_gives_the_design_back():
     np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
     with pytest.raises(RuntimeError, match="can no longer run"):
         sel.select()                                  # retired
+
+
+# ---------------------------------------------------------------------------
+# Checks at construction
+# ---------------------------------------------------------------------------
+
+def _small():
+    rng = np.random.default_rng(31)
+    n, p = 40, 10
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, 0] + rng.standard_normal(n)
+    return X, y, n, p
+
+
+def _build(X, y, **fields):
+    tik = tsn.TRexTikhonovControlParameter()
+    for name, value in fields.items():
+        setattr(tik, name, value)
+    base = tsn.TRexControlParameter()
+    base.K = 5
+    return tsn.TRexTikhonovSelector(X, y, tFDR=0.3, tik_control=tik, trex_control=base, seed=2, verbose=False)
+
+
+def test_the_content_of_k_is_checked_at_construction():
+    X, y, _, p = _small()
+    X0 = X.copy(order="F")
+    K_asym = np.eye(p)
+    K_asym[0, 1] = 0.5
+    K_neg = np.eye(p)
+    K_neg[p - 1, p - 1] = -1.0
+    with pytest.raises(ValueError, match="TRexTikhonovSelector.*not symmetric"):
+        _build(X, y, tikhonov_K=K_asym, lambda_2=1.0)
+    with pytest.raises(ValueError, match="TRexTikhonovSelector.*positive semi-definite"):
+        _build(X, y, tikhonov_K=K_neg, lambda_2=1.0)
+    np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_lambda_2_must_be_finite(bad):
+    X, y, _, p = _small()
+    with pytest.raises(ValueError, match="lambda_2 must be finite"):
+        _build(X, y, tikhonov_K=np.eye(p), lambda_2=bad)
+
+
+def test_the_folds_of_a_cv_rule_are_checked_at_construction():
+    X, y, n, p = _small()
+    for folds in (1, n + 1):
+        with pytest.raises(ValueError, match=r"cv_n_folds must be in \[2, n\]"):
+            _build(X, y, tikhonov_K=np.eye(p), lambda2_method=tsn.TikLambda2Method.CV_1SE_IEN_CCD,
+                   cv_n_folds=folds)
+    # A fixed lambda_2 does not use the folds.
+    _build(X, y, tikhonov_K=np.eye(p), lambda_2=1.0, cv_n_folds=1).restore()
+
+
+def test_group_centering_refuses_another_matrix():
+    X, y, _, p = _small()
+    groups = [0] * 5 + [1] * 5
+
+    def run(K):
+        fields = dict(penalty_structure=tsn.TikPenaltyStructure.GROUP_CENTERING, prior_groups=groups,
+                      lambda_2=1.0)
+        if K is not None:
+            fields["tikhonov_K"] = K
+        return np.array(_build(X, y, **fields).select().selected_var)
+
+    with pytest.raises(ValueError, match="must be the centering matrix"):
+        run(np.eye(p))
+    # The right matrix and no matrix give the same run.
+    assert np.array_equal(run(tsn.build_group_centering_k(groups)), run(None))
+

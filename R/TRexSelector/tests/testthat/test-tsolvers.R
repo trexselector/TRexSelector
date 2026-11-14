@@ -650,3 +650,19 @@ test_that("n_threads is the solver's own budget: default 1, at least 1, the path
   expect_error(s$set_num_threads(-1), "n_threads")
   expect_error(s$set_num_threads(0), "n_threads")
 })
+
+test_that("tikhonov_validated lets a Tikhonov solver skip the check of its matrix", {
+  expect_false(tsolver_options()$tikhonov_validated)
+  set.seed(71)
+  n <- 30; p <- 6
+  X <- matrix(rnorm(n * p), n, p)
+  D <- matrix(rnorm(n * p), n, p)
+  y <- rnorm(n)
+  K <- diag(p); K[1, 2] <- 0.5                      # not symmetric
+  expect_error(TIKNET_Solver$new(X + 0, D + 0, y, K, options = tsolver_options(lambda2 = 1)),
+               "not symmetric")
+  expect_no_error(
+    TIKNET_Solver$new(X + 0, D + 0, y, K,
+                      options = tsolver_options(lambda2 = 1, tikhonov_validated = TRUE))$restore())
+})
+

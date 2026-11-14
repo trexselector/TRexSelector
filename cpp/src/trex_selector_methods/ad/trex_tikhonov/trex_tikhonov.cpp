@@ -31,6 +31,9 @@
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_dummies.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_hac.hpp>
 
+// Content check of the penalty matrix (shared with the solvers)
+#include <tsolvers/ad/solver_utils/tikhonov_validation.hpp>
+
 // Seed mixing (CV fold seed derivation, mirrors TRexGVSSelector)
 #include <utils/datageneration/utils_dummygen.hpp>
 #include <utils/logging/logger.hpp>
@@ -60,10 +63,21 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     tc::TRexSelector(X, y, tFDR, trex_tik_ctrl.trex_ctrl, seed, verbose),
     trex_tik_ctrl_(std::move(trex_tik_ctrl))
 {
+    // ---- lambda_2 ----------------------------------------------------------
+    // A value >= 0 is used as it is, a negative one is the sentinel of the
+    // rules. NaN and infinity are neither.
+    if (!std::isfinite(trex_tik_ctrl_.lambda_2)) {
+        throw std::invalid_argument(
+            "TRexTikhonovSelector: lambda_2 must be finite. A value >= 0 is "
+            "used as it is, a negative value lets lambda2_method choose it. "
+            "Got: " + std::to_string(trex_tik_ctrl_.lambda_2));
+    }
+
     // ---- Penalty matrix / structure ---------------------------------------
     const auto p_idx = static_cast<Eigen::Index>(p_);
-    if (trex_tik_ctrl_.penalty_structure ==
-        TikPenaltyStructure::GROUP_CENTERING) {
+    const bool group_centering = trex_tik_ctrl_.penalty_structure ==
+                                 TikPenaltyStructure::GROUP_CENTERING;
+    if (group_centering) {
         // Structured fast path: groups are REQUIRED (they define K_GC and
         // feed the O(1) solver hooks); K is built internally when absent
         // (the CV tuners consume it).
@@ -75,10 +89,33 @@ TRexTikhonovSelector::TRexTikhonovSelector(
         }
         cdum::validatePriorGroups(trex_tik_ctrl_.prior_groups, p_,
                                   "TRexTikhonovSelector");
-        if (trex_tik_ctrl_.tikhonov_K.nonZeros() == 0) {
-            trex_tik_ctrl_.tikhonov_K =
-                buildGroupCenteringK(trex_tik_ctrl_.prior_groups);
+        Eigen::SparseMatrix<double> K_gc =
+            buildGroupCenteringK(trex_tik_ctrl_.prior_groups);
+        if (trex_tik_ctrl_.tikhonov_K.nonZeros() != 0) {
+            // A supplied matrix has to be the centering matrix: the solver
+            // runs on the groups and the CV rules on the matrix, so another
+            // one would tune one penalty and apply a second.
+            bool same = trex_tik_ctrl_.tikhonov_K.rows() == p_idx &&
+                        trex_tik_ctrl_.tikhonov_K.cols() == p_idx;
+            if (same) {
+                const Eigen::SparseMatrix<double> diff =
+                    trex_tik_ctrl_.tikhonov_K - K_gc;
+                for (int j = 0; j < diff.outerSize() && same; ++j) {
+                    for (Eigen::SparseMatrix<double>::InnerIterator it(diff, j); it; ++it) {
+                        if (!(std::abs(it.value()) <= 1e-10)) { same = false; break; }
+                    }
+                }
+            }
+            if (!same) {
+                throw std::invalid_argument(
+                    "TRexTikhonovSelector: under penalty_structure = "
+                    "GROUP_CENTERING a supplied tikhonov_K must be the "
+                    "centering matrix of prior_groups, "
+                    "blockdiag(I - 1 1^T / p_m). Leave tikhonov_K empty and "
+                    "the selector builds it.");
+            }
         }
+        trex_tik_ctrl_.tikhonov_K = std::move(K_gc);
         groups_vec_i_.resize(p_idx);
         for (std::size_t j = 0; j < p_; ++j) {
             groups_vec_i_(static_cast<Eigen::Index>(j)) =
@@ -108,6 +145,14 @@ TRexTikhonovSelector::TRexTikhonovSelector(
             "the solver constructors).");
     }
     trex_tik_ctrl_.tikhonov_K.makeCompressed();
+
+    // The content of a supplied K is checked once, here. The solvers of the
+    // selector skip their own check (buildRunnerConfig()). The centering
+    // matrix is built above and valid by construction.
+    if (!group_centering) {
+        trex::tsolvers::ad::solver_utils::tikhonov::validateTikhonovK(
+            trex_tik_ctrl_.tikhonov_K, "TRexTikhonovSelector");
+    }
 
     // ---- Solver gate ------------------------------------------------------
     // Two solvers implement the general sparse-K mode: TIKNET (native LARS
@@ -150,11 +195,22 @@ TRexTikhonovSelector::TRexTikhonovSelector(
         }
         cdum::validatePriorGroups(trex_tik_ctrl_.prior_groups, p_,
                                   "TRexTikhonovSelector");
-        if (trex_tik_ctrl_.prior_groups.empty() &&
-            (trex_tik_ctrl_.corr_max < 0.0 || trex_tik_ctrl_.corr_max > 1.0)) {
-            throw std::invalid_argument(
-                "TRexTikhonovSelector: corr_max must be in [0, 1]. Got: " +
-                std::to_string(trex_tik_ctrl_.corr_max));
+        // The clustering runs only without supplied groups.
+        if (trex_tik_ctrl_.prior_groups.empty()) {
+            if (!(trex_tik_ctrl_.corr_max >= 0.0 && trex_tik_ctrl_.corr_max <= 1.0)) {
+                throw std::invalid_argument(
+                    "TRexTikhonovSelector: corr_max must be in [0, 1]. Got: " +
+                    std::to_string(trex_tik_ctrl_.corr_max));
+            }
+            const hac::LinkageMethod linkage = trex_tik_ctrl_.hc_linkage;
+            if (linkage != hac::LinkageMethod::Single &&
+                linkage != hac::LinkageMethod::Complete &&
+                linkage != hac::LinkageMethod::Average &&
+                linkage != hac::LinkageMethod::WPGMA) {
+                throw std::invalid_argument(
+                    "TRexTikhonovSelector: unsupported linkage method. "
+                    "Supported: Single, Complete, Average, WPGMA.");
+            }
         }
     }
 
@@ -210,6 +266,30 @@ TRexTikhonovSelector::TRexTikhonovSelector(
             "TRexTikhonovSelector: cv_dfmax_ratio must be finite (<= 0 "
             "disables the support cap). Got: " +
             std::to_string(trex_tik_ctrl_.cv_dfmax_ratio));
+    }
+    // The sizes a cross-validation rule needs, checked here so that the
+    // error does not come from the tuner in the middle of select().
+    if (trex_tik_ctrl_.lambda_2 < 0.0 && !pilotRequested()) {
+        const int folds = trex_tik_ctrl_.cv_n_folds;
+        if (folds < 2 || static_cast<std::size_t>(folds) > n_) {
+            throw std::invalid_argument(
+                "TRexTikhonovSelector: cv_n_folds must be in [2, n]. Got: " +
+                std::to_string(folds));
+        }
+        const bool ien_rule =
+            trex_tik_ctrl_.lambda2_method == TikLambda2Method::CV_1SE_IEN_CCD ||
+            trex_tik_ctrl_.lambda2_method == TikLambda2Method::CV_MIN_IEN_CCD;
+        if (ien_rule && (trex_tik_ctrl_.cv_n_lambda2 < 1 ||
+                         trex_tik_ctrl_.cv_n_lambda1 < 1)) {
+            throw std::invalid_argument(
+                "TRexTikhonovSelector: cv_n_lambda2 and cv_n_lambda1 must be "
+                ">= 1 for the rules CV_1SE_IEN_CCD and CV_MIN_IEN_CCD.");
+        }
+        if (!ien_rule && trex_tik_ctrl_.cv_n_lambda < 1) {
+            throw std::invalid_argument(
+                "TRexTikhonovSelector: cv_n_lambda must be >= 1 for the rules "
+                "CV_1SE_TIK_SVD and CV_MIN_TIK_SVD.");
+        }
     }
 
     // ---- CV fold seed (mirrors TRexGVSSelector) ---------------------------
@@ -368,6 +448,7 @@ er::ExperimentRunnerConfig TRexTikhonovSelector::buildRunnerConfig(
     // The K matrix lives in trex_tik_ctrl_ and outlives every run() call;
     // lambda2_ was resolved in onSelectBegin().
     cfg.tikhonov_K            = &trex_tik_ctrl_.tikhonov_K;
+    cfg.tikhonov_K_validated  = true;   // checked once in the constructor
     cfg.tikhonov_fold_dummies = trex_tik_ctrl_.fold_dummy_coupling;
     cfg.solver_params.lambda2 = lambda2_;
 

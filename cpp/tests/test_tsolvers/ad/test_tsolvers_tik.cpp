@@ -845,6 +845,36 @@ TEST_F(TSolverTikTest, TiknetRejectsInvalidTikhonovK) {
 }
 
 
+/** @brief With tikhonov_validated the solver trusts the caller and skips
+ *  its check: a matrix it refuses by default is taken. The dimensions are
+ *  still checked. */
+TEST_F(TSolverTikTest, TiknetSkipsTheCheckOfAValidatedMatrix) {
+    const Eigen::Index p = X.cols();
+    Eigen::SparseMatrix<double> K = identityK(p);
+    K.coeffRef(0, 1) = 0.5;   // not symmetric
+    {
+        Mapped m(X, D, y);
+        EXPECT_THROW(
+            TIKNET_Solver(m.Xm, m.Dm, m.ym, K, trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0}),
+            std::invalid_argument);
+    }
+    {
+        Mapped m(X, D, y);
+        EXPECT_NO_THROW(
+            TIKNET_Solver(m.Xm, m.Dm, m.ym, K,
+                          trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0, .tikhonov_validated = true}));
+    }
+    {
+        Mapped m(X, D, y);
+        EXPECT_THROW(
+            TIKNET_Solver(m.Xm, m.Dm, m.ym, identityK(p + 1),
+                          trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0, .tikhonov_validated = true}),
+            std::invalid_argument);
+    }
+    EXPECT_FALSE(trex::tsolvers::ad::SolverOptions{}.tikhonov_validated);
+}
+
+
 /** @brief The three standard penalties pass validation — including the
  *  group-centering projector, whose zero eigenvalues sit exactly on the
  *  PSD boundary (the tol-shift must keep it clear of the LDLT zero-pivot

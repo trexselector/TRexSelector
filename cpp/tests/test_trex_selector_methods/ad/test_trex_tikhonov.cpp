@@ -22,6 +22,7 @@
 // std includes
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -155,6 +156,165 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
     ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
+}
+
+
+/** @brief The content of K is checked at construction, under the name of
+ *  the selector: finite entries, symmetry, positive semi-definiteness. */
+TEST_F(TRexTikhonovTest, Validation_ContentOfKIsCheckedAtConstruction) {
+    const auto expect_refused = [&](const Eigen::SparseMatrix<double>& K) {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K = K;
+        ctrl.lambda_2   = 1.0;
+        try {
+            TRexTikhonovSelector sel(X_map, y_map, 0.1, ctrl, 1, false);
+            ADD_FAILURE() << "the matrix was accepted";
+        } catch (const std::invalid_argument& e) {
+            EXPECT_NE(std::string(e.what()).find("TRexTikhonovSelector"), std::string::npos) << e.what();
+        }
+    };
+    Eigen::SparseMatrix<double> K = identityK(10);
+    K.coeffRef(0, 1) = 0.5;
+    expect_refused(K);                                   // not symmetric
+    K = identityK(10);
+    K.coeffRef(9, 9) = -1.0;
+    expect_refused(K);                                   // not positive semi-definite
+    K = identityK(10);
+    K.coeffRef(2, 2) = std::numeric_limits<double>::quiet_NaN();
+    expect_refused(K);                                   // not finite
+
+    // The three standard penalties pass.
+    const std::vector<Eigen::Index> halves = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+    for (const Eigen::SparseMatrix<double>& good :
+         {identityK(10), groupMeanK(10, 5), TRexTikhonovSelector::buildGroupCenteringK(halves)}) {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K = good;
+        ctrl.lambda_2   = 1.0;
+        EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false));
+    }
+}
+
+
+/** @brief lambda_2 is a finite number: a value >= 0 or the negative
+ *  sentinel of the rules. NaN and infinity are refused at construction. */
+TEST_F(TRexTikhonovTest, Validation_Lambda2MustBeFinite) {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    const double inf = std::numeric_limits<double>::infinity();
+    for (const double bad : {nan, inf, -inf}) {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K = identityK(10);
+        ctrl.lambda_2   = bad;
+        EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false), std::invalid_argument)
+            << "lambda_2 = " << bad;
+    }
+    for (const double good : {-1.0, 0.0, 2.5}) {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K = identityK(10);
+        ctrl.lambda_2   = good;
+        EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false)) << "lambda_2 = " << good;
+    }
+}
+
+
+/** @brief The linkage and the sizes of the cross-validation are checked at
+ *  construction when they will be used, and left alone when they will not. */
+TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
+    namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
+    const auto base = [] {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K = identityK(10);
+        ctrl.lambda_2   = 1.0;
+        return ctrl;
+    };
+    const auto refused = [&](const TRexTikhonovControlParameter& ctrl) {
+        EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false), std::invalid_argument);
+    };
+    const auto accepted = [&](const TRexTikhonovControlParameter& ctrl) {
+        EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false));
+    };
+
+    // The linkage: used when the selector clusters the variables itself.
+    for (const auto linkage : {hac::LinkageMethod::Ward, hac::LinkageMethod::Median,
+                               hac::LinkageMethod::Centroid}) {
+        auto ctrl = base();
+        ctrl.hc_linkage = linkage;
+        refused(ctrl);
+        ctrl.prior_groups = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1};   // supplied groups: no clustering
+        accepted(ctrl);
+        ctrl.prior_groups.clear();
+        ctrl.cluster_dummies = false;                         // i.i.d. dummies: no clustering
+        accepted(ctrl);
+    }
+    for (const auto linkage : {hac::LinkageMethod::Single, hac::LinkageMethod::Complete,
+                               hac::LinkageMethod::Average, hac::LinkageMethod::WPGMA}) {
+        auto ctrl = base();
+        ctrl.hc_linkage = linkage;
+        accepted(ctrl);
+    }
+
+    // The sizes of the cross-validation: used when a CV rule chooses lambda_2.
+    auto cv = base();
+    cv.lambda_2 = -1.0;
+    cv.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+    accepted(cv);
+    for (const int folds : {0, 1, 31}) {                      // n = 30
+        auto ctrl = cv;
+        ctrl.cv_n_folds = folds;
+        refused(ctrl);
+    }
+    { auto ctrl = cv; ctrl.cv_n_lambda2 = 0; refused(ctrl); }
+    { auto ctrl = cv; ctrl.cv_n_lambda1 = 0; refused(ctrl); }
+    { auto ctrl = cv; ctrl.cv_n_lambda = 0; accepted(ctrl); }  // the SVD grid is not used
+    cv.lambda2_method = TikLambda2Method::CV_MIN_TIK_SVD;
+    { auto ctrl = cv; ctrl.cv_n_lambda = 0; refused(ctrl); }
+    { auto ctrl = cv; ctrl.cv_n_lambda2 = 0; accepted(ctrl); } // the IEN grid is not used
+
+    // A fixed lambda_2 and the pilot rule use none of them.
+    for (const double lambda2 : {1.0, -1.0}) {
+        auto ctrl = base();
+        ctrl.lambda_2 = lambda2;                              // -1 with the default PILOT_KNEE
+        ctrl.cv_n_folds = 0;
+        ctrl.cv_n_lambda = 0;
+        accepted(ctrl);
+    }
+}
+
+
+/** @brief Under GROUP_CENTERING a supplied K has to be the centering matrix
+ *  of the groups. Another matrix would let the cross-validation tune one
+ *  penalty while the solver applies a second. */
+TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) {
+    const std::vector<Eigen::Index> groups = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
+    const std::vector<Eigen::Index> other  = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
+    const auto control = [&](const Eigen::SparseMatrix<double>& K) {
+        TRexTikhonovControlParameter ctrl;
+        ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+        ctrl.prior_groups      = groups;
+        ctrl.tikhonov_K        = K;
+        ctrl.lambda_2          = 1.0;
+        ctrl.trex_ctrl.K       = 5;
+        return ctrl;
+    };
+    EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, control(identityK(10)), 1, false),
+                 std::invalid_argument);
+    EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1,
+                                      control(TRexTikhonovSelector::buildGroupCenteringK(other)), 1, false),
+                 std::invalid_argument);
+    EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, control(identityK(11)), 1, false),
+                 std::invalid_argument);
+
+    // The right matrix and no matrix give the same run.
+    const auto run = [&](const TRexTikhonovControlParameter& ctrl) {
+        Eigen::MatrixXd Xc = X;
+        Eigen::VectorXd yc = y;
+        Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
+        Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
+        TRexTikhonovSelector sel(Xm, ym, 0.3, ctrl, 7, false);
+        sel.select();
+        return sel.getSelectedIndices();
+    };
+    EXPECT_EQ(run(control(TRexTikhonovSelector::buildGroupCenteringK(groups))),
+              run(control(Eigen::SparseMatrix<double>())));
 }
 
 

@@ -319,6 +319,10 @@ struct SolverConfig {
      *  inside the solver state instead. */
     const Eigen::SparseMatrix<double>* tikhonov_K = nullptr;
 
+    /** @brief tikhonov_K was checked by the caller (finite, symmetric,
+     *  positive semi-definite), so the solvers skip their own check. */
+    bool tikhonov_K_validated = false;
+
     /** @brief Dummy-coupling mode of the sparse-K TCDTIKNET dispatch:
      *  false = INDEPENDENT_RIDGE (kappa_dummy * I dummy block; preserves
      *  the K = I ≡ TCDENET collapse), true = FOLDED (dummy copies join
@@ -425,6 +429,7 @@ inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg
     o.n_threads      = cfg.n_threads;
     o.kappa_dummy    = 1.0;
     o.fold_dummies   = cfg.tikhonov_fold_dummies;
+    o.tikhonov_validated = cfg.tikhonov_K_validated;
     // GROUP_CENTERING is the structured fast path the dispatch serves for
     // TCDIENET; the group-mean (MEAN) construction stays GVS-internal.
     o.group_penalty  = trex::tsolvers::ad::GroupPenaltyVariant::CENTERING;

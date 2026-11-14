@@ -414,3 +414,64 @@ test_that("an unconverged coordinate descent is an error and the design comes ba
   expect_equal(X, X0, tolerance = 1e-12)          # given back
   expect_error(sel$select(), "can no longer run") # retired
 })
+
+# =============================================================================
+# Checks at construction
+# =============================================================================
+
+test_that("the Tikhonov selector checks K, lambda_2 and the CV sizes at construction", {
+  set.seed(31)
+  n <- 40; p <- 10
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] + rnorm(n)
+  X0 <- X + 0
+  build <- function(...) {
+    TRexTikhonovSelector$new(X, y, tFDR = 0.2, seed = 2, verbose = FALSE,
+                             tik_control = trex_tikhonov_control(...),
+                             control = trex_control(K = 5))
+  }
+  # The content of K, under the name of the selector
+  K_asym <- diag(p); K_asym[1, 2] <- 0.5
+  K_neg <- diag(p); K_neg[p, p] <- -1
+  expect_error(build(tikhonov_K = K_asym, lambda_2 = 1), "TRexTikhonovSelector.*not symmetric")
+  expect_error(build(tikhonov_K = K_neg, lambda_2 = 1), "TRexTikhonovSelector.*positive semi-definite")
+  # lambda_2 must be finite
+  for (bad in c(NaN, Inf, -Inf)) {
+    expect_error(build(tikhonov_K = diag(p), lambda_2 = bad), "lambda_2 must be finite")
+  }
+  # The folds of a cross-validation rule
+  expect_error(build(tikhonov_K = diag(p), lambda2_method = "CV_1SE_IEN_CCD", cv_n_folds = 1),
+               "cv_n_folds must be in \\[2, n\\]")
+  expect_error(build(tikhonov_K = diag(p), lambda2_method = "CV_1SE_IEN_CCD", cv_n_folds = n + 1),
+               "cv_n_folds must be in \\[2, n\\]")
+  # A fixed lambda_2 does not use the folds
+  expect_no_error(build(tikhonov_K = diag(p), lambda_2 = 1, cv_n_folds = 1)$restore())
+  # A refused control leaves X alone
+  expect_equal(X, X0, tolerance = 1e-12)
+})
+
+test_that("GROUP_CENTERING refuses a supplied K that is not the centering matrix", {
+  set.seed(32)
+  n <- 40; p <- 10
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] + rnorm(n)
+  groups <- rep(1:2, each = 5)
+  run <- function(K) {
+    sel <- TRexTikhonovSelector$new(X, y, tFDR = 0.3, seed = 2, verbose = FALSE,
+                                    tik_control = trex_tikhonov_control(
+                                      tikhonov_K = K, penalty_structure = "GROUP_CENTERING",
+                                      prior_groups = groups, lambda_2 = 1),
+                                    control = trex_control(K = 5))
+    sel$select()
+    sel$selected_indices
+  }
+  expect_error(run(diag(p)), "must be the centering matrix")
+  # The right matrix and no matrix give the same run
+  K_gc <- matrix(0, p, p)
+  for (g in 1:2) {
+    idx <- which(groups == g)
+    K_gc[idx, idx] <- diag(5) - 1 / 5
+  }
+  expect_identical(run(K_gc), run(NULL))
+})
+

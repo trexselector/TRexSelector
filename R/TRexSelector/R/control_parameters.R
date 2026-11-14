@@ -710,10 +710,12 @@ trex_dummy_distribution <- function(type     = "Normal",
 #' @param tikhonov_K Penalty matrix K (p x p): a base \code{matrix} or a
 #'   sparse \code{Matrix::dgCMatrix}. Build it from a regularization
 #'   operator Gamma with \code{\link{trex_gamma_to_k}}. Required for
-#'   \code{penalty_structure = "SPARSE_GENERAL"}. Optional under
-#'   \code{"GROUP_CENTERING"}: left out, the selector builds the centering
-#'   matrix from \code{prior_groups}. A supplied matrix is used as it is
-#'   and has to be that centering matrix.
+#'   \code{penalty_structure = "SPARSE_GENERAL"}, where the selector checks
+#'   its content at construction (finite entries, symmetry, positive
+#'   semi-definiteness). Optional under \code{"GROUP_CENTERING"}: left out,
+#'   the selector builds the centering matrix from \code{prior_groups}. A
+#'   supplied matrix is compared with that centering matrix, and another
+#'   matrix is an error.
 #' @param penalty_structure \code{"SPARSE_GENERAL"} (default): the
 #'   user-supplied K. \code{"GROUP_CENTERING"}: K is the block-diagonal
 #'   centering penalty over the groups of \code{prior_groups}, which this
@@ -725,7 +727,7 @@ trex_dummy_distribution <- function(type     = "Normal",
 #' @param lambda_2 Penalty weight, solver scale. A negative value (default
 #'   \code{-1}) triggers auto-determination via \code{lambda2_method};
 #'   \code{0} is the degenerate pure-lasso case; a positive value is used
-#'   as-is.
+#'   as-is. The value must be finite.
 #' @param lambda2_method Auto-determination strategy when
 #'   \code{lambda_2 < 0}. \code{"PILOT_KNEE"} (default) reads lambda_2 off
 #'   a few random experiments per candidate of \code{pilot_grid}, by the
@@ -738,7 +740,7 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   \code{"CV_1SE_TIK_SVD"}, \code{"CV_MIN_TIK_SVD"}. The knee of the full
 #'   selection profile, one selection per grid value, is
 #'   \code{\link{trex_tikhonov_lambda2_power_rule}}.
-#' @param cv_n_folds Folds for the CV paths (default: 10).
+#' @param cv_n_folds Folds for the CV paths, 2 to n (default: 10).
 #' @param cv_n_lambda Points on the CV lambda grid of the SVD rules
 #'   (default: 100).
 #' @param cv_n_lambda1 IEN-geometry coordinate-descent rules: points on the
