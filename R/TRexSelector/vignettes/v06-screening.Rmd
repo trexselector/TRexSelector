@@ -110,16 +110,18 @@ round(ar$estimated_correlation, 3)
 # The biobank screening
 
 `TRexBiobankScreeningSelector` screens one or many phenotypes against one genotype matrix. `Y` is a
-vector for one phenotype or a matrix with one column per phenotype. The acceptance window of the
-estimated FDR is `trex_biobank_control(lower_bound_FDR, upper_bound_FDR)`, and `tFDR` is the target
-of the fallback selector. The phenotypes draw independent dummies, because the phenotype in column `k`
-runs with `seed + k - 1`, and a single-phenotype run with that seed reproduces it.
+vector for one phenotype or a matrix with one column per phenotype. The control is
+`trex_biobank_control()`: the acceptance window of the estimated FDR is `lower_bound_FDR` to
+`upper_bound_FDR`, and `target_FDR_trex` is the target of the fallback selector. The phenotypes draw
+independent dummies, because the phenotype in column `k` runs with `seed + k - 1`, and a
+single-phenotype run with that seed reproduces it.
 
 ```{r biobank}
 Y <- cbind(y, as.numeric(X %*% (0.5 * beta) + rnorm(n)), rnorm(n))
 colnames(Y) <- c("strong", "weak", "null")
-bio <- TRexBiobankScreeningSelector$new(X, Y, tFDR = 0.1, seed = 3, verbose = FALSE,
-                                        biobank_control = trex_biobank_control(0.05, 0.15),
+bio <- TRexBiobankScreeningSelector$new(X, Y, seed = 3,
+                                        biobank_control = trex_biobank_control(0.05, 0.15,
+                                                                               target_FDR_trex = 0.1),
                                         control = trex_control(K = 20))
 res <- bio$select()
 length(res)
@@ -127,7 +129,7 @@ length(res)
 
 Each record names the phenotype, the method that produced the result and whether the fallback ran.
 For a screening result `estimated_FDR` is the estimate of the accepted variant. For a fallback result it
-is the target level `tFDR`, at which the T-Rex selector controls the FDR. An estimate can equal the
+is the target level `target_FDR_trex`, at which the T-Rex selector controls the FDR. An estimate can equal the
 target, so `used_fallback_trex` tells the two cases apart.
 
 ```{r records}

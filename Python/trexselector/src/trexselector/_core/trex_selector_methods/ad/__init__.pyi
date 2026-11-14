@@ -63,7 +63,7 @@ class BiobankScreenTRexControl:
     @property
     def lower_bound_FDR(self) -> float:
         """
-        Lower bound on the FDR search range.
+        Lower bound of the accepted range of the FDR estimate of the screening (default 0.05). An estimate below it suggests too little power.
         """
     @lower_bound_FDR.setter
     def lower_bound_FDR(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -71,7 +71,7 @@ class BiobankScreenTRexControl:
     @property
     def target_FDR_trex(self) -> float:
         """
-        Target FDR for the core T-Rex fallback (default 0.1).
+        Target FDR level of the fallback T-Rex selector (default 0.1).
         """
     @target_FDR_trex.setter
     def target_FDR_trex(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -79,7 +79,7 @@ class BiobankScreenTRexControl:
     @property
     def trex_screen_ctrl(self) -> ScreenTRexControlParameter:
         """
-        Nested Screen-TRex control shared by both the screening and fallback-T-Rex paths. Set the screening method via trex_screen_ctrl.trex_method and the base algorithm (K, solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its lloop_strategy defaults to STANDARD; accepted values are STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED (validated at construction).
+        Nested Screen-TRex control shared by both the screening and fallback-T-Rex paths. Set the screening method via trex_screen_ctrl.trex_method and the base algorithm (K, solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its lloop_strategy defaults to STANDARD; accepted values are STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED (validated at construction). Its use_bootstrap_CI has no effect here: the biobank screening computes the ordinary and the bootstrap variant for every phenotype.
         """
     @trex_screen_ctrl.setter
     def trex_screen_ctrl(self, arg0: ScreenTRexControlParameter) -> None:
@@ -87,7 +87,7 @@ class BiobankScreenTRexControl:
     @property
     def upper_bound_FDR(self) -> float:
         """
-        Upper bound on the FDR search range.
+        Upper bound of the accepted range of the FDR estimate of the screening (default 0.15). An estimate above it suggests too many false discoveries.
         """
     @upper_bound_FDR.setter
     def upper_bound_FDR(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1581,7 +1581,23 @@ class SolverTypeForTRex:
         ...
 class TRexBiobankScreeningSelector:
     """
-    Biobank-scale T-Rex selector for FDR-controlled variable selection across one or many phenotypes.
+    Biobank screening with the T-Rex selector: per phenotype the fast screening
+    (T-Rex+Screening), and the T-Rex selector as fallback when no FDR estimate of the
+    screening lies in the accepted range.
+    
+    Notes
+    -----
+    Decision rule per phenotype. The screening gives two FDR estimates, the one of its
+    ordinary variant and the one of its bootstrap variant. A variant is accepted when its
+    estimate lies in [lower_bound_FDR, upper_bound_FDR]. Of two accepted variants the one
+    with the larger estimate is taken, and the bootstrap variant on a tie. With no accepted
+    variant the T-Rex selector runs at target_FDR_trex.
+    
+    Both estimates come from one set of K experiments. The screening runs once, and the
+    bootstrap variant is derived from its coefficients.
+    
+    L-loop strategies. STANDARD (default), SEEDED, PERMUTATION and PERMUTATION_SEEDED, as for
+    TRexScreeningSelector. HCONCAT and SKIPL are refused.
     
     References
     ----------
@@ -1598,7 +1614,7 @@ class TRexBiobankScreeningSelector:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
         """
-        Construct for a single phenotype (1-D y). X and y are accessed zero-copy.
+        Construct for a single phenotype (1-D y). X and y are accessed zero-copy. A negative seed (default: -1) gives a run that is not reproducible.
         """
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], Y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], bio_ctrl: BiobankScreenTRexControl = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:

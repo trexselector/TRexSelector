@@ -211,3 +211,51 @@ def test_phenotypes_use_independent_seeds():
     # With one shared dummy draw the twelve copies would give twelve identical results
     first = multi[0].selected_indices_screen_ordinary
     assert any(res.selected_indices_screen_ordinary != first for res in multi)
+
+
+def _biobank_design():
+    rng = np.random.default_rng(11)
+    n, p = 100, 60
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, :5] @ np.full(5, 3.0) + rng.standard_normal(n)
+    return X, y
+
+
+def _biobank_run(X, y, lower, upper, use_bootstrap_ci=False):
+    ctrl = BiobankScreenTRexControl()
+    ctrl.lower_bound_FDR = lower
+    ctrl.upper_bound_FDR = upper
+    ctrl.trex_screen_ctrl.use_bootstrap_CI = use_bootstrap_ci
+    ctrl.trex_screen_ctrl.trex_ctrl.K = 10
+    return TRexBiobankScreeningSelector(X, y, bio_ctrl=ctrl, seed=3).select()
+
+
+@pytest.mark.parametrize("lower, upper", [(0.01, 0.05), (0.05, 0.15), (0.1, 0.25), (0.15, 0.3), (0.2, 1.0),
+                                           (0.3, 0.5)])
+def test_biobank_follows_the_documented_decision_rule(lower, upper):
+    """A variant is accepted inside the bounds, the larger accepted estimate wins, the bootstrap on a tie."""
+    X, y = _biobank_design()
+    res = _biobank_run(X, y, lower, upper)
+    ordinary, bootstrap = res.estimated_FDR_screen_ordinary, res.estimated_FDR_screen_bootstrap
+    ok_ordinary = lower <= ordinary <= upper
+    ok_bootstrap = lower <= bootstrap <= upper
+    if ok_bootstrap and (not ok_ordinary or bootstrap >= ordinary):
+        expected = "Screen-TRex (bootstrap-CI)"
+    elif ok_ordinary:
+        expected = "Screen-TRex (ordinary)"
+    else:
+        expected = "T-Rex (fallback)"
+    assert res.method_used == expected
+    assert res.used_fallback_trex == (expected == "T-Rex (fallback)")
+
+
+def test_biobank_computes_both_variants_whatever_use_bootstrap_ci_says():
+    """use_bootstrap_CI of the nested screening control has no effect in the biobank screening."""
+    X, y = _biobank_design()
+    off = _biobank_run(X, y, 0.05, 0.15, use_bootstrap_ci=False)
+    on = _biobank_run(X, y, 0.05, 0.15, use_bootstrap_ci=True)
+    for field in ("selected_indices", "estimated_FDR", "method_used", "estimated_FDR_screen_ordinary",
+                  "estimated_FDR_screen_bootstrap", "selected_indices_screen_ordinary",
+                  "selected_indices_screen_bootstrap", "used_fallback_trex"):
+        assert getattr(off, field) == getattr(on, field)
+

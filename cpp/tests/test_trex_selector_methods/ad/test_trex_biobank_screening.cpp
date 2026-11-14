@@ -14,6 +14,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 // project trex includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
@@ -214,6 +215,47 @@ TEST(TRexBiobankScreeningEstimateTest, Execution_EmptyScreeningFallsBack) {
 
     // A fallback result reports the target level, and the flag marks it.
     EXPECT_DOUBLE_EQ(result.estimated_FDR, control.target_FDR_trex);
+}
+
+
+/** @brief The decision rule of the class documentation: a variant is accepted
+ *  inside the bounds, the larger accepted estimate wins, the bootstrap variant
+ *  on a tie, and the T-Rex selector runs otherwise. Both variants are computed
+ *  whatever use_bootstrap_CI says. */
+TEST_F(TRexBiobankScreeningTest, Execution_FollowsTheDocumentedDecisionRule) {
+    auto run = [&](double lower, double upper, bool use_bootstrap) {
+        BiobankScreenTRexControl control;
+        control.lower_bound_FDR = lower;
+        control.upper_bound_FDR = upper;
+        control.trex_screen_ctrl.use_bootstrap_CI = use_bootstrap;
+        control.trex_screen_ctrl.R_boot = 100;
+        control.trex_screen_ctrl.trex_ctrl.K = 5;
+        BiobankScreenTRex selector(X_map, y_map, control, 5, false);
+        return selector.screenPhenotype();
+    };
+
+    const std::pair<double, double> windows[] = {
+        {0.01, 0.05}, {0.05, 0.15}, {0.1, 0.25}, {0.15, 0.3}, {0.2, 1.0}, {0.3, 0.5}};
+    for (const auto& [lower, upper] : windows) {
+        const auto res = run(lower, upper, false);
+        const double ordinary = res.estimated_FDR_screen_ordinary;
+        const double bootstrap = res.estimated_FDR_screen_bootstrap;
+        const bool ok_ordinary = lower <= ordinary && ordinary <= upper;
+        const bool ok_bootstrap = lower <= bootstrap && bootstrap <= upper;
+        std::string expected = "T-Rex (fallback)";
+        if (ok_bootstrap && (!ok_ordinary || bootstrap >= ordinary)) {
+            expected = "Screen-TRex (bootstrap-CI)";
+        } else if (ok_ordinary) {
+            expected = "Screen-TRex (ordinary)";
+        }
+        EXPECT_EQ(res.method_used, expected) << "window [" << lower << ", " << upper << "]";
+        EXPECT_EQ(res.used_fallback_trex, expected == "T-Rex (fallback)");
+
+        const auto with_flag = run(lower, upper, true);
+        EXPECT_EQ(with_flag.method_used, res.method_used);
+        EXPECT_EQ(with_flag.selected_indices, res.selected_indices);
+        EXPECT_DOUBLE_EQ(with_flag.estimated_FDR_screen_bootstrap, bootstrap);
+    }
 }
 
 

@@ -128,8 +128,8 @@ test_that("TRexBiobankScreeningSelector correctly triggers fallback T-Rex decisi
   # With such extreme bounds, it should reject Screen-TRex evaluation and use the full T-Rex
   expect_true(res$used_fallback_trex)
 
-  # A fallback result reports the target level (tFDR, default 0.1), the flag marks it, and the
-  # screening estimates stay in their own fields
+  # A fallback result reports the target level (target_FDR_trex, default 0.1), the flag marks it,
+  # and the screening estimates stay in their own fields
   expect_equal(res$estimated_FDR, 0.1)
   expect_equal(res$method_used, "T-Rex (fallback)")
   expect_true(res$estimated_FDR_screen_ordinary > 0 && res$estimated_FDR_screen_ordinary <= 1)
@@ -353,5 +353,78 @@ test_that("TRexBiobankScreeningSelector takes the four strategies of the core an
   for (strategy in c("HCONCAT", "SKIPL")) {
     expect_error(run(strategy), "only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED", fixed = TRUE)
   }
+})
+
+
+test_that("TRexBiobankScreeningSelector takes its target from the control and is quiet by default", {
+  # The defaults of the constructor follow C++ and Python
+  defaults <- formals(TRexBiobankScreeningSelector$public_methods$initialize)
+  expect_null(defaults$tFDR)
+  expect_false(defaults$verbose)
+
+  # The control holds the target, after the two bounds, so calls by position keep their meaning
+  ctrl <- trex_biobank_control()
+  expect_identical(names(ctrl), c("lower_bound_FDR", "upper_bound_FDR", "target_FDR_trex"))
+  expect_identical(ctrl$target_FDR_trex, 0.1)
+  expect_identical(trex_biobank_control(0.02, 0.1)[c("lower_bound_FDR", "upper_bound_FDR")],
+                   list(lower_bound_FDR = 0.02, upper_bound_FDR = 0.1))
+
+  set.seed(11)
+  n <- 100
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
+  # Bounds that no estimate meets, so the fallback runs and reports its target
+  run <- function(...) {
+    TRexBiobankScreeningSelector$new(X, y, seed = 3, control = trex_control(K = 10), ...)$select()
+  }
+  never <- function(target) trex_biobank_control(0.0001, 0.0002, target_FDR_trex = target)
+
+  from_control <- run(biobank_control = never(0.2))
+  expect_identical(from_control$estimated_FDR, 0.2)
+  # tFDR of 2.0.1 still works and replaces the target of the control
+  from_tfdr <- run(tFDR = 0.2, biobank_control = never(0.1))
+  expect_identical(from_tfdr, from_control)
+  # A control list of 2.0.1 without the target takes the default
+  expect_identical(run(biobank_control = list(lower_bound_FDR = 0.0001, upper_bound_FDR = 0.0002))$estimated_FDR,
+                   0.1)
+})
+
+
+test_that("TRexBiobankScreeningSelector follows the documented decision rule", {
+  set.seed(11)
+  n <- 100
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
+  run <- function(lower, upper, screen_control = trex_screen_control()) {
+    TRexBiobankScreeningSelector$new(X, y, seed = 3, control = trex_control(K = 10),
+                                     screen_control = screen_control,
+                                     biobank_control = trex_biobank_control(lower, upper))$select()
+  }
+  # The rule of the help: a variant is accepted inside the bounds, the larger accepted estimate
+  # wins, the bootstrap variant on a tie, and the T-Rex selector runs otherwise
+  expected <- function(res, lower, upper) {
+    ordinary <- res$estimated_FDR_screen_ordinary
+    bootstrap <- res$estimated_FDR_screen_bootstrap
+    ok_ordinary <- ordinary >= lower && ordinary <= upper
+    ok_bootstrap <- bootstrap >= lower && bootstrap <= upper
+    if (ok_bootstrap && (!ok_ordinary || bootstrap >= ordinary)) {
+      "Screen-TRex (bootstrap-CI)"
+    } else if (ok_ordinary) {
+      "Screen-TRex (ordinary)"
+    } else {
+      "T-Rex (fallback)"
+    }
+  }
+  for (bounds in list(c(0.01, 0.05), c(0.05, 0.15), c(0.1, 0.25), c(0.15, 0.3), c(0.2, 1), c(0.3, 0.5))) {
+    res <- run(bounds[1], bounds[2])
+    expect_identical(res$method_used, expected(res, bounds[1], bounds[2]))
+    expect_identical(res$used_fallback_trex, res$method_used == "T-Rex (fallback)")
+  }
+
+  # Both variants are computed for every phenotype, whatever the screening control says
+  expect_identical(run(0.05, 0.15, trex_screen_control(use_bootstrap_CI = TRUE)),
+                   run(0.05, 0.15, trex_screen_control(use_bootstrap_CI = FALSE)))
 })
 

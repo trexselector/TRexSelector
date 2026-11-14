@@ -25,6 +25,11 @@
   `"PERMUTATION_SEEDED"` now run, as in C++ and Python, and `"HCONCAT"` and `"SKIPL"` are refused with
   an error, because the screening is one pass at L = p. The default `"STANDARD"` gives the results of
   2.0.1.
+* `TRexBiobankScreeningSelector` is quiet by default (`verbose = FALSE`), as in C++ and Python. Up to
+  2.0.1 it printed its progress by default.
+* `trex_biobank_control()` gains `target_FDR_trex`, the target FDR level of the fallback T-Rex selector
+  (default 0.1), as in C++ and Python. `tFDR` of the constructor defaults to `NULL` and still works: a
+  supplied value replaces the target of the control.
 
 ## Fixed
 
@@ -75,6 +80,11 @@
   they hold. The variants of `trex_method` are described as dependency-aware filters of the screening.
   A new section says which values the fields inherited from `TRexSelector` have after a screening run,
   among them `fdp_hat_mat`, which stays 0, because the screening estimates no FDP per voting level.
+* The help of `TRexBiobankScreeningSelector` states the decision rule per phenotype, names the values
+  of `method_used` and says that `use_bootstrap_CI` of the screening control has no effect there,
+  because both variants are computed for every phenotype. Its example printed `NULL`, because
+  `Gauss_data$y` is a one-column matrix and the selector then returns a list of records. It now passes
+  a vector and prints the selection.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

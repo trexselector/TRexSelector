@@ -4,24 +4,33 @@
 \alias{trex_biobank_control}
 \title{TRex Biobank Control Parameters}
 \usage{
-trex_biobank_control(lower_bound_FDR = 0.05, upper_bound_FDR = 0.15)
+trex_biobank_control(
+  lower_bound_FDR = 0.05,
+  upper_bound_FDR = 0.15,
+  target_FDR_trex = 0.1
+)
 }
 \arguments{
-\item{lower_bound_FDR}{Lower bound of the acceptable estimated FDR range (default: 0.05).}
+\item{lower_bound_FDR}{Lower bound of the accepted range of the FDR estimate of the
+screening (default: 0.05). An estimate below it suggests too little power.}
 
-\item{upper_bound_FDR}{Upper bound of the acceptable estimated FDR range (default: 0.15).}
+\item{upper_bound_FDR}{Upper bound of the accepted range of the FDR estimate of the
+screening (default: 0.15). An estimate above it suggests too many false discoveries.}
+
+\item{target_FDR_trex}{Target FDR level of the fallback T-Rex selector (default: 0.1).}
 }
 \value{
 A named list for use in TRexBiobankScreeningSelector.
 }
 \description{
-Build a control list for the FDR acceptance bounds in
-TRexBiobankScreeningSelector. The target FDR level (\code{tFDR}) is a separate
-top-level parameter of the selector constructor.
+Build a control list for TRexBiobankScreeningSelector: the accepted range of
+the FDR estimate of the screening and the target FDR level of the fallback T-Rex
+selector.
 }
 \examples{
 trex_biobank_control()
 trex_biobank_control(lower_bound_FDR = 0.02, upper_bound_FDR = 0.10)
+trex_biobank_control(target_FDR_trex = 0.2)
 
 }
 \seealso{

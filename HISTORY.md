@@ -16,6 +16,39 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The biobank screening has one parametrization on the three surfaces, and its help is corrected
+
+- The default of `verbose`. R printed by default (`verbose = TRUE`), C++ and Python do not. R takes the
+  default of C++, FALSE.
+- The target FDR. C++ and Python hold it in the control as `target_FDR_trex`. R took it only as `tFDR`
+  in the constructor, and `trex_biobank_control()` had the two bounds. The control of R gains
+  `target_FDR_trex` (default 0.1), placed after the bounds so that calls by position keep their
+  meaning. `tFDR` of the R constructor now defaults to NULL and, when it is supplied, replaces the
+  target of the control, so code written for 2.0.1 keeps running. Whether `tFDR` leaves is a matter of
+  the naming pass.
+- The screening runs once per phenotype. The C++ class note said that it runs twice, once per variant.
+  Both FDR estimates come from one set of K experiments, and the bootstrap variant is derived from the
+  coefficients of that run.
+- The decision rule is written down on the three surfaces. A variant is accepted when its estimate lies
+  in [lower_bound_FDR, upper_bound_FDR]. Of two accepted variants the one with the larger estimate is
+  taken, and the bootstrap variant on a tie. With no accepted variant the T-Rex selector runs at
+  `target_FDR_trex`. C++ had one line on it, R and Python none.
+- `use_bootstrap_CI` of the nested screening control has no effect in the biobank screening, because
+  the selector computes both variants for every phenotype. The three surfaces say so.
+- Texts. Python called the two bounds the bounds "on the FDR search range", they bound the accepted
+  range of the estimate. The three values of `method_used` are named in C++ and R as well. The class
+  opens with "Biobank screening with the T-Rex selector: per phenotype the fast screening
+  (T-Rex+Screening), and the T-Rex selector as fallback when no FDR estimate of the screening lies in
+  the accepted range". The R vignette on the screening sets the target through the control.
+- The R help example of `TRexBiobankScreeningSelector` printed `NULL`. `Gauss_data$y` is a matrix with
+  one column, which the selector takes as a list of phenotypes, so `res$selected_indices` did not
+  exist. The example passes `drop(y)` and prints the selection, and it sets the target through the
+  control.
+- Tests. C++, R and Python pin the decision rule over six acceptance windows, with the expected method
+  computed from the two reported estimates, and that `use_bootstrap_CI` changes nothing. R pins the
+  defaults, the target from the control, the override by `tFDR` and a control list of 2.0.1 without
+  the target. C++ tests 725 of 725, R tests 2,007, Python tests 738.
+
 #### The screening takes the same strategies on the three surfaces, and its help is corrected
 
 - Rule of Fabian, 2026-11-14: "we aim for standards, so parametrizations between Cpp, Python, and R are

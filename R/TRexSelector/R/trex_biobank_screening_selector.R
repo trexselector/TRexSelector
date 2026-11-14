@@ -4,9 +4,20 @@
 
 #' @name TRexBiobankScreeningSelector
 #'
-#' @title Biobank Screen T-Rex Selector
+#' @title Biobank Screening with the T-Rex Selector
 #'
-#' @description Genomic biobank phenotype screening algorithm based on TRex architecture.
+#' @description Per phenotype the fast screening (T-Rex+Screening), and the T-Rex selector as
+#'   fallback when no FDR estimate of the screening lies in the accepted range.
+#'
+#' @section Decision rule per phenotype:
+#' The screening gives two FDR estimates, the one of its ordinary variant and the one of its
+#' bootstrap variant. A variant is accepted when its estimate lies in
+#' \code{[lower_bound_FDR, upper_bound_FDR]} of \code{\link{trex_biobank_control}()}. Of two
+#' accepted variants the one with the larger estimate is taken, and the bootstrap variant on a tie.
+#' With no accepted variant the T-Rex selector runs at \code{target_FDR_trex}.
+#'
+#' Both estimates come from one set of K experiments. The screening runs once, and the bootstrap
+#' variant is derived from its coefficients.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -26,8 +37,10 @@
 #' \donttest{
 #' data(Gauss_data)
 #' X <- Gauss_data$X
-#' y <- Gauss_data$y
-#' sel <- TRexBiobankScreeningSelector$new(X, y, tFDR = 0.1, verbose = FALSE)
+#' # A vector is one phenotype and gives one record, a matrix gives a list of records
+#' y <- drop(Gauss_data$y)
+#' ctrl <- trex_biobank_control(target_FDR_trex = 0.1)
+#' sel <- TRexBiobankScreeningSelector$new(X, y, biobank_control = ctrl)
 #' res <- sel$select()
 #' res$selected_indices
 #' }
@@ -47,31 +60,38 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
     #'   or an \code{mmap_matrix}, the handle of a memory-mapped file, and is
     #'   bound without a copy. It is only read, so \code{"readonly"} mode
     #'   suffices for it.
-    #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1). Phenotype \code{k} (the \code{k}-th column of
+    #' @param tFDR Target FDR level of the fallback T-Rex selector. \code{NULL} (default)
+    #'   takes \code{target_FDR_trex} of \code{biobank_control}. A supplied value replaces it,
+    #'   as in TRexSelector 2.0.1.
+    #' @param seed Random seed. A negative value (default: -1) gives a run that is not
+    #'   reproducible. Phenotype \code{k} (the \code{k}-th column of
     #'   \code{Y}) runs with \code{seed + k - 1}, so the phenotypes draw independent dummies and
     #'   a single phenotype is reproduced by a single-phenotype run with that seed.
-    #' @param verbose Whether to print progress (default: TRUE).
+    #' @param verbose Whether to print progress (default: FALSE).
     #' @param biobank_control A biobank control list from \code{\link{trex_biobank_control}()}
     #'   (default: \code{trex_biobank_control()}).
     #' @param screen_control A screen control list from \code{\link{trex_screen_control}()}
-    #'   (default: \code{trex_screen_control()}).
+    #'   (default: \code{trex_screen_control()}). Its \code{use_bootstrap_CI} has no effect
+    #'   here: the biobank screening computes the ordinary and the bootstrap variant for every
+    #'   phenotype.
     #' @param control A control list from \code{\link{trex_control}()} (default:
     #'   \code{trex_control()}). The screening takes the values \code{"STANDARD"} (default),
     #'   \code{"SEEDED"}, \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} of
     #'   \code{lloop_strategy} and refuses \code{"HCONCAT"} and \code{"SKIPL"}, as
     #'   \code{\link{TRexScreeningSelector}} does.
     initialize = function(X, Y,
-                          tFDR = 0.1,
+                          tFDR = NULL,
                           seed = -1,
-                          verbose = TRUE,
+                          verbose = FALSE,
                           biobank_control = trex_biobank_control(),
                           screen_control = trex_screen_control(),
                           control = trex_control()) {
 
       .warn_cd_solver_name(control$solver)
 
-      biobank_control_list <- c(list(target_FDR_trex = tFDR), biobank_control)
+      # A supplied tFDR replaces the target of the control, as in 2.0.1.
+      biobank_control_list <- biobank_control
+      if (!is.null(tFDR)) biobank_control_list$target_FDR_trex <- tFDR
 
       y_mmap <- inherits(Y, "mmap_matrix")
       if (!is.numeric(Y) && !y_mmap) {
@@ -120,11 +140,12 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
     #'
     #' @return For a vector \code{Y}, a single per-phenotype record: a named list
     #'   with \code{phenotype_index}, \code{selected_indices}, \code{estimated_FDR},
-    #'   \code{method_used}, \code{estimated_FDR_screen_ordinary},
+    #'   \code{method_used} (\code{"Screen-TRex (ordinary)"}, \code{"Screen-TRex (bootstrap-CI)"}
+    #'   or \code{"T-Rex (fallback)"}), \code{estimated_FDR_screen_ordinary},
     #'   \code{estimated_FDR_screen_bootstrap}, \code{selected_indices_screen_ordinary},
     #'   \code{selected_indices_screen_bootstrap}, and \code{used_fallback_trex}
     #'   (indices are 1-based). \code{estimated_FDR} is the estimate of the accepted screening
-    #'   variant, or, for a fallback result, the target level \code{tFDR}, at which the T-Rex
+    #'   variant, or, for a fallback result, the target level \code{target_FDR_trex}, at which the T-Rex
     #'   selector controls the FDR. An estimate can equal the target, so
     #'   \code{used_fallback_trex} tells the two cases apart. The two screening estimates and
     #'   the two screening index vectors are stored for every phenotype, a fallback result

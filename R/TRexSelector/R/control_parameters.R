@@ -586,26 +586,32 @@ trex_screen_control <- function(use_bootstrap_CI = FALSE,
 #'
 #' @title TRex Biobank Control Parameters
 #'
-#' @description Build a control list for the FDR acceptance bounds in
-#'   TRexBiobankScreeningSelector. The target FDR level (\code{tFDR}) is a separate
-#'   top-level parameter of the selector constructor.
+#' @description Build a control list for TRexBiobankScreeningSelector: the accepted range of
+#'   the FDR estimate of the screening and the target FDR level of the fallback T-Rex
+#'   selector.
 #'
-#' @param lower_bound_FDR Lower bound of the acceptable estimated FDR range (default: 0.05).
-#' @param upper_bound_FDR Upper bound of the acceptable estimated FDR range (default: 0.15).
+#' @param lower_bound_FDR Lower bound of the accepted range of the FDR estimate of the
+#'   screening (default: 0.05). An estimate below it suggests too little power.
+#' @param upper_bound_FDR Upper bound of the accepted range of the FDR estimate of the
+#'   screening (default: 0.15). An estimate above it suggests too many false discoveries.
+#' @param target_FDR_trex Target FDR level of the fallback T-Rex selector (default: 0.1).
 #'
 #' @return A named list for use in TRexBiobankScreeningSelector.
 #'
 #' @examples
 #' trex_biobank_control()
 #' trex_biobank_control(lower_bound_FDR = 0.02, upper_bound_FDR = 0.10)
+#' trex_biobank_control(target_FDR_trex = 0.2)
 #'
 #' @family T-Rex selectors and controls
 #' @export
 trex_biobank_control <- function(lower_bound_FDR = 0.05,
-                                 upper_bound_FDR = 0.15) {
+                                 upper_bound_FDR = 0.15,
+                                 target_FDR_trex = 0.1) {
   list(
     lower_bound_FDR = lower_bound_FDR,
-    upper_bound_FDR = upper_bound_FDR
+    upper_bound_FDR = upper_bound_FDR,
+    target_FDR_trex = target_FDR_trex
   )
 }
 

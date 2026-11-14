@@ -59,7 +59,8 @@ struct BiobankScreenTRexResult {
      */
     double estimated_FDR;
 
-    /** @brief Method used for selection */
+    /** @brief Method that gave the final selection: "Screen-TRex (ordinary)",
+     *  "Screen-TRex (bootstrap-CI)" or "T-Rex (fallback)". */
     std::string method_used;
 
     /** @brief Estimated FDR of the ordinary screening, stored for every
@@ -117,10 +118,13 @@ struct BiobankScreenTRexControl {
     /** @brief Control parameters forwarded to the Screen-TRex selector (nests
      *  its own base trex_ctrl, shared by both the Screen-TRex path and the
      *  fallback plain T-Rex path — single source of truth for the base
-     *  algorithmic control). */
+     *  algorithmic control). Its use_bootstrap_CI has no effect here: the
+     *  biobank screening computes the ordinary and the bootstrap variant for
+     *  every phenotype. */
     ts::ScreenTRexControlParameter trex_screen_ctrl;
 
-    /** @brief Default constructor: sets lloop_strategy to STANDARD for ScreenTRexSelector compatibility. */
+    /** @brief Default constructor. The strategy of the nested control is STANDARD, the default of
+     *  the base control. */
     BiobankScreenTRexControl() {
         trex_screen_ctrl.trex_ctrl.lloop_strategy = tc::LLoopStrategy::STANDARD;
     }
@@ -128,15 +132,26 @@ struct BiobankScreenTRexControl {
 
 
 /**
- * @brief Biobank screening orchestrator implementing Algorithm 1 from Screen-TRex paper.
+ * @brief Biobank screening with the T-Rex selector: per phenotype the fast screening
+ *        (T-Rex+Screening), and the T-Rex selector as fallback when no FDR estimate of
+ *        the screening lies in the accepted range.
  *
- * @details The algorithm is proposed as solution to efficiently screen thousands of phenotypes
- *          by:
- *          1. Running fast Screen-TRex
- *          2. Only using full T-Rex when Screen-TRex estimate is outside [α_l, α_u].
+ * @details Implements Algorithm 1 of the screening paper, a way to screen thousands of
+ *          phenotypes efficiently.
  *
- * @note Algorithm 1 requires BOTH ordinary (α̂) and bootstrap-CI (α̂_C)  FDR estimates for its
- *       decision logic. Therefore, Screen-TRex is run twice per phenotype (once in each mode).
+ *  Decision rule per phenotype:
+ *  ----------------------------
+ *  The screening gives two FDR estimates, the one of its ordinary variant and the one of
+ *  its bootstrap variant. A variant is accepted when its estimate lies in
+ *  [lower_bound_FDR, upper_bound_FDR]. Of two accepted variants the one with the larger
+ *  estimate is taken, and the bootstrap variant on a tie. With no accepted variant the
+ *  T-Rex selector runs at target_FDR_trex.
+ *
+ *  Both estimates come from one set of K experiments. The screening runs once, and the
+ *  bootstrap variant is derived from its coefficients.
+ *
+ *  L-loop strategies: STANDARD (default), SEEDED, PERMUTATION and PERMUTATION_SEEDED, as
+ *  for ScreenTRexSelector. HCONCAT and SKIPL are refused.
  *
  *  References:
  *  -----------
@@ -186,7 +201,8 @@ public:
      * @param X Design matrix (n x p)
      * @param y Phenotype vector (n x 1)
      * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
-     * @param seed Random seed for reproducibility (default: -1, random)
+     * @param seed Random seed. A negative value (default: -1) gives a run that is
+     *             not reproducible.
      * @param verbose If true, print progress messages (default: false)
      */
     BiobankScreenTRex(
@@ -206,7 +222,8 @@ public:
      *          its memory may be read-only, for example a memory-mapped file
      *          opened ReadOnly (MemoryMappedMatrix::getReaderMap()).
      * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
-     * @param seed Random seed for reproducibility (default: -1, random).
+     * @param seed Random seed. A negative value (default: -1) gives a run that is
+     *             not reproducible.
      *             Phenotype i (0-based) runs with seed + i, so the phenotypes
      *             draw independent dummies and a single phenotype is
      *             reproduced by a single-phenotype run with that seed.

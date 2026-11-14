@@ -196,12 +196,14 @@ inline void bind_trex_screening_biobanks(py::module& m) {
     py::class_<BiobankScreenTRexControl>(m, "BiobankScreenTRexControl", "Control parameters for "
         "TRexBiobankScreeningSelector.")
         .def(py::init<>())
-        .def_readwrite("target_FDR_trex", &BiobankScreenTRexControl::target_FDR_trex, "Target FDR for the core T-Rex "
-            "fallback (default 0.1).")
-        .def_readwrite("lower_bound_FDR", &BiobankScreenTRexControl::lower_bound_FDR, "Lower bound on the FDR search "
-            "range.")
-        .def_readwrite("upper_bound_FDR", &BiobankScreenTRexControl::upper_bound_FDR, "Upper bound on the FDR search "
-            "range.")
+        .def_readwrite("target_FDR_trex", &BiobankScreenTRexControl::target_FDR_trex, "Target FDR level of the "
+            "fallback T-Rex selector (default 0.1).")
+        .def_readwrite("lower_bound_FDR", &BiobankScreenTRexControl::lower_bound_FDR, "Lower bound of the accepted "
+            "range of the FDR estimate of the screening (default 0.05). An estimate below it suggests too little "
+            "power.")
+        .def_readwrite("upper_bound_FDR", &BiobankScreenTRexControl::upper_bound_FDR, "Upper bound of the accepted "
+            "range of the FDR estimate of the screening (default 0.15). An estimate above it suggests too many "
+            "false discoveries.")
         .def_readwrite("trex_screen_ctrl", &BiobankScreenTRexControl::trex_screen_ctrl,
                        "Nested Screen-TRex control shared by both the screening and "
                        "fallback-T-Rex paths. Set the screening method via "
@@ -209,7 +211,9 @@ inline void bind_trex_screening_biobanks(py::module& m) {
                        "solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its "
                        "lloop_strategy defaults to STANDARD; accepted values are "
                        "STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED "
-                       "(validated at construction).");
+                       "(validated at construction). Its use_bootstrap_CI has no effect "
+                       "here: the biobank screening computes the ordinary and the "
+                       "bootstrap variant for every phenotype.");
 
     py::class_<BiobankScreenTRexResult>(m, "BiobankScreenTRexResult", "Result for a single phenotype returned by "
         "screenPhenotype() or screenPhenotypes().")
@@ -237,8 +241,23 @@ inline void bind_trex_screening_biobanks(py::module& m) {
             "selector gave the final selection. estimated_FDR then holds the target level and not an estimate.");
 
     py::class_<PyBiobankScreenTRex>(m, "TRexBiobankScreeningSelector",
-        "Biobank-scale T-Rex selector for FDR-controlled variable selection across one or many "
-        "phenotypes.\n"
+        "Biobank screening with the T-Rex selector: per phenotype the fast screening\n"
+        "(T-Rex+Screening), and the T-Rex selector as fallback when no FDR estimate of the\n"
+        "screening lies in the accepted range.\n"
+        "\n"
+        "Notes\n"
+        "-----\n"
+        "Decision rule per phenotype. The screening gives two FDR estimates, the one of its\n"
+        "ordinary variant and the one of its bootstrap variant. A variant is accepted when its\n"
+        "estimate lies in [lower_bound_FDR, upper_bound_FDR]. Of two accepted variants the one\n"
+        "with the larger estimate is taken, and the bootstrap variant on a tie. With no accepted\n"
+        "variant the T-Rex selector runs at target_FDR_trex.\n"
+        "\n"
+        "Both estimates come from one set of K experiments. The screening runs once, and the\n"
+        "bootstrap variant is derived from its coefficients.\n"
+        "\n"
+        "L-loop strategies. STANDARD (default), SEEDED, PERMUTATION and PERMUTATION_SEEDED, as for\n"
+        "TRexScreeningSelector. HCONCAT and SKIPL are refused.\n"
         "\n"
         "References\n"
         "----------\n"
@@ -257,7 +276,8 @@ inline void bind_trex_screening_biobanks(py::module& m) {
              py::arg("bio_ctrl") = BiobankScreenTRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = false,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct for a single phenotype (1-D y). X and y are accessed zero-copy.")
+             "Construct for a single phenotype (1-D y). X and y are accessed zero-copy. A negative seed "
+             "(default: -1) gives a run that is not reproducible.")
         .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>, const BiobankScreenTRexControl&, int,
             bool>(),
              py::arg("X"), py::arg("Y"),

@@ -632,11 +632,12 @@ class TRexScreeningSelector(TRexSelector):
 @_with_core_notes(PyBiobankScreeningSelector)
 class TRexBiobankScreeningSelector:
     """
-    Biobank-scale T-Rex selector for FDR-controlled variable selection across
-    one or many phenotypes.
+    Biobank screening with the T-Rex selector: per phenotype the fast screening
+    (T-Rex+Screening), and the T-Rex selector as fallback when no FDR estimate
+    of the screening lies in the accepted range.
 
-    Dispatches to screenPhenotype() for a single 1-D response vector
-    or screenPhenotypes() for a m-D response matrix.
+    ``select()`` returns one result for a response vector and a list of
+    results, one per column, for a response matrix.
 
     The inner selectors standardize X in place and restore it, so X must be
     writable. Under ``ScalingMode.NONE`` they write nothing into X and accept an
