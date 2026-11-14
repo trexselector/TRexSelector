@@ -441,23 +441,26 @@ class TRexGVSSelector(TRexSelector):
 @_with_core_notes(PyTRexTikhonovSelector)
 class TRexTikhonovSelector(TRexSelector):
     """
-    T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated
-    TCDTIKNET) and cluster-aware dummies.
+    T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov):
+    FDR-controlled variable selection with the penalty
+    (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix K
+    carries the structure among the variables.
 
     The penalty comes from ``tik_control``: a p x p PSD matrix ``tikhonov_K``
     (``penalty_structure = SPARSE_GENERAL``), a scipy.sparse matrix or a dense
-    array, or ``GROUP_CENTERING`` built from the groups. lambda_2 < 0
-    resolves by ``tik_control.lambda2_method`` (CV tuners or the pilot power
-    rules); the dummies are cluster-aware by default. Solver: TIKNET, the
-    pathwise homotopy solver (default), or TCDTIKNET, the coordinate-descent
-    solver, chosen through the base control. Any other solver raises
+    array, or ``GROUP_CENTERING``, built from ``prior_groups``. With
+    ``lambda_2 < 0`` the rule ``tik_control.lambda2_method`` chooses the
+    weight, the pilot rule by default.
+
+    The solver is TIKNET, the homotopy solver. Any other solver raises
     ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
-    a base control that is passed has to name the solver. TCDTIKNET is not
+    a base control that is passed has to name the solver. TCDTIKNET, the
+    coordinate-descent solver, is deprecated and will be removed in the next
+    minor release: the selector raises ``FutureWarning`` for it. It is not
     finally developed: once lambda_2 times K is large it can stop at its sweep
-    budget (``cd_max_sweeps``) before it has converged. ``select()`` then
+    budget (``cd_max_sweeps``) before it has converged, and ``select()`` then
     raises ``RuntimeError`` instead of returning a selection from an
-    unconverged path. TCDTIKNET is deprecated and will be removed in the next
-    minor release: the selector raises ``FutureWarning`` for it.
+    unconverged path.
 
     Parameters
     ----------
@@ -500,18 +503,20 @@ class TRexTikhonovSelector(TRexSelector):
 
     @property
     def lambda2_used(self) -> float:
-        """lambda_2 used by the last select() (solver scale); -1 before select()."""
+        """The lambda_2 the last run used: the supplied value, or the pick of the pilot rule or of a
+        cross-validation rule, on the scale of a supplied value. -1 before a run."""
         return self._selector.getLambda2Used()
 
     @property
     def lambda2_cv_diagnostics(self) -> Lambda2CVDiagnostics:
-        """Health record of the lambda_2 tuner of the last select() (Lambda2CVDiagnostics)."""
+        """Health record of the rule that chose lambda_2 in the last run (Lambda2CVDiagnostics). ``ran`` is
+        False when the value was supplied."""
         return self._selector.getLambda2CVDiagnostics()
 
     @property
     def lambda2_pilot(self) -> Lambda2PilotResult:
-        """Record of the lambda_2 pilot of the last select() (Lambda2PilotResult; ``ran`` is False unless the
-        pilot rule resolved lambda_2)."""
+        """Record of the lambda_2 pilot of the last run (Lambda2PilotResult): the grid, the counts, the pick
+        and the size of the pilot. ``ran`` is False unless the pilot rule chose lambda_2."""
         return self._selector.getLambda2PilotResult()
 
     @property
@@ -551,9 +556,9 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                                 knee_tolerance: float = 1.0,
                                 verbose: bool = False) -> Lambda2PowerRuleResult:
     """
-    The knee of the full lambda_2 profile of the Tikhonov T-Rex.
+    The knee of the full lambda_2 profile of the Tikhonov selector.
 
-    Runs one FDR-controlled Tikhonov T-Rex selection per value of ``grid`` with
+    Runs one FDR-controlled selection of ``TRexTikhonovSelector`` per value of ``grid`` with
     the same seed, so the probes share their dummies and differ by the penalty
     weight alone, and picks the smallest lambda_2 whose selection is within
     ``knee_tolerance`` selections of the largest (the knee of the profile; 0

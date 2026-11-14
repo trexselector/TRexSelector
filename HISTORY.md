@@ -16,6 +16,35 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The texts of the Python Tikhonov class mirror the C++ class
+
+Step 5 of the rework of the Python class of the Tikhonov selector, the last one. Texts only.
+
+- The class. The core class and the root class open with the sentence of C++, "T-Rex selector with a
+  general Tikhonov penalty (T-Rex+Tikhonov): FDR-controlled variable selection with the penalty
+  (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix K carries the structure among the
+  variables". The core class gains the notes of the C++ class (the penalty and its special cases, the
+  solver, the dummies, the L-loop strategies, the rules for lambda_2, the scale, a selector runs once),
+  and the root class shows them through the decorator. Before, the core class had a summary and the
+  references only.
+- Wrong texts. `PilotStatistic.CALIBRATED` was the "soft curve" and `curve_soft` a "calibrated (soft)
+  count": the soft curve is the mean number of variables ahead of the t-th dummy, and the calibrated
+  count is the T-Rex selection rule on the pilot data. `GROUP_MAJORITY` was a count of groups, it counts
+  the members of the groups that reach the fraction. `corr_max` bounded the correlation between
+  clusters, which holds for single linkage only. `lambda_2` and `lambda2_used` were "on the solver
+  scale", they refer to the scale of the standardized columns. The root class named "the pilot power
+  rules".
+- Gaps. `hc_linkage` names its values and why Ward is refused. `prior_groups` names its three uses (the
+  clusters of the dummies, the penalty under GROUP_CENTERING, the count GROUP_MAJORITY). The pilot
+  fields say how they are capped. The fields of the pilot record say what they hold.
+- Guide page 08 of Python. Its section "The solver" still said that TLARS "maps to" TIKNET, which
+  e6705c3 had ended, an omission of that commit. It now says that the nested base control applies and
+  that a passed control has to name TIKNET. The page gains the paragraph on the scale of lambda_2 and of
+  the grids, and names `run_pilot_only()` and `dummy_clusters`. Its title and the titles of the other
+  pages wait for the page review.
+- The reference page shows the notes for the root and the core class. Python tests 786, Sphinx 0
+  warnings.
+
 #### The Python Tikhonov class has what the C++ class has
 
 Step 4 of the rework of the Python class of the Tikhonov selector (notes: TIKHONOV_findings.md, findings

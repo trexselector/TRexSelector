@@ -87,7 +87,8 @@ print("lambda_2 used:", tik.lambda2_used)
 ```
 
 `TRexTikhonovSelector` inherits the attributes of `TRexSelector` and adds `lambda2_used`,
-`lambda2_cv_diagnostics` and `lambda2_pilot`.
+`lambda2_cv_diagnostics`, `lambda2_pilot` and `dummy_clusters`. A selector runs once, as every
+selector does.
 
 ## Choosing lambda_2
 
@@ -98,14 +99,21 @@ exist.
   `pilot_grid`, by the selector's own principle: the smallest $\lambda_2$ whose pilot selection
   count is within `pilot_knee_tolerance` of the largest, the knee of the profile. `pilot_K`,
   `pilot_T` and `pilot_L_multiplier` size the pilot, `pilot_statistic` names the count
-  (`PilotStatistic.MAJORITY`, `CALIBRATED`, `GROUP_MAJORITY`).
-- The k-fold cross-validation rules consume $\boldsymbol K$ and return $\lambda_2$ on the solver
-  scale: `CV_1SE_IEN_CCD`, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD` and `CV_MIN_TIK_SVD`. `cv_n_folds`,
-  `cv_n_lambda1`, `cv_n_lambda2`, `cv_dfmax_ratio` and `cv_seed` control them. They judge a fitted
-  estimate, so on structured designs they tend to pick the edges of their grid.
+  (`PilotStatistic.MAJORITY`, `CALIBRATED`, `GROUP_MAJORITY`). `run_pilot_only()` runs the pilot
+  without the selection.
+- The k-fold cross-validation rules consume $\boldsymbol K$: `CV_1SE_IEN_CCD`, `CV_MIN_IEN_CCD`,
+  `CV_1SE_TIK_SVD` and `CV_MIN_TIK_SVD`. `cv_n_folds`, `cv_n_lambda1`, `cv_n_lambda2`,
+  `cv_dfmax_ratio` and `cv_seed` control them. They judge a fitted estimate, so on structured
+  designs they tend to pick the edges of their grid.
 - `tikhonov_lambda2_power_rule()` runs one full selection per grid value with common dummies and
   takes the knee of that profile. It is the reference rule behind the pilot, at the cost of one
   selection per grid value, and it returns every probe's selection.
+
+A supplied `lambda_2` is used as it is, on the scale of the standardized columns. A grid, `pilot_grid`
+or the grid of the power rule, is stated for columns of unit norm. Under `ScalingMode.ZSCORE` the
+columns have the squared norm $n - 1$, so the rules run at the grid times $n - 1$, and one grid means
+the same shrinkage under every scaling mode. Every rule reports its pick on the scale of a supplied
+value, so `lambda2_used` can be passed as `lambda_2`.
 
 ```{code-cell} python
 pilot_ctrl = tsn.TRexTikhonovControlParameter()
@@ -138,7 +146,7 @@ under the penalty. Two mechanisms take care of that. `cluster_dummies = True` (d
 dummies as per-cluster coloured layers on a correlation clustering of the variables (`prior_groups`,
 or hierarchical clustering with `corr_max` and `hc_linkage`), and every dummy joins the
 $\boldsymbol K$-coupling of the variable it mirrors (the folded coupling). `cluster_dummies = False`
-exists for validation runs.
+exists for validation runs. `dummy_clusters` reports the clusters of a run.
 
 ## Group centering
 
@@ -165,5 +173,7 @@ gc.selected_indices
 
 ## The solver
 
-The selector runs `SolverTypeForTRex.TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. The
-neutral default `TLARS` of a fresh control maps to it.
+The selector runs `SolverTypeForTRex.TIKNET`, the pathwise homotopy algorithm of the Tikhonov net.
+It is the solver of the base control nested in the Tikhonov control, which applies when no base
+control is passed. A fresh `TRexControlParameter()` names `TLARS`, which the selector refuses as every
+other solver, so a base control that is passed has to set `solver_type` to `TIKNET`.

@@ -118,7 +118,7 @@ public:
             selector_design_ref(X, trex_control ? *trex_control : tik_control.trex_ctrl), y, tFDR,
             tik_control, trex_control, seed, verbose) {}
 
-    /** @brief lambda_2 used by the last select() (solver scale); -1 before select(). */
+    /** @brief The lambda_2 the last run used, on the scale of a supplied value; -1 before a run. */
     double getLambda2Used() const {
         return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
             ->getLambda2Used();
@@ -159,35 +159,44 @@ public:
  */
 inline void bind_trex_tikhonov(py::module& m) {
     py::enum_<tik::TikLambda2Method>(m, "TikLambda2Method",
-        "Rule for resolving lambda_2 when tik_control.lambda_2 < 0: the pilot knee (default) or a k-fold CV tuner. "
-            "The knee of the full selection profile is tikhonov_lambda2_power_rule().")
-        .value("CV_1SE_IEN_CCD", tik::TikLambda2Method::CV_1SE_IEN_CCD, "IEN-geometry coordinate-descent CV (lambda_1 "
-            "profiled), 1-SE rule.")
-        .value("CV_MIN_IEN_CCD", tik::TikLambda2Method::CV_MIN_IEN_CCD, "IEN-geometry coordinate-descent CV, minimum "
-            "rule.")
-        .value("CV_1SE_TIK_SVD", tik::TikLambda2Method::CV_1SE_TIK_SVD, "Generalized-Tikhonov SVD ridge CV, 1-SE rule.")
-        .value("CV_MIN_TIK_SVD", tik::TikLambda2Method::CV_MIN_TIK_SVD, "Generalized-Tikhonov SVD ridge CV, minimum "
-            "rule.")
-        .value("PILOT_KNEE",     tik::TikLambda2Method::PILOT_KNEE,     "The pilot knee (default): a few random "
-            "experiments per grid value, the smallest grid value whose selection count is within "
-            "pilot_knee_tolerance of the maximum.")
+        "Rule that chooses lambda_2 when no value is supplied (tik_control.lambda_2 < 0). The pilot rule reads it "
+            "off a few random experiments per value of pilot_grid. The four cross-validation rules tune on the "
+            "normalized data before the random experiments. Every rule reports its pick on the working scale of "
+            "the run. The knee of the full selection profile is tikhonov_lambda2_power_rule().")
+        .value("CV_1SE_IEN_CCD", tik::TikLambda2Method::CV_1SE_IEN_CCD, "Cross-validation with the lambda_1 path "
+            "profiled out per lambda_2 candidate, 1-SE rule. Well-posed for every p and n.")
+        .value("CV_MIN_IEN_CCD", tik::TikLambda2Method::CV_MIN_IEN_CCD, "Cross-validation with the lambda_1 path "
+            "profiled out, minimum rule.")
+        .value("CV_1SE_TIK_SVD", tik::TikLambda2Method::CV_1SE_TIK_SVD, "Analytic ridge cross-validation "
+            "(lambda_1 = 0), 1-SE rule. Exact for n > p, refused when the unpenalized null space interpolates the "
+            "training folds.")
+        .value("CV_MIN_TIK_SVD", tik::TikLambda2Method::CV_MIN_TIK_SVD, "Analytic ridge cross-validation "
+            "(lambda_1 = 0), minimum rule.")
+        .value("PILOT_KNEE",     tik::TikLambda2Method::PILOT_KNEE,     "The pilot rule (default): a few random "
+            "experiments per value of pilot_grid, then the smallest lambda_2 whose count is within "
+            "pilot_knee_tolerance of the largest.")
         .export_values();
 
     py::enum_<tik::PilotStatistic>(m, "PilotStatistic",
-        "Selection count the pilot rule reads per grid value.")
-        .value("MAJORITY",       tik::PilotStatistic::MAJORITY,       "Variables selected in more than half of the "
-            "pilot experiments.")
-        .value("CALIBRATED",     tik::PilotStatistic::CALIBRATED,     "Calibrated count (soft curve).")
-        .value("GROUP_MAJORITY", tik::PilotStatistic::GROUP_MAJORITY, "Groups whose selected fraction exceeds "
-            "pilot_group_fraction.")
+        "The count the pilot rule picks on, per value of the grid. The record holds all three.")
+        .value("MAJORITY",       tik::PilotStatistic::MAJORITY,       "The number of variables ahead of the "
+            "T_pilot-th dummy in more than half of the pilot experiments, the count of the T-Rex selector at the "
+            "voting level 1/2. Zero under the global null.")
+        .value("CALIBRATED",     tik::PilotStatistic::CALIBRATED,     "The T-Rex selection rule applied to the "
+            "pilot data: the largest selection whose estimated FDP stays within tFDR. Coarser at a small pilot_K.")
+        .value("GROUP_MAJORITY", tik::PilotStatistic::GROUP_MAJORITY, "The MAJORITY count restricted to the groups "
+            "of prior_groups in which at least pilot_group_fraction of the members are ahead. A group that enters "
+            "as a whole counts with its members, a group that enters as a minority counts nothing. It needs "
+            "prior_groups.")
         .export_values();
 
     py::enum_<tik::TikPenaltyStructure>(m, "TikPenaltyStructure",
-        "Where the penalty matrix comes from.")
+        "Structural form of the Tikhonov penalty.")
         .value("SPARSE_GENERAL",  tik::TikPenaltyStructure::SPARSE_GENERAL,  "tik_control.tikhonov_K is the p x p PSD "
             "penalty matrix (a scipy.sparse matrix or a dense array).")
-        .value("GROUP_CENTERING", tik::TikPenaltyStructure::GROUP_CENTERING, "K = I - J/p_m per group, built from "
-            "prior_groups, which this structure requires.")
+        .value("GROUP_CENTERING", tik::TikPenaltyStructure::GROUP_CENTERING, "K = blockdiag(I - J/p_m) over "
+            "prior_groups: the members of a group share a coefficient. The groups are required, and tikhonov_K "
+            "may be left out.")
         .export_values();
 
     py::class_<tik::Lambda2PickInfo>(m, "Lambda2PickInfo",
@@ -229,46 +238,47 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def("counts", &tik::Lambda2PowerRuleResult::counts, "The selection counts, ascending in lambda_2.");
 
     py::class_<tik::Lambda2PilotResult>(m, "Lambda2PilotResult",
-        "Record of a lambda_2 pilot run (PILOT_KNEE): the grid, the per-value counts and curves, the pick, and the "
-            "pilot's size.")
+        "What the lambda_2 pilot of the last select() or run_pilot_only() did: the grid, the counts and curves per "
+            "grid value, the pick and the size of the pilot.")
         .def(py::init<>())
         .def_readonly("ran",               &tik::Lambda2PilotResult::ran,               "A pilot ran (False: lambda_2 "
-            "came from the caller or a CV tuner).")
+            "came from the caller or a cross-validation rule).")
         .def_readonly("grid",              &tik::Lambda2PilotResult::grid,              "The lambda_2 values the "
-            "pilot ran at: pilot_grid times grid_scale.")
+            "pilot ran at, ascending and without duplicates: pilot_grid times grid_scale.")
         .def_readonly("grid_scale",        &tik::Lambda2PilotResult::grid_scale,        "The factor between "
             "pilot_grid and grid: n - 1 under ScalingMode.ZSCORE, 1 otherwise.")
-        .def_readonly("counts",            &tik::Lambda2PilotResult::counts,            "Selection count per grid "
-            "value "
-            "under pilot_statistic.")
-        .def_readonly("curve_majority",    &tik::Lambda2PilotResult::curve_majority,    "Per grid value: majority "
-            "count "
-            "per pilot T-step.")
-        .def_readonly("curve_soft",        &tik::Lambda2PilotResult::curve_soft,        "Per grid value: calibrated "
-            "(soft) count per pilot T-step.")
-        .def_readonly("calibrated",        &tik::Lambda2PilotResult::calibrated,        "Calibrated count per grid "
-            "value.")
-        .def_readonly("group_majority",    &tik::Lambda2PilotResult::group_majority,    "Group-majority count per grid "
-            "value.")
-        .def_readonly("groups_qualifying", &tik::Lambda2PilotResult::groups_qualifying, "Groups qualifying per grid "
-            "value.")
+        .def_readonly("counts",            &tik::Lambda2PilotResult::counts,            "The count the pick was read "
+            "off, per grid value: the count of pilot_statistic.")
+        .def_readonly("curve_majority",    &tik::Lambda2PilotResult::curve_majority,    "The majority count per grid "
+            "value and pilot stopping time t = 1 .. T_pilot.")
+        .def_readonly("curve_soft",        &tik::Lambda2PilotResult::curve_soft,        "The mean number of "
+            "variables ahead of the t-th dummy, per grid value and t (a diagnostic).")
+        .def_readonly("calibrated",        &tik::Lambda2PilotResult::calibrated,        "The calibrated pilot "
+            "selection count per grid value.")
+        .def_readonly("group_majority",    &tik::Lambda2PilotResult::group_majority,    "The group-majority count "
+            "per grid value: the members ahead, summed over the groups that reach pilot_group_fraction. Zeros "
+            "without prior_groups.")
+        .def_readonly("groups_qualifying", &tik::Lambda2PilotResult::groups_qualifying, "The number of groups that "
+            "reach pilot_group_fraction, per grid value. Zeros without prior_groups.")
         .def_readonly("probe_seconds",     &tik::Lambda2PilotResult::probe_seconds,     "Wall-clock seconds per grid "
             "value.")
         .def_readonly("pick",              &tik::Lambda2PilotResult::pick,              "Lambda2PickInfo of the pick.")
-        .def_readonly("index",             &tik::Lambda2PilotResult::index,             "0-based index of the picked "
+        .def_readonly("index",             &tik::Lambda2PilotResult::index,             "0-based index of the pick "
+            "into grid.")
+        .def_readonly("lambda2",           &tik::Lambda2PilotResult::lambda2,           "The picked lambda_2, "
+            "grid[index], on the working scale.")
+        .def_readonly("at_lower_end",      &tik::Lambda2PilotResult::at_lower_end,      "The pick sits on the first "
             "grid value.")
-        .def_readonly("lambda2",           &tik::Lambda2PilotResult::lambda2,           "The picked lambda_2.")
-        .def_readonly("at_lower_end",      &tik::Lambda2PilotResult::at_lower_end,      "The pick is the first grid "
-            "value.")
-        .def_readonly("at_upper_end",      &tik::Lambda2PilotResult::at_upper_end,      "The pick is the last grid "
-            "value.")
+        .def_readonly("at_upper_end",      &tik::Lambda2PilotResult::at_upper_end,      "The pick sits on the last "
+            "grid value: widen the grid before trusting it.")
         .def_readonly("K_pilot",           &tik::Lambda2PilotResult::K_pilot,           "Pilot experiments per grid "
-            "value.")
-        .def_readonly("T_pilot",           &tik::Lambda2PilotResult::T_pilot,           "Pilot T-steps.")
-        .def_readonly("L_0",               &tik::Lambda2PilotResult::L_0,               "Number of dummies of "
-            "the pilot, pilot_L_multiplier times p.")
-        .def_readonly("dummy_tag",         &tik::Lambda2PilotResult::dummy_tag,         "Dummy stream tag the pilot "
-            "drew under.")
+            "value that ran: pilot_K, capped at K.")
+        .def_readonly("T_pilot",           &tik::Lambda2PilotResult::T_pilot,           "Stopping time of the pilot "
+            "paths that was used: pilot_T, capped at min(L_0, ceil(n / 2)).")
+        .def_readonly("L_0",               &tik::Lambda2PilotResult::L_0,               "Number of pilot dummies, "
+            "pilot_L_multiplier times p.")
+        .def_readonly("dummy_tag",         &tik::Lambda2PilotResult::dummy_tag,         "Seed tag under which the "
+            "pilot dummies were drawn.")
         .def_readonly("seconds",           &tik::Lambda2PilotResult::seconds,           "Wall-clock seconds of the "
             "whole pilot.");
 
@@ -285,12 +295,13 @@ inline void bind_trex_tikhonov(py::module& m) {
             "\"average\" or \"wpgma\". Empty when there are no clusters.");
 
     py::class_<tik::TRexTikhonovControlParameter>(m, "TRexTikhonovControlParameter",
-        "Control parameters for TRexTikhonovSelector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, "
-            "or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.")
+        "Control parameters of the Tikhonov selector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, "
+            "or GROUP_CENTERING built from groups), the rule for lambda_2, and the dummies.")
         .def(py::init<>())
-        .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "SPARSE_GENERAL "
-            "(tikhonov_K given) or GROUP_CENTERING (K from the groups; with the TCDTIKNET solver this path runs "
-            "through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).")
+        .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "Structural form "
+            "of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from "
+            "prior_groups, which it requires). With the solver TCDTIKNET the group centering runs through the "
+            "hooks of TCDIENET, so its warnings carry the tag [TCDIENET].")
         .def_property("tikhonov_K",
             [](const tik::TRexTikhonovControlParameter& c) { return c.tikhonov_K; },
             [](tik::TRexTikhonovControlParameter& c, const Eigen::SparseMatrix<double>& K) {
@@ -302,59 +313,76 @@ inline void bind_trex_tikhonov(py::module& m) {
                 "entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the "
                 "selector builds the centering matrix from prior_groups when it is left out. A supplied matrix "
                 "is compared with that matrix, and another matrix raises ValueError.")
-        .def_readwrite("lambda_2",        &tik::TRexTikhonovControlParameter::lambda_2,        "Tikhonov penalty "
-            "(solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed. It must be finite.")
-        .def_readwrite("lambda2_method",  &tik::TRexTikhonovControlParameter::lambda2_method,  "Rule for resolving "
-            "lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot knee; the CV tuners are the alternatives).")
-        .def_readwrite("cv_n_folds",      &tik::TRexTikhonovControlParameter::cv_n_folds,      "Folds of the CV "
-            "tuners, 2 to n.")
-        .def_readwrite("cv_n_lambda",     &tik::TRexTikhonovControlParameter::cv_n_lambda,     "SVD tuners: points on "
-            "the lambda_2 grid.")
-        .def_readwrite("cv_n_lambda1",    &tik::TRexTikhonovControlParameter::cv_n_lambda1,    "IEN-geometry CD "
-            "tuners: "
-            "points on the profiled lambda_1 path per lambda_2 value.")
-        .def_readwrite("cv_dfmax_ratio",  &tik::TRexTikhonovControlParameter::cv_dfmax_ratio,  "IEN-geometry CD "
-            "tuners: "
-            "support cap as a fraction of the smallest fold's training size (default 0.8; <= 0 disables the cap; "
-                "larger "
-            "values allow larger supports at a higher tuner cost; must be finite).")
-        .def_readwrite("cv_n_lambda2",    &tik::TRexTikhonovControlParameter::cv_n_lambda2,    "IEN-geometry CD "
-            "tuners: "
-            "points on the lambda_2 grid.")
-        .def_readwrite("cv_seed",         &tik::TRexTikhonovControlParameter::cv_seed,         "Seed for the CV fold "
-            "permutation (-1 = derive from the T-Rex seed).")
+        .def_readwrite("lambda_2",        &tik::TRexTikhonovControlParameter::lambda_2,        "Weight of the "
+            "penalty. A negative value (default -1) lets lambda2_method choose it, 0 is no penalty (the lasso path "
+            "of the solver), and a positive value is used as it is. It must be finite. A supplied value refers to "
+            "the scale of the standardized columns: under ScalingMode.ZSCORE the columns have the squared norm "
+            "n - 1, so the same shrinkage needs the value times n - 1. The rules report their pick on this scale.")
+        .def_readwrite("lambda2_method",  &tik::TRexTikhonovControlParameter::lambda2_method,  "Rule that chooses "
+            "lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot rule; the cross-validation rules are the "
+            "alternatives).")
+        .def_readwrite("cv_n_folds",      &tik::TRexTikhonovControlParameter::cv_n_folds,      "Folds of the "
+            "cross-validation rules, 2 to n (default 10).")
+        .def_readwrite("cv_n_lambda",     &tik::TRexTikhonovControlParameter::cv_n_lambda,     "CV_*_TIK_SVD: points "
+            "on the lambda_2 grid (default 100).")
+        .def_readwrite("cv_n_lambda1",    &tik::TRexTikhonovControlParameter::cv_n_lambda1,    "CV_*_IEN_CCD: points "
+            "on the profiled lambda_1 path per lambda_2 value (default 40).")
+        .def_readwrite("cv_dfmax_ratio",  &tik::TRexTikhonovControlParameter::cv_dfmax_ratio,  "CV_*_IEN_CCD: support "
+            "cap as a fraction of the smallest fold's training size (default 0.8). A value <= 0 disables the cap, "
+            "larger values allow larger supports at a higher cost. It must be finite.")
+        .def_readwrite("cv_n_lambda2",    &tik::TRexTikhonovControlParameter::cv_n_lambda2,    "CV_*_IEN_CCD: points "
+            "on the lambda_2 grid (default 100).")
+        .def_readwrite("cv_seed",         &tik::TRexTikhonovControlParameter::cv_seed,         "Seed of the fold "
+            "permutation of the cross-validation rules. -1 (default) derives it from the seed of the selector, a "
+            "value >= 0 replaces it for the folds only.")
         .def_readwrite("pilot_grid",      &tik::TRexTikhonovControlParameter::pilot_grid,      "lambda_2 grid of the "
             "pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values "
             "times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every "
             "scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on "
-            "the grid so that no penalty is an admissible answer.")
+            "the grid so that no penalty is an admissible answer. Default: default_lambda2_grid().")
         .def_readwrite("pilot_K",         &tik::TRexTikhonovControlParameter::pilot_K,         "Pilot experiments per "
-            "grid value.")
-        .def_readwrite("pilot_T",         &tik::TRexTikhonovControlParameter::pilot_T,         "Pilot T-steps.")
-        .def_readwrite("pilot_L_multiplier", &tik::TRexTikhonovControlParameter::pilot_L_multiplier, "Pilot dummy "
-            "multiplier (in [1, trex_control.max_dummy_multiplier]).")
-        .def_readwrite("pilot_knee_tolerance", &tik::TRexTikhonovControlParameter::pilot_knee_tolerance, "Pilot rule: "
-            "selections below the largest count that still count as on the plateau (0 reads the largest count).")
-        .def_readwrite("pilot_statistic", &tik::TRexTikhonovControlParameter::pilot_statistic, "Selection count the "
-            "pilot reads (MAJORITY, CALIBRATED, GROUP_MAJORITY).")
+            "grid value (default 10; at least 2, capped at K of the base control).")
+        .def_readwrite("pilot_T",         &tik::TRexTikhonovControlParameter::pilot_T,         "Stopping time of the "
+            "pilot paths (default 5; at least 1, capped at min(L_0, ceil(n / 2))).")
+        .def_readwrite("pilot_L_multiplier", &tik::TRexTikhonovControlParameter::pilot_L_multiplier, "Pilot "
+            "dummies L_0 = pilot_L_multiplier times p (default 1; in [1, max_dummy_multiplier] of the base "
+            "control).")
+        .def_readwrite("pilot_knee_tolerance", &tik::TRexTikhonovControlParameter::pilot_knee_tolerance, "Pilot "
+            "rule: selections below the largest count that still count as on the plateau (default 1; 0 reads the "
+            "largest count).")
+        .def_readwrite("pilot_statistic", &tik::TRexTikhonovControlParameter::pilot_statistic, "The count the pilot "
+            "rule picks on: MAJORITY (default), CALIBRATED or GROUP_MAJORITY.")
         .def_readwrite("pilot_group_fraction", &tik::TRexTikhonovControlParameter::pilot_group_fraction,
-            "GROUP_MAJORITY: "
-            ""
-            "fraction of a group that must be selected.")
-        .def_readwrite("pilot_shared_dummies", &tik::TRexTikhonovControlParameter::pilot_shared_dummies, "Pilot draws "
-            "its dummies under the main run's first block tag.")
+            "GROUP_MAJORITY: the share of a group's members that must be ahead for the group to count, in (0, 1] "
+            "(default 0.5).")
+        .def_readwrite("pilot_shared_dummies", &tik::TRexTikhonovControlParameter::pilot_shared_dummies, "False "
+            "(default): the pilot draws its dummies from a seed stream of its own, so the dummies of the main run "
+            "do not depend on the pick. True: the pilot uses the first dummy block of the main strategy (not with "
+            "the PERMUTATION strategies).")
         .def_readwrite("fold_dummy_coupling", &tik::TRexTikhonovControlParameter::fold_dummy_coupling, "FOLDED dummy "
             "coupling: dummies take the K block of their real counterpart (default True). False is a validation "
             "switch that only the TCDTIKNET solver offers; the default solver TIKNET raises an error for it. "
             "Deprecated: removed with TCDTIKNET and the coordinate-descent family in the next minor release.")
-        .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Cluster-aware MVN "
-            "dummies (default True); False = i.i.d. dummies (the K = I anchor).")
-        .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Group assignment "
-            "(0-based, length p; empty = HAC clusters from corr_max / hc_linkage).")
-        .def_readwrite("corr_max",        &tik::TRexTikhonovControlParameter::corr_max,        "HAC cut: maximum "
-            "correlation between variables of different clusters when prior_groups is empty.")
-        .def_readwrite("hc_linkage",      &tik::TRexTikhonovControlParameter::hc_linkage,      "HAC linkage "
-            "(ml_methods.clustering.LinkageMethod).")
+        .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Draw the dummies per "
+            "cluster of correlated variables, as in TRexGVSSelector (default True). False gives i.i.d. dummies, "
+            "for validation runs only: with an informed K they deform the exchangeability of dummies and null "
+            "variables that the FDR calibration relies on.")
+        .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Groups of the "
+            "variables: a 0-based group ID per variable (length p, IDs without gaps). They define the clusters of "
+            "the dummies (with cluster_dummies), the penalty under GROUP_CENTERING and the count GROUP_MAJORITY of "
+            "the pilot rule. Empty (default): the clusters of the dummies are found by clustering the "
+            "correlations with corr_max and hc_linkage.")
+        .def_readwrite("corr_max",        &tik::TRexTikhonovControlParameter::corr_max,        "Correlation threshold "
+            "of the automatic clustering (default 0.5, in [0, 1]). The dendrogram is cut at the height "
+            "1 - corr_max. With Single linkage (default) no two variables of different clusters correlate above "
+            "corr_max. With Complete linkage every two variables of one cluster correlate at least at corr_max, "
+            "and variables of different clusters can exceed it. Ignored when prior_groups is set or "
+            "cluster_dummies is False.")
+        .def_readwrite("hc_linkage",      &tik::TRexTikhonovControlParameter::hc_linkage,      "Linkage of the "
+            "hierarchical clustering (ml_methods.clustering.LinkageMethod, default Single). Supported: Single, "
+            "Complete, Average, WPGMA. Ward is rejected, because its update is valid for squared Euclidean "
+            "distances only and the correlation distance 1 - abs(cor) is not Euclidean. Ignored when prior_groups "
+            "is set or cluster_dummies is False.")
         .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControlParameter::trex_ctrl,       "Nested base T-Rex "
             "control, whose solver is TIKNET. It applies when TRexTikhonovSelector gets no trex_control argument, "
             "and that argument replaces it otherwise.");
@@ -442,8 +470,52 @@ inline void bind_trex_tikhonov(py::module& m) {
           "fixed-lambda_2 FDR guarantee that each probe carries.");
 
     py::class_<PyTRexTikhonovSelector, PyTRexSelector>(m, "TRexTikhonovSelector",
-        "T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated TCDTIKNET) and "
-        "cluster-aware dummies.\n"
+        "T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov): FDR-controlled variable selection\n"
+        "with the penalty (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix K carries the\n"
+        "structure among the variables.\n"
+        "\n"
+        "Notes\n"
+        "-----\n"
+        "The penalty. K = Gamma^T Gamma (p x p) for a regularization operator Gamma, see gamma_to_k().\n"
+        "Special cases: K = I is the ridge part of the elastic net. The group-mean matrix is the penalty of\n"
+        "the informed elastic net of TRexGVSSelector. The group-centering matrix\n"
+        "(TikPenaltyStructure.GROUP_CENTERING) makes the members of a group share a coefficient. A banded\n"
+        "matrix or a graph Laplacian makes neighbouring coefficients smooth.\n"
+        "\n"
+        "The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the coordinate-descent solver, is\n"
+        "deprecated. Every other solver is refused.\n"
+        "\n"
+        "The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector\n"
+        "(cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the\n"
+        "correlations (corr_max, hc_linkage). dummy_clusters reports them. In the penalty every dummy takes\n"
+        "the place of the variable it was drawn for (the folded coupling), so dummies and null variables\n"
+        "stay exchangeable for every K.\n"
+        "\n"
+        "L-loop strategies. With cluster dummies STANDARD, HCONCAT, SKIPL and SEEDED are supported, and\n"
+        "SEEDED equals STANDARD. PERMUTATION and PERMUTATION_SEEDED are refused, because a row permutation\n"
+        "destroys the covariance of the dummies within a cluster. With cluster_dummies = False the two run\n"
+        "as well.\n"
+        "\n"
+        "lambda_2. A supplied value is used as it is. Otherwise lambda2_method chooses it before the L-loop.\n"
+        "PILOT_KNEE (default), the pilot rule: for every value of pilot_grid, pilot_K random experiments run\n"
+        "to the stopping time pilot_T on one set of dummies, and the variables ahead of the dummies in more\n"
+        "than half of the experiments are counted. The pick is the smallest lambda_2 whose count is within\n"
+        "pilot_knee_tolerance of the largest. The pilot dummies come from a seed stream of their own, so the\n"
+        "main run is a T-Rex run at a fixed lambda_2 whose dummies do not depend on the pick. The pick\n"
+        "itself depends on y and lies outside the FDR guarantee of a fixed lambda_2. In simulations the pick\n"
+        "cost nothing under the global null and at most 0.02 of true positive rate against the best fixed\n"
+        "value under the alternatives. The record is lambda2_pilot, and tikhonov_lambda2_power_rule() runs\n"
+        "the same rule on full selections. The rules CV_*_IEN_CCD cross-validate with the lambda_1 path\n"
+        "profiled out and are well-posed for every p and n. The rules CV_*_TIK_SVD are an analytic ridge\n"
+        "cross-validation, exact for n > p.\n"
+        "\n"
+        "The scale. A supplied lambda_2 refers to the scale of the standardized columns: under\n"
+        "ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value\n"
+        "times n - 1. pilot_grid is stated for columns of unit norm, and the pilot rule and the\n"
+        "cross-validation rules apply the factor n - 1 themselves. Every rule reports its pick on the scale\n"
+        "of a supplied value (lambda2_used).\n"
+        "\n"
+        "A selector runs once: select() and run_pilot_only() exclude each other.\n"
         "\n"
         "References\n"
         "----------\n"
@@ -485,8 +557,9 @@ inline void bind_trex_tikhonov(py::module& m) {
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              kReaderSelectorDoc.c_str())
-        .def("getLambda2Used", &PyTRexTikhonovSelector::getLambda2Used, "lambda_2 used by the last select() (solver "
-            "scale); -1 before select().")
+        .def("getLambda2Used", &PyTRexTikhonovSelector::getLambda2Used, "The lambda_2 the last run used: the "
+            "supplied value, or the pick of the pilot rule or of a cross-validation rule, on the scale of a "
+            "supplied value. -1 before a run.")
         .def("getLambda2CVDiagnostics", &PyTRexTikhonovSelector::getLambda2CVDiagnostics, "Return the lambda_2 tuner "
             "health record of the last select().")
         .def("getLambda2PilotResult", &PyTRexTikhonovSelector::getLambda2PilotResult, "Return the lambda_2 pilot "

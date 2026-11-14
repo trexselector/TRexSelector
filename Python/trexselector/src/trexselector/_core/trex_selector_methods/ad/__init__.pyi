@@ -792,64 +792,64 @@ class Lambda2PickInfo:
         """
 class Lambda2PilotResult:
     """
-    Record of a lambda_2 pilot run (PILOT_KNEE): the grid, the per-value counts and curves, the pick, and the pilot's size.
+    What the lambda_2 pilot of the last select() or run_pilot_only() did: the grid, the counts and curves per grid value, the pick and the size of the pilot.
     """
     def __init__(self) -> None:
         ...
     @property
     def K_pilot(self) -> int:
         """
-        Pilot experiments per grid value.
+        Pilot experiments per grid value that ran: pilot_K, capped at K.
         """
     @property
     def L_0(self) -> int:
         """
-        Number of dummies of the pilot, pilot_L_multiplier times p.
+        Number of pilot dummies, pilot_L_multiplier times p.
         """
     @property
     def T_pilot(self) -> int:
         """
-        Pilot T-steps.
+        Stopping time of the pilot paths that was used: pilot_T, capped at min(L_0, ceil(n / 2)).
         """
     @property
     def at_lower_end(self) -> bool:
         """
-        The pick is the first grid value.
+        The pick sits on the first grid value.
         """
     @property
     def at_upper_end(self) -> bool:
         """
-        The pick is the last grid value.
+        The pick sits on the last grid value: widen the grid before trusting it.
         """
     @property
     def calibrated(self) -> list[int]:
         """
-        Calibrated count per grid value.
+        The calibrated pilot selection count per grid value.
         """
     @property
     def counts(self) -> list[int]:
         """
-        Selection count per grid value under pilot_statistic.
+        The count the pick was read off, per grid value: the count of pilot_statistic.
         """
     @property
     def curve_majority(self) -> list[list[int]]:
         """
-        Per grid value: majority count per pilot T-step.
+        The majority count per grid value and pilot stopping time t = 1 .. T_pilot.
         """
     @property
     def curve_soft(self) -> list[list[float]]:
         """
-        Per grid value: calibrated (soft) count per pilot T-step.
+        The mean number of variables ahead of the t-th dummy, per grid value and t (a diagnostic).
         """
     @property
     def dummy_tag(self) -> int:
         """
-        Dummy stream tag the pilot drew under.
+        Seed tag under which the pilot dummies were drawn.
         """
     @property
     def grid(self) -> list[float]:
         """
-        The lambda_2 values the pilot ran at: pilot_grid times grid_scale.
+        The lambda_2 values the pilot ran at, ascending and without duplicates: pilot_grid times grid_scale.
         """
     @property
     def grid_scale(self) -> float:
@@ -859,22 +859,22 @@ class Lambda2PilotResult:
     @property
     def group_majority(self) -> list[int]:
         """
-        Group-majority count per grid value.
+        The group-majority count per grid value: the members ahead, summed over the groups that reach pilot_group_fraction. Zeros without prior_groups.
         """
     @property
     def groups_qualifying(self) -> list[int]:
         """
-        Groups qualifying per grid value.
+        The number of groups that reach pilot_group_fraction, per grid value. Zeros without prior_groups.
         """
     @property
     def index(self) -> int:
         """
-        0-based index of the picked grid value.
+        0-based index of the pick into grid.
         """
     @property
     def lambda2(self) -> float:
         """
-        The picked lambda_2.
+        The picked lambda_2, grid[index], on the working scale.
         """
     @property
     def pick(self) -> Lambda2PickInfo:
@@ -889,7 +889,7 @@ class Lambda2PilotResult:
     @property
     def ran(self) -> bool:
         """
-        A pilot ran (False: lambda_2 came from the caller or a CV tuner).
+        A pilot ran (False: lambda_2 came from the caller or a cross-validation rule).
         """
     @property
     def seconds(self) -> float:
@@ -1043,15 +1043,15 @@ class LambdaSelectionMethod:
         ...
 class PilotStatistic:
     """
-    Selection count the pilot rule reads per grid value.
+    The count the pilot rule picks on, per value of the grid. The record holds all three.
     
     Members:
     
-      MAJORITY : Variables selected in more than half of the pilot experiments.
+      MAJORITY : The number of variables ahead of the T_pilot-th dummy in more than half of the pilot experiments, the count of the T-Rex selector at the voting level 1/2. Zero under the global null.
     
-      CALIBRATED : Calibrated count (soft curve).
+      CALIBRATED : The T-Rex selection rule applied to the pilot data: the largest selection whose estimated FDP stays within tFDR. Coarser at a small pilot_K.
     
-      GROUP_MAJORITY : Groups whose selected fraction exceeds pilot_group_fraction.
+      GROUP_MAJORITY : The MAJORITY count restricted to the groups of prior_groups in which at least pilot_group_fraction of the members are ahead. A group that enters as a whole counts with its members, a group that enters as a minority counts nothing. It needs prior_groups.
     """
     CALIBRATED: typing.ClassVar[PilotStatistic]  # value = <PilotStatistic.CALIBRATED: 1>
     GROUP_MAJORITY: typing.ClassVar[PilotStatistic]  # value = <PilotStatistic.GROUP_MAJORITY: 2>
@@ -2446,14 +2446,14 @@ class TRexSelector:
         """
 class TRexTikhonovControlParameter:
     """
-    Control parameters for TRexTikhonovSelector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.
+    Control parameters of the Tikhonov selector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, or GROUP_CENTERING built from groups), the rule for lambda_2, and the dummies.
     """
     def __init__(self) -> None:
         ...
     @property
     def cluster_dummies(self) -> bool:
         """
-        Cluster-aware MVN dummies (default True); False = i.i.d. dummies (the K = I anchor).
+        Draw the dummies per cluster of correlated variables, as in TRexGVSSelector (default True). False gives i.i.d. dummies, for validation runs only: with an informed K they deform the exchangeability of dummies and null variables that the FDR calibration relies on.
         """
     @cluster_dummies.setter
     def cluster_dummies(self, arg0: bool) -> None:
@@ -2461,7 +2461,7 @@ class TRexTikhonovControlParameter:
     @property
     def corr_max(self) -> float:
         """
-        HAC cut: maximum correlation between variables of different clusters when prior_groups is empty.
+        Correlation threshold of the automatic clustering (default 0.5, in [0, 1]). The dendrogram is cut at the height 1 - corr_max. With Single linkage (default) no two variables of different clusters correlate above corr_max. With Complete linkage every two variables of one cluster correlate at least at corr_max, and variables of different clusters can exceed it. Ignored when prior_groups is set or cluster_dummies is False.
         """
     @corr_max.setter
     def corr_max(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2469,7 +2469,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_dfmax_ratio(self) -> float:
         """
-        IEN-geometry CD tuners: support cap as a fraction of the smallest fold's training size (default 0.8; <= 0 disables the cap; larger values allow larger supports at a higher tuner cost; must be finite).
+        CV_*_IEN_CCD: support cap as a fraction of the smallest fold's training size (default 0.8). A value <= 0 disables the cap, larger values allow larger supports at a higher cost. It must be finite.
         """
     @cv_dfmax_ratio.setter
     def cv_dfmax_ratio(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2477,7 +2477,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_n_folds(self) -> int:
         """
-        Folds of the CV tuners, 2 to n.
+        Folds of the cross-validation rules, 2 to n (default 10).
         """
     @cv_n_folds.setter
     def cv_n_folds(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2485,7 +2485,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_n_lambda(self) -> int:
         """
-        SVD tuners: points on the lambda_2 grid.
+        CV_*_TIK_SVD: points on the lambda_2 grid (default 100).
         """
     @cv_n_lambda.setter
     def cv_n_lambda(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2493,7 +2493,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_n_lambda1(self) -> int:
         """
-        IEN-geometry CD tuners: points on the profiled lambda_1 path per lambda_2 value.
+        CV_*_IEN_CCD: points on the profiled lambda_1 path per lambda_2 value (default 40).
         """
     @cv_n_lambda1.setter
     def cv_n_lambda1(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2501,7 +2501,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_n_lambda2(self) -> int:
         """
-        IEN-geometry CD tuners: points on the lambda_2 grid.
+        CV_*_IEN_CCD: points on the lambda_2 grid (default 100).
         """
     @cv_n_lambda2.setter
     def cv_n_lambda2(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2509,7 +2509,7 @@ class TRexTikhonovControlParameter:
     @property
     def cv_seed(self) -> int:
         """
-        Seed for the CV fold permutation (-1 = derive from the T-Rex seed).
+        Seed of the fold permutation of the cross-validation rules. -1 (default) derives it from the seed of the selector, a value >= 0 replaces it for the folds only.
         """
     @cv_seed.setter
     def cv_seed(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2525,7 +2525,7 @@ class TRexTikhonovControlParameter:
     @property
     def hc_linkage(self) -> ...:
         """
-        HAC linkage (ml_methods.clustering.LinkageMethod).
+        Linkage of the hierarchical clustering (ml_methods.clustering.LinkageMethod, default Single). Supported: Single, Complete, Average, WPGMA. Ward is rejected, because its update is valid for squared Euclidean distances only and the correlation distance 1 - abs(cor) is not Euclidean. Ignored when prior_groups is set or cluster_dummies is False.
         """
     @hc_linkage.setter
     def hc_linkage(self, arg0: ...) -> None:
@@ -2533,7 +2533,7 @@ class TRexTikhonovControlParameter:
     @property
     def lambda2_method(self) -> TikLambda2Method:
         """
-        Rule for resolving lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot knee; the CV tuners are the alternatives).
+        Rule that chooses lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot rule; the cross-validation rules are the alternatives).
         """
     @lambda2_method.setter
     def lambda2_method(self, arg0: TikLambda2Method) -> None:
@@ -2541,7 +2541,7 @@ class TRexTikhonovControlParameter:
     @property
     def lambda_2(self) -> float:
         """
-        Tikhonov penalty (solver scale): < 0 = resolve by lambda2_method, 0 = no ridge, > 0 = fixed. It must be finite.
+        Weight of the penalty. A negative value (default -1) lets lambda2_method choose it, 0 is no penalty (the lasso path of the solver), and a positive value is used as it is. It must be finite. A supplied value refers to the scale of the standardized columns: under ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value times n - 1. The rules report their pick on this scale.
         """
     @lambda_2.setter
     def lambda_2(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2549,7 +2549,7 @@ class TRexTikhonovControlParameter:
     @property
     def penalty_structure(self) -> TikPenaltyStructure:
         """
-        SPARSE_GENERAL (tikhonov_K given) or GROUP_CENTERING (K from the groups; with the TCDTIKNET solver this path runs through the group-centering hooks of TCDIENET, so its warnings carry the tag [TCDIENET]).
+        Structural form of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from prior_groups, which it requires). With the solver TCDTIKNET the group centering runs through the hooks of TCDIENET, so its warnings carry the tag [TCDIENET].
         """
     @penalty_structure.setter
     def penalty_structure(self, arg0: TikPenaltyStructure) -> None:
@@ -2557,7 +2557,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_K(self) -> int:
         """
-        Pilot experiments per grid value.
+        Pilot experiments per grid value (default 10; at least 2, capped at K of the base control).
         """
     @pilot_K.setter
     def pilot_K(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2565,7 +2565,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_L_multiplier(self) -> int:
         """
-        Pilot dummy multiplier (in [1, trex_control.max_dummy_multiplier]).
+        Pilot dummies L_0 = pilot_L_multiplier times p (default 1; in [1, max_dummy_multiplier] of the base control).
         """
     @pilot_L_multiplier.setter
     def pilot_L_multiplier(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2573,7 +2573,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_T(self) -> int:
         """
-        Pilot T-steps.
+        Stopping time of the pilot paths (default 5; at least 1, capped at min(L_0, ceil(n / 2))).
         """
     @pilot_T.setter
     def pilot_T(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -2581,7 +2581,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_grid(self) -> list[float]:
         """
-        lambda_2 grid of the pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on the grid so that no penalty is an admissible answer.
+        lambda_2 grid of the pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on the grid so that no penalty is an admissible answer. Default: default_lambda2_grid().
         """
     @pilot_grid.setter
     def pilot_grid(self, arg0: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
@@ -2589,7 +2589,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_group_fraction(self) -> float:
         """
-        GROUP_MAJORITY: fraction of a group that must be selected.
+        GROUP_MAJORITY: the share of a group's members that must be ahead for the group to count, in (0, 1] (default 0.5).
         """
     @pilot_group_fraction.setter
     def pilot_group_fraction(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2597,7 +2597,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_knee_tolerance(self) -> float:
         """
-        Pilot rule: selections below the largest count that still count as on the plateau (0 reads the largest count).
+        Pilot rule: selections below the largest count that still count as on the plateau (default 1; 0 reads the largest count).
         """
     @pilot_knee_tolerance.setter
     def pilot_knee_tolerance(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2605,7 +2605,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_shared_dummies(self) -> bool:
         """
-        Pilot draws its dummies under the main run's first block tag.
+        False (default): the pilot draws its dummies from a seed stream of its own, so the dummies of the main run do not depend on the pick. True: the pilot uses the first dummy block of the main strategy (not with the PERMUTATION strategies).
         """
     @pilot_shared_dummies.setter
     def pilot_shared_dummies(self, arg0: bool) -> None:
@@ -2613,7 +2613,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_statistic(self) -> PilotStatistic:
         """
-        Selection count the pilot reads (MAJORITY, CALIBRATED, GROUP_MAJORITY).
+        The count the pilot rule picks on: MAJORITY (default), CALIBRATED or GROUP_MAJORITY.
         """
     @pilot_statistic.setter
     def pilot_statistic(self, arg0: PilotStatistic) -> None:
@@ -2621,7 +2621,7 @@ class TRexTikhonovControlParameter:
     @property
     def prior_groups(self) -> list[int]:
         """
-        Group assignment (0-based, length p; empty = HAC clusters from corr_max / hc_linkage).
+        Groups of the variables: a 0-based group ID per variable (length p, IDs without gaps). They define the clusters of the dummies (with cluster_dummies), the penalty under GROUP_CENTERING and the count GROUP_MAJORITY of the pilot rule. Empty (default): the clusters of the dummies are found by clustering the correlations with corr_max and hc_linkage.
         """
     @prior_groups.setter
     def prior_groups(self, arg0: collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]) -> None:
@@ -2644,7 +2644,52 @@ class TRexTikhonovControlParameter:
         ...
 class TRexTikhonovSelector(TRexSelector):
     """
-    T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated TCDTIKNET) and cluster-aware dummies.
+    T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov): FDR-controlled variable selection
+    with the penalty (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix K carries the
+    structure among the variables.
+    
+    Notes
+    -----
+    The penalty. K = Gamma^T Gamma (p x p) for a regularization operator Gamma, see gamma_to_k().
+    Special cases: K = I is the ridge part of the elastic net. The group-mean matrix is the penalty of
+    the informed elastic net of TRexGVSSelector. The group-centering matrix
+    (TikPenaltyStructure.GROUP_CENTERING) makes the members of a group share a coefficient. A banded
+    matrix or a graph Laplacian makes neighbouring coefficients smooth.
+    
+    The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the coordinate-descent solver, is
+    deprecated. Every other solver is refused.
+    
+    The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector
+    (cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the
+    correlations (corr_max, hc_linkage). dummy_clusters reports them. In the penalty every dummy takes
+    the place of the variable it was drawn for (the folded coupling), so dummies and null variables
+    stay exchangeable for every K.
+    
+    L-loop strategies. With cluster dummies STANDARD, HCONCAT, SKIPL and SEEDED are supported, and
+    SEEDED equals STANDARD. PERMUTATION and PERMUTATION_SEEDED are refused, because a row permutation
+    destroys the covariance of the dummies within a cluster. With cluster_dummies = False the two run
+    as well.
+    
+    lambda_2. A supplied value is used as it is. Otherwise lambda2_method chooses it before the L-loop.
+    PILOT_KNEE (default), the pilot rule: for every value of pilot_grid, pilot_K random experiments run
+    to the stopping time pilot_T on one set of dummies, and the variables ahead of the dummies in more
+    than half of the experiments are counted. The pick is the smallest lambda_2 whose count is within
+    pilot_knee_tolerance of the largest. The pilot dummies come from a seed stream of their own, so the
+    main run is a T-Rex run at a fixed lambda_2 whose dummies do not depend on the pick. The pick
+    itself depends on y and lies outside the FDR guarantee of a fixed lambda_2. In simulations the pick
+    cost nothing under the global null and at most 0.02 of true positive rate against the best fixed
+    value under the alternatives. The record is lambda2_pilot, and tikhonov_lambda2_power_rule() runs
+    the same rule on full selections. The rules CV_*_IEN_CCD cross-validate with the lambda_1 path
+    profiled out and are well-posed for every p and n. The rules CV_*_TIK_SVD are an analytic ridge
+    cross-validation, exact for n > p.
+    
+    The scale. A supplied lambda_2 refers to the scale of the standardized columns: under
+    ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value
+    times n - 1. pilot_grid is stated for columns of unit norm, and the pilot rule and the
+    cross-validation rules apply the factor n - 1 themselves. Every rule reports its pick on the scale
+    of a supplied value (lambda2_used).
+    
+    A selector runs once: select() and run_pilot_only() exclude each other.
     
     References
     ----------
@@ -2690,7 +2735,7 @@ class TRexTikhonovSelector(TRexSelector):
         """
     def getLambda2Used(self) -> float:
         """
-        lambda_2 used by the last select() (solver scale); -1 before select().
+        The lambda_2 the last run used: the supplied value, or the pick of the pilot rule or of a cross-validation rule, on the scale of a supplied value. -1 before a run.
         """
     def runPilotOnly(self) -> Lambda2PilotResult:
         """
@@ -2698,19 +2743,19 @@ class TRexTikhonovSelector(TRexSelector):
         """
 class TikLambda2Method:
     """
-    Rule for resolving lambda_2 when tik_control.lambda_2 < 0: the pilot knee (default) or a k-fold CV tuner. The knee of the full selection profile is tikhonov_lambda2_power_rule().
+    Rule that chooses lambda_2 when no value is supplied (tik_control.lambda_2 < 0). The pilot rule reads it off a few random experiments per value of pilot_grid. The four cross-validation rules tune on the normalized data before the random experiments. Every rule reports its pick on the working scale of the run. The knee of the full selection profile is tikhonov_lambda2_power_rule().
     
     Members:
     
-      CV_1SE_IEN_CCD : IEN-geometry coordinate-descent CV (lambda_1 profiled), 1-SE rule.
+      CV_1SE_IEN_CCD : Cross-validation with the lambda_1 path profiled out per lambda_2 candidate, 1-SE rule. Well-posed for every p and n.
     
-      CV_MIN_IEN_CCD : IEN-geometry coordinate-descent CV, minimum rule.
+      CV_MIN_IEN_CCD : Cross-validation with the lambda_1 path profiled out, minimum rule.
     
-      CV_1SE_TIK_SVD : Generalized-Tikhonov SVD ridge CV, 1-SE rule.
+      CV_1SE_TIK_SVD : Analytic ridge cross-validation (lambda_1 = 0), 1-SE rule. Exact for n > p, refused when the unpenalized null space interpolates the training folds.
     
-      CV_MIN_TIK_SVD : Generalized-Tikhonov SVD ridge CV, minimum rule.
+      CV_MIN_TIK_SVD : Analytic ridge cross-validation (lambda_1 = 0), minimum rule.
     
-      PILOT_KNEE : The pilot knee (default): a few random experiments per grid value, the smallest grid value whose selection count is within pilot_knee_tolerance of the maximum.
+      PILOT_KNEE : The pilot rule (default): a few random experiments per value of pilot_grid, then the smallest lambda_2 whose count is within pilot_knee_tolerance of the largest.
     """
     CV_1SE_IEN_CCD: typing.ClassVar[TikLambda2Method]  # value = <TikLambda2Method.CV_1SE_IEN_CCD: 0>
     CV_1SE_TIK_SVD: typing.ClassVar[TikLambda2Method]  # value = <TikLambda2Method.CV_1SE_TIK_SVD: 2>
@@ -2754,13 +2799,13 @@ class TikLambda2Method:
         ...
 class TikPenaltyStructure:
     """
-    Where the penalty matrix comes from.
+    Structural form of the Tikhonov penalty.
     
     Members:
     
       SPARSE_GENERAL : tik_control.tikhonov_K is the p x p PSD penalty matrix (a scipy.sparse matrix or a dense array).
     
-      GROUP_CENTERING : K = I - J/p_m per group, built from prior_groups, which this structure requires.
+      GROUP_CENTERING : K = blockdiag(I - J/p_m) over prior_groups: the members of a group share a coefficient. The groups are required, and tikhonov_K may be left out.
     """
     GROUP_CENTERING: typing.ClassVar[TikPenaltyStructure]  # value = <TikPenaltyStructure.GROUP_CENTERING: 1>
     SPARSE_GENERAL: typing.ClassVar[TikPenaltyStructure]  # value = <TikPenaltyStructure.SPARSE_GENERAL: 0>
