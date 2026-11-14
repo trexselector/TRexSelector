@@ -640,8 +640,8 @@ def test_the_derived_selectors_run_once(fast_control):
         ctrl = trexselector.TRexTikhonovControlParameter()
         ctrl.tikhonov_K = np.eye(p)
         ctrl.lambda_2 = 1.0
-        return trexselector.TRexTikhonovSelector(X, y, tFDR=0.2, tik_control=ctrl, trex_control=fast_control,
-                                                 seed=3, verbose=False)
+        ctrl.trex_ctrl.K = fast_control.K       # the nested base control, whose solver is TIKNET
+        return trexselector.TRexTikhonovSelector(X, y, tFDR=0.2, tik_control=ctrl, seed=3, verbose=False)
 
     makers = {
         "screening": lambda: trexselector.TRexScreeningSelector(X, y, seed=3, verbose=False),

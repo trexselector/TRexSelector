@@ -60,8 +60,8 @@ def test_readonly_view_serves_every_selector_under_none(readonly_design):
     tik_ctrl = tsn.TRexTikhonovControlParameter()
     tik_ctrl.tikhonov_K = np.eye(d["p"])
     tik_ctrl.lambda_2 = 0.5
-    tsn.TRexTikhonovSelector(view, y, tFDR=0.2, tik_control=tik_ctrl, trex_control=none, seed=11,
-                             verbose=False).select()
+    tik_ctrl.trex_ctrl.scaling_mode = tsn.ScalingMode.NONE   # the nested base control of the run
+    tsn.TRexTikhonovSelector(view, y, tFDR=0.2, tik_control=tik_ctrl, seed=11, verbose=False).select()
     tsn.TRexScreeningSelector(view, y, trex_control=none, seed=11, verbose=False).select()
 
     bio_ctrl = tsn.BiobankScreenTRexControl()
@@ -93,8 +93,9 @@ def test_readonly_view_is_refused_where_the_design_is_written(readonly_design, m
         tsn.TRexGVSSelector(view, y, trex_control=ctrl, verbose=False)
     tik_ctrl = tsn.TRexTikhonovControlParameter()
     tik_ctrl.tikhonov_K = np.eye(d["p"])
+    tik_ctrl.trex_ctrl.scaling_mode = mode                   # the nested base control of the run
     with pytest.raises(ValueError, match="not writable"):
-        tsn.TRexTikhonovSelector(view, y, tik_control=tik_ctrl, trex_control=ctrl, verbose=False)
+        tsn.TRexTikhonovSelector(view, y, tik_control=tik_ctrl, verbose=False)
     with pytest.raises(ValueError, match="not writable"):
         tsn.TRexScreeningSelector(view, y, trex_control=ctrl, verbose=False)
 

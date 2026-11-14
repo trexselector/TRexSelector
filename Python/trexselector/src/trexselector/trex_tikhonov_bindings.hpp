@@ -23,6 +23,9 @@
 #include <pybind11/eigen.h>
 #include <pybind11/stl.h>
 
+// std includes
+#include <optional>
+
 // trex includes
 #include <ml_methods/model_selection/lambda2_cv_diagnostics.hpp>
 #include <trex_selector_methods/ad/trex_tikhonov/trex_tikhonov.hpp>
@@ -40,23 +43,18 @@ using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
 // =====================================================================================
 
 /**
- * @brief The base control placed into the Tikhonov control. The C++
- *        constructor takes one control that nests the base control, with
- *        TIKNET as its solver. Python takes the base control as a second
- *        argument, whose solver defaults to TLARS. TLARS therefore stands
- *        for "no solver chosen" and gives TIKNET. Every other solver is
- *        passed on as it is, and the C++ constructor refuses one outside
- *        TIKNET and TCDTIKNET.
+ * @brief The control of a run. The C++ constructor takes one control that
+ *        nests the base control, with TIKNET as its solver. Python can pass
+ *        a base control as a second argument: it then replaces the nested
+ *        one, as it is. Without it the nested control applies. Nothing is
+ *        changed in either, and the C++ constructor validates the result.
  */
 inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
     const tik::TRexTikhonovControlParameter& tik_control,
-    const TRexControlParameter& trex_control)
+    const std::optional<TRexControlParameter>& trex_control)
 {
     tik::TRexTikhonovControlParameter tik_ctrl = tik_control;
-    tik_ctrl.trex_ctrl = trex_control;
-    if (tik_ctrl.trex_ctrl.solver_type == tik_sd::SolverTypeForTRex::TLARS) {
-        tik_ctrl.trex_ctrl.solver_type = tik_sd::SolverTypeForTRex::TIKNET;
-    }
+    if (trex_control) { tik_ctrl.trex_ctrl = *trex_control; }
     return tik_ctrl;
 }
 
@@ -73,7 +71,7 @@ public:
      * @param y Reference to the response vector (n × 1).
      * @param tFDR Target False Discovery Rate threshold.
      * @param tik_control Tikhonov-specific control (K or penalty structure, lambda_2 rule, dummies).
-     * @param trex_control General configuration parameters for the T-Rex algorithm.
+     * @param trex_control Base control that replaces the nested one of tik_control, or none.
      * @param seed Random seed for reproducible computations.
      * @param verbose If true, prompts standard out messaging during select().
      */
@@ -82,7 +80,7 @@ public:
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
         const tik::TRexTikhonovControlParameter& tik_control,
-        const TRexControlParameter& trex_control,
+        const std::optional<TRexControlParameter>& trex_control,
         int seed,
         bool verbose
     ) {
@@ -112,11 +110,12 @@ public:
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
         const tik::TRexTikhonovControlParameter& tik_control,
-        const TRexControlParameter& trex_control,
+        const std::optional<TRexControlParameter>& trex_control,
         int seed,
         bool verbose
-    ) : PyTRexTikhonovSelector(selector_design_ref(X, trex_control), y, tFDR, tik_control, trex_control,
-                               seed, verbose) {}
+    ) : PyTRexTikhonovSelector(
+            selector_design_ref(X, trex_control ? *trex_control : tik_control.trex_ctrl), y, tFDR,
+            tik_control, trex_control, seed, verbose) {}
 
     /** @brief lambda_2 used by the last select() (solver scale); -1 before select(). */
     double getLambda2Used() const {
@@ -332,7 +331,8 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readwrite("hc_linkage",      &tik::TRexTikhonovControlParameter::hc_linkage,      "HAC linkage "
             "(ml_methods.clustering.LinkageMethod).")
         .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControlParameter::trex_ctrl,       "Nested base T-Rex "
-            "control (overridden by the separate trex_control argument of TRexTikhonovSelector).");
+            "control, whose solver is TIKNET. It applies when TRexTikhonovSelector gets no trex_control argument, "
+            "and that argument replaces it otherwise.");
 
     m.def("gamma_to_k",
           [](const Eigen::SparseMatrix<double>& gamma) {
@@ -352,7 +352,8 @@ inline void bind_trex_tikhonov(py::module& m) {
 
     m.def("tikhonov_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
-             const tik::TRexTikhonovControlParameter& tik_control, const TRexControlParameter& trex_control,
+             const tik::TRexTikhonovControlParameter& tik_control,
+             const std::optional<TRexControlParameter>& trex_control,
              int seed, const std::vector<double>& grid, double knee_tolerance, bool verbose) {
               // Every probe normalizes X in place and hands it back on return,
               // so X and y are read through maps and never copied.
@@ -368,7 +369,7 @@ inline void bind_trex_tikhonov(py::module& m) {
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
           py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
-          py::arg("trex_control") = TRexControlParameter(),
+          py::arg("trex_control") = py::none(),
           py::arg("seed") = 0,
           py::arg("grid") = tik::default_lambda2_grid(),
           py::arg("knee_tolerance") = 1.0, py::arg("verbose") = false,
@@ -406,18 +407,23 @@ inline void bind_trex_tikhonov(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
         .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, double,
-                      const tik::TRexTikhonovControlParameter&, const TRexControlParameter&, int, bool>(),
+                      const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
+                      int, bool>(),
              py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
              py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map.")
+             "Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without "
+             "trex_control the base control nested in tik_control applies, whose solver is TIKNET. A "
+             "trex_control replaces it as it is, and its solver_type must be TIKNET (or the deprecated "
+             "TCDTIKNET): any other solver, TLARS included, raises ValueError.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double,
-                      const tik::TRexTikhonovControlParameter&, const TRexControlParameter&, int, bool>(),
+                      const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
+                      int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
              py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              kReaderSelectorDoc.c_str())

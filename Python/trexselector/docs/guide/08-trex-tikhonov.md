@@ -63,7 +63,9 @@ print(K[:4, :4].toarray())
 ## Running the selector
 
 The Tikhonov control is required, because it carries $\boldsymbol K$. The penalty weight is fixed
-here.
+here. A base control that is passed has to name the solver of the selector, `TIKNET`. Without a
+base control the one nested in the Tikhonov control applies, `tik_ctrl.trex_ctrl`, whose solver is
+`TIKNET` already.
 
 ```{code-cell} python
 from trexselector.utils import compute_fdp, compute_tpp
@@ -72,6 +74,7 @@ tik_ctrl = tsn.TRexTikhonovControlParameter()
 tik_ctrl.tikhonov_K = K
 tik_ctrl.lambda_2 = 1.0
 ctrl = tsn.TRexControlParameter()
+ctrl.solver_type = tsn.SolverTypeForTRex.TIKNET
 ctrl.K = 10
 
 tik = tsn.TRexTikhonovSelector(X, y, tFDR=0.1, tik_control=tik_ctrl, trex_control=ctrl,

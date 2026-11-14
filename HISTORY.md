@@ -16,6 +16,33 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Python Tikhonov class takes TIKNET only, as C++ does
+
+Step 3 of the rework of the Python class of the Tikhonov selector. It corrects 74fef7c, which had kept
+one mapping.
+
+- Fabian on 74fef7c: "TLARS can only be a solver if the K matrix is zero. I would prefer for stability
+  that we accept only Tiknet. How is it in Cpp?" In C++ the selector accepts TIKNET, the default of the
+  base control nested in its control, and the deprecated TCDTIKNET, and refuses every other solver,
+  TLARS included.
+- 74fef7c had let TLARS stand for "no solver chosen" and give TIKNET, because Python takes the base
+  control as a second argument and a fresh `TRexControlParameter()` names TLARS. That mapping is gone:
+  the binding changes nothing in a control, and the C++ constructor decides. TLARS raises `ValueError`
+  as every solver outside the family does.
+- The base control of a run. Without `trex_control` the base control nested in the Tikhonov control
+  applies (`tik_control.trex_ctrl`), whose solver is TIKNET, as in C++. Up to now a fresh default
+  control replaced it, and settings on the nested control had no effect. A `trex_control` that is passed
+  replaces the nested one as it is, and so has to name the solver TIKNET. The root class, the core
+  class (`trex_control = None` by default, where it was a default control) and
+  `tikhonov_lambda2_power_rule()` follow this rule.
+- What changes for code written for 1.0.0. A call that passes a base control built from
+  `TRexControlParameter()` without a solver raises `ValueError` and needs
+  `solver_type = SolverTypeForTRex.TIKNET`. Guide page 08 did so and sets the solver now.
+- Tests. Python pins that TLARS and four other solvers are refused on the three entry points, that the
+  nested control applies without `trex_control` and is not changed, and that a passed control replaces
+  it. Python tests 782.
+- The R class follows with its rework.
+
 #### The penalty matrix of the Python Tikhonov class is sparse
 
 Step 2 of the rework of the Python class of the Tikhonov selector (notes: TIKHONOV_findings.md, finding

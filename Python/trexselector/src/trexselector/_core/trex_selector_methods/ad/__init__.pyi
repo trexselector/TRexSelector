@@ -2616,7 +2616,7 @@ class TRexTikhonovControlParameter:
     @property
     def trex_ctrl(self) -> TRexControlParameter:
         """
-        Nested base T-Rex control (overridden by the separate trex_control argument of TRexTikhonovSelector).
+        Nested base T-Rex control, whose solver is TIKNET. It applies when TRexTikhonovSelector gets no trex_control argument, and that argument replaces it otherwise.
         """
     @trex_ctrl.setter
     def trex_ctrl(self, arg0: TRexControlParameter) -> None:
@@ -2646,12 +2646,12 @@ class TRexTikhonovSelector(TRexSelector):
       Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
     """
     @typing.overload
-    def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+    def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map.
+        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the base control nested in tik_control applies, whose solver is TIKNET. A trex_control replaces it as it is, and its solver_type must be TIKNET (or the deprecated TCDTIKNET): any other solver, TLARS included, raises ValueError.
         """
     @typing.overload
-    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
+    def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
         Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
@@ -2782,7 +2782,7 @@ def normalize_design(X: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, 
     """
     Apply the selectors' data normalization to copies of X and y and return a dict with keys 'X', 'y' (the normalized copies), 'X_means', 'X_scales' (the per-column divisors: L2 norms for L2, sample SDs for ZSCORE, ones for NONE) and 'y_mean'. Under ScalingMode.NONE the copies equal the inputs and the parameters are the identity. eps is the dead-column threshold on the working L2 norm (the selectors use the solver tolerance, default 1e-6). n_threads is the thread budget of the column passes (None: the library's default budget, utils.get_num_threads(), initially 1). Raises ValueError on a non-finite entry or a dead column (constant under L2 / ZSCORE, all-zero under NONE), naming the column (0-based).
     """
-def tikhonov_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
+def tikhonov_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
     """
     The knee of the full lambda_2 profile of the Tikhonov T-Rex: one FDR-controlled selection per grid value with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest (0 reads the largest selection, ties toward the smallest lambda_2). This is the reference rule behind TikLambda2Method.PILOT_KNEE at the cost of one selection per grid value; it returns every probe's selection. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1, as the pilot rule does. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back, so X is unchanged on return. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries.
     """

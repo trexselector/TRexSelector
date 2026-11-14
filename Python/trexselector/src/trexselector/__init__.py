@@ -449,9 +449,9 @@ class TRexTikhonovSelector(TRexSelector):
     resolves by ``tik_control.lambda2_method`` (CV tuners or the pilot power
     rules); the dummies are cluster-aware by default. Solver: TIKNET, the
     pathwise homotopy solver (default), or TCDTIKNET, the coordinate-descent
-    solver, chosen through ``trex_control.solver_type``. ``TLARS``, the
-    default of ``TRexControlParameter``, stands for "no solver chosen" and
-    gives TIKNET. Any other solver raises ``ValueError``. TCDTIKNET is not
+    solver, chosen through the base control. Any other solver raises
+    ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
+    a base control that is passed has to name the solver. TCDTIKNET is not
     finally developed: once lambda_2 times K is large it can stop at its sweep
     budget (``cd_max_sweeps``) before it has converged. ``select()`` then
     raises ``RuntimeError`` instead of returning a selection from an
@@ -470,8 +470,11 @@ class TRexTikhonovSelector(TRexSelector):
         Control parameters of the Tikhonov selector. Required, because it
         carries the penalty matrix ``tikhonov_K`` or the penalty structure.
     trex_control : TRexControlParameter, optional
-        Control parameters of the T-Rex selector. The defaults apply when it
-        is omitted.
+        Control parameters of the T-Rex selector. When it is omitted, the
+        base control nested in ``tik_control`` applies
+        (``tik_control.trex_ctrl``, whose solver is TIKNET). A control that
+        is passed replaces the nested one as it is, so its ``solver_type``
+        must be ``SolverTypeForTRex.TIKNET``.
     seed : int, default -1
         Random seed. A negative value gives a run that is not reproducible.
     verbose : bool, default True
@@ -489,11 +492,8 @@ class TRexTikhonovSelector(TRexSelector):
             raise ValueError(
                 "tik_control is required (a TRexTikhonovControlParameter; it "
                 "carries the penalty matrix tikhonov_K or the penalty structure).")
-        if trex_control is None:
-            trex_control = TRexControlParameter()
-
-        # The core decides on the solver: TLARS, the default of the base
-        # control, gives TIKNET, and a solver outside the family is refused.
+        # The core builds the control of the run: without trex_control the base
+        # control nested in tik_control applies, and the core validates it.
         self._selector: PyTRexTikhonovSelector = PyTRexTikhonovSelector(
             self.X, self.y, tFDR, tik_control, trex_control, seed, verbose)
 
@@ -545,15 +545,16 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
     ``X`` and ``y`` are converted to Fortran-ordered float64 arrays once (no
     copy when they already are) and accessed zero-copy: every probe normalizes
     X in place and hands it back, so X is unchanged on return. ``tik_control``
-    is required; its ``lambda_2`` is overwritten per probe. A negative seed
-    would draw fresh dummies per probe and is refused.
+    is required; its ``lambda_2`` is overwritten per probe. ``trex_control``
+    is taken as for ``TRexTikhonovSelector``: without it the base control
+    nested in ``tik_control`` applies, and a control that is passed must name
+    the solver TIKNET. A negative seed would draw fresh dummies per probe and
+    is refused.
     """
     if tik_control is None:
         raise ValueError(
             "tik_control is required (a TRexTikhonovControlParameter; it "
             "carries the penalty matrix tikhonov_K or the penalty structure).")
-    if trex_control is None:
-        trex_control = TRexControlParameter()
     if seed < 0:
         raise ValueError("seed must be non-negative: the probes share their dummies.")
     X = np.asfortranarray(X, dtype=np.float64)

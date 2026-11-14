@@ -60,8 +60,8 @@ def _base_control(K=5, mult=2, solver=None, sweeps=None):
     ctrl = tsn.TRexControlParameter()
     ctrl.K = K
     ctrl.max_dummy_multiplier = mult
-    if solver is not None:
-        ctrl.solver_type = solver
+    # A base control that is passed has to name the solver of the selector.
+    ctrl.solver_type = solver if solver is not None else tsn.SolverTypeForTRex.TIKNET
     if sweeps is not None:
         ctrl.solver_params.cd_max_sweeps = sweeps
     return ctrl
@@ -145,7 +145,7 @@ def test_empty_or_misdimensioned_k_raises():
                                  trex_control=_base_control(), verbose=False)
 
 
-@pytest.mark.parametrize("solver", ["TLASSO", "TENET", "TOMP", "TIENET"])
+@pytest.mark.parametrize("solver", ["TLARS", "TLASSO", "TENET", "TOMP", "TIENET"])
 def test_a_solver_outside_the_family_is_refused(solver):
     """The root class, the core class and the power rule refuse it, as C++ does."""
     from trexselector.trex_selector_methods import ad as core
@@ -164,20 +164,40 @@ def test_a_solver_outside_the_family_is_refused(solver):
     np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
 
 
-def test_tlars_stands_for_no_solver_chosen():
-    """TLARS is the default of the base control. It gives TIKNET, without a warning."""
+def test_the_nested_base_control_applies_without_trex_control():
+    """Without trex_control the base control of the Tikhonov control is the one of the run, as in C++."""
     X, y, groups = _grouped_data()
     tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
+    assert tik.trex_ctrl.solver_type == tsn.SolverTypeForTRex.TIKNET
+    tik.trex_ctrl.K = 7
+    tik.trex_ctrl.max_dummy_multiplier = 2
 
-    def run(solver):
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            sel = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik,
-                                           trex_control=_base_control(solver=solver), seed=1, verbose=False)
-            return np.array(sel.select().selected_var)
+    nested = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik, seed=1, verbose=False)
+    assert nested.K == 7
+    selected = np.array(nested.select().selected_var)
 
-    assert tsn.TRexControlParameter().solver_type == tsn.SolverTypeForTRex.TLARS
-    assert np.array_equal(run(None), run(tsn.SolverTypeForTRex.TIKNET))
+    # The same control passed as trex_control gives the same run and replaces the nested one.
+    tik.trex_ctrl.K = 3
+    passed = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik,
+                                      trex_control=_base_control(K=7, mult=2), seed=1, verbose=False)
+    assert passed.K == 7
+    assert np.array_equal(np.array(passed.select().selected_var), selected)
+    # Neither control is changed by the selector.
+    assert tik.trex_ctrl.K == 3
+
+
+def test_the_default_of_the_base_control_is_refused():
+    """TRexControlParameter() names TLARS, so a base control that is passed has to set the solver."""
+    X, y, groups = _grouped_data()
+    tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
+    base = tsn.TRexControlParameter()
+    assert base.solver_type == tsn.SolverTypeForTRex.TLARS
+    with pytest.raises(ValueError, match="solver_type must be TCDTIKNET or TIKNET"):
+        tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik, trex_control=base,
+                                 verbose=False)
+    base.solver_type = tsn.SolverTypeForTRex.TIKNET
+    tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tik_control=tik, trex_control=base,
+                             verbose=False).restore()
 
 
 # ---------------------------------------------------------------------------
@@ -479,9 +499,8 @@ def _build(X, y, **fields):
     tik = tsn.TRexTikhonovControlParameter()
     for name, value in fields.items():
         setattr(tik, name, value)
-    base = tsn.TRexControlParameter()
-    base.K = 5
-    return tsn.TRexTikhonovSelector(X, y, tFDR=0.3, tik_control=tik, trex_control=base, seed=2, verbose=False)
+    return tsn.TRexTikhonovSelector(X, y, tFDR=0.3, tik_control=tik, trex_control=_base_control(K=5, mult=10),
+                                    seed=2, verbose=False)
 
 
 def test_the_content_of_k_is_checked_at_construction():
@@ -548,8 +567,7 @@ def test_the_core_power_rule_refuses_a_negative_seed():
     X, y, _, p = _small()
     tik = tsn.TRexTikhonovControlParameter()
     tik.tikhonov_K = np.eye(p)
-    base = tsn.TRexControlParameter()
-    base.K = 5
+    base = _base_control(K=5, mult=10)
     with pytest.raises(ValueError, match="seed must be >= 0"):
         core.tikhonov_lambda2_power_rule(X, y, 0.3, tik, base, -1, [0.0, 1.0], 1.0, False)
     # Without a grid the core takes the default grid of the pilot rule.
@@ -569,8 +587,7 @@ def test_a_lambda_2_grid_means_the_same_shrinkage_under_zscore():
         tik.prior_groups = list(groups)
         tik.pilot_grid = grid
         tik.pilot_K = 5
-        base = tsn.TRexControlParameter()
-        base.K = 10
+        base = _base_control(K=10, mult=10)
         base.scaling_mode = mode
         return tik, base
 
