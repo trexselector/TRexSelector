@@ -7,103 +7,10 @@
 /**
  * @file trex_tikhonov.hpp
  *
- * @brief T-Rex selector with a general Tikhonov (anisotropic ridge) penalty.
+ * @brief T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov).
  *
- * @details
- *
- *  Method:
- *  -------
- *  TRexTikhonovSelector runs the standard T-Rex calibration with a
- *  terminating Tikhonov-net solver in its general sparse-K mode, by default
- *  the pathwise homotopy solver (TIKNET_Solver) and on request the
- *  coordinate-descent solver (TCDTIKNET_Solver, not finally developed):
- *  the quadratic penalty is (lambda_2 / 2) * beta^T K beta for a
- *  user-supplied PSD matrix K = Gamma^T Gamma (p x p).
- *  This generalizes:
- *    - K = I                     -> the ridge penalty of the elastic net,
- *    - K = sum_m 1_m 1_m^T / p_m -> the group-informed IEN penalty that
- *      TRexGVSSelector builds from a clustering (kept separate on purpose:
- *      GVS owns the cluster-aware K-experiment loop; this class runs the
- *      shared base runner),
- *    - banded / Laplacian K      -> smoothness-informed selection.
- *
- *  Dummy coupling (default FOLDED, `fold_dummy_coupling`): dummy copies
- *  join their originating variable's K-coupling — the exact generalization
- *  of GVS's layered group convention — so dummy/null exchangeability holds
- *  for arbitrary K.
- *  The INDEPENDENT_RIDGE escape (decoupled kappa_dummy = 1
- *  dummy block) preserves the K = I ≡ TCDENET collapse for validation runs;
- *  under it, prefer diag(K) = 1 (see tcdtiknet_solver.hpp).
- *
- *  Dummy generation:
- *  -----------------
- *  Cluster-aware by default (`cluster_dummies = true`), on GVS parity:
- *  variables are partitioned into clusters (user-supplied `prior_groups`,
- *  else correlation-HAC with `corr_max` / `hc_linkage`), and dummies are
- *  drawn as per-cluster colored MVN layers via the shared machinery in
- *  trex_cluster_dummies.hpp.
- *  The same seed_seq scheme, same center-only / realized-norms convention
- *  as TRexGVSSelector.
- *  An informed K encodes structure among correlated variables;
- *  i.i.d. dummies would be systematically less competitive than correlated
- *  null reals there, deforming the dummy/null exchangeability the FDR
- *  calibration relies on.
- *  `cluster_dummies = false` restores the canonical i.i.d. dummy path
- *  (validation / equivalence runs only). The model is installed into the
- *  base DummyGenerator (`setClusterModel`), whose cluster mode serves
- *  EVERY strategy natively: STANDARD / HCONCAT / SKIPL (stored matrices),
- *  SEEDED (one D_k at a time, serial — content bit-identical to
- *  STANDARD at the same L), and the memory-mapped writers (the mmap region
- *  is pre-allocated at maximum dimensions and layers are regenerated into
- *  it deterministically). Only the PERMUTATION variants are rejected: K
- *  row-permuted copies of one base cannot carry the per-cluster MVN
- *  convention.
- *
- *  Architecture:
- *  -------------
- *  Unlike GVS (private K-experiment loop), this class reuses the ENTIRE base
- *  machinery — L/T loops, warm starts, the shared ExperimentRunner —
- *  by injecting the penalty matrix into the shared solver dispatch:
- *  `buildRunnerConfig()` is overridden to set
- *  `ExperimentRunnerConfig::tikhonov_K` (forwarded to
- *  `SolverConfig::tikhonov_K`, where dispatchByType() routes TIKNET or
- *  TCDTIKNET through its sparse-K constructor) and to overwrite `solver_params.lambda2` with
- *  the resolved penalty weight. Cluster-aware dummies enter through the
- *  DummyGenerator cluster mode (`setClusterModel()` in `onSelectBegin()`),
- *  so the base dummy hook, the ExperimentRunner, and the memory-mapped
- *  writers all run unchanged.
- *
- *  lambda_2 selection:
- *  -------------------
- *  Auto-computed in `onSelectBegin()` (X is already centered + scaled, y
- *  centered) via the sparse-K overloads of the IEN-geometry tuners:
- *    - CV_*_IEN_CCD (`ienet_cv_ccd`): lambda_1 path profiled out per
- *      lambda_2 candidate; well-posed in any p/n regime (recommended).
- *    - CV_*_TIK_SVD (`tikhonov_cv_svd`): analytic lambda_1 = 0 backbone;
- *      exact for n > p, refused when the unpenalized null-space block
- *      interpolates the training folds.
- *  The selected lambda_2 is on the unit-L2 SOLVER scale (no p/2
- *  conversion); only the ZSCORE working-scale factor (n - 1) applies.
- *
- *  The pilot rule (PILOT_KNEE, the default) decides lambda_2 from the random
- *  experiments themselves, still in `onSelectBegin()` and before the main
- *  L-loop: for every candidate of `pilot_grid` the shared ExperimentRunner
- *  runs `pilot_K` experiments with L_0 = p dummies to the stopping time
- *  `pilot_T`, on ONE dummy set common to every candidate, and the count of
- *  originals ahead of the T-th dummy in more than half of the experiments
- *  (the T-Rex's own count at voting level 1/2; or the calibrated pilot
- *  selection, `pilot_statistic`) is read off. The pick is the knee of that
- *  profile, the smallest lambda_2 whose count is within
- *  `pilot_knee_tolerance` of the largest — the selector's own principle
- *  applied to lambda_2 — at a fraction of the cost of one full selection
- *  per candidate: about |grid| x pilot_K paths at (L_0, pilot_T) against
- *  |grid| x K x (L-steps + T-steps) paths. The pilot dummies live in a
- *  reserved seed stream, so the main run is a standard T-Rex at a fixed
- *  lambda_2 whose dummies are independent of the pick; the pick itself
- *  depends on y and is outside the fixed-lambda_2 FDR proof — its cost was
- *  measured to be nil under the global null and at most 0.02 of TPR
- *  against the oracle pin under the alternatives in the Tikhonov T-Rex
- *  workspace. The record is in `getLambda2PilotResult()`.
+ * @details The method is described at the class TRexTikhonovSelector.
+ *  Implementations are in trex_tikhonov.cpp.
  */
 // ===================================================================================
 
@@ -146,13 +53,12 @@ namespace ms = trex::ml_methods::model_selection;
 // ===================================================================================
 
 /**
- * @brief Selection rule for the Tikhonov penalty weight `lambda_2` when no
- *        user-supplied value is given. The four CV rules consume the penalty
- *        matrix K on the normalized data before the random experiments and
- *        return lambda_2 on the solver scale (no p/2 conversion; see the
- *        file header). The pilot rule reads lambda_2 off a few random
- *        experiments per candidate of `pilot_grid` (see the file header,
- *        "lambda_2 selection").
+ * @brief Rule that chooses the penalty weight `lambda_2` when no value is
+ *        supplied (`lambda_2 < 0`). The pilot rule reads it off a few random
+ *        experiments per value of `pilot_grid`. The four cross-validation
+ *        rules tune on the normalized data before the random experiments.
+ *        Every rule reports its pick on the working scale of the run (see
+ *        the class documentation, "lambda_2").
  */
 enum class TikLambda2Method {
     /** @brief IEN-geometry coordinate-descent CV (lambda1 profiled), 1SE. */
@@ -210,8 +116,8 @@ struct Lambda2PilotResult {
      *  ScalingMode::ZSCORE, 1 otherwise. */
     double grid_scale = 1.0;
 
-    /** @brief The count the pick was read off (MAJORITY or CALIBRATED),
-     *  per grid point. */
+    /** @brief The count the pick was read off, per grid point: the count of
+     *  `pilot_statistic` (MAJORITY, CALIBRATED or GROUP_MAJORITY). */
     std::vector<std::size_t> counts;
 
     /** @brief The majority count per grid point and pilot stopping time
@@ -225,11 +131,14 @@ struct Lambda2PilotResult {
     /** @brief The calibrated pilot selection count per grid point. */
     std::vector<std::size_t> calibrated;
 
-    /** @brief The group-majority count per grid point (members ahead of the
-     *  T_pilot-th dummy in the majority of experiments, summed over the
+    /** @brief The group-majority count per grid point: the members ahead of
+     *  the T_pilot-th dummy in the majority of experiments, summed over the
      *  groups in which at least `pilot_group_fraction` of the members are
-     *  ahead), and the number of such groups; zeros without `prior_groups`. */
+     *  ahead. Zeros without `prior_groups`. */
     std::vector<std::size_t> group_majority;
+
+    /** @brief The number of groups that reach `pilot_group_fraction`, per
+     *  grid point. Zeros without `prior_groups`. */
     std::vector<std::size_t> groups_qualifying;
 
     /** @brief Wall-clock seconds per grid point. */
@@ -238,18 +147,31 @@ struct Lambda2PilotResult {
     /** @brief The pick diagnostics on `counts`. */
     Lambda2PickInfo pick;
 
-    /** @brief Index of the pick into `grid`, and the picked lambda_2. */
-    std::size_t index   = 0;
-    double      lambda2 = 0.0;
+    /** @brief Index of the pick into `grid`. */
+    std::size_t index = 0;
 
-    /** @brief The pick sits on the first / last grid point. */
+    /** @brief The picked lambda_2, `grid[index]`, on the working scale. */
+    double lambda2 = 0.0;
+
+    /** @brief The pick sits on the first grid point. */
     bool at_lower_end = false;
+
+    /** @brief The pick sits on the last grid point: widen the grid before
+     *  trusting it. */
     bool at_upper_end = false;
 
-    /** @brief The budget actually used. */
-    std::size_t K_pilot   = 0;
-    std::size_t T_pilot   = 0;
-    std::size_t L_0       = 0;
+    /** @brief Pilot experiments per grid point that ran: `pilot_K`, capped
+     *  at K. */
+    std::size_t K_pilot = 0;
+
+    /** @brief Stopping time of the pilot paths that was used: `pilot_T`,
+     *  capped at min(L_0, ceil(n / 2)). */
+    std::size_t T_pilot = 0;
+
+    /** @brief Number of pilot dummies, `pilot_L_multiplier` times p. */
+    std::size_t L_0 = 0;
+
+    /** @brief Seed tag under which the pilot dummies were drawn. */
     std::size_t dummy_tag = 0;
 
     /** @brief Wall-clock seconds of the whole pilot. */
@@ -279,16 +201,20 @@ struct DummyClusters {
 
 /**
  * @brief Structural form of the Tikhonov penalty (solver routing).
- *
- * @details SPARSE_GENERAL passes `tikhonov_K` to the solver's matrix-passing
- *  core (O(nnz(K col)) per coordinate update). GROUP_CENTERING declares
- *  K = blockdiag(I_{p_m} - 1_m 1_m^T / p_m) over `prior_groups` and routes
- *  the solver through the O(1) group-centering hooks instead — the
- *  mathematically identical fast path (FOLDED coupling by construction).
- *  With GROUP_CENTERING, `tikhonov_K` may be left empty: the selector builds
- *  it internally for the lambda_2 CV tuners.
  */
-enum class TikPenaltyStructure { SPARSE_GENERAL, GROUP_CENTERING };
+enum class TikPenaltyStructure {
+    /** @brief The supplied matrix `tikhonov_K` is the penalty. The solver
+     *  works on the matrix, at a cost per update that grows with the
+     *  non-zero entries of a column of K. */
+    SPARSE_GENERAL,
+
+    /** @brief K = blockdiag(I_{p_m} - 1_m 1_m^T / p_m) over `prior_groups`:
+     *  the members of a group share a coefficient. The groups are required.
+     *  `tikhonov_K` may be left empty, the selector builds the matrix for
+     *  the cross-validation rules. With TCDTIKNET the solver runs on the
+     *  O(1) group-centering hooks, the same penalty at a constant cost. */
+    GROUP_CENTERING
+};
 
 
 // ===================================================================================
@@ -321,12 +247,14 @@ struct TRexTikhonovControlParameter {
      *  O(1) hooks either way. */
     Eigen::SparseMatrix<double> tikhonov_K;
 
-    /** @brief User-supplied lambda_2 on the solver scale.
-     *  - `< 0` (default `-1.0`): "not supplied" sentinel; triggers
-     *    auto-computation via `lambda2_method`.
-     *  - `== 0`: degenerate case -> pure TCDLASSO lasso path (no penalty).
-     *  - `> 0` : fixed penalty weight.
-     *  The value must be finite. */
+    /** @brief User-supplied lambda_2.
+     *  - `< 0` (default `-1.0`): not supplied, `lambda2_method` chooses it.
+     *  - `== 0`: no penalty, the lasso path of the solver.
+     *  - `> 0` : used as it is.
+     *  The value must be finite. A supplied value refers to the scale of the
+     *  standardized columns. Under ScalingMode::ZSCORE the columns have the
+     *  squared norm n - 1, so the same shrinkage needs the value times n - 1.
+     *  The rules report their pick on this scale. */
     double lambda_2 = -1.0;
 
     /** @brief Selection rule for auto-computing `lambda_2` when
@@ -434,33 +362,41 @@ struct TRexTikhonovControlParameter {
      *  family in the next minor release. */
     bool fold_dummy_coupling = true;
 
-    /** @brief Cluster-aware dummy generation (GVS parity). Default: true.
-     *  When true, dummies are drawn as per-cluster colored MVN layers on
-     *  the clustering below via the DummyGenerator cluster mode — all
-     *  strategies and memory mapping supported; only the PERMUTATION
-     *  variants throw. Set to false ONLY for validation / equivalence runs
-     *  against the canonical i.i.d. dummy path (e.g. the K = I ≡ TCDENET
-     *  anchor test): with an informed K, i.i.d. dummies deform the
-     *  dummy/null exchangeability the FDR calibration relies on. */
+    /** @brief Cluster-aware dummy generation, as in TRexGVSSelector.
+     *  Default: true. When true, dummies are drawn as per-cluster colored
+     *  MVN layers on the clustering below via the DummyGenerator cluster
+     *  mode — all strategies and memory mapping supported; only the
+     *  PERMUTATION variants throw. Set to false ONLY for validation /
+     *  equivalence runs against the canonical i.i.d. dummy path (e.g. the
+     *  K = I ≡ TCDENET anchor test): with an informed K, i.i.d. dummies
+     *  deform the dummy/null exchangeability the FDR calibration relies on. */
     bool cluster_dummies = true;
 
-    /** @brief User-supplied dummy clustering: 0-based cluster ID per
-     *  variable (length p, contiguous IDs). Empty (default): clusters are
-     *  discovered by correlation-HAC with `corr_max` / `hc_linkage`.
-     *  Ignored when `cluster_dummies == false`. */
+    /** @brief Groups of the variables: a 0-based group ID per variable
+     *  (length p, IDs without gaps). They define the clusters of the
+     *  dummies (with `cluster_dummies`), the penalty under GROUP_CENTERING
+     *  and the count GROUP_MAJORITY of the pilot rule. Empty (default): the
+     *  clusters of the dummies are found by clustering the correlations
+     *  with `corr_max` and `hc_linkage`. */
     std::vector<Eigen::Index> prior_groups;
 
-    /** @brief Maximum allowed pairwise |corr| between variables from
-     *  different clusters when clusters are discovered by HAC (the
-     *  dendrogram is cut at height 1 - corr_max). Same semantics and
-     *  default as TRexGVSSelector. Ignored when `prior_groups` is set or
+    /** @brief Correlation threshold of the automatic clustering (only when
+     *  groups are not provided). The dendrogram is cut at the height
+     *  1 - corr_max. With Single linkage (default) no two variables of
+     *  different clusters correlate above corr_max. With Complete linkage
+     *  every two variables of one cluster correlate at least at corr_max,
+     *  and variables of different clusters can exceed it. Default 0.5, in
+     *  [0, 1]. Ignored when `prior_groups` is set or
      *  `cluster_dummies == false`. */
     double corr_max = 0.5;
 
-    /** @brief Linkage method for the HAC dummy clustering: Single (default),
-     *  Complete, Average or WPGMA. Another linkage is refused at
-     *  construction. Ignored when `prior_groups` is set or
-     *  `cluster_dummies == false`. */
+    /** @brief Linkage of the hierarchical clustering (default: Single).
+     *  Supported: Single, Complete, Average (UPGMA), WPGMA (McQuitty).
+     *  Ward is rejected, because its update is valid for squared Euclidean
+     *  distances only and the correlation distance 1 - |cor| is not
+     *  Euclidean. The centroid and median linkages are rejected as well,
+     *  because they are not reducible. Ignored when `prior_groups` is set
+     *  or `cluster_dummies == false`. */
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
@@ -494,9 +430,81 @@ struct TRexTikhonovControlParameter {
 /**
  * @class TRexTikhonovSelector
  *
- * @brief T-Rex variant driving the CCD Tikhonov-Net solver with a
- *        user-supplied general Tikhonov penalty matrix (see the file
- *        header).
+ * @brief T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov):
+ *        FDR-controlled variable selection with the penalty
+ *        (lambda_2 / 2) * beta^T K beta, whose positive semi-definite matrix
+ *        K carries the structure among the variables.
+ *
+ * @details
+ *  The penalty. K = Gamma^T Gamma (p x p) for a regularization operator
+ *  Gamma, see gammaToK(). Special cases:
+ *    - K = I: the ridge part of the elastic net.
+ *    - K = sum_m 1_m 1_m^T / p_m (group means): the penalty of the informed
+ *      elastic net of TRexGVSSelector.
+ *    - K = blockdiag(I - 1_m 1_m^T / p_m) (group centering,
+ *      TikPenaltyStructure::GROUP_CENTERING): the members of a group share
+ *      a coefficient.
+ *    - a banded matrix or a graph Laplacian: neighbouring coefficients are
+ *      smooth.
+ *
+ *  The solver. TIKNET, the homotopy solver, by default. TCDTIKNET, the
+ *  coordinate-descent solver, is deprecated.
+ *
+ *  The dummies. By default they are drawn per cluster of correlated
+ *  variables, as in TRexGVSSelector (`cluster_dummies`): the clusters are
+ *  `prior_groups`, or come from a hierarchical clustering of the
+ *  correlations (`corr_max`, `hc_linkage`). getDummyClusters() reports
+ *  them. With an informed K, i.i.d. dummies would be less competitive than
+ *  correlated null variables, which deforms the exchangeability the FDR
+ *  calibration relies on. In the penalty every dummy takes the place of the
+ *  variable it was drawn for (FOLDED coupling, `fold_dummy_coupling`), so
+ *  dummies and null variables stay exchangeable for every K.
+ *
+ *  L-loop strategies. With cluster dummies STANDARD, HCONCAT, SKIPL and
+ *  SEEDED are supported, and SEEDED equals STANDARD. PERMUTATION and
+ *  PERMUTATION_SEEDED are refused, because a row permutation destroys the
+ *  covariance of the dummies within a cluster. With
+ *  `cluster_dummies = false` the two run as well.
+ *
+ *  lambda_2. A supplied value is used as it is. Otherwise `lambda2_method`
+ *  chooses it before the L-loop, on the normalized data:
+ *    - PILOT_KNEE (default), the pilot rule. For every value of
+ *      `pilot_grid`, `pilot_K` random experiments run with L_0 = p dummies
+ *      to the stopping time `pilot_T`, on one set of dummies, and the
+ *      variables ahead of the dummies in more than half of the experiments
+ *      are counted (`pilot_statistic`). The pick is the knee of this
+ *      profile, the smallest lambda_2 whose count is within
+ *      `pilot_knee_tolerance` of the largest. It costs about
+ *      |grid| x pilot_K paths, a fraction of one selection per grid value.
+ *      The pilot dummies come from a seed stream of their own, so the main
+ *      run is a T-Rex run at a fixed lambda_2 whose dummies do not depend on
+ *      the pick. The pick itself depends on y and lies outside the FDR
+ *      guarantee of a fixed lambda_2. In simulations the pick cost nothing
+ *      under the global null and at most 0.02 of true positive rate
+ *      against the best fixed value under the alternatives. The record is
+ *      in getLambda2PilotResult(), and tikhonov_lambda2_power_rule() runs
+ *      the same rule on full selections.
+ *    - CV_*_IEN_CCD: cross-validation with the lambda_1 path profiled out
+ *      per lambda_2 candidate, well-posed for every p and n.
+ *    - CV_*_TIK_SVD: analytic ridge cross-validation (lambda_1 = 0), exact
+ *      for n > p and refused when the unpenalized null space interpolates
+ *      the training folds.
+ *  The scale. A supplied `lambda_2` refers to the scale of the standardized
+ *  columns: under ScalingMode::ZSCORE the columns have the squared norm
+ *  n - 1, so the same shrinkage needs the value times n - 1. `pilot_grid`
+ *  is stated for columns of unit norm, and the pilot rule and the
+ *  cross-validation rules apply the factor n - 1 themselves. Every rule
+ *  reports its pick on the scale of a supplied value (getLambda2Used()).
+ *
+ *  A selector runs once: select() and runPilotOnly() exclude each other.
+ *
+ *  Architecture. Unlike TRexGVSSelector, which has its own loop over the
+ *  random experiments, this class reuses the machinery of the base class
+ *  (L-loop, T-loop, warm starts, the ExperimentRunner): buildRunnerConfig()
+ *  hands the penalty matrix and the resolved lambda_2 to the solver
+ *  dispatch, and the cluster model enters through the DummyGenerator
+ *  (setClusterModel() in onSelectBegin()), which serves every strategy and
+ *  the memory-mapped writers.
  *
  *  References:
  *  -----------
@@ -524,14 +532,17 @@ public:
     /**
      * @brief Construct a TRexTikhonovSelector.
      *
-     * @param X    Design matrix map (n x p); normalized in place, restored
-     *             on destruction (base-class contract).
-     * @param y    Response vector map (n).
-     * @param tFDR Target FDR level in (0, 1].
-     * @param trex_tik_ctrl Tikhonov control parameters (must carry a
-     *             non-empty p x p `tikhonov_K`).
-     * @param seed Seed for reproducible dummies / folds (< 0: entropy).
-     * @param verbose Progress output.
+     * @param X    Design matrix (n x p), Eigen::Map, not copied. It is
+     *             standardized in place at construction and restored when
+     *             select() returns (the contract of the base class).
+     * @param y    Response vector (n), Eigen::Map, copied internally.
+     * @param tFDR Target FDR level (default: 0.1), in [0, 1].
+     * @param trex_tik_ctrl Tikhonov control parameters. Under SPARSE_GENERAL
+     *             they carry the p x p matrix `tikhonov_K`, under
+     *             GROUP_CENTERING the groups.
+     * @param seed Random seed. A negative value (default: -1) gives a run
+     *             that is not reproducible.
+     * @param verbose Enable verbose output (default: true).
      *
      * @throws std::invalid_argument on an empty or mis-dimensioned
      *         `tikhonov_K`, a `tikhonov_K` that is not finite, not symmetric
@@ -564,8 +575,10 @@ public:
     static Eigen::SparseMatrix<double> buildGroupCenteringK(
         const std::vector<Eigen::Index>& prior_groups);
 
-    /** @brief The lambda_2 actually used by the last select() run
-     *  (user-supplied or CV-resolved); -1 before select(). */
+    /** @brief The lambda_2 the last select() / runPilotOnly() used: the
+     *  supplied value, or the pick of the pilot rule or of a
+     *  cross-validation rule, on the scale of a supplied value. -1 before
+     *  a run. */
     double getLambda2Used() const noexcept { return lambda2_; }
 
     /** @brief Health record of the lambda_2 resolution of the last
@@ -631,8 +644,8 @@ private:
     /** @brief lambda_2 resolution (user value or sparse-K CV tuners). */
     double computeLambda2() const;
 
-    /** @brief The control requests a pilot rule (lambda_2 < 0 and a PILOT_*
-     *  method). */
+    /** @brief The control requests the pilot rule (lambda_2 < 0 and
+     *  lambda2_method = PILOT_KNEE). */
     bool pilotRequested() const noexcept;
 
     /** @brief The lambda_2 pilot: for every grid point, `pilot_K` random

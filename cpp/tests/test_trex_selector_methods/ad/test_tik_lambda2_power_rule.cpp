@@ -592,6 +592,47 @@ TEST(TikLambda2Pilot, GridMeansTheSameShrinkageUnderZscore) {
     EXPECT_EQ(runSelector(d, fixed, 2026).selected, z.selected);
 }
 
+/** @brief With PilotStatistic::CALIBRATED the pick is read off the count of
+ *  the T-Rex selection rule on the pilot data, which the record also holds
+ *  under the other statistics. */
+TEST(TikLambda2Pilot, CalibratedStatistic) {
+    const BlockData d = testDesign();
+    auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    const SelectorRun majority = runSelector(d, ctrl, 2026);
+    ctrl.pilot_statistic = PilotStatistic::CALIBRATED;
+    const SelectorRun calibrated = runSelector(d, ctrl, 2026);
+
+    // The pilot experiments are the same, so the two records agree.
+    EXPECT_EQ(calibrated.pilot.calibrated, majority.pilot.calibrated);
+    EXPECT_EQ(calibrated.pilot.curve_majority, majority.pilot.curve_majority);
+    // The count of the pick is the one of the statistic.
+    EXPECT_EQ(calibrated.pilot.counts, calibrated.pilot.calibrated);
+    for (std::size_t g = 0; g < majority.pilot.counts.size(); ++g) {
+        EXPECT_EQ(majority.pilot.counts[g], majority.pilot.curve_majority[g].back());
+    }
+    const Lambda2PickInfo pick = pick_lambda2_index(calibrated.pilot.calibrated, ctrl.pilot_knee_tolerance);
+    EXPECT_EQ(calibrated.pilot.index, pick.index);
+    EXPECT_DOUBLE_EQ(calibrated.lambda2, calibrated.pilot.grid[pick.index]);
+}
+
+/** @brief A cross-validation rule returns its pick on the working scale:
+ *  under ZSCORE it is n - 1 times the pick under L2. */
+TEST(TikLambda2Pilot, CvPickIsConvertedUnderZscore) {
+    using ScalingMode = trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
+    const BlockData d = testDesign();
+    const double n_minus_1 = static_cast<double>(d.X.rows() - 1);
+    auto ctrl = centeringControl(d.groups);
+    ctrl.lambda_2       = -1.0;
+    ctrl.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.cv_seed        = 3;
+    const SelectorRun l2 = runSelector(d, ctrl, 2026);
+    ctrl.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
+    const SelectorRun z = runSelector(d, ctrl, 2026);
+    ASSERT_GT(l2.lambda2, 0.0);
+    EXPECT_NEAR(z.lambda2 / l2.lambda2, n_minus_1, 1e-6 * n_minus_1);
+    EXPECT_FALSE(l2.pilot.ran);
+}
+
 /** @brief The factor between a grid and the working scale. */
 TEST(TikLambda2Pilot, ScaleFactor) {
     EXPECT_DOUBLE_EQ(lambda2_scale_factor(false, 100), 1.0);

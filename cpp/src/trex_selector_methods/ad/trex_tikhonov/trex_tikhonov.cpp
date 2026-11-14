@@ -27,7 +27,7 @@
 #include <ml_methods/model_selection/ienet_cv_ccd.hpp>
 #include <ml_methods/model_selection/tikhonov_cv_svd.hpp>
 
-// Shared cluster-aware dummy machinery (GVS parity)
+// Cluster-aware dummy machinery, shared with the GVS selector
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_dummies.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_hac.hpp>
 
@@ -377,7 +377,7 @@ void TRexTikhonovSelector::onSelectBegin() {
         }
     }
 
-    // 2. lambda_2 (solver scale). Timed here rather than inside
+    // 2. lambda_2 (working scale). Timed here rather than inside
     //    computeLambda2(), so a CV tuner's (or the pilot's) cost is
     //    attributable on its own instead of hiding inside the first solver
     //    run. The pilot needs the cluster model of step 1 (its dummies are
@@ -392,7 +392,7 @@ void TRexTikhonovSelector::onSelectBegin() {
     }
     if (verbose_) {
         std::ostringstream oss;
-        oss << "Tikhonov: lambda_2 (solver scale) = " << lambda2_;
+        oss << "Tikhonov: lambda_2 = " << lambda2_;
         printProgress(oss.str());
     }
 }
@@ -503,13 +503,13 @@ double TRexTikhonovSelector::computeLambda2() const {
 
     if (trex_tik_ctrl_.lambda_2 >= 0.0) {
         // Fixed user value (>= 0); lambda_2 == 0 -> pure lasso path.
-        // Interpreted in the WORKING column scale (trex_ctrl_.scaling_mode).
+        // Used as it is, on the scale of the standardized columns.
         return trex_tik_ctrl_.lambda_2;
     }
 
     // CV is entered with X centered + scaled per trex_ctrl_.scaling_mode and
     // y centered (base-class constructor). The tuners re-normalize per fold
-    // to unit L2, so the selected lambda_2 is on the unit-L2 solver scale;
+    // to unit L2, so their pick refers to columns of unit norm;
     // the ZSCORE working scale (squared column norm n - 1 instead of 1)
     // needs the (n - 1) factor — same conversion as the IEN-geometry
     // methods in TRexGVSSelector::computeLambda2(). L2 and NONE (user-managed
@@ -753,8 +753,8 @@ double TRexTikhonovSelector::runLambda2Pilot() {
 const Lambda2PilotResult& TRexTikhonovSelector::runPilotOnly() {
     if (!pilotRequested()) {
         throw std::invalid_argument(
-            "TRexTikhonovSelector::runPilotOnly: requires lambda_2 < 0 and a "
-            "PILOT_* lambda2_method.");
+            "TRexTikhonovSelector::runPilotOnly: requires lambda_2 < 0 and "
+            "lambda2_method = PILOT_KNEE.");
     }
     beginRun();
     const GiveXBackOnError give_x_back(*this);

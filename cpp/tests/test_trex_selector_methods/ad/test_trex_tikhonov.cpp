@@ -318,6 +318,38 @@ TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) 
 }
 
 
+/** @brief With cluster dummies the four strategies of the GVS family run.
+ *  The permutations are refused, and run with i.i.d. dummies. */
+TEST_F(TRexTikhonovTest, LLoopStrategies_WithAndWithoutClusterDummies) {
+    const GroupedData d(/*n=*/60, /*p=*/20, /*rho=*/0.8, /*sigma=*/1.0, /*seed=*/9);
+    const auto run = [&](LLoopStrategy strategy, bool cluster_dummies) {
+        Eigen::MatrixXd Xc = d.X;
+        Eigen::VectorXd yc = d.y;
+        Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
+        Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
+        TRexTikhonovControlParameter ctrl;
+        ctrl.tikhonov_K      = identityK(Xc.cols());
+        ctrl.lambda_2        = 1.0;
+        ctrl.cluster_dummies = cluster_dummies;
+        ctrl.trex_ctrl.K                    = 5;
+        ctrl.trex_ctrl.max_dummy_multiplier = 3;
+        ctrl.trex_ctrl.lloop_strategy       = strategy;
+        TRexTikhonovSelector sel(Xm, ym, 0.2, ctrl, 4, false);
+        sel.select();
+        return sel.getSelectedIndices();
+    };
+    for (const LLoopStrategy strategy : {LLoopStrategy::STANDARD, LLoopStrategy::HCONCAT,
+                                         LLoopStrategy::SKIPL, LLoopStrategy::SEEDED}) {
+        EXPECT_NO_THROW(run(strategy, /*cluster_dummies=*/true));
+    }
+    EXPECT_EQ(run(LLoopStrategy::SEEDED, true), run(LLoopStrategy::STANDARD, true));
+    for (const LLoopStrategy strategy : {LLoopStrategy::PERMUTATION, LLoopStrategy::PERMUTATION_SEEDED}) {
+        EXPECT_THROW(run(strategy, /*cluster_dummies=*/true), std::invalid_argument);
+        EXPECT_NO_THROW(run(strategy, /*cluster_dummies=*/false));
+    }
+}
+
+
 /** @brief getDummyClusters() reports the clusters the dummies were drawn
  *  for: the supplied groups, or the clusters of the correlation clustering,
  *  with their number and their origin. */

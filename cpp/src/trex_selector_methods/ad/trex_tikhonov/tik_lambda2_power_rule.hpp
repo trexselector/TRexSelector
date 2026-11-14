@@ -34,9 +34,9 @@
  *   the smallest k with n_k >= max_k n_k - knee_tolerance (the "minimum
  *   sufficient shrinkage" reading of the profile); `knee_tolerance = 0`
  *   reads the largest selection, ties resolved toward the smallest lambda_2
- *   (the least reliance on the prior). The knee at tolerance 1 is the rule
- *   the Tikhonov study adopted: it keeps the power of the largest selection
- *   and halves the excess FDR the largest selection pays at high SNR.
+ *   (the least reliance on the prior). The knee at tolerance 1 is the
+ *   default: in simulations it kept the power of the largest selection and
+ *   halved the excess FDR the largest selection pays at high SNR.
  *
  *   The result carries the whole profile — every probe's selection, stopping
  *   time and cost — so criteria that need the selections (a refit, an
@@ -49,9 +49,8 @@
  *   P(any selection) <= |grid| x P(any selection at one lambda_2), and under
  *   an alternative the exposure is the spread of the counts across the grid,
  *   which on structured designs is dominated by true positives. The rule is
- *   validated empirically (demo_14 in the Tikhonov T-Rex workspace); a
- *   sample-splitting use (pick on one half of the rows, select on the other)
- *   restores the guarantee at a power cost.
+ *   validated in simulations. A sample-splitting use (pick on one half of
+ *   the rows, select on the other) restores the guarantee at a power cost.
  */
 // ===================================================================================
 
@@ -142,9 +141,11 @@ struct Lambda2PowerRuleResult {
     /** @brief The pick diagnostics. */
     Lambda2PickInfo pick;
 
-    /** @brief The pick sits on the first / last grid point (a boundary
-     *  solution: widen the grid before trusting it). */
+    /** @brief The pick sits on the first grid point. */
     bool at_lower_end = false;
+
+    /** @brief The pick sits on the last grid point, a boundary solution:
+     *  widen the grid before trusting it. */
     bool at_upper_end = false;
 
     /** @brief Wall-clock seconds of the whole profile. */
@@ -201,6 +202,8 @@ inline void require_shared_seed(int seed, const char* who)
  *                selection at the given lambda_2 (same data, same seed) and
  *                returning at least `selected` and `T_stop`; `lambda2` and
  *                `seconds` are filled in here.
+ * @param cfg    The grid and the tolerance of the knee.
+ * @param probe  The callable that runs one selection.
  * @param grid_scale The factor from the grid to the working scale of the
  *                runs (lambda2_scale_factor()). The probe receives the grid
  *                value times this factor. Default 1.

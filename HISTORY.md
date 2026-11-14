@@ -16,6 +16,39 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The documentation of the Tikhonov selector sits at the class and says what the code does
+
+Step 6 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 9 to 20, 22
+and 23). Texts and tests only, no change of behaviour.
+
+- The structure. The method was described in the file header, and the class said "see the file
+  header", so the generated class page showed a summary and the references. The description moved to
+  the class: the penalty and its special cases, the solver, the dummies, the L-loop strategies, the
+  rules for lambda_2 and its scale, and the architecture. The file header keeps two lines.
+- The name. The class opens with "T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov):
+  FDR-controlled variable selection with the penalty (lambda_2 / 2) * beta^T K beta, whose positive
+  semi-definite matrix K carries the structure among the variables" (Fabian: yes).
+- Wrong texts. The class summary named the "CCD Tikhonov-Net solver", where the default is TIKNET, the
+  homotopy solver. `lambda_2 == 0` was the "pure TCDLASSO lasso path", it is the lasso path of the
+  solver in use. The constructor gave `tFDR` "in (0, 1]" (it is [0, 1]), asked for a non-empty K (not
+  under GROUP_CENTERING) and said that X is "restored on destruction" (it is restored when `select()`
+  returns). `prior_groups` was "ignored when cluster_dummies == false", while the groups also define
+  the penalty under GROUP_CENTERING and the count GROUP_MAJORITY. `corr_max` bounded the correlation
+  between clusters, which holds for single linkage only (the sentence of the GVS selector). The scale
+  of `lambda_2` had three names ("solver scale", "working column scale", "unit-L2 solver scale"), it is
+  the scale of the standardized columns. The cross-validation rules were "(recommended)", where the
+  default is the pilot rule. `counts` left out GROUP_MAJORITY, and `getLambda2Used()` the pilot rule.
+- References to a workspace that is not public ("in the Tikhonov T-Rex workspace", "demo_14 in the
+  Tikhonov T-Rex workspace", "the rule the Tikhonov study adopted") read "in simulations" (Fabian: yes).
+- One comment per member. In `Lambda2PilotResult` and `Lambda2PowerRuleResult` several members shared
+  one comment, so the generated documentation described the first of them only. Every member has its
+  own text, and the two values of `TikPenaltyStructure` as well.
+- Tests that were missing for the C++ class: the count CALIBRATED, the four strategies with cluster
+  dummies including SKIPL and the permutations with i.i.d. dummies, and the conversion of a
+  cross-validation pick under ZSCORE (n - 1 times the pick under L2).
+- Doxygen over the folder gives no warning for these files, and the class page shows the notes.
+- The R and the Python class follow with their rework, where these texts are mirrored.
+
 #### The Tikhonov selector reports the clusters of its dummies
 
 Step 5 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, finding 21).
