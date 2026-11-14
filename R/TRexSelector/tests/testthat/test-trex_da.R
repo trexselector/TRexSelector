@@ -101,6 +101,8 @@ test_that("TRexDASelector supports the prior-groups DA path", {
     control = trex_control(K = 5)
   )
   expect_no_error(selector$select())
+  # The field names the method of the run, not the default of the control
+  expect_identical(selector$da_method_used, "PRIOR_GROUPS")
   expect_type(selector$selected_indices, "integer")
   expect_true(all(selector$selected_indices >= 1 &
                   selector$selected_indices <= p))
@@ -525,5 +527,59 @@ test_that("TRexDASelector DA-specific fields have valid bounds after selection",
   expect_lte(selector$rho_thresh, 1.0)
   expect_gt(length(selector$rho_grid), 0L)
   expect_true(all(selector$rho_grid >= 0.0 & selector$rho_grid <= 1.0))
-  expect_true(selector$da_method_used %in% c("BT", "AR1", "EQUI", "BLOCK_EQUI"))
+  expect_identical(selector$da_method_used, "BT")
+})
+
+
+test_that("TRexDASelector reports the reference threshold in the inherited matrices", {
+  set.seed(42)
+  n <- 100
+  p <- 40
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 2] * -4 + X[, 3] * 3 + rnorm(n)
+
+  for (method in c("BT", "NN")) {
+    selector <- TRexDASelector$new(X, y, tFDR = 0.2, seed = 42, verbose = FALSE,
+                                   da_control = trex_da_control(da_method = method),
+                                   control = trex_control(K = 5))
+    selector$select()
+
+    # Grid of 20 thresholds, reference element 15
+    expect_equal(length(selector$rho_grid), 20L)
+    expect_identical(selector$fdp_hat_mat, selector$FDP_hat_array_BT[, , 15])
+    expect_identical(selector$phi_mat, selector$Phi_array_BT[, , 15])
+
+    # One row per stopping time, one less for the selection counts
+    expect_equal(dim(selector$FDP_hat_array_BT)[1], selector$T_stop)
+    expect_equal(dim(selector$R_array_BT)[1], max(selector$T_stop - 1, 1))
+
+    # The selection counts belong to the selected threshold
+    if (selector$rho_thresh >= 0) {
+      at <- which(selector$rho_grid == selector$rho_thresh)
+      same <- vapply(at, function(r) {
+        identical(selector$r_mat, matrix(selector$R_array_BT[, , r], nrow = nrow(selector$r_mat)))
+      }, logical(1))
+      expect_true(any(same))
+    }
+  }
+})
+
+
+test_that("TRexDASelector AR1 and EQUI report -2 as rho_thresh and no grid", {
+  set.seed(42)
+  n <- 50
+  p <- 20
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 5 + X[, 2] * -4 + X[, 3] * 3 + rnorm(n)
+
+  for (method in c("AR1", "EQUI")) {
+    selector <- TRexDASelector$new(X, y, tFDR = 0.2, verbose = FALSE,
+                                   da_control = trex_da_control(da_method = method),
+                                   control = trex_control(K = 5))
+    selector$select()
+    expect_identical(selector$da_method_used, method)
+    expect_identical(selector$rho_thresh, -2)
+    expect_length(selector$rho_grid, 0L)
+    expect_length(selector$FDP_hat_array_BT, 0L)
+  }
 })

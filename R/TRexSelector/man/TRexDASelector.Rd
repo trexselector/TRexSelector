@@ -2,9 +2,9 @@
 % Please edit documentation in R/trex_da_selector.R
 \name{TRexDASelector}
 \alias{TRexDASelector}
-\title{Dependency-Aware T-Rex Selector (TRexDA)}
+\title{Dependency-Aware T-Rex Selector (T-Rex+DA)}
 \description{
-FDR-controlled variable selection algorithm for dependency scenarios.
+FDR-controlled variable selection for dependent variables.
 }
 \section{The penalty of the last step}{
 
@@ -34,6 +34,19 @@ invalid, and on AR(1) designs the last-step penalty had the higher true positive
 The methods \code{"AR1"} and \code{"EQUI"} used the per-step penalty up to TRexSelector 2.0.1, so
 their selections can differ slightly from earlier versions. \code{"BT"}, \code{"NN"} and prior
 groups have always used the penalty of the last step.
+}
+
+\section{The reference threshold}{
+
+The methods \code{"BT"}, \code{"NN"} and prior groups evaluate every step on the whole grid of
+correlation thresholds (\code{rho_grid}). The L-loop and the T-loop read the FDP estimate at one of
+them, the reference threshold, which sits at three quarters of the grid: element 0.75 times its
+length, a half rounded up (element 15 of the default 20). The selection then searches all cells of
+stopping time, voting level and threshold, and \code{rho_thresh} is the threshold of the cell it
+takes. The inherited fields \code{fdp_hat_mat}, \code{phi_mat} and \code{phi_prime} therefore
+hold the values at the reference threshold, while \code{r_mat}, \code{v_thresh} and the selection
+belong to \code{rho_thresh}. The values at every threshold are in \code{FDP_hat_array_BT},
+\code{Phi_array_BT} and \code{R_array_BT}.
 }
 
 \examples{
@@ -108,11 +121,17 @@ Other T-Rex selectors and controls:
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{rho_thresh}}{Optimal correlation threshold selected by the DA process.}
+    \item{\code{rho_thresh}}{Correlation threshold of the selected cell of the calibration grid
+(BT, NN and prior groups). -2 for AR1 and EQUI and when no cell meets the target.}
 
-    \item{\code{rho_grid}}{The grid of correlation thresholds evaluated.}
+    \item{\code{rho_grid}}{Grid of correlation thresholds of BT, NN and prior groups:
+\code{hc_grid_length} ascending values. BT and prior groups take them from the merge
+heights of the dendrogram (1 - height) and end at 1, NN spaces them equally on
+\code{[0, 1]}. Empty for AR1 and EQUI.}
 
-    \item{\code{da_method_used}}{The integer code (or name mapped later) of the DA method used.}
+    \item{\code{da_method_used}}{The dependency-aware method of the last \code{select()}:
+\code{"BT"}, \code{"NN"}, \code{"AR1"}, \code{"EQUI"}, or \code{"PRIOR_GROUPS"} when
+prior groups were supplied.}
 
     \item{\code{FDP_hat_array_BT}}{FDP estimates of the methods BT, NN and prior groups: an array
 with one row per stopping time (\code{T_stop}), one column per voting level
@@ -129,8 +148,9 @@ groups: an array with one row per stopping time that can be selected
 (\code{T_stop - 1}), one column per voting level (\code{voting_grid}) and one
 slice per correlation threshold (\code{rho_grid}). Empty for AR1 and EQUI.}
 
-    \item{\code{cor_coef}}{The correlation coefficient of the dependency-aware
-dummy generation (AR1 / EQUI methods).}
+    \item{\code{cor_coef}}{Correlation coefficient of the methods AR1 and EQUI: the supplied
+value, or the estimate from the data when -2 requested it. The other methods do not
+use it and return the value of the control.}
   }
   \if{html}{\out{</div>}}
 }
@@ -175,7 +195,8 @@ needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
 writes nothing and \code{"readonly"} mode suffices.}
       \item{\code{y}}{Response vector.}
       \item{\code{tFDR}}{Target FDR level (default: 0.1).}
-      \item{\code{seed}}{Random seed (default: -1).}
+      \item{\code{seed}}{Random seed. A negative value (default: -1) gives a run that is not
+reproducible.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{da_control}}{A DA control list from \code{\link{trex_da_control}()} (default:
 \code{trex_da_control()}).}

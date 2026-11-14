@@ -1,8 +1,8 @@
 #' @name TRexDASelector
 #'
-#' @title Dependency-Aware T-Rex Selector (TRexDA)
+#' @title Dependency-Aware T-Rex Selector (T-Rex+DA)
 #'
-#' @description FDR-controlled variable selection algorithm for dependency scenarios.
+#' @description FDR-controlled variable selection for dependent variables.
 #'
 #' @section The penalty of the last step:
 #' The dependency-aware relative occurrences of variable \eqn{j} at step \eqn{t} of the T-loop are
@@ -31,6 +31,17 @@
 #' The methods \code{"AR1"} and \code{"EQUI"} used the per-step penalty up to TRexSelector 2.0.1, so
 #' their selections can differ slightly from earlier versions. \code{"BT"}, \code{"NN"} and prior
 #' groups have always used the penalty of the last step.
+#'
+#' @section The reference threshold:
+#' The methods \code{"BT"}, \code{"NN"} and prior groups evaluate every step on the whole grid of
+#' correlation thresholds (\code{rho_grid}). The L-loop and the T-loop read the FDP estimate at one of
+#' them, the reference threshold, which sits at three quarters of the grid: element 0.75 times its
+#' length, a half rounded up (element 15 of the default 20). The selection then searches all cells of
+#' stopping time, voting level and threshold, and \code{rho_thresh} is the threshold of the cell it
+#' takes. The inherited fields \code{fdp_hat_mat}, \code{phi_mat} and \code{phi_prime} therefore
+#' hold the values at the reference threshold, while \code{r_mat}, \code{v_thresh} and the selection
+#' belong to \code{rho_thresh}. The values at every threshold are in \code{FDP_hat_array_BT},
+#' \code{Phi_array_BT} and \code{R_array_BT}.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -84,7 +95,8 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
     #'   writes nothing and \code{"readonly"} mode suffices.
     #' @param y Response vector.
     #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1).
+    #' @param seed Random seed. A negative value (default: -1) gives a run that is not
+    #'   reproducible.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param da_control A DA control list from \code{\link{trex_da_control}()} (default:
     #'   \code{trex_da_control()}).
@@ -123,14 +135,18 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
     }
   ),
   active = list(
-    #' @field rho_thresh Optimal correlation threshold selected by the DA process.
+    #' @field rho_thresh Correlation threshold of the selected cell of the calibration grid
+    #'   (BT, NN and prior groups). -2 for AR1 and EQUI and when no cell meets the target.
     rho_thresh = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
       }
       trex_da_get_rho_thresh(private$ptr)
     },
-    #' @field rho_grid The grid of correlation thresholds evaluated.
+    #' @field rho_grid Grid of correlation thresholds of BT, NN and prior groups:
+    #'   \code{hc_grid_length} ascending values. BT and prior groups take them from the merge
+    #'   heights of the dendrogram (1 - height) and end at 1, NN spaces them equally on
+    #'   \code{[0, 1]}. Empty for AR1 and EQUI.
     rho_grid = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -138,7 +154,9 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
       trex_da_get_rho_grid(private$ptr)
     },
 
-    #' @field da_method_used The integer code (or name mapped later) of the DA method used.
+    #' @field da_method_used The dependency-aware method of the last \code{select()}:
+    #'   \code{"BT"}, \code{"NN"}, \code{"AR1"}, \code{"EQUI"}, or \code{"PRIOR_GROUPS"} when
+    #'   prior groups were supplied.
     da_method_used = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -180,13 +198,14 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
       if (!missing(value)) {
         stop("Field is read-only.")
       }
-      # A 3-d array (T_stop x p x R) built once in C++; an empty result
-      # is a length-0 numeric vector.
+      # A 3-d array ((T_stop - 1) x V x rho levels) built once in C++; an
+      # empty result is a length-0 numeric vector.
       trex_da_get_r_array_bt(private$ptr)
     },
 
-    #' @field cor_coef The correlation coefficient of the dependency-aware
-    #'   dummy generation (AR1 / EQUI methods).
+    #' @field cor_coef Correlation coefficient of the methods AR1 and EQUI: the supplied
+    #'   value, or the estimate from the data when -2 requested it. The other methods do not
+    #'   use it and return the value of the control.
     cor_coef = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       trex_da_get_cor_coef(private$ptr)

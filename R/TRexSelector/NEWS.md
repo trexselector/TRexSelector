@@ -35,6 +35,17 @@
   `use_max_T_stop` in `trex_control()` names the bound, `ceiling(n / 2)`.
 * The help of `trex_da_control(da_method = )` and the vignette "T-Rex+DA" say which dependency model
   each method is made for.
+* The field `da_method_used` of `TRexDASelector` returned `"UNKNOWN"` for a run with prior groups. It
+  returns `"PRIOR_GROUPS"`.
+* The help of `TRexDASelector` gains the section "The reference threshold". The methods `"BT"`, `"NN"`
+  and the prior groups run their loops on one threshold of the grid and search all thresholds for the
+  selection, so `fdp_hat_mat`, `phi_mat` and `phi_prime` belong to the reference threshold, while
+  `r_mat`, `v_thresh` and the selection belong to `rho_thresh`. The vignette "T-Rex+DA" says the same.
+* The help of the fields `rho_thresh`, `rho_grid`, `da_method_used` and `cor_coef` of `TRexDASelector`
+  says what they hold, among it that `rho_thresh` is -2 for `"AR1"` and `"EQUI"`. The help of
+  `trex_da_control()` says which methods use `hc_linkage` and `hc_grid_length`, how `cor_coef` is
+  estimated, and gives the formula of the AR1 window, `ceiling(log(rho_thr_DA) / log(abs(cor_coef)))`
+  columns to each side.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

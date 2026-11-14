@@ -196,6 +196,7 @@ std::string trex_da_get_method_string(XPtr<RTRexDASelector> r_ptr) {
     if (m == DAMethod::AR1) return "AR1";
     if (m == DAMethod::EQUI) return "EQUI";
     if (m == DAMethod::NN) return "NN";
+    if (m == DAMethod::PRIOR_GROUPS) return "PRIOR_GROUPS";
     return "UNKNOWN";
 }
 

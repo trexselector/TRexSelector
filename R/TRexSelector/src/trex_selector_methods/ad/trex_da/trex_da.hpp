@@ -7,7 +7,7 @@
 /**
  * @file trex_da.hpp
  *
- * @brief Dependency-Aware T-Rex (DA-TRex) Selector.
+ * @brief Dependency-aware T-Rex selector (T-Rex+DA).
  *
  * @details
  *  Extends the base class TRexSelector with dependency-aware deflation that accounts
@@ -33,10 +33,10 @@
  * FDR limitation (BT-style): at very high-within-group correlation (rho >~ 0.9)
  * and with no independent ("white") predictors, the equiangular TLARS solver
  * can exceed the target FDR because the true signal and its
- * collinear shadows become statistically exchangeable; this is inherent to the
- * method (it also appears in the R reference). Mitigate with the default
- * BTSelectionMode::FeasibleOnly and by preferring a greedy solver (TOMP) in
- * high-correlation designs.
+ * collinear shadows become statistically exchangeable.
+ * This is inherent to the method (it also appears in the R reference).
+ * Mitigate with the default BTSelectionMode::FeasibleOnly and by preferring
+ * a greedy solver (TOMP) in high-correlation designs.
  */
 // ===================================================================================
 
@@ -89,18 +89,22 @@ enum class DAMethod {
      *  overlapping groups of highly correlated variables. */
     NN,
 
-    /** @brief User-supplied group labels at multiple hierarchy levels. */
+    /** @brief User-supplied group labels at multiple hierarchy levels. The
+     *  selector sets this method itself when prior_groups is supplied.
+     *  Choosing it without prior_groups is an error of the constructor. */
     PRIOR_GROUPS
 };
 
 
 /**
- * @brief Candidate-cell policy for BT-style variable selection.
+ * @brief Candidate-cell policy for the variable selection of the methods BT,
+ *        NN and PRIOR_GROUPS.
  *
  * @details
  *  In selectVariables_BT the winning selection count `val_max` is the largest
  *  count over FDP-feasible cells (FDP_hat <= tFDR). This flag controls which
- *  cells may then win the tie-break among those equal to `val_max`.
+ *  cells may then win the tie-break among those equal to `val_max`. AR1 and
+ *  EQUI ignore it.
  */
 enum class BTSelectionMode {
     /** @brief Only FDP-feasible cells (FDP_hat <= tFDR) may be selected. This
@@ -108,9 +112,10 @@ enum class BTSelectionMode {
     FeasibleOnly,
 
     /** @brief Any cell whose count equals `val_max` may win, including
-     *  FDP-infeasible ones. Reproduces the R reference `select_var_fun_DA_BT`
-     *  (which scans the whole R_array), including its tendency to inflate the
-     *  realized FDR at high within-group correlation. */
+     *  FDP-infeasible ones. Reproduces the 1.x versions of the R package
+     *  (`select_var_fun_DA_BT`, which scans the whole R_array), including
+     *  their tendency to inflate the realized FDR at high within-group
+     *  correlation. */
     RFaithful
 };
 
@@ -131,31 +136,35 @@ struct TRexDAControlParameter {
      *  use the magnitude of a supplied coefficient. A supplied value outside
      *  [-1, 1] gives a warning and is replaced by the estimate.
      *
-     *  @note Auto-estimation details: for EQUI, the mean of all pairwise
-     *  Pearson correlations (identical to the R reference). For AR1, the
-     *  per-row lag-1 Yule-Walker autocorrelation averaged over rows; the R
-     *  reference instead fits a per-row AR(1) via `arima(..., method="ML")`.
-     *  The two estimators agree asymptotically but can differ slightly on
-     *  short rows — supply cor_coef explicitly for exact R parity.
+     *  @note The estimates: for EQUI, the mean of all pairwise Pearson
+     *  correlations (as in the 1.x versions of the R package). For AR1, the
+     *  magnitude of the lag-1 Yule-Walker autocorrelation of each row,
+     *  averaged over the rows. The 1.x versions of the R package fit an
+     *  AR(1) model per row via `arima(..., method="ML")` instead. The two
+     *  estimators agree asymptotically and can differ slightly on short
+     *  rows. Supply cor_coef to reproduce a result of those versions.
      */
     double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
 
     /** @brief Correlation threshold of the AR1 and EQUI methods (default: 0.02).
-     *  AR1: the window around a variable holds the lags whose correlation
-     *  |cor_coef|^lag reaches the threshold, range [0, 1). EQUI: the correction
-     *  is skipped when |cor_coef| does not exceed the threshold, range [0, 1].
+     *  AR1: the window around a variable reaches
+     *  ceil(log(rho_thr_DA) / log(|cor_coef|)) columns to each side, up to
+     *  the first lag whose correlation |cor_coef|^lag has fallen to the
+     *  threshold, range [0, 1). EQUI: the correction is skipped when
+     *  |cor_coef| does not exceed the threshold, range [0, 1].
      */
     double rho_thr_DA = 0.02;
 
-    /** @brief Linkage method for BT clustering (default: Single).
+    /** @brief Linkage of the hierarchical clustering (default: Single). Used
+     *  by BT and by prior groups.
      *  Supported: Single, Complete, Average (UPGMA), WPGMA (McQuitty).
      *  Ward is rejected, because its update is valid for squared Euclidean
      *  distances only and the correlation distance 1 - |cor| is not Euclidean.
      */
     hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
 
-    /** @brief Number of dendrogram / NN grid points.
-     *  Initialized as 0 and in constructor defaulted to min(20, p).
+    /** @brief Number of correlation thresholds on the calibration grid of BT,
+     *  NN and prior groups. 0 (default) takes min(20, p).
      */
     std::size_t hc_grid_length = 0;
 
@@ -170,15 +179,15 @@ struct TRexDAControlParameter {
      *  operating point. The nearest-partner deflation therefore always acts
      *  on tight data-driven neighbourhoods INSIDE the known groups — the
      *  groups themselves are never used directly as deflation neighbourhoods
-     *  (that degenerates for group sizes > 2; see
-     *  Prior_Groups_Deflation_Mismatch_DA_TRex.md).
+     *  (that degenerates for group sizes > 2).
      */
     std::vector<std::vector<Eigen::Index>> prior_groups;
 
-    /** @brief Candidate-cell policy for BT-style selection (default: FeasibleOnly).
-     *  FeasibleOnly restricts selection to FDP-feasible cells (FDR-controlling);
-     *  RFaithful reproduces the R reference by also admitting infeasible cells.
-     *  See BTSelectionMode.
+    /** @brief Candidate-cell policy for the selection of the methods BT, NN
+     *  and PRIOR_GROUPS (default: FeasibleOnly). FeasibleOnly restricts the
+     *  selection to FDP-feasible cells (FDR-controlling); RFaithful reproduces
+     *  the 1.x versions of the R package by also admitting infeasible cells.
+     *  Ignored by AR1 and EQUI. See BTSelectionMode.
      */
     BTSelectionMode bt_selection_mode = BTSelectionMode::FeasibleOnly;
 
@@ -253,14 +262,30 @@ struct DACorrectionResult {
 // ===================================================================================
 
 /**
- * @brief Dependency-Aware T-Rex Selector.
+ * @brief Dependency-aware T-Rex selector (T-Rex+DA): FDR-controlled variable
+ *        selection for dependent variables.
  *
  * @details
- *  Inherits from TRexSelector. The select() method is overridden to insert a
- *  dependency-aware deflation step between the random-experiment aggregation and
- *  the FDP estimation.
- *  For BT-style methods the calibration is performed over a 3D grid (T_stop x V x rho_grid);
- *  for AR1/EQUI the standard 2D grid is used with modified phi_T / Phi values.
+ *  Inherits from TRexSelector. The selector inserts a dependency-aware deflation
+ *  step between the aggregation of the random experiments and the FDP estimation,
+ *  through the hooks of the base class.
+ *  For BT, NN and PRIOR_GROUPS the calibration is performed over a 3D grid
+ *  (T_stop x V x rho_grid); for AR1/EQUI the standard 2D grid is used with modified
+ *  phi_T / Phi values.
+ *
+ *  Reference threshold (BT, NN and PRIOR_GROUPS):
+ *  ----------------------------------------------
+ *  These methods evaluate every step on the whole grid of correlation thresholds
+ *  (rho_grid). The L-loop and the T-loop read the FDP estimate at one of them, the
+ *  reference threshold, which sits at three quarters of the grid: element 0.75 times
+ *  its length counted from 1, a half rounded up (element 15 of the default 20). The
+ *  selection then searches all cells of stopping time, voting level and threshold,
+ *  and rho_thresh is the threshold of the cell it takes.
+ *  getFDPHatMat(), getPhiMat() and getPhiPrime() therefore hold the values at the
+ *  reference threshold, while getRMat(), the voting threshold and the selection
+ *  belong to rho_thresh. The values at every threshold are in FDP_hat_array_BT,
+ *  Phi_array_BT and R_array_BT of the result, whose FDP_hat_mat and Phi_mat are
+ *  empty for these methods.
  *
  *  Penalty of the last step (a deliberate deviation from the papers):
  *  ------------------------------------------------------------------
@@ -292,9 +317,9 @@ struct DACorrectionResult {
  *    and in at most 0.01 % with the last-step penalty.
  *
  *  AR1 and EQUI used the per-step penalty up to C++ 1.0.0, R 2.0.1 and Python 1.0.0, as
- *  the R reference implementation of the papers does. BT, NN and PRIOR_GROUPS have always
- *  used the last step, in the reference as well. Do not move a method to a penalty per
- *  step, or add a clamp to Phi', without repeating that comparison (HISTORY.md, 2026-11-13).
+ *  the 1.x versions of the R package do. BT, NN and PRIOR_GROUPS have always used the
+ *  last step, in those versions as well. Do not move a method to a penalty per step, or
+ *  add a clamp to Phi', without repeating that comparison (HISTORY.md, 2026-11-13).
  *
  *  References:
  *  -----------
@@ -318,32 +343,53 @@ public:
     // ============================================================
 
     /**
-     * @brief Extended result for DA-TRex, adding rho_grid diagnostics.
+     * @brief Extended result of T-Rex+DA, adding the record of the dependency
+     *        estimation.
      */
     struct DASelectionResult : public SelectionResult {
-        /** @brief Selected rho threshold (AUTO_ESTIMATE_CORRELATION for AR1/EQUI). */
+        /** @brief Correlation threshold of the selected cell of the calibration
+         *  grid (BT, NN and PRIOR_GROUPS). -2 (AUTO_ESTIMATE_CORRELATION) for
+         *  AR1 and EQUI and when no cell meets the target.
+         */
         double rho_thresh = tc::AUTO_ESTIMATE_CORRELATION;
 
-        /** @brief Correlation-level grid used (empty for AR1/EQUI). */
+        /** @brief Grid of correlation thresholds of BT, NN and PRIOR_GROUPS:
+         *  hc_grid_length ascending values. BT and PRIOR_GROUPS take them from
+         *  the merge heights of the dendrogram (1 - height) and end at 1, NN
+         *  spaces them equally on [0, 1]. Empty for AR1 and EQUI.
+         */
         Eigen::VectorXd rho_grid;
 
-        /** @brief DA method that was applied. */
+        /** @brief Dependency-aware method of the run. PRIOR_GROUPS when prior
+         *  groups were supplied.
+         */
         DAMethod method = DAMethod::BT;
 
-        /** @brief Estimated or supplied correlation coefficient. */
+        /** @brief Correlation coefficient of the methods AR1 and EQUI: the
+         *  supplied value, or the estimate from the data when -2 requested it.
+         *  The other methods do not use it and return the value of the control.
+         */
         double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
 
-        /** @brief BT-style: FDP estimates per rho level.
-         * FDP_hat_array_BT[rho] = (T_stop x V_len).
+        /** @brief FDP estimates of the methods BT, NN and PRIOR_GROUPS: one
+         *  matrix per correlation threshold (rho_grid), with one row per
+         *  stopping time (T_stop) and one column per voting level
+         *  (voting_grid). Empty for AR1 and EQUI.
          */
         std::vector<Eigen::MatrixXd> FDP_hat_array_BT;
 
-        /** @brief BT-style: relative occurrences per rho level.
-         * Phi_array_BT[rho] = (T_stop x p).
+        /** @brief Dependency-aware relative occurrences of the methods BT, NN
+         *  and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid),
+         *  with one row per stopping time (T_stop) and one column per variable.
+         *  Empty for AR1 and EQUI.
          */
         std::vector<Eigen::MatrixXd> Phi_array_BT;
 
-        /** @brief BT-style: selection-count array. R_array[rho] = (T_stop x V_len). */
+        /** @brief Numbers of selected variables of the methods BT, NN and
+         *  PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with
+         *  one row per stopping time that can be selected (T_stop - 1) and one
+         *  column per voting level (voting_grid). Empty for AR1 and EQUI.
+         */
         std::vector<Eigen::MatrixXd> R_array_BT;
 
         /** @brief Virtual destructor. */
@@ -364,7 +410,8 @@ public:
      * @param trex_da_ctrl  DA-specific control parameters, nesting the base
      *                      T-Rex algorithmic control parameters as
      *                      `trex_da_ctrl.trex_ctrl`.
-     * @param seed          Random seed (< 0 for non-deterministic).
+     * @param seed          Random seed. A negative value (default: -1) gives a run
+     *                      that is not reproducible.
      * @param verbose       Enable verbose output (default: true).
      */
     TRexDASelector(

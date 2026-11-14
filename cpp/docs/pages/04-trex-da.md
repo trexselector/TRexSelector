@@ -68,14 +68,27 @@ method is made for variables that all share one correlation.
 The binary tree method clusters the variables by correlation distance with the linkage `hc_linkage`
 (`LinkageMethod::Single` by default), evaluates the FDP estimate at `hc_grid_length` correlation
 thresholds (the default `0` lets the core take \f$\min(20, p)\f$ points) and keeps the threshold
-`rho_thresh`. The autoregressive and equi-correlated methods draw the same independent dummies as the
-other methods and penalize the relative occurrences. The autoregressive method compares a variable
-with the neighbours inside a window, which holds the lags whose correlation `|cor_coef|^lag` reaches
-`rho_thr_DA`, a threshold in \f$[0, 1)\f$. The equi-correlated method compares a variable with all
-other variables and is skipped when `|cor_coef|` does not exceed `rho_thr_DA`. Both methods use the
-magnitude of the coefficient. Setting `cor_coef` to `-2` (the constant `AUTO_ESTIMATE_CORRELATION`)
-estimates the coefficient from the data, and any other value outside \f$[-1, 1]\f$ gives a warning
-and is replaced by the estimate.
+`rho_thresh`.
+
+The binary tree method, the nearest-neighbour method and the prior groups evaluate every step on the
+whole grid of correlation thresholds. The L-loop and the T-loop read the FDP estimate at one of them,
+the reference threshold, which sits at three quarters of the grid (element 15 of the default 20). The
+selection then searches all cells of stopping time, voting level and threshold, and `rho_thresh` is
+the threshold of the cell it takes. `getFDPHatMat()`, `getPhiMat()` and `getPhiPrime()` therefore
+hold the values at the reference threshold, while `getRMat()`, `getVotingThreshold()` and the
+selection belong to `rho_thresh`. The values at every threshold are in `FDP_hat_array_BT`,
+`Phi_array_BT` and `R_array_BT` of the result, whose `FDP_hat_mat` and `Phi_mat` are empty for these
+methods.
+
+The autoregressive and equi-correlated methods draw the same independent dummies as the other methods
+and penalize the relative occurrences. The autoregressive method compares a variable with the
+neighbours inside a window that reaches `ceil(log(rho_thr_DA) / log(|cor_coef|))` columns to each
+side, up to the first lag whose correlation `|cor_coef|^lag` has fallen to `rho_thr_DA`, a threshold
+in \f$[0, 1)\f$. The equi-correlated method compares a variable with all other variables and is
+skipped when `|cor_coef|` does not exceed `rho_thr_DA`. Both methods use the magnitude of the
+coefficient. Setting `cor_coef` to `-2` (the constant `AUTO_ESTIMATE_CORRELATION`) estimates the
+coefficient from the data, and any other value outside \f$[-1, 1]\f$ gives a warning and is replaced
+by the estimate.
 
 \snippet{trimleft} trex_da.cpp ar1
 \output{trex_da.ar1.txt}

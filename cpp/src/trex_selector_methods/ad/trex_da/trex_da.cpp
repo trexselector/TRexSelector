@@ -4,7 +4,7 @@
 /**
  * @file trex_da.cpp
  *
- * @brief Implementation of the Dependency-Aware T-Rex (DA-TRex) Selector.
+ * @brief Implementation of the dependency-aware T-Rex selector (T-Rex+DA).
  */
 // ===================================================================================
 
@@ -18,7 +18,7 @@
 #include <utility>
 #include <vector>
 
-// DA-TRex header
+// T-Rex+DA header
 #include <trex_selector_methods/ad/trex_da/trex_da.hpp>
 
 // AR(1) window shared with the screening selector
@@ -73,6 +73,15 @@ TRexDASelector::TRexDASelector(
 // ===================================================================================
 
 void TRexDASelector::validateDAParameters() const {
+
+    // The constructor sets PRIOR_GROUPS when groups are supplied, so the
+    // method without groups was chosen by hand.
+    if (trex_da_ctrl_.method == DAMethod::PRIOR_GROUPS &&
+        trex_da_ctrl_.prior_groups.empty()) {
+        throw std::invalid_argument(
+            "The method PRIOR_GROUPS requires prior_groups. The selector sets "
+            "the method itself when prior_groups is supplied.");
+    }
 
     if (!trex_da_ctrl_.prior_groups.empty()) {
         for (const auto& level : trex_da_ctrl_.prior_groups) {
@@ -384,10 +393,10 @@ void TRexDASelector::setupDA() {
 // The prior groups are merge CONSTRAINTS on the dependency structure, not
 // deflation neighbourhoods. The nearest-partner penalty Psi (Definition 1 of
 // the T-Rex+DA paper) assumes tight neighbourhoods in which the closest-Phi
-// member is a genuine shadow; inside a large user group nearly every variable
-// has SOME member with an almost identical Phi, so delta -> 2 uniformly and
-// the shadow/active ranking is left invariant (see
-// Prior_Groups_Deflation_Mismatch_DA_TRex.md).
+// member is a genuine shadow.
+// Inside a large user group nearly every variable has SOME member with an
+// almost identical Phi, so delta -> 2 uniformly and the shadow/active ranking is
+// left invariant.
 // Sub-clustering within each group restores the deflation's operating assumptions:
 // HAC on the correlation distance runs per group (merges across group boundaries
 // are structurally impossible), and the rho grid spans from whole-group

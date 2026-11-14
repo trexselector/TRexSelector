@@ -321,6 +321,66 @@ TEST(TRexDATest, Validation_ThrowsOnInvalidParameters) {
     EXPECT_THROW({
         TRexDASelector selector(X_map, y_map, 0.1, da_params);
     }, std::invalid_argument);
+
+    // 4. PRIOR_GROUPS chosen by hand, without groups
+    da_params.hc_linkage =
+        trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Single;
+    da_params.method = DAMethod::PRIOR_GROUPS;
+    EXPECT_THROW({
+        TRexDASelector selector(X_map, y_map, 0.1, da_params);
+    }, std::invalid_argument);
+}
+
+
+/** @brief The matrices of the selector belong to the reference threshold of
+ *  the grid, the selection and its counts to the selected threshold. */
+TEST(TRexDATest, Result_GridMethodsReportTheReferenceThreshold) {
+    std::vector<std::size_t> support = {1, 2, 3};
+    std::vector<double> coefs = {5.0, -3.0, 2.0};
+    SyntheticData data(100, 40, support, coefs, 1.0, 42);
+
+    auto X = data.getX();
+    auto y = data.getY();
+    Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+
+    for (const DAMethod method : {DAMethod::BT, DAMethod::NN}) {
+        TRexDAControlParameter da_ctrl;
+        da_ctrl.method = method;
+        da_ctrl.trex_ctrl.K = 5;
+
+        TRexDASelector trex(X_map, y_map, 0.2, da_ctrl, 42, false);
+        trex.select();
+        const auto& res = trex.getDAResult();
+
+        // Grid of 20 thresholds, reference element 15 (index 14)
+        ASSERT_EQ(res.rho_grid.size(), 20);
+        ASSERT_EQ(res.FDP_hat_array_BT.size(), 20u);
+        const std::size_t ref = 14;
+        EXPECT_TRUE(trex.getFDPHatMat() == res.FDP_hat_array_BT[ref]);
+        EXPECT_TRUE(trex.getPhiMat() == res.Phi_array_BT[ref]);
+
+        // The result holds the arrays, its two base matrices stay empty
+        EXPECT_EQ(res.FDP_hat_mat.size(), 0);
+        EXPECT_EQ(res.Phi_mat.size(), 0);
+
+        // One row per stopping time, one less for the selection counts
+        const auto T_stop = static_cast<Eigen::Index>(trex.getTStop());
+        EXPECT_EQ(res.FDP_hat_array_BT[ref].rows(), T_stop);
+        EXPECT_EQ(res.R_array_BT[ref].rows(), T_stop > 1 ? T_stop - 1 : T_stop);
+
+        // The selection counts of the selector belong to the selected threshold
+        if (res.rho_thresh >= 0.0) {
+            bool matched = false;
+            for (Eigen::Index r = 0; r < res.rho_grid.size(); ++r) {
+                if (res.rho_grid(r) == res.rho_thresh &&
+                    trex.getRMat() == res.R_array_BT[static_cast<std::size_t>(r)]) {
+                    matched = true;
+                }
+            }
+            EXPECT_TRUE(matched);
+        }
+    }
 }
 
 

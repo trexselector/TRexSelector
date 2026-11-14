@@ -254,3 +254,73 @@ def test_da_prior_groups_rejects_negative_labels(signal_data):
     with pytest.raises(ValueError, match="non-negative"):
         trexselector.TRexDASelector(X, y, da_control=da_ctrl,
                                          verbose=False).select()
+
+
+def test_da_prior_groups_method_needs_groups(signal_data):
+    """PRIOR_GROUPS without prior_groups is rejected at construction."""
+    X, y, n, p = signal_data
+    da_ctrl = trexselector.TRexDAControlParameter()
+    da_ctrl.method = trexselector.DAMethod.PRIOR_GROUPS
+    with pytest.raises(ValueError, match="requires prior_groups"):
+        trexselector.TRexDASelector(X, y, da_control=da_ctrl, verbose=False)
+
+
+@pytest.mark.parametrize("method", [trexselector.DAMethod.BT, trexselector.DAMethod.NN])
+def test_da_grid_methods_report_the_reference_threshold(method):
+    """The matrices of the selector belong to the reference threshold of the grid."""
+    rng = np.random.default_rng(42)
+    n, p = 100, 40
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = 5.0 * X[:, 0] - 4.0 * X[:, 1] + 3.0 * X[:, 2] + rng.standard_normal(n)
+
+    da_ctrl = trexselector.TRexDAControlParameter()
+    da_ctrl.method = method
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 5
+    sel = trexselector.TRexDASelector(X, y, tFDR=0.2, da_control=da_ctrl, trex_control=ctrl, seed=42,
+                                      verbose=False)
+    res = sel.select()
+
+    # Grid of 20 thresholds, reference element 15 (index 14)
+    assert res.rho_grid.size == 20
+    assert np.array_equal(sel.fdp_hat_mat, res.fdp_hat_array_bt[14])
+    assert np.array_equal(sel.phi_mat, res.phi_array_bt[14])
+
+    # The result holds the arrays, its two base matrices stay empty
+    assert res.fdp_hat_mat.size == 0
+    assert res.phi_mat.size == 0
+
+    # One row per stopping time, one less for the selection counts
+    assert res.fdp_hat_array_bt[14].shape[0] == sel.T_stop
+    assert res.r_array_bt[14].shape[0] == max(sel.T_stop - 1, 1)
+
+    # The selection counts of the selector belong to the selected threshold
+    if res.rho_thresh >= 0:
+        grid = res.rho_grid.ravel()
+        assert any(np.array_equal(sel.r_mat, res.r_array_bt[r])
+                   for r in range(grid.size) if grid[r] == res.rho_thresh)
+
+
+@pytest.mark.parametrize("method", [trexselector.DAMethod.AR1, trexselector.DAMethod.EQUI])
+def test_da_window_methods_report_no_grid(signal_data, fast_control, method):
+    """AR1 and EQUI report -2 as rho_thresh, an empty grid and empty arrays."""
+    X, y, n, p = signal_data
+    da_ctrl = trexselector.TRexDAControlParameter()
+    da_ctrl.method = method
+    sel = trexselector.TRexDASelector(X, y, da_control=da_ctrl, trex_control=fast_control, verbose=False)
+    res = sel.select()
+    assert res.method == method
+    assert res.rho_thresh == -2.0
+    assert res.rho_grid.size == 0
+    assert len(res.fdp_hat_array_bt) == 0
+
+
+def test_da_prior_groups_set_the_method(signal_data, fast_control):
+    """Supplied prior groups make PRIOR_GROUPS the method of the run."""
+    X, y, n, p = signal_data
+    da_ctrl = trexselector.TRexDAControlParameter()
+    assert da_ctrl.method == trexselector.DAMethod.BT
+    da_ctrl.prior_groups = [[i % 4 for i in range(p)]]
+    sel = trexselector.TRexDASelector(X, y, da_control=da_ctrl, trex_control=fast_control, verbose=False)
+    res = sel.select()
+    assert res.method == trexselector.DAMethod.PRIOR_GROUPS

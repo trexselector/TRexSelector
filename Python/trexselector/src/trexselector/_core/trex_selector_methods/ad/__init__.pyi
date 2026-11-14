@@ -9,13 +9,13 @@ import typing
 __all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'gamma_to_k', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
     """
-    Cell-selection policy for the BT (binary-tree) DA method.
+    Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.
     
     Members:
     
-      FeasibleOnly : Only FDP-feasible cells may be selected (default; controls realized FDR).
+      FeasibleOnly : Only cells whose FDP estimate is at or below the target (default), which controls the realized FDR.
     
-      RFaithful : Reproduces the R reference; may inflate FDR at high within-group correlation.
+      RFaithful : Every cell with the largest selection count, as the 1.x versions of the R package do. Can exceed the target at high within-group correlation.
     """
     FeasibleOnly: typing.ClassVar[BTSelectionMode]  # value = <BTSelectionMode.FeasibleOnly: 0>
     RFaithful: typing.ClassVar[BTSelectionMode]  # value = <BTSelectionMode.RFaithful: 1>
@@ -155,7 +155,7 @@ class DAMethod:
     
       NN : Nearest neighbours, made for overlapping groups of highly correlated variables. The groups come from a sweep of correlation thresholds.
     
-      PRIOR_GROUPS : Groups supplied by the user, clustered within each group.
+      PRIOR_GROUPS : Groups supplied by the user, clustered within each group. The selector sets this method itself when prior_groups is supplied. Choosing it without prior_groups raises ValueError at construction.
     """
     AR1: typing.ClassVar[DAMethod]  # value = <DAMethod.AR1: 0>
     BT: typing.ClassVar[DAMethod]  # value = <DAMethod.BT: 2>
@@ -199,42 +199,42 @@ class DAMethod:
         ...
 class DASelectionResult(SelectionResult):
     """
-    Extended SelectionResult holding specific DA outputs.
+    Result of T-Rex+DA: the SelectionResult with the record of the dependency estimation.
     """
     @property
     def cor_coef(self) -> float:
         """
-        Auto-estimated or supplied correlation coefficient.
+        Correlation coefficient of the methods AR1 and EQUI: the supplied value, or the estimate from the data when -2 requested it. The other methods do not use it and return the value of the control.
         """
     @property
     def fdp_hat_array_bt(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]]:
         """
-        Per-rho-level FDP estimate matrices (BT method only).
+        FDP estimates of the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with one row per stopping time (T_stop) and one column per voting level (voting_grid). Empty for AR1 and EQUI.
         """
     @property
     def method(self) -> DAMethod:
         """
-        The resulting DA method applied.
+        Dependency-aware method of the run. PRIOR_GROUPS when prior groups were supplied.
         """
     @property
     def phi_array_bt(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]]:
         """
-        Per-rho-level deflated Phi matrices (BT method only).
+        Dependency-aware relative occurrences of the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with one row per stopping time (T_stop) and one column per variable. Empty for AR1 and EQUI.
         """
     @property
     def r_array_bt(self) -> list[typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]]:
         """
-        Per-rho-level R matrices (BT method only).
+        Numbers of selected variables of the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with one row per stopping time that can be selected (T_stop - 1) and one column per voting level (voting_grid). Empty for AR1 and EQUI.
         """
     @property
     def rho_grid(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Grid values used for rho.
+        Grid of correlation thresholds of BT, NN and PRIOR_GROUPS: hc_grid_length ascending values. BT and PRIOR_GROUPS take them from the merge heights of the dendrogram (1 - height) and end at 1, NN spaces them equally on [0, 1]. Empty for AR1 and EQUI.
         """
     @property
     def rho_thresh(self) -> float:
         """
-        The threshold applied for rho.
+        Correlation threshold of the selected cell of the calibration grid (BT, NN and PRIOR_GROUPS). -2 for AR1 and EQUI and when no cell meets the target.
         """
 class DummyDistribution:
     """
@@ -1768,7 +1768,7 @@ class TRexDAControlParameter:
     @property
     def bt_selection_mode(self) -> BTSelectionMode:
         """
-        Cell-selection policy for the BT method (FeasibleOnly or RFaithful).
+        Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly (default) or RFaithful. Ignored by AR1 and EQUI.
         """
     @bt_selection_mode.setter
     def bt_selection_mode(self, arg0: BTSelectionMode) -> None:
@@ -1776,7 +1776,7 @@ class TRexDAControlParameter:
     @property
     def cor_coef(self) -> float:
         """
-        Correlation coefficient of the AR1 and EQUI methods; setting the parameter to -2 estimates it from the data. Both methods use the magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.
+        Correlation coefficient of the AR1 and EQUI methods; setting the parameter to -2 estimates it from the data. The estimate is the mean lag-1 autocorrelation of the rows for AR1 and the mean pairwise correlation of the variables for EQUI. Both methods use the magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced by the estimate.
         """
     @cor_coef.setter
     def cor_coef(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1784,7 +1784,7 @@ class TRexDAControlParameter:
     @property
     def hc_grid_length(self) -> int:
         """
-        Grid length for hierarchical clustering.
+        Number of correlation thresholds on the calibration grid of BT, NN and prior groups. 0 (default) takes min(20, p).
         """
     @hc_grid_length.setter
     def hc_grid_length(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1792,8 +1792,8 @@ class TRexDAControlParameter:
     @property
     def hc_linkage(self) -> ...:
         """
-        Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Ward is
-        rejected, because the correlation distance 1 - |cor| is not Euclidean.
+        Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Used by BT
+        and by prior groups. Ward is rejected, because the correlation distance 1 - |cor| is not Euclidean.
         """
     @hc_linkage.setter
     def hc_linkage(self, arg0: ...) -> None:
@@ -1818,7 +1818,7 @@ class TRexDAControlParameter:
     @property
     def rho_thr_DA(self) -> float:
         """
-        Correlation threshold of the AR1 and EQUI methods (default 0.02). AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
+        Correlation threshold of the AR1 and EQUI methods (default 0.02). AR1: the window around a variable reaches ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation abs(cor_coef)**lag has fallen to the threshold, range [0, 1). EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
         """
     @rho_thr_DA.setter
     def rho_thr_DA(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1869,6 +1869,18 @@ class TRexDASelector(TRexSelector):
     selections can differ slightly from earlier versions. BT, NN and PRIOR_GROUPS have always
     used the penalty of the last step.
     
+    The reference threshold. The methods BT, NN and PRIOR_GROUPS evaluate every step on the
+    whole grid of correlation thresholds (rho_grid). The L-loop and the T-loop read the FDP
+    estimate at one of them, the reference threshold, which sits at three quarters of the
+    grid: element 0.75 times its length counted from 1, a half rounded up (element 15 of the
+    default 20). The selection then searches all cells of stopping time, voting level and
+    threshold, and rho_thresh is the threshold of the cell it takes. The matrices of FDP
+    estimates and relative occurrences of the selector and its Phi' therefore hold the values
+    at the reference threshold, while its matrix of selection counts, the voting threshold
+    and the selection belong to rho_thresh. The values at every threshold are in
+    fdp_hat_array_bt, phi_array_bt and r_array_bt of the result, whose fdp_hat_mat and phi_mat
+    are empty for these methods.
+    
     References
     ----------
     J. Machkour, M. Muma, and D. P. Palomar, "High-Dimensional False Discovery Rate Control
@@ -1887,7 +1899,8 @@ class TRexDASelector(TRexSelector):
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, da_control: TRexDAControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the DA selector. X and y are accessed zero-copy via Eigen::Map.
+        Construct the DA selector. X and y are accessed zero-copy via Eigen::Map. A negative seed
+        (default: -1) gives a run that is not reproducible.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, da_control: TRexDAControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:

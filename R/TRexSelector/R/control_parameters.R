@@ -277,19 +277,22 @@ trex_control <- function(solver = "TLARS",
 #'   made for a first-order autoregressive dependency across the columns. "EQUI" is
 #'   made for variables that all share one correlation.
 #' @param cor_coef Correlation coefficient for AR1/EQUI. -2.0 triggers auto-estimation
-#'   (default: -2.0). Both methods use the magnitude of a supplied coefficient. Any other
-#'   value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.
+#'   (default: -2.0). The estimate is the mean lag-1 autocorrelation of the rows for AR1
+#'   and the mean pairwise correlation of the variables for EQUI. Both methods use the
+#'   magnitude of a supplied coefficient. Any other value outside \code{[-1, 1]} gives a
+#'   warning and is replaced by the estimate.
 #' @param rho_thr_DA Correlation threshold of the AR1 and EQUI methods (default: 0.02).
-#'   AR1: the window around a variable holds the lags whose correlation
-#'   \code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. EQUI: the
-#'   correction is skipped when \code{abs(cor_coef)} does not exceed the threshold,
-#'   range \code{[0, 1]}.
+#'   AR1: the window around a variable reaches
+#'   \code{ceiling(log(rho_thr_DA) / log(abs(cor_coef)))} columns to each side, up to the
+#'   first lag whose correlation \code{abs(cor_coef)^lag} has fallen to the threshold,
+#'   range \code{[0, 1)}. EQUI: the correction is skipped when \code{abs(cor_coef)} does
+#'   not exceed the threshold, range \code{[0, 1]}.
 #' @param hc_linkage Hierarchical clustering linkage: "Single", "Complete", "Average",
-#'   "WPGMA" (default: "Single"). "Ward" is rejected, because its update is valid for
-#'   squared Euclidean distances only and the correlation distance \code{1 - abs(cor)}
-#'   is not Euclidean.
-#' @param hc_grid_length Number of grid points for BT/NN calibration. \code{0}
-#'   (default) lets the core auto-select \code{min(20, p)}.
+#'   "WPGMA" (default: "Single"). Used by BT and by prior groups. "Ward" is rejected,
+#'   because its update is valid for squared Euclidean distances only and the correlation
+#'   distance \code{1 - abs(cor)} is not Euclidean.
+#' @param hc_grid_length Number of correlation thresholds on the calibration grid of BT,
+#'   NN and prior groups. \code{0} (default) takes \code{min(20, p)}.
 #' @param prior_groups Optional prior grouping constraints: a list of integer
 #'   vectors, each of length \code{p}, giving non-negative group labels per
 #'   variable. When supplied (non-\code{NULL}, non-empty), the prior-groups
@@ -305,7 +308,7 @@ trex_control <- function(solver = "TLARS",
 #'   of the methods BT, NN and prior groups. \code{"FeasibleOnly"} (default) admits
 #'   only cells whose FDP estimate is at or below the target, which controls the
 #'   realized FDR. \code{"RFaithful"} admits every cell with the largest selection
-#'   count, as the R reference implementation does, and can exceed the target at
+#'   count, as the 1.x versions of the package do, and can exceed the target at
 #'   high within-group correlation. Ignored by AR1 and EQUI.
 #'
 #' @return A named list for use in TRexDASelector.

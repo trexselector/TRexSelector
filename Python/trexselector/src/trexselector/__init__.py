@@ -207,7 +207,8 @@ class TRexSelector:
 
 class TRexDASelector(TRexSelector):
     """
-    Python wrapper for the C++ TRexDASelector (Dependency Awareness).
+    Dependency-aware T-Rex selector (T-Rex+DA): FDR-controlled variable
+    selection for dependent variables.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  da_control: TRexDAControlParameter | None = None,

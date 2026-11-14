@@ -14,6 +14,49 @@ its removal in the next minor releases, and the R package compiles in less time.
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1. The DESCRIPTION of the R package reads 2.0.1
 until the release is prepared.
 
+### 2026-11-14
+
+#### The help of the dependency-aware selector agrees on the three surfaces and with the code
+
+- The help texts of the selector, of its control and of its result were read side by side in C++, R and
+  Python and checked against the code. One defect in the R binding, one late error and the texts below
+  came out of it.
+- R: the field `da_method_used` returned "UNKNOWN" for a run with prior groups, because the getter had
+  no case for the method. It returns "PRIOR_GROUPS", as the result of C++ and Python does.
+- C++ and Python: the method PRIOR_GROUPS without `prior_groups` passed the constructor and failed in
+  `select()`. The constructor rejects it. The selector sets the method itself when groups are supplied,
+  and the texts of the method say so.
+- The reference threshold. BT, NN and the prior groups evaluate every step on the whole grid of
+  correlation thresholds. The L-loop and the T-loop read the FDP estimate at one of them, the element at
+  three quarters of the grid (element 15 of the default 20), and the selection searches all thresholds.
+  The matrix of FDP estimates, the matrix of relative occurrences and Phi' of the selector therefore
+  belong to the reference threshold, while the selection counts, the voting threshold and the selection
+  belong to `rho_thresh`. No surface said so. The class documentation of the three surfaces and guide
+  page 04 state it.
+- The result fields have one text on the three surfaces. `rho_thresh` is -2 for AR1 and EQUI and when no
+  cell meets the target. `rho_grid` says where its values come from. `cor_coef` says that the methods
+  without a coefficient return the value of the control. The R text of `cor_coef` still spoke of a
+  "dependency-aware dummy generation" and the R text of `da_method_used` of an "integer code". The
+  Python texts called the three arrays "BT method only", and they are filled for BT, NN and the prior
+  groups. The C++ header gave `R_array_BT` one row more than it has.
+- The control. `hc_grid_length` is the number of thresholds on the grid of BT, NN and the prior groups
+  (Python had called it the grid of the hierarchical clustering). `hc_linkage` names its users, BT and
+  the prior groups. `bt_selection_mode` acts for BT, NN and the prior groups (Python had named BT).
+  `cor_coef` says in R and Python how the coefficient is estimated, and `seed` what a negative value
+  does.
+- The AR1 window. The texts said that the window holds the lags whose correlation reaches
+  `rho_thr_DA`. The half-width is ceil(log(rho_thr_DA) / log(|cor_coef|)), so the last lag of the
+  window lies at or below the threshold (0.7 and 0.02 give 11 lags, and 0.7^11 = 0.0198). The help
+  texts and guide page 04 give the formula.
+- Names. The short form is T-Rex+DA in the help of the three surfaces, where "TRexDA", "DA-TRex" and
+  "Dependency Awareness" stood. "The R reference" is now "the 1.x versions of the R package". The C++
+  header no longer points to a note outside the repository, and its class details no longer say that
+  `select()` is overridden. It is inherited, and the selector acts through the hooks of the base class.
+- Tests. C++, R and Python each pin the reference threshold (the matrices of the selector against the
+  arrays of the result), the method name of a run with prior groups, and -2 with an empty grid for AR1
+  and EQUI. C++ and Python pin the rejection of PRIOR_GROUPS without groups. C++ tests 721 of 721, R
+  tests 1,916, Python tests 705.
+
 ### 2026-11-13
 
 #### Guide page 05 describes the informed elastic net as its paper does
