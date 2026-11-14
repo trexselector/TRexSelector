@@ -1873,13 +1873,14 @@ class TRexDASelector(TRexSelector):
     whole grid of correlation thresholds (rho_grid). The L-loop and the T-loop read the FDP
     estimate at one of them, the reference threshold, which sits at three quarters of the
     grid: element 0.75 times its length counted from 1, a half rounded up (element 15 of the
-    default 20). The selection then searches all cells of stopping time, voting level and
-    threshold, and rho_thresh is the threshold of the cell it takes. The matrices of FDP
-    estimates and relative occurrences of the selector and its Phi' therefore hold the values
-    at the reference threshold, while its matrix of selection counts, the voting threshold
-    and the selection belong to rho_thresh. The values at every threshold are in
-    fdp_hat_array_bt, phi_array_bt and r_array_bt of the result, whose fdp_hat_mat and phi_mat
-    are empty for these methods.
+    default 20). The 1.x versions of the R package round a half to the even number and take
+    one element lower for the grid lengths 6, 14, 22, 30 and so on. The selection then
+    searches all cells of stopping time, voting level and threshold, and rho_thresh is the
+    threshold of the cell it takes. The matrices of FDP estimates and relative occurrences of
+    the selector and its Phi' therefore hold the values at the reference threshold, while its
+    matrix of selection counts, the voting threshold and the selection belong to rho_thresh.
+    The values at every threshold are in fdp_hat_array_bt, phi_array_bt and r_array_bt of the
+    result, whose fdp_hat_mat and phi_mat are empty for these methods.
     
     FDR limitation of BT, NN and PRIOR_GROUPS. At a very high correlation within the groups
     (about 0.9 and above) and with no independent ("white") predictors, the equiangular

@@ -469,8 +469,9 @@ void TRexDASelector::setupDA_PriorGroups() {
 
     da_setup_.use_BT_style = true;
     da_setup_.rho_grid_len = grid_len;
-    // R (1-indexed): round(0.75 * L) -> element L*0.75.
-    // C++ (0-indexed): subtract 1 to match.
+    // Reference element round(0.75 * L) counted from 1, so the index is raw - 1.
+    // std::round takes a half up. The 1.x versions of the R package round it to
+    // the even number and take one element lower for L = 6, 14, 22, 30, ...
     {
         std::size_t raw = static_cast<std::size_t>(
             std::round(0.75 * static_cast<double>(grid_len)));
@@ -569,8 +570,9 @@ void TRexDASelector::setupDA_BT() {
 
     da_setup_.use_BT_style = true;
     da_setup_.rho_grid_len = grid_len;
-    // R (1-indexed): round(0.75 * L) -> element L*0.75.
-    // C++ (0-indexed): subtract 1 to match.
+    // Reference element round(0.75 * L) counted from 1, so the index is raw - 1.
+    // std::round takes a half up. The 1.x versions of the R package round it to
+    // the even number and take one element lower for L = 6, 14, 22, 30, ...
     {
         std::size_t raw = static_cast<std::size_t>(
             std::round(0.75 * static_cast<double>(grid_len)));
@@ -629,8 +631,9 @@ void TRexDASelector::setupDA_NN() {
 
     da_setup_.use_BT_style = true;
     da_setup_.rho_grid_len = grid_len;
-    // R (1-indexed): round(0.75 * L) -> element L*0.75.
-    // C++ (0-indexed): subtract 1 to match.
+    // Reference element round(0.75 * L) counted from 1, so the index is raw - 1.
+    // std::round takes a half up. The 1.x versions of the R package round it to
+    // the even number and take one element lower for L = 6, 14, 22, 30, ...
     {
         std::size_t raw = static_cast<std::size_t>(
             std::round(0.75 * static_cast<double>(grid_len)));

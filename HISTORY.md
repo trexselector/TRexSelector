@@ -16,6 +16,17 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The reference element of the grid rounds a half up, and the documentation says so
+
+- The reference threshold of BT, NN and the prior groups is element round(0.75 * L) of a grid of length
+  L. The library rounds a half up (`std::round`). The 1.x versions of the R package compute
+  `round(0.75 * rho_grid_len)` in R, which rounds a half to the even number. The two differ for
+  L = 6, 14, 22, 30 and so on, where the 1.x versions take one element lower. The default length 20 is
+  not affected.
+- Decision of Fabian, 2026-11-14: the library keeps its rule, because the differences are minor, and
+  states it. The class documentation of the three surfaces carries one sentence, and a comment stands at
+  the three places in the code. No code changes.
+
 #### The selectors of the Python package root carry their documentation
 
 - `trexselector.TRexDASelector`, the class of the guides, showed one line under `help()`. The notes on

@@ -49,6 +49,9 @@
 * The help of `TRexDASelector` gains the section "FDR limitation of BT, NN and prior groups". At a very
   high correlation within the groups and with no independent predictors the three methods can exceed
   the target FDR with the solver `"TLARS"`. The C++ documentation carried the paragraph before.
+* The help of `TRexDASelector` says how the reference threshold is rounded. The package rounds a half
+  up, while the 1.x versions rounded it to the even number, so they took one element lower for the grid
+  lengths 6, 14, 22, 30 and so on. The default length 20 is not affected.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

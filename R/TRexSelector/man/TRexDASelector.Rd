@@ -41,12 +41,13 @@ groups have always used the penalty of the last step.
 The methods \code{"BT"}, \code{"NN"} and prior groups evaluate every step on the whole grid of
 correlation thresholds (\code{rho_grid}). The L-loop and the T-loop read the FDP estimate at one of
 them, the reference threshold, which sits at three quarters of the grid: element 0.75 times its
-length, a half rounded up (element 15 of the default 20). The selection then searches all cells of
-stopping time, voting level and threshold, and \code{rho_thresh} is the threshold of the cell it
-takes. The inherited fields \code{fdp_hat_mat}, \code{phi_mat} and \code{phi_prime} therefore
-hold the values at the reference threshold, while \code{r_mat}, \code{v_thresh} and the selection
-belong to \code{rho_thresh}. The values at every threshold are in \code{FDP_hat_array_BT},
-\code{Phi_array_BT} and \code{R_array_BT}.
+length, a half rounded up (element 15 of the default 20). The 1.x versions of the package round a
+half to the even number and take one element lower for the grid lengths 6, 14, 22, 30 and so on.
+The selection then searches all cells of stopping time, voting level and threshold, and
+\code{rho_thresh} is the threshold of the cell it takes. The inherited fields \code{fdp_hat_mat},
+\code{phi_mat} and \code{phi_prime} therefore hold the values at the reference threshold, while
+\code{r_mat}, \code{v_thresh} and the selection belong to \code{rho_thresh}. The values at every
+threshold are in \code{FDP_hat_array_BT}, \code{Phi_array_BT} and \code{R_array_BT}.
 }
 
 \section{FDR limitation of BT, NN and prior groups}{
