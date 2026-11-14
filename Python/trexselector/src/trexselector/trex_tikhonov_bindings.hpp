@@ -192,7 +192,8 @@ inline void bind_trex_tikhonov(py::module& m) {
     py::class_<tik::Lambda2Probe>(m, "Lambda2Probe",
         "One grid value's selection in the full lambda_2 profile of tikhonov_lambda2_power_rule().")
         .def(py::init<>())
-        .def_readonly("lambda2",  &tik::Lambda2Probe::lambda2,  "The lambda_2 this probe ran at.")
+        .def_readonly("lambda2",  &tik::Lambda2Probe::lambda2,  "The lambda_2 this probe ran at: the grid value "
+            "times grid_scale of the result.")
         .def_readonly("selected", &tik::Lambda2Probe::selected, "The selected variables (0-based, ascending).")
         .def_readonly("T_stop",   &tik::Lambda2Probe::T_stop,   "The calibrated stopping time of the run.")
         .def_readonly("seconds",  &tik::Lambda2Probe::seconds,  "Wall-clock seconds of the run.");
@@ -200,7 +201,10 @@ inline void bind_trex_tikhonov(py::module& m) {
     py::class_<tik::Lambda2PowerRuleResult>(m, "Lambda2PowerRuleResult",
         "The full lambda_2 profile and its knee: every grid value's selection, the pick and the boundary flags.")
         .def(py::init<>())
-        .def_readonly("lambda2",      &tik::Lambda2PowerRuleResult::lambda2,      "The chosen lambda_2.")
+        .def_readonly("lambda2",      &tik::Lambda2PowerRuleResult::lambda2,      "The chosen lambda_2, on the "
+            "working scale of the runs. Supplied as lambda_2, it reproduces the selection at the pick.")
+        .def_readonly("grid_scale",   &tik::Lambda2PowerRuleResult::grid_scale,   "The factor between the supplied "
+            "grid and the values the probes ran at: n - 1 under ScalingMode.ZSCORE, 1 otherwise.")
         .def_readonly("index",        &tik::Lambda2PowerRuleResult::index,        "0-based index of the pick into "
             "probes.")
         .def_readonly("probes",       &tik::Lambda2PowerRuleResult::probes,       "Every grid value's selection, "
@@ -221,7 +225,10 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def(py::init<>())
         .def_readonly("ran",               &tik::Lambda2PilotResult::ran,               "A pilot ran (False: lambda_2 "
             "came from the caller or a CV tuner).")
-        .def_readonly("grid",              &tik::Lambda2PilotResult::grid,              "The lambda_2 grid probed.")
+        .def_readonly("grid",              &tik::Lambda2PilotResult::grid,              "The lambda_2 values the "
+            "pilot ran at: pilot_grid times grid_scale.")
+        .def_readonly("grid_scale",        &tik::Lambda2PilotResult::grid_scale,        "The factor between "
+            "pilot_grid and grid: n - 1 under ScalingMode.ZSCORE, 1 otherwise.")
         .def_readonly("counts",            &tik::Lambda2PilotResult::counts,            "Selection count per grid "
             "value "
             "under pilot_statistic.")
@@ -297,7 +304,10 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readwrite("cv_seed",         &tik::TRexTikhonovControlParameter::cv_seed,         "Seed for the CV fold "
             "permutation (-1 = derive from the T-Rex seed).")
         .def_readwrite("pilot_grid",      &tik::TRexTikhonovControlParameter::pilot_grid,      "lambda_2 grid of the "
-            "pilot rule (keep 0 on it so that no penalty is an admissible answer).")
+            "pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values "
+            "times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every "
+            "scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on "
+            "the grid so that no penalty is an admissible answer.")
         .def_readwrite("pilot_K",         &tik::TRexTikhonovControlParameter::pilot_K,         "Pilot experiments per "
             "grid value.")
         .def_readwrite("pilot_T",         &tik::TRexTikhonovControlParameter::pilot_T,         "Pilot T-steps.")
@@ -368,7 +378,9 @@ inline void bind_trex_tikhonov(py::module& m) {
           "with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance "
           "selections of the largest (0 reads the largest selection, ties toward the smallest lambda_2). This is the "
           "reference rule behind TikLambda2Method.PILOT_KNEE at the cost of one selection per grid value; it returns "
-          "every probe's selection. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X "
+          "every probe's selection. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the "
+          "probes run at its values times n - 1, as the pilot rule does. "
+          "X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X "
           "in place and hands it back, so X is unchanged on return. The pick depends on y and lies outside the "
           "fixed-lambda_2 FDR guarantee that each probe carries.");
 

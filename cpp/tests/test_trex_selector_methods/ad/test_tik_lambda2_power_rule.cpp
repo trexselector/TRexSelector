@@ -323,6 +323,48 @@ TEST(TikLambda2PowerRule, Tikhonov_SharedSeedReproduces) {
     }
 }
 
+/** @brief The power rule converts its grid as the pilot rule does: under
+ *  ZSCORE the probes run at the grid times n - 1 and give the profile of
+ *  the L2 run, for the Tikhonov and for the GVS selector. */
+TEST(TikLambda2PowerRule, GridMeansTheSameShrinkageUnderZscore) {
+    using ScalingMode = trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
+    const BlockData d = testDesign();
+    const double n_minus_1 = static_cast<double>(d.X.rows() - 1);
+    Lambda2PowerRuleConfig cfg;
+    cfg.grid = {0.0, 1.0, 10.0};
+
+    auto tik_l2 = centeringControl(d.groups);
+    auto tik_z  = tik_l2;
+    tik_z.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
+    const auto a = tikhonov_lambda2_power_rule(d.X, d.y, 0.1, tik_l2, 2026, cfg);
+    const auto b = tikhonov_lambda2_power_rule(d.X, d.y, 0.1, tik_z, 2026, cfg);
+    EXPECT_DOUBLE_EQ(a.grid_scale, 1.0);
+    EXPECT_DOUBLE_EQ(b.grid_scale, n_minus_1);
+    ASSERT_EQ(a.probes.size(), b.probes.size());
+    for (std::size_t k = 0; k < a.probes.size(); ++k) {
+        EXPECT_DOUBLE_EQ(a.probes[k].lambda2, cfg.grid[k]);
+        EXPECT_DOUBLE_EQ(b.probes[k].lambda2, cfg.grid[k] * n_minus_1);
+        EXPECT_EQ(a.probes[k].selected, b.probes[k].selected) << "grid value " << cfg.grid[k];
+    }
+    EXPECT_EQ(a.index, b.index);
+    EXPECT_DOUBLE_EQ(b.lambda2, a.lambda2 * n_minus_1);
+
+    gvs::TRexGVSControlParameter gvs_l2;
+    gvs_l2.prior_groups = d.groups;
+    gvs_l2.trex_ctrl    = baseControl();
+    gvs_l2.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    auto gvs_z = gvs_l2;
+    gvs_z.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
+    const auto ga = gvs_lambda2_power_rule(d.X, d.y, 0.1, gvs_l2, 2026, cfg);
+    const auto gb = gvs_lambda2_power_rule(d.X, d.y, 0.1, gvs_z, 2026, cfg);
+    EXPECT_DOUBLE_EQ(gb.grid_scale, n_minus_1);
+    ASSERT_EQ(ga.probes.size(), gb.probes.size());
+    for (std::size_t k = 0; k < ga.probes.size(); ++k) {
+        EXPECT_DOUBLE_EQ(gb.probes[k].lambda2, cfg.grid[k] * n_minus_1);
+        EXPECT_EQ(ga.probes[k].selected, gb.probes[k].selected) << "grid value " << cfg.grid[k];
+    }
+}
+
 /** @brief The probes share their dummies through the seed. A negative seed
  *  draws fresh dummies per probe and is refused by both rules. */
 TEST(TikLambda2PowerRule, NegativeSeedIsRefused) {
@@ -512,6 +554,50 @@ TEST(TikLambda2Pilot, MainRunEqualsFixedLambda2Run) {
         EXPECT_EQ(pilot.T_stop, ref.T_stop) << "shared = " << shared;
         EXPECT_TRUE(pilot.phi.isApprox(ref.phi)) << "shared = " << shared;
     }
+}
+
+/** @brief The grid is stated for columns of unit L2 norm. Under ZSCORE the
+ *  pilot runs at the grid times n - 1, so the profile over the grid and the
+ *  pick are those of the L2 run, and the pick is reported on the working
+ *  scale. */
+TEST(TikLambda2Pilot, GridMeansTheSameShrinkageUnderZscore) {
+    using ScalingMode = trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
+    const BlockData d = testDesign();
+    const double n_minus_1 = static_cast<double>(d.X.rows() - 1);
+
+    auto ctrl_l2 = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto ctrl_z  = ctrl_l2;
+    ctrl_z.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
+    const SelectorRun l2 = runSelector(d, ctrl_l2, 2026);
+    const SelectorRun z  = runSelector(d, ctrl_z, 2026);
+
+    EXPECT_DOUBLE_EQ(l2.pilot.grid_scale, 1.0);
+    EXPECT_DOUBLE_EQ(z.pilot.grid_scale, n_minus_1);
+    ASSERT_EQ(l2.pilot.grid.size(), kPilotGrid.size());
+    ASSERT_EQ(z.pilot.grid.size(), kPilotGrid.size());
+    for (std::size_t g = 0; g < kPilotGrid.size(); ++g) {
+        EXPECT_DOUBLE_EQ(l2.pilot.grid[g], kPilotGrid[g]);
+        EXPECT_DOUBLE_EQ(z.pilot.grid[g], kPilotGrid[g] * n_minus_1);
+    }
+    EXPECT_EQ(z.pilot.counts, l2.pilot.counts);
+    EXPECT_EQ(z.pilot.index, l2.pilot.index);
+    EXPECT_DOUBLE_EQ(z.pilot.lambda2, z.pilot.grid[z.pilot.index]);
+    EXPECT_DOUBLE_EQ(z.lambda2, l2.lambda2 * n_minus_1);
+    EXPECT_EQ(z.selected, l2.selected);
+
+    // The pick is on the working scale: supplied as lambda_2 it gives the run.
+    auto fixed = centeringControl(d.groups);
+    fixed.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
+    fixed.lambda_2 = z.lambda2;
+    EXPECT_EQ(runSelector(d, fixed, 2026).selected, z.selected);
+}
+
+/** @brief The factor between a grid and the working scale. */
+TEST(TikLambda2Pilot, ScaleFactor) {
+    EXPECT_DOUBLE_EQ(lambda2_scale_factor(false, 100), 1.0);
+    EXPECT_DOUBLE_EQ(lambda2_scale_factor(true, 100), 99.0);
+    EXPECT_DOUBLE_EQ(lambda2_scale_factor(true, 1), 1.0);
+    EXPECT_DOUBLE_EQ(lambda2_scale_factor(true, 0), 1.0);
 }
 
 /** @brief The same seed reproduces the pilot and the selection. */

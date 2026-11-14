@@ -30,6 +30,13 @@
 * `trex_biobank_control()` gains `target_FDR_trex`, the target FDR level of the fallback T-Rex selector
   (default 0.1), as in C++ and Python. `tFDR` of the constructor defaults to `NULL` and still works: a
   supplied value replaces the target of the control.
+* `TRexTikhonovSelector` and `trex_tikhonov_lambda2_power_rule()` read their `lambda_2` grid
+  (`pilot_grid`, `grid`) as values for columns of unit norm. Under `scaling_mode = "ZSCORE"` they run at
+  the grid times `n - 1`, as the cross-validation rules already returned their pick. Up to 2.0.1 the
+  grid was used as it was, so under `"ZSCORE"` the default grid meant a shrinkage `n - 1` times weaker
+  than under `"L2"`. Selections with `"ZSCORE"` and a grid can differ from 2.0.1, those with the default
+  `"L2"` do not. The pick is reported on the working scale, and the pilot record and the result of the
+  power rule gain `grid_scale`. A single supplied `lambda_2` is used as it is, as before.
 * `TRexSPCASelector` takes `tFDR` in [0, 1], as the other selectors do and as C++ and Python do. Up to
   2.0.1 it refused 0 and 1. An `M` above `min(n, p)` is refused at construction. Up to 2.0.1 that error
   came in `select()`.

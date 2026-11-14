@@ -201,8 +201,13 @@ struct Lambda2PilotResult {
      *  CV tuner). */
     bool ran = false;
 
-    /** @brief The grid, ascending and de-duplicated. */
+    /** @brief The lambda_2 values the pilot ran at, ascending and
+     *  de-duplicated: `pilot_grid` times `grid_scale`. */
     std::vector<double> grid;
+
+    /** @brief The factor between `pilot_grid` and `grid`: n - 1 under
+     *  ScalingMode::ZSCORE, 1 otherwise. */
+    double grid_scale = 1.0;
 
     /** @brief The count the pick was read off (MAJORITY or CALIBRATED),
      *  per grid point. */
@@ -348,9 +353,11 @@ struct TRexTikhonovControlParameter {
 
     // ----- Pilot rule (lambda2_method = PILOT_KNEE) -----
 
-    /** @brief lambda_2 candidates on the WORKING column scale (the scale of
-     *  `lambda_2`; the pilot runs the solver at these values verbatim, so no
-     *  (n - 1) ZSCORE conversion applies, unlike the CV tuners). Sorted and
+    /** @brief lambda_2 candidates, stated for columns of unit L2 norm.
+     *  Under ScalingMode::ZSCORE the pilot runs at these values times n - 1,
+     *  as the CV tuners return their pick, so one grid means the same
+     *  shrinkage under every scaling mode. The pick is reported on the
+     *  working scale and can be supplied as `lambda_2`. Sorted and
      *  de-duplicated internally. Keep 0 on it so that "no penalty" is an
      *  admissible answer: a prior that misfits the truth loses power
      *  monotonically and the rule then switches it off. Default:

@@ -481,3 +481,43 @@ test_that("the power rule and the pilot rule have one default grid", {
   expect_identical(grid, c(0, 1, 3, 10, 30, 100, 300, 1000, 3000))
 })
 
+test_that("a lambda_2 grid means the same shrinkage under ZSCORE as under L2", {
+  d <- .make_tik_data()
+  n <- nrow(d$X)
+  grid <- c(0, 1, 10)
+  pilot <- function(mode) {
+    sel <- TRexTikhonovSelector$new(d$X + 0, d$y, tFDR = 0.2, seed = 5, verbose = FALSE,
+                                    tik_control = trex_tikhonov_control(
+                                      penalty_structure = "GROUP_CENTERING", prior_groups = d$groups,
+                                      pilot_grid = grid, pilot_K = 5),
+                                    control = trex_control(K = 10, scaling_mode = mode))
+    sel$select()
+    sel
+  }
+  l2 <- pilot("L2")
+  z <- pilot("ZSCORE")
+  expect_identical(l2$lambda2_pilot$grid_scale, 1)
+  expect_identical(z$lambda2_pilot$grid_scale, n - 1)
+  expect_equal(l2$lambda2_pilot$grid, grid)
+  expect_equal(z$lambda2_pilot$grid, grid * (n - 1))
+  expect_identical(z$lambda2_pilot$counts, l2$lambda2_pilot$counts)
+  expect_identical(z$lambda2_pilot$index, l2$lambda2_pilot$index)
+  expect_equal(z$lambda2_used, l2$lambda2_used * (n - 1))
+  expect_identical(z$selected_indices, l2$selected_indices)
+
+  rule <- function(mode) {
+    trex_tikhonov_lambda2_power_rule(
+      d$X + 0, d$y, tFDR = 0.2, seed = 5, grid = grid,
+      tik_control = trex_tikhonov_control(penalty_structure = "GROUP_CENTERING",
+                                          prior_groups = d$groups),
+      control = trex_control(K = 10, scaling_mode = mode))
+  }
+  a <- rule("L2")
+  b <- rule("ZSCORE")
+  expect_identical(a$grid_scale, 1)
+  expect_identical(b$grid_scale, n - 1)
+  expect_equal(b$grid, grid * (n - 1))
+  expect_identical(b$counts, a$counts)
+  expect_identical(b$selected, a$selected)
+})
+

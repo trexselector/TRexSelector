@@ -533,3 +533,52 @@ def test_the_core_power_rule_refuses_a_negative_seed():
     res = core.tikhonov_lambda2_power_rule(X, y, 0.3, tik, base, 3)
     assert [pr.lambda2 for pr in res.probes] == list(tik.pilot_grid)
 
+
+def test_a_lambda_2_grid_means_the_same_shrinkage_under_zscore():
+    """Under ZSCORE the pilot and the power rule run at the grid times n - 1."""
+    X, y, groups = _grouped_data()
+    n = X.shape[0]
+    grid = [0.0, 1.0, 10.0]
+
+    def controls(mode):
+        tik = tsn.TRexTikhonovControlParameter()
+        tik.penalty_structure = tsn.TikPenaltyStructure.GROUP_CENTERING
+        tik.prior_groups = list(groups)
+        tik.pilot_grid = grid
+        tik.pilot_K = 5
+        base = tsn.TRexControlParameter()
+        base.K = 10
+        base.scaling_mode = mode
+        return tik, base
+
+    def pilot(mode):
+        tik, base = controls(mode)
+        sel = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tFDR=0.2, tik_control=tik,
+                                       trex_control=base, seed=5, verbose=False)
+        selected = np.array(sel.select().selected_var)
+        return sel, selected
+
+    l2, sel_l2 = pilot(tsn.ScalingMode.L2)
+    z, sel_z = pilot(tsn.ScalingMode.ZSCORE)
+    assert l2.lambda2_pilot.grid_scale == 1.0
+    assert z.lambda2_pilot.grid_scale == n - 1
+    assert list(l2.lambda2_pilot.grid) == grid
+    assert np.allclose(z.lambda2_pilot.grid, np.array(grid) * (n - 1))
+    assert list(z.lambda2_pilot.counts) == list(l2.lambda2_pilot.counts)
+    assert z.lambda2_pilot.index == l2.lambda2_pilot.index
+    assert np.isclose(z.lambda2_used, l2.lambda2_used * (n - 1))
+    assert np.array_equal(sel_z, sel_l2)
+
+    def rule(mode):
+        tik, base = controls(mode)
+        return tsn.tikhonov_lambda2_power_rule(np.asfortranarray(X.copy()), y, tFDR=0.2, tik_control=tik,
+                                               trex_control=base, seed=5, grid=grid)
+
+    a = rule(tsn.ScalingMode.L2)
+    b = rule(tsn.ScalingMode.ZSCORE)
+    assert a.grid_scale == 1.0
+    assert b.grid_scale == n - 1
+    assert np.allclose([pr.lambda2 for pr in b.probes], np.array(grid) * (n - 1))
+    assert list(b.counts()) == list(a.counts())
+    assert list(b.selection()) == list(a.selection())
+

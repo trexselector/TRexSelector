@@ -103,7 +103,10 @@ defaults).}
 
     \item{\code{lambda2_pilot}}{Record of the lambda_2 pilot rule of the last
 \code{select()} (\code{ran == FALSE} when no pilot ran): the
-\code{grid}, the \code{counts} the pick was read off, the
+\code{grid} of the values the pilot ran at (\code{pilot_grid} times
+\code{grid_scale}, which is \code{n - 1} under
+\code{scaling_mode = "ZSCORE"} and 1 otherwise), the \code{counts}
+the pick was read off, the
 per-grid-point curves over the pilot stopping times
 (\code{curve_majority}, \code{curve_soft}; G x T matrices), the
 \code{calibrated} and \code{group_majority} counts, the 1-based

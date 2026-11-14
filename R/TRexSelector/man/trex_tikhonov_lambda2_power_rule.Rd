@@ -35,10 +35,11 @@ overwritten per probe, everything else is shared by every probe.}
 \item{seed}{Selector seed, the same for every probe (default: 0). A
 negative seed would draw fresh dummies per probe and is refused.}
 
-\item{grid}{lambda_2 candidates on the solver scale (default
+\item{grid}{lambda_2 candidates, stated for columns of unit norm (default
 \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}), sorted and
-de-duplicated. Keep 0 on it so that "no penalty" is an admissible
-answer.}
+de-duplicated. Under \code{scaling_mode = "ZSCORE"} the probes run at
+these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
+grid so that "no penalty" is an admissible answer.}
 
 \item{knee_tolerance}{Selections below the largest count that still
 count as "on the plateau" (default: 1); 0 reads the largest selection,
@@ -48,9 +49,12 @@ ties toward the smallest lambda_2.}
 \code{FALSE}).}
 }
 \value{
-A list: \code{lambda2} (the pick), \code{index} (1-based, into
+A list: \code{lambda2} (the pick, on the working scale: supplied as
+\code{lambda_2} it reproduces the selection), \code{index} (1-based, into
 \code{grid}), \code{selected} (the 1-based selection at the pick),
-\code{grid} (ascending, de-duplicated), \code{counts} (selection sizes
+\code{grid} (the values the probes ran at, ascending and de-duplicated),
+\code{grid_scale} (the factor between the supplied grid and \code{grid},
+\code{n - 1} under \code{"ZSCORE"} and 1 otherwise), \code{counts} (selection sizes
 per grid value), \code{probes} (one list per grid value with
 \code{lambda2}, \code{selected}, \code{T_stop} and \code{seconds}),
 \code{max_selected}, \code{n_ties} (grid values within the tolerance

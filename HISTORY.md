@@ -16,6 +16,34 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### A lambda_2 grid means the same shrinkage under every scaling mode
+
+Step 4 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, finding 8).
+
+- The fact. `scaling_mode` of the base control has L2 (default, columns of unit norm), ZSCORE (columns
+  of unit variance, squared norm n - 1) and NONE. The fit term is n - 1 times larger under ZSCORE, so
+  the same lambda_2 shrinks n - 1 times less there. The cross-validation rules multiply their pick by
+  n - 1 for this reason. The grid of the pilot rule and the grid of the power rule were used as they
+  were. Probe (n = 100): the pilot counts 13 13 11 10 at the grid values 0, 1, 3, 10 under L2 came two
+  decades later under ZSCORE (13 up to 100, then 11 and 10 at 300 and 1000), and with the grid times
+  n - 1 the two profiles were equal. Under ZSCORE the default grid therefore reached a shrinkage of
+  3000 / (n - 1) only.
+- The decision (Fabian asked for a proposal and agreed, also to the scope). A grid is stated for columns
+  of unit norm. The pilot rule and the two power rules (`tikhonov_lambda2_power_rule()`,
+  `gvs_lambda2_power_rule()`) run at the grid times `lambda2_scale_factor()`, which is n - 1 under
+  ZSCORE and 1 otherwise. Both rules are converted, because the pilot rule is the cheap version of the
+  power rule and the two would disagree under ZSCORE otherwise. The pick is reported on the working
+  scale, as the cross-validation rules report theirs, so it can be supplied as `lambda_2` and reproduces
+  the run. A single supplied `lambda_2` is used as it is, as before.
+- The records. `Lambda2PilotResult::grid` and the probes of the power rule hold the values the runs
+  were made at, and both results gain `grid_scale`, the factor. R and Python carry the field.
+- What changes for a user. Nothing under the default L2 and under NONE. Under ZSCORE a selection that
+  resolves lambda_2 by the pilot rule, and a power rule, now see the grid they would see under L2.
+- Tests. C++ pins that the pilot counts, the pick and the selection under ZSCORE equal those under L2,
+  that the pick supplied as `lambda_2` gives the run, the same for the power rule of the Tikhonov and
+  of the GVS selector, and the factor. R and Python pin the same on their surface. C++ tests 747 of
+  747, R tests 2,084, Python tests 773.
+
 #### The power rule refuses a negative seed and has the default grid of the pilot rule
 
 Step 3 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 6 and 7).

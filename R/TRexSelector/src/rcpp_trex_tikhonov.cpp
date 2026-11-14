@@ -310,6 +310,7 @@ Rcpp::List trex_tikhonov_get_lambda2_pilot_result(
     return Rcpp::List::create(
         Rcpp::Named("ran")               = r.ran,
         Rcpp::Named("grid")              = Rcpp::wrap(r.grid),
+        Rcpp::Named("grid_scale")        = r.grid_scale,
         Rcpp::Named("counts")            = counts(r.counts),
         Rcpp::Named("curve_majority")    = rows_to_matrix(r.curve_majority),
         Rcpp::Named("curve_soft")        = rows_to_matrix(r.curve_soft),
@@ -384,6 +385,7 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
         Rcpp::Named("index")        = static_cast<int>(r.index) + 1,  // 1-based
         Rcpp::Named("selected")     = one_based(r.selection()),
         Rcpp::Named("grid")         = lambdas,
+        Rcpp::Named("grid_scale")   = r.grid_scale,
         Rcpp::Named("counts")       = counts,
         Rcpp::Named("probes")       = probes,
         Rcpp::Named("max_selected") = static_cast<double>(r.pick.max_selected),

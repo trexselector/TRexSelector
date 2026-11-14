@@ -87,7 +87,9 @@ namespace trex_tikhonov {
 struct Lambda2PowerRuleConfig {
 
     /** @brief lambda_2 candidates (>= 0, finite; sorted ascending and
-     *  de-duplicated by the driver). Include 0 when "no penalty" must be
+     *  de-duplicated by the driver), stated for columns of unit L2 norm.
+     *  Under ScalingMode::ZSCORE the probes run at these values times
+     *  n - 1, as the pilot rule does. Include 0 when "no penalty" must be
      *  an admissible answer — a prior that misfits the truth loses power
      *  monotonically and the rule then switches it off. Default:
      *  `default_lambda2_grid()`, the grid of the pilot rule. */
@@ -106,7 +108,8 @@ struct Lambda2PowerRuleConfig {
 /** @brief One grid point's selection. */
 struct Lambda2Probe {
 
-    /** @brief The lambda_2 this probe ran at. */
+    /** @brief The lambda_2 this probe ran at: the grid value times
+     *  `Lambda2PowerRuleResult::grid_scale`. */
     double lambda2 = 0.0;
 
     /** @brief The selected original variables (0-based, ascending). */
@@ -122,8 +125,13 @@ struct Lambda2Probe {
 /** @brief The profile and the pick. */
 struct Lambda2PowerRuleResult {
 
-    /** @brief The chosen lambda_2. */
+    /** @brief The chosen lambda_2, on the working scale of the runs. Supplied
+     *  as `lambda_2`, it reproduces the selection at the pick. */
     double lambda2 = 0.0;
+
+    /** @brief The factor between the grid of the config and the values the
+     *  probes ran at: n - 1 under ScalingMode::ZSCORE, 1 otherwise. */
+    double grid_scale = 1.0;
 
     /** @brief Index of the pick into `probes`. */
     std::size_t index = 0;
@@ -193,16 +201,22 @@ inline void require_shared_seed(int seed, const char* who)
  *                selection at the given lambda_2 (same data, same seed) and
  *                returning at least `selected` and `T_stop`; `lambda2` and
  *                `seconds` are filled in here.
+ * @param grid_scale The factor from the grid to the working scale of the
+ *                runs (lambda2_scale_factor()). The probe receives the grid
+ *                value times this factor. Default 1.
  */
 template <typename Probe>
-Lambda2PowerRuleResult run_lambda2_power_rule(const Lambda2PowerRuleConfig& cfg, Probe&& probe)
+Lambda2PowerRuleResult run_lambda2_power_rule(const Lambda2PowerRuleConfig& cfg, Probe&& probe,
+                                              double grid_scale = 1.0)
 {
     const std::vector<double> grid = lambda2_power_rule_grid(cfg);
     const auto t_all = std::chrono::steady_clock::now();
 
     Lambda2PowerRuleResult res;
+    res.grid_scale = grid_scale;
     res.probes.reserve(grid.size());
-    for (const double l2 : grid) {
+    for (const double grid_value : grid) {
+        const double l2 = grid_value * grid_scale;
         const auto t0 = std::chrono::steady_clock::now();
         Lambda2Probe pr = probe(l2);
         pr.lambda2 = l2;
@@ -252,6 +266,10 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::Matr
                                                           bool verbose = false)
 {
     require_shared_seed(seed, "tikhonov_lambda2_power_rule");
+    const double grid_scale = lambda2_scale_factor(
+        ctrl.trex_ctrl.scaling_mode ==
+            trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode::ZSCORE,
+        static_cast<std::size_t>(X.rows()));
     return run_lambda2_power_rule(cfg, [&](double l2) {
         ctrl.lambda_2 = l2;
         TRexTikhonovSelector selector(X, y, tFDR, ctrl, seed, verbose);
@@ -260,7 +278,7 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::Matr
         pr.selected = selector.getSelectedIndices();
         pr.T_stop   = selector.getTStop();
         return pr;
-    });
+    }, grid_scale);
 }
 
 /** @brief The rule on owned matrices: X and y are copied once, the copies
@@ -297,6 +315,10 @@ inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd>
                                                      bool verbose = false)
 {
     require_shared_seed(seed, "gvs_lambda2_power_rule");
+    const double grid_scale = lambda2_scale_factor(
+        ctrl.trex_ctrl.scaling_mode ==
+            trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode::ZSCORE,
+        static_cast<std::size_t>(X.rows()));
     return run_lambda2_power_rule(cfg, [&](double l2) {
         ctrl.lambda_2 = l2;
         trex_gvs::TRexGVSSelector selector(X, y, tFDR, ctrl, seed, verbose);
@@ -305,7 +327,7 @@ inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd>
         pr.selected = selector.getSelectedIndices();
         pr.T_stop   = selector.getGVSResult().T_stop;
         return pr;
-    });
+    }, grid_scale);
 }
 
 /** @brief The GVS rule on owned matrices: X and y are copied once. */

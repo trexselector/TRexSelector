@@ -503,10 +503,8 @@ double TRexTikhonovSelector::computeLambda2() const {
     // needs the (n - 1) factor — same conversion as the IEN-geometry
     // methods in TRexGVSSelector::computeLambda2(). L2 and NONE (user-managed
     // design, unit-L2-commensurate by contract) need no factor.
-    const double scale_adjust =
-        (trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE && n_ > 1)
-            ? static_cast<double>(n_ - 1)
-            : 1.0;
+    const double scale_adjust = lambda2_scale_factor(
+        trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE, n_);
 
     switch (trex_tik_ctrl_.lambda2_method) {
         case TikLambda2Method::CV_1SE_IEN_CCD:
@@ -628,7 +626,13 @@ double TRexTikhonovSelector::runLambda2Pilot() {
     const std::size_t half_n  = (n_ + 1) / 2;   // ceil(n / 2), the T-loop's cap
     const std::size_t T_pilot =
         std::max<std::size_t>(1, std::min({c.pilot_T, L_0, half_n}));
-    const std::vector<double> grid   = validate_lambda2_grid(c.pilot_grid);
+    // The grid is stated for columns of unit L2 norm. The pilot runs on the
+    // working scale, as the CV rules return their pick: times n - 1 under
+    // ZSCORE, so one grid means the same shrinkage in every scaling mode.
+    const double grid_scale = lambda2_scale_factor(
+        trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE, n_);
+    std::vector<double> grid = validate_lambda2_grid(c.pilot_grid);
+    for (double& value : grid) { value *= grid_scale; }
     const Eigen::VectorXd     v_grid = createVotingGrid(K_pilot);
     const std::size_t tag = c.pilot_shared_dummies ? pilotDummyTag()
                                                    : kPilotDummyTag;
@@ -636,8 +640,9 @@ double TRexTikhonovSelector::runLambda2Pilot() {
     const auto t_all = std::chrono::steady_clock::now();
 
     Lambda2PilotResult res;
-    res.ran       = true;
-    res.grid      = grid;
+    res.ran        = true;
+    res.grid       = grid;
+    res.grid_scale = grid_scale;
     res.K_pilot   = K_pilot;
     res.T_pilot   = T_pilot;
     res.L_0       = L_0;

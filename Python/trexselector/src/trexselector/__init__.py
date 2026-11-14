@@ -547,6 +547,11 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
     depends on y and lies outside the fixed-lambda_2 FDR guarantee that each
     probe carries.
 
+    ``grid`` is stated for columns of unit norm. Under ``ScalingMode.ZSCORE``
+    the probes run at its values times n - 1, as the pilot rule does, and the
+    pick is reported on that working scale (``grid_scale`` of the result holds
+    the factor).
+
     ``X`` and ``y`` are converted to Fortran-ordered float64 arrays once (no
     copy when they already are) and accessed zero-copy: every probe normalizes
     X in place and hands it back, so X is unchanged on return. ``tik_control``

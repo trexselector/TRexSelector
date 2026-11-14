@@ -160,7 +160,10 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 
     #' @field lambda2_pilot Record of the lambda_2 pilot rule of the last
     #'   \code{select()} (\code{ran == FALSE} when no pilot ran): the
-    #'   \code{grid}, the \code{counts} the pick was read off, the
+    #'   \code{grid} of the values the pilot ran at (\code{pilot_grid} times
+    #'   \code{grid_scale}, which is \code{n - 1} under
+    #'   \code{scaling_mode = "ZSCORE"} and 1 otherwise), the \code{counts}
+    #'   the pick was read off, the
     #'   per-grid-point curves over the pilot stopping times
     #'   (\code{curve_majority}, \code{curve_soft}; G x T matrices), the
     #'   \code{calibrated} and \code{group_majority} counts, the 1-based
@@ -207,19 +210,23 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #'   \code{\link{TRexTikhonovSelector}}.
 #' @param seed Selector seed, the same for every probe (default: 0). A
 #'   negative seed would draw fresh dummies per probe and is refused.
-#' @param grid lambda_2 candidates on the solver scale (default
+#' @param grid lambda_2 candidates, stated for columns of unit norm (default
 #'   \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}), sorted and
-#'   de-duplicated. Keep 0 on it so that "no penalty" is an admissible
-#'   answer.
+#'   de-duplicated. Under \code{scaling_mode = "ZSCORE"} the probes run at
+#'   these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
+#'   grid so that "no penalty" is an admissible answer.
 #' @param knee_tolerance Selections below the largest count that still
 #'   count as "on the plateau" (default: 1); 0 reads the largest selection,
 #'   ties toward the smallest lambda_2.
 #' @param verbose Whether the probes print their progress (default:
 #'   \code{FALSE}).
 #'
-#' @return A list: \code{lambda2} (the pick), \code{index} (1-based, into
+#' @return A list: \code{lambda2} (the pick, on the working scale: supplied as
+#'   \code{lambda_2} it reproduces the selection), \code{index} (1-based, into
 #'   \code{grid}), \code{selected} (the 1-based selection at the pick),
-#'   \code{grid} (ascending, de-duplicated), \code{counts} (selection sizes
+#'   \code{grid} (the values the probes ran at, ascending and de-duplicated),
+#'   \code{grid_scale} (the factor between the supplied grid and \code{grid},
+#'   \code{n - 1} under \code{"ZSCORE"} and 1 otherwise), \code{counts} (selection sizes
 #'   per grid value), \code{probes} (one list per grid value with
 #'   \code{lambda2}, \code{selected}, \code{T_stop} and \code{seconds}),
 #'   \code{max_selected}, \code{n_ties} (grid values within the tolerance

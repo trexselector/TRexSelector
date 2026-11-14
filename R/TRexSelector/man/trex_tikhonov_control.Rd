@@ -90,10 +90,14 @@ Must be finite.}
 derives it from the selector seed, \code{>= 0} overrides it for CV
 folds only.}
 
-\item{pilot_grid}{Pilot rule: lambda_2 candidates on the working column
-scale (default \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}),
-sorted and de-duplicated internally. Keep 0 on it so that "no
-penalty" is an admissible answer.}
+\item{pilot_grid}{Pilot rule: lambda_2 candidates, stated for columns of
+unit norm (default \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}),
+sorted and de-duplicated internally. Under
+\code{scaling_mode = "ZSCORE"} the pilot runs at these values times
+\code{n - 1}, as the CV rules return their pick, so one grid means the
+same shrinkage under every scaling mode. The pick is reported on the
+working scale and can be supplied as \code{lambda_2}. Keep 0 on the
+grid so that "no penalty" is an admissible answer.}
 
 \item{pilot_K}{Pilot rule: pilot experiments per grid point (default:
 10; at least 2, capped at \code{K} of \code{\link{trex_control}}).}

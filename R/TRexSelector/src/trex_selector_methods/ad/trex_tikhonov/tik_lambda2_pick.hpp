@@ -165,6 +165,19 @@ inline std::vector<double> default_lambda2_grid()
 }
 
 /**
+ * @brief The factor between a lambda_2 for columns of unit L2 norm and the
+ *        working scale of a run: n - 1 under the z-score scaling, whose
+ *        columns have the squared norm n - 1, and 1 otherwise.
+ *
+ * @param zscore The run standardizes with ScalingMode::ZSCORE.
+ * @param n      Number of observations.
+ */
+inline double lambda2_scale_factor(bool zscore, std::size_t n)
+{
+    return (zscore && n > 1) ? static_cast<double>(n - 1) : 1.0;
+}
+
+/**
  * @brief The validated, ascending, de-duplicated lambda_2 grid.
  *
  * @throws std::invalid_argument on an empty grid or a negative / non-finite

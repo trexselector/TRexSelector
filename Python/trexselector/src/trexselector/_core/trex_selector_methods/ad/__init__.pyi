@@ -827,7 +827,12 @@ class Lambda2PilotResult:
     @property
     def grid(self) -> list[float]:
         """
-        The lambda_2 grid probed.
+        The lambda_2 values the pilot ran at: pilot_grid times grid_scale.
+        """
+    @property
+    def grid_scale(self) -> float:
+        """
+        The factor between pilot_grid and grid: n - 1 under ScalingMode.ZSCORE, 1 otherwise.
         """
     @property
     def group_majority(self) -> list[int]:
@@ -894,6 +899,11 @@ class Lambda2PowerRuleResult:
         The pick is the last grid value.
         """
     @property
+    def grid_scale(self) -> float:
+        """
+        The factor between the supplied grid and the values the probes ran at: n - 1 under ScalingMode.ZSCORE, 1 otherwise.
+        """
+    @property
     def index(self) -> int:
         """
         0-based index of the pick into probes.
@@ -901,7 +911,7 @@ class Lambda2PowerRuleResult:
     @property
     def lambda2(self) -> float:
         """
-        The chosen lambda_2.
+        The chosen lambda_2, on the working scale of the runs. Supplied as lambda_2, it reproduces the selection at the pick.
         """
     @property
     def pick(self) -> Lambda2PickInfo:
@@ -932,7 +942,7 @@ class Lambda2Probe:
     @property
     def lambda2(self) -> float:
         """
-        The lambda_2 this probe ran at.
+        The lambda_2 this probe ran at: the grid value times grid_scale of the result.
         """
     @property
     def seconds(self) -> float:
@@ -2549,7 +2559,7 @@ class TRexTikhonovControlParameter:
     @property
     def pilot_grid(self) -> list[float]:
         """
-        lambda_2 grid of the pilot rule (keep 0 on it so that no penalty is an admissible answer).
+        lambda_2 grid of the pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on the grid so that no penalty is an admissible answer.
         """
     @pilot_grid.setter
     def pilot_grid(self, arg0: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex]) -> None:
@@ -2773,7 +2783,7 @@ def normalize_design(X: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, 
     """
 def tikhonov_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
     """
-    The knee of the full lambda_2 profile of the Tikhonov T-Rex: one FDR-controlled selection per grid value with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest (0 reads the largest selection, ties toward the smallest lambda_2). This is the reference rule behind TikLambda2Method.PILOT_KNEE at the cost of one selection per grid value; it returns every probe's selection. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back, so X is unchanged on return. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries.
+    The knee of the full lambda_2 profile of the Tikhonov T-Rex: one FDR-controlled selection per grid value with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest (0 reads the largest selection, ties toward the smallest lambda_2). This is the reference rule behind TikLambda2Method.PILOT_KNEE at the cost of one selection per grid value; it returns every probe's selection. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1, as the pilot rule does. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back, so X is unchanged on return. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries.
     """
 AR1: DAMethod  # value = <DAMethod.AR1: 0>
 ActiveSet: SPCAMode  # value = <SPCAMode.ActiveSet: 0>
