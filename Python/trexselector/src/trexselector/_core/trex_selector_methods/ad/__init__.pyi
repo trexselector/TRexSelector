@@ -1061,11 +1061,13 @@ class PilotStatistic:
         ...
 class SPCAMode:
     """
+    Assembly of the sparse loading vector from the selected set.
+    
     Members:
     
-      ActiveSet : Ridge regression on the T-Rex active set to compute loadings.
+      ActiveSet : Ridge regression of the component on the selected variables, normalized to unit length. The T-Rex PCA of the paper.
     
-      Thresholded : Keep and normalize the top |A| ordinary PCA loadings.
+      Thresholded : The largest ordinary PCA loadings in absolute value, as many as variables were selected, normalized to unit length. The T-Rex Thresholded PCA of the paper.
     """
     ActiveSet: typing.ClassVar[SPCAMode]  # value = <SPCAMode.ActiveSet: 0>
     Thresholded: typing.ClassVar[SPCAMode]  # value = <SPCAMode.Thresholded: 1>
@@ -2116,14 +2118,14 @@ class TRexGVSSelector(TRexSelector):
         """
 class TRexSPCAControlParameter:
     """
-    Algorithmic control parameters for the T-Rex Sparse PCA selector.
+    Control parameters of the T-Rex sparse PCA selector.
     """
     def __init__(self) -> None:
         ...
     @property
     def en_solver(self) -> ENSolverType:
         """
-        EN solver variant for the per-PC GVS(EN) sub-selector (TENET or TENET_AUG; default TENET_AUG).
+        Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG). TENET_AUG is the elastic net as a LASSO on row-augmented data, the form of the paper. TENET is the elastic net on the Gram matrix. TCDENET (coordinate descent) is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TENET. The three solve the same elastic net problem.
         """
     @en_solver.setter
     def en_solver(self, arg0: ENSolverType) -> None:
@@ -2131,7 +2133,15 @@ class TRexSPCAControlParameter:
     @property
     def gvs_ctrl(self) -> TRexGVSControlParameter:
         """
-        TRexGVSControlParameter forwarded to each per-PC GVS run. gvs_ctrl.gvs_type must stay GVSType.EN (T-Rex SPCA is defined on the elastic net, IEN raises ValueError). Set gvs_ctrl.lambda_2 > 0 to bypass auto-determination. The base T-Rex parameters are configured via gvs_ctrl.trex_ctrl.
+        Control of the T-Rex+GVS run of each component (TRexGVSControlParameter), with the base control in gvs_ctrl.trex_ctrl.
+        
+        gvs_ctrl.gvs_type must be GVSType.EN (the default). The selector raises ValueError for IEN, because the method is defined on the elastic net.
+        
+        gvs_ctrl.en_solver and gvs_ctrl.trex_ctrl.solver_type have no effect: the selector replaces them by en_solver of this control.
+        
+        gvs_ctrl.lambda_2: a negative value (default: -1) lets the rule gvs_ctrl.lambda2_method choose it, 0 is the T-LASSO without the ridge part, and a positive value is used as it is. A supplied value refers to the scale of the standardized columns. Under ScalingMode.ZSCORE the columns have the squared norm n - 1, so the same shrinkage needs the value times n - 1.
+        
+        gvs_ctrl.lambda2_method: CV_1SE_CCD (default), CV_MIN_CCD, CV_1SE_SVD or CV_MIN_SVD. The selector raises ValueError for the rules of the informed elastic net (CV_*_IEN_CCD and CV_*_TIK_SVD).
         """
     @gvs_ctrl.setter
     def gvs_ctrl(self, arg0: TRexGVSControlParameter) -> None:
@@ -2139,7 +2149,7 @@ class TRexSPCAControlParameter:
     @property
     def lambda2_ridge_loadings(self) -> float:
         """
-        Ridge penalty for ActiveSet loading assembly (default: 1e-6).
+        Ridge penalty of the loading assembly in ActiveSet mode (default: 1e-6). Not used in Thresholded mode.
         """
     @lambda2_ridge_loadings.setter
     def lambda2_ridge_loadings(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -2147,21 +2157,21 @@ class TRexSPCAControlParameter:
     @property
     def mode(self) -> SPCAMode:
         """
-        Sparse loading strategy (default: ActiveSet).
+        Assembly of the sparse loading vectors (default: ActiveSet).
         """
     @mode.setter
     def mode(self, arg0: SPCAMode) -> None:
         ...
 class TRexSPCAResult:
     """
-    Container for the T-Rex Sparse PCA output.
+    Result of the T-Rex sparse PCA selector. A component without a selected variable has a zero column in V and Z and the explained variance 0.
     """
     def __init__(self) -> None:
         ...
     @property
     def V(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Sparse loading matrix (p × M).
+        Sparse loadings (p x M), each column of unit L2 norm. In ActiveSet mode the non-zero entries of column m are the variables of active_sets[m]. In Thresholded mode they are the largest ordinary PCA loadings, as many as active_sets[m] has entries, which can be other variables.
         """
     @V.setter
     def V(self, arg0: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> None:
@@ -2169,7 +2179,7 @@ class TRexSPCAResult:
     @property
     def Z(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Sparse PC score matrix (n × M).
+        Scores of the sparse components (n x M): column m is the centered X times column m of V.
         """
     @Z.setter
     def Z(self, arg0: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"]) -> None:
@@ -2177,7 +2187,7 @@ class TRexSPCAResult:
     @property
     def active_sets(self) -> list[list[int]]:
         """
-        Support indices per PC (list of M index vectors, 0-based).
+        Selected variables per component (list of M index lists, 0-based), the result of the T-Rex+GVS runs. The FDR control holds for these sets. In Thresholded mode they can differ from the non-zero entries of V.
         """
     @active_sets.setter
     def active_sets(self, arg0: collections.abc.Sequence[collections.abc.Sequence[typing.SupportsInt | typing.SupportsIndex]]) -> None:
@@ -2185,7 +2195,7 @@ class TRexSPCAResult:
     @property
     def adjusted_ev(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Marginal adjusted explained variance per component (M-vector).
+        Adjusted explained variance per component (length M): r_mm^2 / (n - 1), with r_mm the m-th diagonal element of R in the QR decomposition Z = QR. The adjustment accounts for sparse components that are not orthogonal.
         """
     @adjusted_ev.setter
     def adjusted_ev(self, arg0: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, 1]"]) -> None:
@@ -2193,14 +2203,33 @@ class TRexSPCAResult:
     @property
     def cumulative_ev(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Cumulative percentage of explained variance (M-vector).
+        Cumulative adjusted explained variance as a fraction of the total variance of the centered X (length M), between 0 and 1. It is not the PEV of Definition 1 of the paper, whose denominator (signal EV plus mixed EV) needs the true support.
         """
     @cumulative_ev.setter
     def cumulative_ev(self, arg0: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, 1]"]) -> None:
         ...
 class TRexSPCASelector:
     """
-    T-Rex Sparse PCA selector — instance wrapper (zero-copy Eigen::Map).
+    T-Rex sparse PCA selector (T-Rex+SPCA): sparse principal components whose non-zero
+    loadings are selected with FDR control. Each ordinary principal component is the response
+    of a T-Rex+GVS run with the elastic net.
+    
+    Notes
+    -----
+    Steps. (1) X is centered and its first M ordinary principal components are computed (a
+    PCA of the covariance, the columns are not scaled). (2) For each component, a T-Rex+GVS
+    run with the elastic net and the component as response selects its variables at the
+    target FDR. (3) The sparse loading vector is assembled from the selected set (see
+    SPCAMode), and the scores of the sparse component are the centered X times the loading
+    vector. (4) The explained variance is adjusted for components that are not orthogonal,
+    by the QR decomposition of the scores.
+    
+    A component without a selected variable has a zero column in V and Z and the explained
+    variance 0.
+    
+    L-loop strategies. STANDARD, HCONCAT, SKIPL and SEEDED of the T-Rex+GVS runs are
+    supported. PERMUTATION and PERMUTATION_SEEDED are refused at construction, as by the
+    T-Rex+GVS selector.
     
     References
     ----------
@@ -2214,7 +2243,7 @@ class TRexSPCASelector:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], M: typing.SupportsInt | typing.SupportsIndex, tFDR: typing.SupportsFloat | typing.SupportsIndex, ctrl: TRexSPCAControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
         """
-        Construct the SPCA selector. X is accessed zero-copy via Eigen::Map.
+        Construct the selector. X (n x p) is used without a copy and is centered in place during select() and restored on return. M is the number of sparse principal components, 1 to min(n, p). tFDR is the target FDR level of each component, in [0, 1]. A negative seed (default: -1) gives a run that is not reproducible, and each component runs with its own seed derived from it. verbose prints one line per component (default: False), and the T-Rex+GVS runs stay quiet.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], M: typing.SupportsInt | typing.SupportsIndex, tFDR: typing.SupportsFloat | typing.SupportsIndex, ctrl: TRexSPCAControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = False) -> None:
@@ -2223,11 +2252,11 @@ class TRexSPCASelector:
         """
     def getResult(self) -> TRexSPCAResult:
         """
-        Return the TRexSPCAResult after calling select().
+        The TRexSPCAResult of the last select().
         """
     def select(self) -> None:
         """
-        Run T-Rex Sparse PCA selection.
+        Run the T-Rex sparse PCA selection.
         """
 class TRexScreeningSelector(TRexSelector):
     """

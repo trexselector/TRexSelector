@@ -4,40 +4,40 @@
 
 #' @name trex_spca_control
 #'
-#' @title T-Rex SPCA Control Parameters
+#' @title T-Rex+SPCA Control Parameters
 #'
-#' @description Build a control list for the T-Rex Sparse PCA selector.
+#' @description Build the control list of the T-Rex sparse PCA selector (T-Rex+SPCA),
+#'   \code{\link{TRexSPCASelector}}. The list holds the parameters below. Every other parameter
+#'   of the T-Rex+GVS run of each component (the clustering, the cross-validation grid, the
+#'   L-loop strategy, the scaling mode, the threads) runs at its default, see
+#'   \code{\link{trex_gvs_control}()} and \code{\link{trex_control}()}.
 #'
-#' @param mode Character, sparse loading strategy: \code{"ActiveSet"} (default)
-#'   assembles loadings via Ridge regression on the T-Rex active set;
-#'   \code{"Thresholded"} keeps and normalizes the top-\code{|A|} ordinary
-#'   PCA loadings.
-#' @param lambda2_ridge_loadings Numeric, Ridge penalty for ActiveSet loading
-#'   assembly (default: \code{1e-6}).
-#' @param gvs_type Character, GVS variant used internally for per-PC variable
-#'   selection. Only \code{"EN"} (default, elastic net) is allowed: T-Rex SPCA
-#'   is defined on the elastic net, and \code{"IEN"} is rejected.
-#' @param lambda_2 Numeric, L2/Elastic Net penalty forwarded to the internal
-#'   TRexGVSSelector, in LARS units. A negative value (default \code{-1})
-#'   triggers automatic determination (method selected by
-#'   \code{lambda2_method}); \code{0} is the degenerate pure T-LASSO case;
-#'   a positive value is used as-is.
-#' @param lambda2_method Character, auto-determination strategy for
-#'   \code{lambda_2} when \code{lambda_2 < 0}:
-#'   \code{"CV_1SE_CCD"} (default), \code{"CV_MIN_CCD"},
-#'   \code{"CV_1SE_SVD"}, \code{"CV_MIN_SVD"}.
-#' @param en_solver Character, Elastic Net solver variant used internally:
-#'   \code{"TENET_AUG"} (default, row-augmented LASSO) or \code{"TENET"}
-#'   (Gram-based). Both select the same variables; this is a solver-equivalence
-#'   switch, not a LARS-vs-LASSO choice (see \code{tenet_aug_use_lars}).
-#' @param tenet_aug_use_lars Logical. When \code{en_solver = "TENET_AUG"}, run
-#'   the per-PC augmented sub-selector with a pure-LARS inner path that never
-#'   drops variables (\code{TRUE}) instead of the default LASSO inner path
-#'   (\code{FALSE}, default). This is the LARS-vs-LASSO distinction; ignored for
-#'   \code{en_solver = "TENET"}.
-#' @param K Integer, number of T-Rex random experiments per PC (default: 20).
-#' @param max_dummy_multiplier Integer, maximum dummy feature multiplier for
-#'   T-Rex sub-selection (default: 10).
+#' @param mode Assembly of the sparse loading vectors. \code{"ActiveSet"} (default) is the
+#'   ridge regression of the component on the selected variables, normalized to unit length
+#'   (the T-Rex PCA of the paper). \code{"Thresholded"} keeps the largest ordinary PCA
+#'   loadings in absolute value, as many as variables were selected, normalized to unit
+#'   length (the T-Rex Thresholded PCA of the paper).
+#' @param lambda2_ridge_loadings Ridge penalty of the loading assembly in
+#'   \code{"ActiveSet"} mode (default: \code{1e-6}). Not used in \code{"Thresholded"} mode.
+#' @param gvs_type Penalty of the T-Rex+GVS runs. Only \code{"EN"} (default, elastic net) is
+#'   accepted: the method is defined on the elastic net, and \code{"IEN"} is refused.
+#' @param lambda_2 Ridge part of the elastic net of the T-Rex+GVS runs. A negative value
+#'   (default: \code{-1}) lets the rule \code{lambda2_method} choose it, \code{0} is the
+#'   T-LASSO without the ridge part, and a positive value is used as it is. A supplied
+#'   value refers to the scale of the standardized columns.
+#' @param lambda2_method Rule that chooses \code{lambda_2} when \code{lambda_2 < 0}:
+#'   \code{"CV_1SE_CCD"} (default), \code{"CV_MIN_CCD"}, \code{"CV_1SE_SVD"} or
+#'   \code{"CV_MIN_SVD"}. The rules of the informed elastic net are refused.
+#' @param en_solver Elastic net solver of the T-Rex+GVS runs. \code{"TENET_AUG"} (default) is
+#'   the elastic net as a LASSO on row-augmented data, the form of the paper.
+#'   \code{"TENET"} is the elastic net on the Gram matrix. Both solve the same elastic net
+#'   problem.
+#' @param tenet_aug_use_lars Logical. For \code{en_solver = "TENET_AUG"}: run the augmented
+#'   system with a pure-LARS inner path that never drops variables (\code{TRUE}) instead of
+#'   the LASSO inner path that can (\code{FALSE}, default). Ignored for \code{"TENET"}.
+#' @param K Number of random experiments of each T-Rex+GVS run (default: 20).
+#' @param max_dummy_multiplier Cap of the dummy multiplier of each T-Rex+GVS run: the L-loop
+#'   adds dummies up to this many times the number of variables (default: 10).
 #'
 #' @return A named list for passing to \code{TRexSPCASelector$new()}.
 #'
@@ -58,10 +58,10 @@ trex_spca_control <- function(mode                   = "ActiveSet",
                               K                      = 20L,
                               max_dummy_multiplier   = 10L) {
   mode          <- match.arg(mode,          c("ActiveSet", "Thresholded"))
-  # T-Rex SPCA is defined on the elastic net; an IEN request is an error
+  # T-Rex+SPCA is defined on the elastic net, so an IEN request is an error
   if (!identical(gvs_type, "EN"))
-    stop("trex_spca_control: gvs_type must be \"EN\". T-Rex SPCA is ",
-         "defined on the elastic net; the informed elastic net (IEN) is ",
+    stop("trex_spca_control: gvs_type must be \"EN\". T-Rex+SPCA is ",
+         "defined on the elastic net, and the informed elastic net (IEN) is ",
          "not supported. Got: ", format(gvs_type))
   lambda2_method <- match.arg(lambda2_method,
                               c("CV_1SE_CCD", "CV_MIN_CCD",
@@ -89,14 +89,28 @@ trex_spca_control <- function(mode                   = "ActiveSet",
 
 #' @name TRexSPCASelector
 #'
-#' @title T-Rex Sparse PCA Selector
+#' @title T-Rex Sparse PCA Selector (T-Rex+SPCA)
 #'
-#' @description Extracts sparse principal components under FDR control via
-#'   T-Rex variable selection. For each of the \code{M} components, ordinary
-#'   PCA identifies a PC-response direction, T-Rex selects a sparse active set
-#'   at the target FDR, and a sparse loading vector is assembled (ActiveSet or
-#'   Thresholded mode). Explained variance is adjusted for non-orthogonality
-#'   via QR decomposition.
+#' @description Sparse principal components whose non-zero loadings are selected with FDR
+#'   control. Each ordinary principal component is the response of a T-Rex+GVS run with the
+#'   elastic net.
+#'
+#' @details
+#' Steps:
+#' \enumerate{
+#'   \item \code{X} is centered and its first \code{M} ordinary principal components are
+#'     computed (a PCA of the covariance, the columns are not scaled).
+#'   \item For each component, a T-Rex+GVS run with the elastic net and the component as
+#'     response selects its variables at the target FDR.
+#'   \item The sparse loading vector is assembled from the selected set (see \code{mode} of
+#'     \code{\link{trex_spca_control}()}), and the scores of the sparse component are the
+#'     centered \code{X} times the loading vector.
+#'   \item The explained variance is adjusted for components that are not orthogonal, by
+#'     the QR decomposition of the scores.
+#' }
+#'
+#' A component without a selected variable has a zero column in \code{V} and \code{Z} and
+#' the explained variance 0.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -137,16 +151,17 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
 
     #' @description Create a new TRexSPCASelector.
     #'
-    #' @param X Numeric matrix (n x p), or an \code{mmap_matrix} opened
-    #'   \code{"readwrite"}. Stored by reference (no copy); centered in place
+    #' @param X Design matrix (n x p) in memory, or an \code{mmap_matrix} opened in
+    #'   \code{"readwrite"} mode. Both are bound without a copy. \code{X} is centered in place
     #'   during \code{select()} and restored on return.
-    #' @param M Integer, number of sparse principal components to extract.
-    #' @param tFDR Numeric, target false discovery rate in \code{(0, 1)}.
+    #' @param M Number of sparse principal components, 1 to \code{min(n, p)}.
+    #' @param tFDR Target FDR level of each component, in \code{[0, 1]}.
     #' @param control A control list from \code{\link{trex_spca_control}()}
     #'   (default: \code{trex_spca_control()}).
-    #' @param seed Integer random seed. Use \code{-1L} (default) for
-    #'   non-deterministic (hardware entropy) behaviour.
-    #' @param verbose Logical, whether to print progress (default: \code{FALSE}).
+    #' @param seed Random seed. A negative value (default: -1) gives a run that is not
+    #'   reproducible. Each component runs with its own seed derived from it.
+    #' @param verbose Whether to print one line per component (default: \code{FALSE}). The
+    #'   T-Rex+GVS runs stay quiet.
     initialize = function(X, M, tFDR,
                           control = trex_spca_control(),
                           seed    = -1L,
@@ -157,11 +172,19 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
       if (!is_mmap && !is.matrix(X)) X <- as.matrix(X)
       stopifnot(
         is_mmap || is.numeric(X),
-        is.numeric(M),    M >= 1L,
-        is.numeric(tFDR), tFDR > 0, tFDR < 1,
+        is.numeric(M),    length(M) == 1L,
+        is.numeric(tFDR), length(tFDR) == 1L,
         is.numeric(control$lambda2_ridge_loadings),
         is.logical(verbose)
       )
+      # The bounds of the C++ constructor, checked here so that the error comes
+      # at construction: the C++ object is built in select().
+      if (is.na(M) || M < 1 || M > min(dim(X))) {
+        stop("M must be a whole number from 1 to min(n, p) = ", min(dim(X)), ". Got: ", M)
+      }
+      if (is.na(tFDR) || tFDR < 0 || tFDR > 1) {
+        stop("tFDR must be in [0, 1]. Got: ", tFDR)
+      }
       # lambda_2 == 0 is the degenerate no-ridge case, NOT automatic CV
       # (the sentinel for that is lambda_2 < 0). Warn so a user who passed 0
       # expecting CV is not silently handed pure T-LASSO.
@@ -180,11 +203,10 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
       private$ctrl     <- control
     },
 
-    #' @description Run T-Rex Sparse PCA selection.
+    #' @description Run the T-Rex sparse PCA selection.
     #'
-    #' @return Invisible \code{self} for method chaining. Results accessible
-    #'   via active fields \code{Z}, \code{V}, \code{active_sets},
-    #'   \code{adjusted_ev}, \code{cumulative_ev}.
+    #' @return Invisible \code{self} for method chaining. The results are in the fields
+    #'   \code{Z}, \code{V}, \code{active_sets}, \code{adjusted_ev} and \code{cumulative_ev}.
     select = function() {
       selector <- if (inherits(private$X_ref, "mmap_matrix")) trex_spca_select_mmap
                   else trex_spca_select
@@ -201,31 +223,43 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
   ),
   active = list(
 
-    #' @field Z Score matrix (n x M) from last \code{select()} call.
+    #' @field Z Scores of the sparse components (n x M): column m is the centered \code{X}
+    #'   times column m of \code{V}.
     Z = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       private$result_$Z
     },
 
-    #' @field V Loading matrix (p x M) from last \code{select()} call.
+    #' @field V Sparse loadings (p x M), each column of unit L2 norm. In \code{"ActiveSet"}
+    #'   mode the non-zero entries of column m are the variables of \code{active_sets[[m]]}.
+    #'   In \code{"Thresholded"} mode they are the largest ordinary PCA loadings, as many as
+    #'   \code{active_sets[[m]]} has entries, which can be other variables.
     V = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       private$result_$V
     },
 
-    #' @field active_sets List of M integer vectors (1-based) from last \code{select()} call.
+    #' @field active_sets Selected variables per component, a list of M integer vectors
+    #'   (1-based), the result of the T-Rex+GVS runs. The FDR control holds for these sets. In
+    #'   \code{"Thresholded"} mode they can differ from the non-zero entries of \code{V}.
     active_sets = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       private$result_$active_sets
     },
 
-    #' @field adjusted_ev Marginal adjusted explained variance per component (M-vector).
+    #' @field adjusted_ev Adjusted explained variance per component (length M):
+    #'   \code{r_mm^2 / (n - 1)}, with \code{r_mm} the m-th diagonal element of R in the QR
+    #'   decomposition \code{Z = QR}. The adjustment accounts for sparse components that are
+    #'   not orthogonal.
     adjusted_ev = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       private$result_$adjusted_ev
     },
 
-    #' @field cumulative_ev Cumulative explained variance percentage (M-vector).
+    #' @field cumulative_ev Cumulative adjusted explained variance as a fraction of the total
+    #'   variance of the centered \code{X} (length M), between 0 and 1. It is not the PEV of
+    #'   Definition 1 of the paper, whose denominator (signal EV plus mixed EV) needs the true
+    #'   support.
     cumulative_ev = function(value) {
       if (!missing(value)) stop("Field is read-only.")
       private$result_$cumulative_ev

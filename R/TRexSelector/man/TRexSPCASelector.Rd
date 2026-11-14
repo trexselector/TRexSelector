@@ -2,14 +2,28 @@
 % Please edit documentation in R/trex_spca_selector.R
 \name{TRexSPCASelector}
 \alias{TRexSPCASelector}
-\title{T-Rex Sparse PCA Selector}
+\title{T-Rex Sparse PCA Selector (T-Rex+SPCA)}
 \description{
-Extracts sparse principal components under FDR control via
-T-Rex variable selection. For each of the \code{M} components, ordinary
-PCA identifies a PC-response direction, T-Rex selects a sparse active set
-at the target FDR, and a sparse loading vector is assembled (ActiveSet or
-Thresholded mode). Explained variance is adjusted for non-orthogonality
-via QR decomposition.
+Sparse principal components whose non-zero loadings are selected with FDR
+control. Each ordinary principal component is the response of a T-Rex+GVS run with the
+elastic net.
+}
+\details{
+Steps:
+\enumerate{
+\item \code{X} is centered and its first \code{M} ordinary principal components are
+computed (a PCA of the covariance, the columns are not scaled).
+\item For each component, a T-Rex+GVS run with the elastic net and the component as
+response selects its variables at the target FDR.
+\item The sparse loading vector is assembled from the selected set (see \code{mode} of
+\code{\link{trex_spca_control}()}), and the scores of the sparse component are the
+centered \code{X} times the loading vector.
+\item The explained variance is adjusted for components that are not orthogonal, by
+the QR decomposition of the scores.
+}
+
+A component without a selected variable has a zero column in \code{V} and \code{Z} and
+the explained variance 0.
 }
 \examples{
 \donttest{
@@ -65,15 +79,27 @@ Other T-Rex selectors and controls:
 \section{Active bindings}{
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
-    \item{\code{Z}}{Score matrix (n x M) from last \code{select()} call.}
+    \item{\code{Z}}{Scores of the sparse components (n x M): column m is the centered \code{X}
+times column m of \code{V}.}
 
-    \item{\code{V}}{Loading matrix (p x M) from last \code{select()} call.}
+    \item{\code{V}}{Sparse loadings (p x M), each column of unit L2 norm. In \code{"ActiveSet"}
+mode the non-zero entries of column m are the variables of \code{active_sets[[m]]}.
+In \code{"Thresholded"} mode they are the largest ordinary PCA loadings, as many as
+\code{active_sets[[m]]} has entries, which can be other variables.}
 
-    \item{\code{active_sets}}{List of M integer vectors (1-based) from last \code{select()} call.}
+    \item{\code{active_sets}}{Selected variables per component, a list of M integer vectors
+(1-based), the result of the T-Rex+GVS runs. The FDR control holds for these sets. In
+\code{"Thresholded"} mode they can differ from the non-zero entries of \code{V}.}
 
-    \item{\code{adjusted_ev}}{Marginal adjusted explained variance per component (M-vector).}
+    \item{\code{adjusted_ev}}{Adjusted explained variance per component (length M):
+\code{r_mm^2 / (n - 1)}, with \code{r_mm} the m-th diagonal element of R in the QR
+decomposition \code{Z = QR}. The adjustment accounts for sparse components that are
+not orthogonal.}
 
-    \item{\code{cumulative_ev}}{Cumulative explained variance percentage (M-vector).}
+    \item{\code{cumulative_ev}}{Cumulative adjusted explained variance as a fraction of the total
+variance of the centered \code{X} (length M), between 0 and 1. It is not the PEV of
+Definition 1 of the paper, whose denominator (signal EV plus mixed EV) needs the true
+support.}
   }
   \if{html}{\out{</div>}}
 }
@@ -105,16 +131,17 @@ Other T-Rex selectors and controls:
   \subsection{Arguments}{
     \if{html}{\out{<div class="arguments">}}
     \describe{
-      \item{\code{X}}{Numeric matrix (n x p), or an \code{mmap_matrix} opened
-\code{"readwrite"}. Stored by reference (no copy); centered in place
+      \item{\code{X}}{Design matrix (n x p) in memory, or an \code{mmap_matrix} opened in
+\code{"readwrite"} mode. Both are bound without a copy. \code{X} is centered in place
 during \code{select()} and restored on return.}
-      \item{\code{M}}{Integer, number of sparse principal components to extract.}
-      \item{\code{tFDR}}{Numeric, target false discovery rate in \code{(0, 1)}.}
+      \item{\code{M}}{Number of sparse principal components, 1 to \code{min(n, p)}.}
+      \item{\code{tFDR}}{Target FDR level of each component, in \code{[0, 1]}.}
       \item{\code{control}}{A control list from \code{\link{trex_spca_control}()}
 (default: \code{trex_spca_control()}).}
-      \item{\code{seed}}{Integer random seed. Use \code{-1L} (default) for
-non-deterministic (hardware entropy) behaviour.}
-      \item{\code{verbose}}{Logical, whether to print progress (default: \code{FALSE}).}
+      \item{\code{seed}}{Random seed. A negative value (default: -1) gives a run that is not
+reproducible. Each component runs with its own seed derived from it.}
+      \item{\code{verbose}}{Whether to print one line per component (default: \code{FALSE}). The
+T-Rex+GVS runs stay quiet.}
     }
     \if{html}{\out{</div>}}
   }
@@ -124,16 +151,15 @@ non-deterministic (hardware entropy) behaviour.}
 \if{html}{\out{<a id="method-TRexSPCASelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexSPCASelector-select}{}}}
 \subsection{\code{TRexSPCASelector$select()}}{
-  Run T-Rex Sparse PCA selection.
+  Run the T-Rex sparse PCA selection.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexSPCASelector$select()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    Invisible \code{self} for method chaining. Results accessible
-via active fields \code{Z}, \code{V}, \code{active_sets},
-\code{adjusted_ev}, \code{cumulative_ev}.
+    Invisible \code{self} for method chaining. The results are in the fields
+\code{Z}, \code{V}, \code{active_sets}, \code{adjusted_ev} and \code{cumulative_ev}.
   }
 }
 

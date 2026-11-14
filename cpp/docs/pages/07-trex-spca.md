@@ -8,9 +8,10 @@ Principal component analysis (PCA) finds the directions of largest variance, and
 contributes to every loading vector. Sparse PCA asks for loadings with few non-zero entries, so that
 a component can be read as a small set of variables. The T-Rex sparse PCA (T-Rex SPCA)
 \cite machkour2024spca decides which variables enter a loading vector with the T-Rex selector. For
-each of the \f$M\f$ components, ordinary PCA gives the component as a response, the T-Rex selector
-selects the variables for it at the target false discovery rate (FDR), and a sparse loading vector
-is assembled from the selected set. The selected set of every component is FDR-controlled.
+each of the \f$M\f$ components, ordinary PCA gives the component as a response, a T-Rex+GVS run with
+the elastic net selects the variables for it at the target false discovery rate (FDR), and a sparse
+loading vector is assembled from the selected set. The selected set of every component is
+FDR-controlled.
 
 ## Data with two sparse factors
 
@@ -66,7 +67,7 @@ TRexSPCAControlParameter sets the inner machinery.
   keeps the top \f$|A|\f$ ordinary loadings and normalizes them.
 - `gvs_ctrl.lambda_2` and `gvs_ctrl.lambda2_method`: the elastic-net penalty of the inner group
   selector, fixed or chosen by ridge cross-validation (`CV_1SE_CCD` by default when `lambda_2 < 0`).
-  A value of 0 is the degenerate lasso case and gives a warning.
+  A value of 0 is the lasso case without the ridge part.
 - `en_solver`: `ENSolverType::TENET_AUG` (default) or `TENET`, two forms of the same elastic net.
 - `gvs_ctrl.trex_ctrl.K` and `gvs_ctrl.trex_ctrl.max_dummy_multiplier`: the random experiments and
   the dummy cap of the inner selector.

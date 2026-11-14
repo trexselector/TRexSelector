@@ -30,6 +30,9 @@
 * `trex_biobank_control()` gains `target_FDR_trex`, the target FDR level of the fallback T-Rex selector
   (default 0.1), as in C++ and Python. `tFDR` of the constructor defaults to `NULL` and still works: a
   supplied value replaces the target of the control.
+* `TRexSPCASelector` takes `tFDR` in [0, 1], as the other selectors do and as C++ and Python do. Up to
+  2.0.1 it refused 0 and 1. An `M` above `min(n, p)` is refused at construction. Up to 2.0.1 that error
+  came in `select()`.
 
 ## Fixed
 
@@ -99,6 +102,14 @@
 * The vignette "T-Rex GVS: grouped variable selection" describes the informed elastic net as its paper
   does. It keeps the grouping effect of the elastic net and is the elastic net when every variable is
   its own group.
+* The help of `TRexSPCASelector` and of `trex_spca_control()` is corrected. `cumulative_ev` is a
+  fraction of the total variance of the centered design, not a percentage, and `adjusted_ev` is a
+  variance, given with its definition. In `"Thresholded"` mode the non-zero loadings can be other
+  variables than the selected set `active_sets`, for which the FDR control holds. A component without a
+  selected variable has a zero column in `V` and `Z`. A supplied `lambda_2` refers to the scale of the
+  standardized columns, not to LARS units. The help of the control says that every other parameter of
+  the inner T-Rex+GVS runs stays at its default. The short form of the method is T-Rex+SPCA. The
+  vignette "T-Rex SPCA" gives `adjusted_ev` and `cumulative_ev` with their right units.
 
 ## New
 

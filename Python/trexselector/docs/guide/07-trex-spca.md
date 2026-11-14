@@ -20,9 +20,10 @@ Principal component analysis (PCA) finds the directions of largest variance, and
 contributes to every loading vector. Sparse PCA asks for loadings with few non-zero entries, so that
 a component can be read as a small set of variables. The T-Rex sparse PCA (T-Rex SPCA)
 {cite}`machkour2024spca` decides which variables enter a loading vector with the T-Rex selector. For
-each of the $M$ components, ordinary PCA gives the component as a response, the T-Rex selector
-selects the variables for it at the target false discovery rate (FDR), and a sparse loading vector
-is assembled from the selected set. The selected set of every component is FDR-controlled.
+each of the $M$ components, ordinary PCA gives the component as a response, a T-Rex+GVS run with the
+elastic net selects the variables for it at the target false discovery rate (FDR), and a sparse
+loading vector is assembled from the selected set. The selected set of every component is
+FDR-controlled.
 
 ## Data with two sparse factors
 
@@ -90,8 +91,9 @@ fig.suptitle("The two sparse loading vectors. The true supports are variables 0 
 ```
 
 Sparse components are not orthogonal in general, so the explained variance is adjusted for the
-non-orthogonality by a QR decomposition of the scores. `adjusted_ev` is the marginal share per
-component and `cumulative_ev` the cumulative percentage.
+non-orthogonality by a QR decomposition of the scores. `adjusted_ev` is the adjusted variance of
+each component, and `cumulative_ev` is the cumulative adjusted variance as a fraction of the total
+variance of the centered `X`.
 
 ## The control
 

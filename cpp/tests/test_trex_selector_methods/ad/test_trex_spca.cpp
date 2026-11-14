@@ -10,6 +10,7 @@
 
 // std includes
 #include <algorithm>
+#include <limits>
 #include <random>
 #include <stdexcept>
 #include <vector>
@@ -366,6 +367,156 @@ TEST_F(TRexSPCATest, Exceptions_IENRejected) {
 
     ctrl.gvs_ctrl.gvs_type = tg::GVSType::EN;
     EXPECT_NO_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)));
+}
+
+/** @brief M below 1 is refused at construction, before any allocation. */
+TEST_F(TRexSPCATest, Exceptions_MBelowOne) {
+    EXPECT_THROW((TRexSPCA(X_map, 0, 0.2, fast_ctrl(), seed)), std::invalid_argument);
+    EXPECT_THROW((TRexSPCA(X_map, -1, 0.2, fast_ctrl(), seed)), std::invalid_argument);
+    EXPECT_NO_THROW((TRexSPCA(X_map, 1, 0.2, fast_ctrl(), seed)));
+    EXPECT_NO_THROW((TRexSPCA(X_map, p, 0.2, fast_ctrl(), seed)));
+}
+
+/** @brief The target FDR is checked at construction: [0, 1] is accepted,
+ *         values outside and NaN are refused. */
+TEST_F(TRexSPCATest, Exceptions_TargetFDROutsideUnitInterval) {
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+    for (const double bad : {-0.1, 1.5, nan}) {
+        EXPECT_THROW((TRexSPCA(X_map, M, bad, fast_ctrl(), seed)), std::invalid_argument)
+            << "tFDR = " << bad;
+    }
+    for (const double good : {0.0, 0.2, 1.0}) {
+        EXPECT_NO_THROW((TRexSPCA(X_map, M, good, fast_ctrl(), seed))) << "tFDR = " << good;
+    }
+}
+
+/** @brief The rules of the informed elastic net for lambda_2 are refused at
+ *         construction, and the four rules of the elastic net are accepted. */
+TEST_F(TRexSPCATest, Exceptions_IENRulesRejectedAtConstruction) {
+    using Rule = tg::LambdaSelectionMethod;
+    for (const Rule rule : {Rule::CV_1SE_IEN_CCD, Rule::CV_MIN_IEN_CCD,
+                            Rule::CV_1SE_TIK_SVD, Rule::CV_MIN_TIK_SVD}) {
+        TRexSPCAControlParameter ctrl = fast_ctrl();
+        ctrl.gvs_ctrl.lambda2_method = rule;
+        EXPECT_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
+    }
+    for (const Rule rule : {Rule::CV_1SE_CCD, Rule::CV_MIN_CCD,
+                            Rule::CV_1SE_SVD, Rule::CV_MIN_SVD}) {
+        TRexSPCAControlParameter ctrl = fast_ctrl();
+        ctrl.gvs_ctrl.lambda2_method = rule;
+        EXPECT_NO_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)));
+    }
+}
+
+/** @brief The permutation strategies are refused at construction, and the
+ *         four strategies of the T-Rex+GVS runs complete a selection. */
+TEST_F(TRexSPCATest, LLoopStrategies_FourRunAndPermutationsAreRefused) {
+    using Strategy = tc::LLoopStrategy;
+    for (const Strategy strategy : {Strategy::PERMUTATION, Strategy::PERMUTATION_SEEDED}) {
+        TRexSPCAControlParameter ctrl = fast_ctrl();
+        ctrl.gvs_ctrl.trex_ctrl.lloop_strategy = strategy;
+        EXPECT_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
+    }
+    for (const Strategy strategy : {Strategy::STANDARD, Strategy::HCONCAT,
+                                    Strategy::SKIPL, Strategy::SEEDED}) {
+        TRexSPCAControlParameter ctrl = fast_ctrl();
+        ctrl.gvs_ctrl.trex_ctrl.lloop_strategy = strategy;
+        TRexSPCA spca(X_map, M, 0.2, ctrl, seed);
+        EXPECT_NO_THROW(spca.select());
+        EXPECT_EQ(spca.getResult().active_sets.size(), static_cast<std::size_t>(M));
+    }
+}
+
+
+// ========================================================================================
+// Documented behaviour of the control and the result
+// ========================================================================================
+
+/** @brief The nested gvs_ctrl.en_solver and gvs_ctrl.trex_ctrl.solver_type
+ *         have no effect: the selector replaces them by en_solver. */
+TEST_F(TRexSPCATest, Control_NestedSolverFieldsHaveNoEffect) {
+    using SolverType = decltype(tc::TRexControlParameter::solver_type);
+
+    auto run = [](const TRexSPCAControlParameter& ctrl) {
+        Eigen::MatrixXd Xf = plantedFactorX();
+        Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
+        TRexSPCA spca(Xf_map, M, 0.1, ctrl, seed);
+        return spca.select();
+    };
+
+    TRexSPCAControlParameter plain = fast_ctrl();
+    plain.gvs_ctrl.lambda_2 = 1.0;
+
+    // One sweep would end a coordinate-descent run with an error.
+    TRexSPCAControlParameter nested = plain;
+    nested.gvs_ctrl.en_solver = tg::ENSolverType::TCDENET;
+    nested.gvs_ctrl.trex_ctrl.solver_type = SolverType::TLASSO;
+    nested.gvs_ctrl.trex_ctrl.solver_params.cd_max_sweeps = 1;
+
+    const TRexSPCAResult a = run(plain);
+    const TRexSPCAResult b = run(nested);
+    EXPECT_EQ(a.active_sets, b.active_sets);
+    EXPECT_EQ(a.V, b.V);
+}
+
+/** @brief cumulative_ev is the running sum of adjusted_ev over the total
+ *         variance of the centered X, a fraction and not a percentage. */
+TEST_F(TRexSPCATest, ExplainedVariance_CumulativeIsFractionOfTotalVariance) {
+    Eigen::MatrixXd Xf = plantedFactorX();
+    const Eigen::RowVectorXd mu = Xf.colwise().mean();
+    const double total_variance =
+        (Xf.rowwise() - mu).squaredNorm() / static_cast<double>(n_f - 1);
+
+    Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
+    TRexSPCA spca(Xf_map, M, 0.1, fast_ctrl(), seed);
+    const TRexSPCAResult result = spca.select();
+
+    double running = 0.0;
+    for (Eigen::Index m = 0; m < M; ++m) {
+        running += result.adjusted_ev(m);
+        EXPECT_NEAR(result.cumulative_ev(m), running / total_variance, 1e-12);
+        EXPECT_LE(result.cumulative_ev(m), 1.0 + 1e-12);
+    }
+}
+
+/** @brief Thresholded mode keeps as many loadings as variables were selected. */
+TEST_F(TRexSPCATest, Loadings_ThresholdedKeepsAsManyEntriesAsSelected) {
+    Eigen::MatrixXd Xf = plantedFactorX();
+    Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
+    TRexSPCA spca(Xf_map, M, 0.1, fast_ctrl(SPCAMode::Thresholded), seed);
+    const TRexSPCAResult result = spca.select();
+
+    for (Eigen::Index m = 0; m < M; ++m) {
+        const auto nonzero = (result.V.col(m).array() != 0.0).count();
+        EXPECT_EQ(static_cast<std::size_t>(nonzero),
+                  result.active_sets[static_cast<std::size_t>(m)].size());
+    }
+}
+
+/** @brief A component without a selected variable has a zero column in V and
+ *         Z and the explained variance 0, and every other loading has unit
+ *         length. The rule holds for every component, whatever is selected.
+ */
+TEST_F(TRexSPCATest, Result_ComponentWithoutSelectionIsZero) {
+    for (const double tFDR : {0.0, 0.05, 0.2}) {
+        Eigen::MatrixXd Xf = plantedFactorX();
+        Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
+        TRexSPCA spca(Xf_map, 3, tFDR, fast_ctrl(), seed);
+        const TRexSPCAResult result = spca.select();
+
+        double previous = 0.0;
+        for (Eigen::Index m = 0; m < 3; ++m) {
+            if (result.active_sets[static_cast<std::size_t>(m)].empty()) {
+                EXPECT_EQ(result.V.col(m).norm(), 0.0) << "tFDR = " << tFDR;
+                EXPECT_EQ(result.Z.col(m).norm(), 0.0) << "tFDR = " << tFDR;
+                EXPECT_EQ(result.adjusted_ev(m), 0.0) << "tFDR = " << tFDR;
+                EXPECT_EQ(result.cumulative_ev(m), previous) << "tFDR = " << tFDR;
+            } else {
+                EXPECT_NEAR(result.V.col(m).norm(), 1.0, 1e-12) << "tFDR = " << tFDR;
+            }
+            previous = result.cumulative_ev(m);
+        }
+    }
 }
 
 // ========================================================================================

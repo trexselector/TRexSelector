@@ -2,7 +2,7 @@
 % Please edit documentation in R/trex_spca_selector.R
 \name{trex_spca_control}
 \alias{trex_spca_control}
-\title{T-Rex SPCA Control Parameters}
+\title{T-Rex+SPCA Control Parameters}
 \usage{
 trex_spca_control(
   mode = "ActiveSet",
@@ -17,50 +17,50 @@ trex_spca_control(
 )
 }
 \arguments{
-\item{mode}{Character, sparse loading strategy: \code{"ActiveSet"} (default)
-assembles loadings via Ridge regression on the T-Rex active set;
-\code{"Thresholded"} keeps and normalizes the top-\code{|A|} ordinary
-PCA loadings.}
+\item{mode}{Assembly of the sparse loading vectors. \code{"ActiveSet"} (default) is the
+ridge regression of the component on the selected variables, normalized to unit length
+(the T-Rex PCA of the paper). \code{"Thresholded"} keeps the largest ordinary PCA
+loadings in absolute value, as many as variables were selected, normalized to unit
+length (the T-Rex Thresholded PCA of the paper).}
 
-\item{lambda2_ridge_loadings}{Numeric, Ridge penalty for ActiveSet loading
-assembly (default: \code{1e-6}).}
+\item{lambda2_ridge_loadings}{Ridge penalty of the loading assembly in
+\code{"ActiveSet"} mode (default: \code{1e-6}). Not used in \code{"Thresholded"} mode.}
 
-\item{gvs_type}{Character, GVS variant used internally for per-PC variable
-selection. Only \code{"EN"} (default, elastic net) is allowed: T-Rex SPCA
-is defined on the elastic net, and \code{"IEN"} is rejected.}
+\item{gvs_type}{Penalty of the T-Rex+GVS runs. Only \code{"EN"} (default, elastic net) is
+accepted: the method is defined on the elastic net, and \code{"IEN"} is refused.}
 
-\item{lambda_2}{Numeric, L2/Elastic Net penalty forwarded to the internal
-TRexGVSSelector, in LARS units. A negative value (default \code{-1})
-triggers automatic determination (method selected by
-\code{lambda2_method}); \code{0} is the degenerate pure T-LASSO case;
-a positive value is used as-is.}
+\item{lambda_2}{Ridge part of the elastic net of the T-Rex+GVS runs. A negative value
+(default: \code{-1}) lets the rule \code{lambda2_method} choose it, \code{0} is the
+T-LASSO without the ridge part, and a positive value is used as it is. A supplied
+value refers to the scale of the standardized columns.}
 
-\item{lambda2_method}{Character, auto-determination strategy for
-\code{lambda_2} when \code{lambda_2 < 0}:
-\code{"CV_1SE_CCD"} (default), \code{"CV_MIN_CCD"},
-\code{"CV_1SE_SVD"}, \code{"CV_MIN_SVD"}.}
+\item{lambda2_method}{Rule that chooses \code{lambda_2} when \code{lambda_2 < 0}:
+\code{"CV_1SE_CCD"} (default), \code{"CV_MIN_CCD"}, \code{"CV_1SE_SVD"} or
+\code{"CV_MIN_SVD"}. The rules of the informed elastic net are refused.}
 
-\item{en_solver}{Character, Elastic Net solver variant used internally:
-\code{"TENET_AUG"} (default, row-augmented LASSO) or \code{"TENET"}
-(Gram-based). Both select the same variables; this is a solver-equivalence
-switch, not a LARS-vs-LASSO choice (see \code{tenet_aug_use_lars}).}
+\item{en_solver}{Elastic net solver of the T-Rex+GVS runs. \code{"TENET_AUG"} (default) is
+the elastic net as a LASSO on row-augmented data, the form of the paper.
+\code{"TENET"} is the elastic net on the Gram matrix. Both solve the same elastic net
+problem.}
 
-\item{tenet_aug_use_lars}{Logical. When \code{en_solver = "TENET_AUG"}, run
-the per-PC augmented sub-selector with a pure-LARS inner path that never
-drops variables (\code{TRUE}) instead of the default LASSO inner path
-(\code{FALSE}, default). This is the LARS-vs-LASSO distinction; ignored for
-\code{en_solver = "TENET"}.}
+\item{tenet_aug_use_lars}{Logical. For \code{en_solver = "TENET_AUG"}: run the augmented
+system with a pure-LARS inner path that never drops variables (\code{TRUE}) instead of
+the LASSO inner path that can (\code{FALSE}, default). Ignored for \code{"TENET"}.}
 
-\item{K}{Integer, number of T-Rex random experiments per PC (default: 20).}
+\item{K}{Number of random experiments of each T-Rex+GVS run (default: 20).}
 
-\item{max_dummy_multiplier}{Integer, maximum dummy feature multiplier for
-T-Rex sub-selection (default: 10).}
+\item{max_dummy_multiplier}{Cap of the dummy multiplier of each T-Rex+GVS run: the L-loop
+adds dummies up to this many times the number of variables (default: 10).}
 }
 \value{
 A named list for passing to \code{TRexSPCASelector$new()}.
 }
 \description{
-Build a control list for the T-Rex Sparse PCA selector.
+Build the control list of the T-Rex sparse PCA selector (T-Rex+SPCA),
+\code{\link{TRexSPCASelector}}. The list holds the parameters below. Every other parameter
+of the T-Rex+GVS run of each component (the clustering, the cross-validation grid, the
+L-loop strategy, the scaling mode, the threads) runs at its default, see
+\code{\link{trex_gvs_control}()} and \code{\link{trex_control}()}.
 }
 \examples{
 trex_spca_control()

@@ -698,47 +698,53 @@ class TRexBiobankScreeningSelector:
 @_with_core_notes(PyTRexSPCASelector)
 class TRexSPCASelector:
     """
-    T-Rex Sparse PCA selector.
+    T-Rex sparse PCA selector (T-Rex+SPCA): sparse principal components whose
+    non-zero loadings are selected with FDR control. Each ordinary principal
+    component is the response of a T-Rex+GVS run with the elastic net.
 
-    Extracts sparse principal components under FDR control. For each of the
-    M components, ordinary PCA identifies a PC-response direction, T-Rex GVS
-    selects a sparse active set at the target FDR, and a sparse loading vector
-    is assembled. Explained variance is adjusted for non-orthogonality via QR.
+    X is used without a copy when it is a Fortran-contiguous float64 array, for
+    example the ``to_numpy()`` view of a ``MemoryMappedMatrix``. The selector
+    centers X in place during ``select()`` and restores it on return. The
+    centering happens under every scaling mode, so an array that is not
+    writable, for example the view of a file opened with
+    ``AccessMode.ReadOnly``, raises ``ValueError`` in ``select()``. Any other
+    array is copied at construction, and the array of the caller is not
+    touched.
 
     Parameters
     ----------
-    X : ndarray, shape (n, p)
-        Design matrix. Stored by reference; centered in-place during
-        ``select()`` and restored on return. The centering happens under
-        every scaling mode, so an array that is not writable (the view of
-        a ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``)
-        raises ``ValueError`` in ``select()``.
+    X : numpy.ndarray of shape (n, p)
+        Design matrix.
     spca_ctrl : TRexSPCAControlParameter, optional
-        Algorithmic control. Defaults to ``TRexSPCAControlParameter()``.
-        ``gvs_ctrl.gvs_type`` must stay ``GVSType.EN`` (the default):
-        T-Rex SPCA is defined on the elastic net, and ``GVSType.IEN``
-        raises ``ValueError`` in ``select()``. The EN solver flavour is
-        chosen via ``spca_ctrl.en_solver``. The GVS ridge penalty follows
-        ``gvs_ctrl.lambda_2``: ``< 0`` (default) auto-determines it via
-        ``gvs_ctrl.lambda2_method``, ``0`` is the degenerate pure T-LASSO
-        case, and ``> 0`` fixes it in LARS units.
-    seed : int, optional
-        Random seed. ``-1`` (default) for non-deterministic (hardware
-        entropy). ``>= 0`` for reproducible per-PC runs.
+        Control parameters: the loading assembly, the elastic net solver and
+        the control of the T-Rex+GVS runs (``gvs_ctrl``). The defaults apply
+        when it is omitted. A control that the selector refuses
+        (``GVSType.IEN``, a rule of the informed elastic net, a permutation
+        strategy) raises ``ValueError`` in ``select()``.
+        ``gvs_ctrl.lambda_2 = 0`` gives a ``UserWarning``: it is the T-LASSO
+        without the ridge part, not the automatic choice.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+        Each component runs with its own seed derived from it.
+    verbose : bool, default False
+        Whether to print one line per component. The T-Rex+GVS runs stay
+        quiet.
     """
 
     def __init__(self,
                  X: np.ndarray,
                  spca_ctrl: TRexSPCAControlParameter | None = None,
-                 seed: int = -1):
+                 seed: int = -1,
+                 verbose: bool = False):
         self.X = np.asfortranarray(X, dtype=np.float64)
         self._ctrl = spca_ctrl if spca_ctrl is not None else TRexSPCAControlParameter()
         self._seed = seed
+        self._verbose = verbose
         self._result: TRexSPCAResult | None = None
 
-        # lambda_2 == 0 is the degenerate no-ridge case (pure T-LASSO), NOT
-        # automatic CV (the sentinel for that is lambda_2 < 0). Warn so a user
-        # who set exactly 0 expecting CV is not silently given no ridge.
+        # lambda_2 == 0 is the T-LASSO without the ridge part, not the
+        # automatic choice (a negative lambda_2). The warning is for a user who
+        # set 0 and expected the cross-validation.
         if self._ctrl.gvs_ctrl.lambda_2 == 0.0:
             warnings.warn(
                 "spca_ctrl.gvs_ctrl.lambda_2 = 0 is the degenerate no-ridge "
@@ -750,60 +756,72 @@ class TRexSPCASelector:
 
     def select(self, M: int, tFDR: float) -> "TRexSPCASelector":
         """
-        Run T-Rex Sparse PCA selection.
+        Run the T-Rex sparse PCA selection.
 
         Parameters
         ----------
         M : int
-            Number of sparse principal components to extract.
+            Number of sparse principal components, 1 to min(n, p).
         tFDR : float
-            Target false discovery rate in (0, 1).
+            Target FDR level of each component, in [0, 1].
 
         Returns
         -------
-        self : TRexSPCASelector
-            For method chaining. Results accessible via properties.
+        TRexSPCASelector
+            The selector itself. The results are in its properties ``Z``,
+            ``V``, ``active_sets``, ``adjusted_ev`` and ``cumulative_ev``.
         """
-        if M < 1:
-            raise ValueError(f"M must be >= 1, got {M}")
-        if not 0.0 < tFDR < 1.0:
-            raise ValueError(f"tFDR must be in (0, 1), got {tFDR}")
-        selector = PyTRexSPCASelector(self.X, M, tFDR, self._ctrl, self._seed, False)
+        # The core validates M, tFDR and the control.
+        selector = PyTRexSPCASelector(self.X, M, tFDR, self._ctrl, self._seed, self._verbose)
         selector.select()
         self._result = selector.getResult()
         return self
 
     @property
     def Z(self) -> np.ndarray:
-        """Score matrix (n × M) from the last ``select()`` call."""
+        """Scores of the sparse components (n x M): column m is the centered X
+        times column m of ``V``."""
         if self._result is None:
             raise RuntimeError("Call select() first.")
         return self._result.Z
 
     @property
     def V(self) -> np.ndarray:
-        """Loading matrix (p × M) from the last ``select()`` call."""
+        """Sparse loadings (p x M), each column of unit L2 norm. In ActiveSet
+        mode the non-zero entries of column m are the variables of
+        ``active_sets[m]``. In Thresholded mode they are the largest ordinary
+        PCA loadings, as many as ``active_sets[m]`` has entries, which can be
+        other variables."""
         if self._result is None:
             raise RuntimeError("Call select() first.")
         return self._result.V
 
     @property
     def active_sets(self) -> list[list[int]]:
-        """Per-component active sets (0-based indices) from the last ``select()`` call."""
+        """Selected variables per component (list of M index lists, 0-based),
+        the result of the T-Rex+GVS runs. The FDR control holds for these sets.
+        In Thresholded mode they can differ from the non-zero entries of
+        ``V``."""
         if self._result is None:
             raise RuntimeError("Call select() first.")
         return self._result.active_sets
 
     @property
     def adjusted_ev(self) -> np.ndarray:
-        """Marginal adjusted explained variance per component (M-vector)."""
+        """Adjusted explained variance per component (length M):
+        r_mm^2 / (n - 1), with r_mm the m-th diagonal element of R in the QR
+        decomposition Z = QR. The adjustment accounts for sparse components
+        that are not orthogonal."""
         if self._result is None:
             raise RuntimeError("Call select() first.")
         return self._result.adjusted_ev
 
     @property
     def cumulative_ev(self) -> np.ndarray:
-        """Cumulative percentage of explained variance (M-vector)."""
+        """Cumulative adjusted explained variance as a fraction of the total
+        variance of the centered X (length M), between 0 and 1. It is not the
+        PEV of Definition 1 of the paper, whose denominator (signal EV plus
+        mixed EV) needs the true support."""
         if self._result is None:
             raise RuntimeError("Call select() first.")
         return self._result.cumulative_ev

@@ -4,7 +4,7 @@
 /**
  * @file trex_spca.cpp
  *
- * @brief Implementation of the T-Rex Sparse PCA selector.
+ * @brief Implementation of the T-Rex sparse PCA selector (T-Rex+SPCA).
  */
 // ==============================================================================
 
@@ -13,6 +13,7 @@
 #include <cmath>
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 // trex_selector_methods includes
@@ -58,23 +59,43 @@ TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
               /*scale=*/false,   // center-only: ordinary PCA must be a covariance PCA
               spca_ctrl_.gvs_ctrl.trex_ctrl.max_inner_threads)
 {
+    if (M_ < 1) {
+        throw std::invalid_argument(
+            "TRexSPCA: M must be at least 1. Got: " + std::to_string(M_));
+    }
     if (M_ > std::min(X_->rows(), X_->cols())) {
         throw std::invalid_argument(
             "TRexSPCA: M must not exceed min(n, p).");
     }
 
-    // TRex-SPCA is defined on the elastic net. An IEN request would change the
+    // The negated form refuses NaN as well.
+    if (!(tFDR_ >= 0.0 && tFDR_ <= 1.0)) {
+        throw std::invalid_argument(
+            "TRexSPCA: tFDR must be in [0, 1]. Got: " + std::to_string(tFDR_));
+    }
+
+    // T-Rex+SPCA is defined on the elastic net. An IEN request would change the
     // algorithm, so it is rejected rather than silently run as EN.
     if (spca_ctrl_.gvs_ctrl.gvs_type != tg::GVSType::EN) {
         throw std::invalid_argument(
-            "TRexSPCA: gvs_ctrl.gvs_type must be EN. TRex-SPCA is defined on "
-            "the elastic net; the informed elastic net (IEN) is not supported.");
+            "TRexSPCA: gvs_ctrl.gvs_type must be EN. T-Rex+SPCA is defined on "
+            "the elastic net, and the informed elastic net (IEN) is not supported.");
     }
 
-    // Fail fast on strategies the per-PC GVS runs will reject anyway:
-    // without this pre-check the error only surfaces at PC 0 INSIDE
-    // select(), after the (potentially expensive) ordinary PCA has already
-    // been computed, and with a message naming TRexGVSSelector.
+    // The checks below repeat refusals of the T-Rex+GVS runs. Without them the
+    // error comes at the first component inside select(), after the ordinary
+    // PCA is computed, and its message names TRexGVSSelector.
+    const auto rule = spca_ctrl_.gvs_ctrl.lambda2_method;
+    if (rule == tg::LambdaSelectionMethod::CV_1SE_IEN_CCD ||
+        rule == tg::LambdaSelectionMethod::CV_MIN_IEN_CCD ||
+        rule == tg::LambdaSelectionMethod::CV_1SE_TIK_SVD ||
+        rule == tg::LambdaSelectionMethod::CV_MIN_TIK_SVD) {
+        throw std::invalid_argument(
+            "TRexSPCA: gvs_ctrl.lambda2_method is a rule of the informed elastic "
+            "net, which T-Rex+SPCA does not support. Use CV_1SE_CCD, CV_MIN_CCD, "
+            "CV_1SE_SVD or CV_MIN_SVD.");
+    }
+
     const auto strat = spca_ctrl_.gvs_ctrl.trex_ctrl.lloop_strategy;
     if (strat == tc::LLoopStrategy::PERMUTATION ||
         strat == tc::LLoopStrategy::PERMUTATION_SEEDED) {

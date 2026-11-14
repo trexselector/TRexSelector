@@ -7,12 +7,12 @@
 /**
  * @file trex_spca.hpp
  *
- * @brief T-Rex Sparse PCA selector class.
+ * @brief T-Rex sparse PCA selector (T-Rex+SPCA).
  *
  * @details
- *  Implements from the T-Rex SPCA paper:
- *    5. T-Rex+GVS(EN) + ActiveSet   loading assembly
- *    6. T-Rex+GVS(EN) + Thresholded loading assembly
+ *  The two methods of the paper: the T-Rex PCA (SPCAMode::ActiveSet) and the
+ *  T-Rex Thresholded PCA (SPCAMode::Thresholded). A T-Rex+GVS run with the
+ *  elastic net selects the variables of each component.
  *
  *  Implementations are in trex_spca.cpp.
  */
@@ -47,13 +47,15 @@ namespace std_scaler = trex::ml_methods::scaler_methods;
 // ==============================================================================
 
 /**
- * @brief Sparse loading assembly strategy.
+ * @brief Assembly of the sparse loading vector from the selected set A_m.
  */
 enum class SPCAMode {
-    /** @brief Ridge regression of z_m on X_{A_m}, normalized (methods 5, 7). */
+    /** @brief Ridge regression of the component z_m on the selected columns
+     *  X_{A_m}, normalized to unit length. The T-Rex PCA of the paper. */
     ActiveSet,
 
-    /** @brief Top |A_m| ordinary PCA loadings, normalized (methods 6, 8). */
+    /** @brief The |A_m| largest ordinary PCA loadings in absolute value,
+     *  normalized to unit length. The T-Rex Thresholded PCA of the paper. */
     Thresholded
 };
 
@@ -63,32 +65,38 @@ enum class SPCAMode {
 // ==============================================================================
 
 /**
- * @brief Container for final sparse PCA components.
+ * @brief Result of the T-Rex sparse PCA selector.
+ *
+ * @details A component without a selected variable has a zero column in V
+ *  and Z and the explained variance 0.
  */
 struct TRexSPCAResult {
-    /** @brief Sparse PC score matrix (n x M); Z.col(m) = X_centered * V.col(m). */
+    /** @brief Scores of the sparse components (n x M): column m is the
+     *  centered X times column m of V. */
     Eigen::MatrixXd Z;
 
-    /** @brief Sparse loading matrix (p x M), columns L2-normalized.
+    /** @brief Sparse loadings (p x M), each column of unit L2 norm.
      *
-     *  In ActiveSet mode the nonzero support of column m equals active_sets[m].
-     *  In Thresholded mode it is the set of top-|active_sets[m]| ordinary PCA
-     *  loadings, which generally differs from active_sets[m]. */
+     *  In ActiveSet mode the non-zero entries of column m are the variables
+     *  of active_sets[m]. In Thresholded mode they are the |active_sets[m]|
+     *  largest ordinary PCA loadings, which can be other variables. */
     Eigen::MatrixXd V;
 
-    /** @brief FDR-controlled support indices per PC, as returned by the GVS
-     *  sub-selector. Note: in Thresholded mode this is NOT necessarily the
-     *  nonzero support of the corresponding column of V (see V). */
+    /** @brief Selected variables per component (0-based), the result of the
+     *  T-Rex+GVS runs. The FDR control holds for these sets. In Thresholded
+     *  mode they can differ from the non-zero entries of V (see V). */
     std::vector<std::vector<Eigen::Index>> active_sets;
 
-    /** @brief Marginal adjusted explained variance per component (M x 1),
-     *  i.e. r_mm^2 / (n - 1) from the QR decomposition of Z. */
+    /** @brief Adjusted explained variance per component (length M):
+     *  r_mm^2 / (n - 1), with r_mm the m-th diagonal element of R in the QR
+     *  decomposition Z = QR. The adjustment accounts for sparse components
+     *  that are not orthogonal. */
     Eigen::VectorXd adjusted_ev;
 
     /** @brief Cumulative adjusted explained variance as a fraction of the
-     *  total variance of centered X (M x 1). Note: this is not the oracle
-     *  PEV of Definition 1 in the T-Rex SPCA paper, whose denominator
-     *  (Signal EV + Mixed EV) requires the true support. */
+     *  total variance of the centered X (length M), between 0 and 1. It is
+     *  not the PEV of Definition 1 of the paper, whose denominator (signal
+     *  EV plus mixed EV) needs the true support. */
     Eigen::VectorXd cumulative_ev;
 };
 
@@ -98,7 +106,7 @@ struct TRexSPCAResult {
 // ==============================================================================
 
 /**
- * @brief Algorithmic control parameters for the T-Rex Sparse PCA selector.
+ * @brief Control parameters of the T-Rex sparse PCA selector.
  */
 struct TRexSPCAControlParameter {
 
@@ -106,62 +114,57 @@ struct TRexSPCAControlParameter {
     // Loading Assembly
     // ====================================
 
-    /** @brief Sparse loading assembly strategy (default: ActiveSet). */
+    /** @brief Assembly of the sparse loading vectors (default: ActiveSet). */
     SPCAMode mode = SPCAMode::ActiveSet;
 
-    /** @brief Ridge regularization penalty for the ActiveSet loading assembly step.
-     *  Used in the Ridge regression `(X_A^T X_A + lambda2_ridge_loadings * I)^{-1} X_A^T z_m`
-     *  to obtain sparse loading vectors on the selected active set.
-     *  (default: 1e-6).
+    /** @brief Ridge penalty of the loading assembly in ActiveSet mode
+     *  (default: 1e-6), in the regression
+     *  `(X_A^T X_A + lambda2_ridge_loadings * I)^{-1} X_A^T z_m`.
+     *  Not used in Thresholded mode.
      */
     double lambda2_ridge_loadings = 1e-6;
 
 
     // ====================================
-    // GVS Sub-Selector
+    // T-Rex+GVS Runs
     // ====================================
 
-    /** @brief GVS-specific control parameters forwarded to each per-PC TRexGVSSelector run.
+    /** @brief Control of the T-Rex+GVS run of each component, with the base
+     *  control in gvs_ctrl.trex_ctrl.
      *
-     *  gvs_ctrl.gvs_type must be EN (the default): TRex-SPCA is defined on
-     *  the elastic net, and the constructor throws std::invalid_argument for
-     *  IEN. Both gvs_ctrl.en_solver and gvs_ctrl.trex_ctrl.solver_type are
-     *  overridden internally to match the top-level `en_solver` knob
-     *  (TENET / TENET_AUG / TCDENET).
-     *
-     *  The GVS ridge penalty is controlled via:
-     *    - gvs_ctrl.lambda_2       : < 0 (default -1.0) is the "not supplied"
-     *                                sentinel and triggers auto-determination;
-     *                                == 0 is the degenerate pure T-LASSO case
-     *                                (no ridge, no grouping effect);
-     *                                > 0 supplies a fixed penalty in LARS units.
-     *    - gvs_ctrl.lambda2_method : selects the auto-determination strategy
-     *                                (CV_1SE_SVD, CV_MIN_SVD, CV_1SE_CCD,
-     *                                CV_MIN_CCD; default: CV_1SE_CCD).
+     *  - gvs_ctrl.gvs_type must be EN (the default). The constructor refuses
+     *    IEN, because the method is defined on the elastic net.
+     *  - gvs_ctrl.en_solver and gvs_ctrl.trex_ctrl.solver_type have no
+     *    effect: the selector replaces them by `en_solver` of this control.
+     *  - gvs_ctrl.lambda_2: a negative value (default: -1) lets the rule
+     *    gvs_ctrl.lambda2_method choose it, 0 is the T-LASSO without the
+     *    ridge part, and a positive value is used as it is. A supplied value
+     *    refers to the scale of the standardized columns. Under
+     *    ScalingMode::ZSCORE the columns have the squared norm n - 1, so the
+     *    same shrinkage needs the value times n - 1.
+     *  - gvs_ctrl.lambda2_method: CV_1SE_CCD (default), CV_MIN_CCD,
+     *    CV_1SE_SVD or CV_MIN_SVD. The constructor refuses the rules of the
+     *    informed elastic net (CV_*_IEN_CCD and CV_*_TIK_SVD).
+     *  - gvs_ctrl.trex_ctrl.lloop_strategy: see the class documentation.
      */
     tg::TRexGVSControlParameter gvs_ctrl;
 
-    /** @brief EN solver variant for the per-PC GVS(EN) sub-selector.
+    /** @brief Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG).
      *
-     *  - ENSolverType::TENET     : Gram-based EN — the ridge penalty is absorbed
-     *                              via a Cholesky update on X_A^T X_A + lambda2*I.
-     *  - ENSolverType::TENET_AUG : augmented-LASSO EN (default) — builds the
-     *                              row-augmented system internally and solves with
-     *                              an inner TLASSO.
-     *  - ENSolverType::TCDENET    : CCD EN — exact fixed-lambda1 elastic-net
-     *                              minimizers per dummy crossing.
+     *  - TENET_AUG: the elastic net as a LASSO on row-augmented data, the
+     *    form of the paper.
+     *  - TENET: the elastic net on the Gram matrix, with the ridge part in
+     *    the Cholesky update of X_A^T X_A + lambda_2 * I.
+     *  - TCDENET: coordinate descent. It is deprecated and will be removed
+     *    with the coordinate descent family in the next minor release. Use
+     *    TENET.
      *
-     *  All variants are mathematically equivalent for lambda2 > 0 and should
-     *  produce the same active sets. Exposed primarily so solver equivalence
-     *  can be validated directly. (gvs_type is always forced to EN by TRexSPCA;
-     *  IEN is not used.)
+     *  The three solve the same elastic net problem.
      */
     tg::ENSolverType en_solver = tg::ENSolverType::TENET_AUG;
 
-    // Note: the base T-Rex algorithmic control parameters are configured via
-    // `gvs_ctrl.trex_ctrl` (TRexGVSControlParameter now nests its own
-    // trex_ctrl) — there is no separate top-level trex_ctrl here, avoiding a
-    // duplicate/out-of-sync copy.
+    // The base control is gvs_ctrl.trex_ctrl. A second copy at this level
+    // could differ from it.
 };
 
 
@@ -172,26 +175,35 @@ struct TRexSPCAControlParameter {
 /**
  * @class TRexSPCA
  *
- * @brief T-Rex Sparse PCA selector.
+ * @brief T-Rex sparse PCA selector (T-Rex+SPCA): sparse principal components
+ *        whose non-zero loadings are selected with FDR control. Each ordinary
+ *        principal component is the response of a T-Rex+GVS run with the
+ *        elastic net.
  *
  * @details
- *  For each principal component m = 1, ..., M:
- *    1. Compute ordinary PCA to obtain the PC response vector z_m.
- *    2. Run TRexGVSSelector (EN) with target FDR to obtain a sparse
- *       active set A_m.
- *    3. Assemble the sparse loading vector v_m:
- *       - SPCAMode::ActiveSet:   Ridge regression of z_m on X_{A_m}, normalized.
- *       - SPCAMode::Thresholded: Top |A_m| ordinary loadings, normalized.
- *    4. Compute sparse PC scores: Z_m = X * v_m (over the nonzero support of
- *       v_m, which in Thresholded mode may differ from A_m).
+ *  Steps:
+ *    1. Center X and compute its first M ordinary principal components
+ *       z_1, ..., z_M (a PCA of the covariance, the columns are not scaled).
+ *    2. For each component m, a T-Rex+GVS run with the elastic net and the
+ *       response z_m selects the set A_m at the target FDR.
+ *    3. Assemble the sparse loading vector v_m from A_m (see SPCAMode), and
+ *       the scores of the sparse component, the centered X times v_m.
+ *    4. Adjust the explained variance for components that are not
+ *       orthogonal, by the QR decomposition of the scores.
  *
- *  After all M components are assembled, explained variance is adjusted for
- *  non-orthogonality via a QR decomposition of the full score matrix Z.
+ *  A component without a selected variable has a zero column in V and Z and
+ *  the explained variance 0.
+ *
+ *  L-loop strategies: STANDARD, HCONCAT, SKIPL and SEEDED of the T-Rex+GVS
+ *  runs are supported. PERMUTATION and PERMUTATION_SEEDED are refused at
+ *  construction, as by the T-Rex+GVS selector.
  *
  *  Data contract:
- *    - X is centered in-place at the start of select() and restored on return
- *      (normal path) or by the destructor (exception path).
- *    - X is not owned; the Map must remain valid for the lifetime of the object.
+ *    - X is centered in place during select() and restored on return, also
+ *      when select() ends with an exception. The centering happens under
+ *      every scaling mode.
+ *    - X is not owned. The Eigen::Map must stay valid for the lifetime of
+ *      the object.
  *
  *  References:
  *  -----------
@@ -210,19 +222,24 @@ public:
     // ============================================================
 
     /**
-     * @brief Construct a TRexSPCA selector.
+     * @brief Construct the T-Rex sparse PCA selector.
      *
-     * @param X          Design matrix (n x p) — Eigen::Map, not copied.
-     *                   X is centered in-place during select() and restored on return.
-     * @param M          Number of sparse principal components to extract.
-     * @param tFDR       Target false discovery rate.
-     * @param spca_ctrl  Control parameters (loading mode, GVS type, lambda2, T-Rex params).
-     * @param seed       Random seed for reproducibility.
-     *                   seed >= 0 : per-PC deterministic runs via mix_seed(seed, m).
-     *                   seed < 0  : non-deterministic (default: -1).
-     * @param verbose    Enable verbose output (default: false).
+     * @param X          Design matrix (n x p), Eigen::Map, not copied. It is
+     *                   centered in place during select() and restored on return.
+     * @param M          Number of sparse principal components, 1 to min(n, p).
+     * @param tFDR       Target FDR level of each component, in [0, 1].
+     * @param spca_ctrl  Control parameters: the loading assembly, the elastic
+     *                   net solver and the control of the T-Rex+GVS runs.
+     * @param seed       Random seed. A negative value (default: -1) gives a run
+     *                   that is not reproducible. Each component runs with its
+     *                   own seed derived from it.
+     * @param verbose    Print one line per component (default: false). The
+     *                   T-Rex+GVS runs stay quiet.
      *
-     * @throws std::invalid_argument if M > min(n, p).
+     * @throws std::invalid_argument if M is not in 1 to min(n, p), if tFDR is
+     *         not in [0, 1], if gvs_ctrl.gvs_type is IEN, if
+     *         gvs_ctrl.lambda2_method is a rule of the informed elastic net,
+     *         or if the L-loop strategy is PERMUTATION or PERMUTATION_SEEDED.
      */
     TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
              Eigen::Index M,
@@ -252,7 +269,7 @@ public:
     // ============================================================
 
     /**
-     * @brief Run T-Rex Sparse PCA selection.
+     * @brief Run the T-Rex sparse PCA selection.
      *
      * @return Const reference to the stored TRexSPCAResult (sparse PCs,
      *         loadings, active sets, explained variance); the bindings wrap
@@ -287,7 +304,7 @@ private:
     /** @brief Algorithmic control parameters. */
     TRexSPCAControlParameter spca_ctrl_;
 
-    /** @brief Random seed (< 0 for non-deterministic). */
+    /** @brief Random seed. A negative value gives a run that is not reproducible. */
     const int seed_;
 
     /** @brief Verbose output flag. */

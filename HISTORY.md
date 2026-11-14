@@ -16,6 +16,55 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The SPCA selector checks its bounds at construction, and its help agrees on the three surfaces
+
+- The bounds in C++. The constructor of `TRexSPCA` checked `M > min(n, p)` only. `M = 0` failed in
+  `select()` with the message of the SVD and `M = -1` with `std::bad_alloc`. The target FDR was checked by
+  the inner selector at the first component, after the PCA. The constructor now refuses `M < 1`, a target
+  outside [0, 1] (NaN included) and the four rules of the informed elastic net for `lambda2_method`,
+  which the inner selector had refused late and under its own name.
+- The range of `tFDR`. R and the Python root class took (0, 1), while C++ and every other selector take
+  [0, 1]. They take [0, 1] now. The Python root class no longer checks `M` and `tFDR` itself, the core
+  does. R checks the bounds of the core in `$new()`, because its C++ object is built in `select()`, so
+  an `M` above `min(n, p)` is refused at construction as well.
+- `verbose` of the Python root class. It had no such argument and always ran quiet. It gains
+  `verbose = False`, the default of C++ and R. The default stays false on the three surfaces (Fabian).
+- Wrong texts. `cumulative_ev` was a "percentage" in R and Python, and it is a fraction of the total
+  variance of the centered X. Guide page 07 of R and Python called `adjusted_ev` a share, and it is a
+  variance. C++ numbered the two modes "methods 5, 7" and "methods 6, 8". The paper has no numbers, it
+  names the T-Rex PCA and the T-Rex Thresholded PCA, and 7 and 8 were variants with the informed
+  elastic net, which the constructor refuses. C++ said that `gvs_type` is "forced to EN", where it is
+  refused. A supplied `lambda_2` was "in LARS units" on the three surfaces, and it refers to the scale
+  of the standardized columns, as corrected for the GVS selector. The Python root class said that X is
+  "stored by reference", which holds for a Fortran-ordered float64 array only. The C++ class text
+  computed the PCA per component, and it is computed once. The C++ guide page said that
+  `lambda_2 = 0` gives a warning, which only the R class and the Python root class give.
+- Gaps closed on the three surfaces. A component without a selected variable has a zero column in `V`
+  and `Z` and the explained variance 0. In Thresholded mode the non-zero loadings can be other variables
+  than `active_sets`, for which the FDR control holds (C++ said so, R and Python did not).
+  `adjusted_ev` carries its definition, and `cumulative_ev` the note that it is not the PEV of the
+  paper. The class documentation of C++ and Python names the L-loop strategies. Python says that the
+  nested `gvs_ctrl.en_solver` and `gvs_ctrl.trex_ctrl.solver_type` are replaced by `en_solver` of the
+  control. TENET_AUG is named as the form of the paper and TCDENET as deprecated.
+- `cumulative_ev` against the PEV of the paper (Fabian's question). The numerator is the same, the
+  adjusted explained variance. The paper divides by the signal EV plus the mixed EV, which needs the
+  true support and exceeds 100 % when a method puts variance on null loadings. The library divides by
+  the total variance of the centered X, which exists for any data and keeps the value between 0 and 1.
+- The name. The class opens with "T-Rex sparse PCA selector (T-Rex+SPCA): sparse principal components
+  whose non-zero loadings are selected with FDR control. Each ordinary principal component is the
+  response of a T-Rex+GVS run with the elastic net." The short form is Fabian's. The titles of the guide
+  pages keep "T-Rex SPCA" until the page review.
+- The control of R. `trex_spca_control()` reaches nine parameters, while C++ and Python reach the whole
+  GVS control and the base control. Fabian: the missing reach must be repaired, and for 2.0.2 the help
+  says that every other parameter of the inner runs stays at its default. The repair belongs to the
+  naming pass.
+- Tests. C++ pins the refusals at construction (`M`, `tFDR`, the rules, the permutation strategies),
+  that the four strategies run, that the nested solver fields have no effect, that `cumulative_ev` is
+  the running sum of `adjusted_ev` over the total variance, that Thresholded mode keeps as many
+  loadings as variables were selected, and the rule for a component without a selection. R and Python
+  pin the same statements on their surface, Python also `verbose` and the copy of an array that is not
+  Fortran-ordered. C++ tests 733 of 733, R tests 2,041, Python tests 760.
+
 #### The biobank screening has one parametrization on the three surfaces, and its help is corrected
 
 - The default of `verbose`. R printed by default (`verbose = TRUE`), C++ and Python do not. R takes the

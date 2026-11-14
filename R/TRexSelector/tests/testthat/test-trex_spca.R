@@ -57,7 +57,7 @@ test_that("trex_spca_control rejects invalid gvs_type", {
   expect_error(trex_spca_control(gvs_type = "unknown"))
 })
 
-test_that("trex_spca_control rejects IEN (T-Rex SPCA is EN only)", {
+test_that("trex_spca_control rejects IEN (T-Rex+SPCA is EN only)", {
   expect_error(trex_spca_control(gvs_type = "IEN"), "must be \"EN\"")
 })
 
@@ -91,7 +91,7 @@ test_that("TRexSPCASelector select() runs to completion (Thresholded + EN)", {
 })
 
 test_that("TRexSPCASelector rejects IEN in a hand-built control list", {
-  # T-Rex SPCA is EN only; the C++ constructor guards a list that bypasses
+  # T-Rex+SPCA is EN only, and the C++ constructor guards a list that bypasses
   # trex_spca_control()
   d <- local_fixture()
   ctrl <- trex_spca_control(mode = "ActiveSet", K = 3L, max_dummy_multiplier = 3L)
@@ -204,6 +204,56 @@ test_that("TRexSPCASelector: cumulative_ev is non-decreasing and in [0, 1]", {
 })
 
 
+test_that("TRexSPCASelector: cumulative_ev is a fraction of the total variance", {
+  d <- local_fixture()
+  X0 <- d$X * 1.0
+  sel <- TRexSPCASelector$new(d$X, M, tFDR, control = ctrl, seed = 1L)
+  sel$select()
+  Xc <- scale(X0, center = TRUE, scale = FALSE)
+  total_variance <- sum(Xc^2) / (d$n - 1)
+  expect_equal(sel$cumulative_ev, cumsum(sel$adjusted_ev) / total_variance, tolerance = 1e-12)
+  # adjusted_ev is r_mm^2 / (n - 1) of the QR decomposition of the scores. The reference
+  # orthogonalizes by hand, because qr() of R may reorder the columns.
+  r2 <- numeric(M)
+  Q <- matrix(0, d$n, 0)
+  for (m in seq_len(M)) {
+    z <- sel$Z[, m] - Q %*% crossprod(Q, sel$Z[, m])
+    r2[m] <- sum(z^2)
+    if (r2[m] > 0) Q <- cbind(Q, z / sqrt(r2[m]))
+  }
+  expect_equal(sel$adjusted_ev, r2 / (d$n - 1), tolerance = 1e-8)
+})
+
+test_that("TRexSPCASelector: a component without a selection has zero columns", {
+  # The rule holds for every component, whatever is selected.
+  for (target in c(0, 0.05, 0.2)) {
+    d <- local_fixture()
+    sel <- TRexSPCASelector$new(d$X, 3L, tFDR = target, control = ctrl, seed = 1L)
+    sel$select()
+    previous <- 0
+    for (m in 1:3) {
+      if (length(sel$active_sets[[m]]) == 0L) {
+        expect_identical(sum(abs(sel$V[, m])), 0)
+        expect_identical(sum(abs(sel$Z[, m])), 0)
+        expect_identical(sel$adjusted_ev[m], 0)
+        expect_identical(sel$cumulative_ev[m], previous)
+      } else {
+        expect_equal(sqrt(sum(sel$V[, m]^2)), 1, tolerance = 1e-12)
+      }
+      previous <- sel$cumulative_ev[m]
+    }
+  }
+})
+
+test_that("TRexSPCASelector: Thresholded keeps as many loadings as variables were selected", {
+  d <- local_fixture()
+  sel <- TRexSPCASelector$new(d$X, M, tFDR, seed = 1L,
+                              control = trex_spca_control(mode = "Thresholded", K = 3L,
+                                                          max_dummy_multiplier = 3L))
+  sel$select()
+  expect_identical(as.integer(colSums(sel$V != 0)), lengths(sel$active_sets))
+})
+
 # =============================================================================
 # Group 6: TRexSPCASelector — data integrity
 # =============================================================================
@@ -229,10 +279,25 @@ test_that("TRexSPCASelector rejects M < 1 at construction", {
   expect_error(TRexSPCASelector$new(d$X, 0L, tFDR, control = ctrl, seed = 1L))
 })
 
-test_that("TRexSPCASelector rejects tFDR out of (0, 1) at construction", {
+test_that("TRexSPCASelector rejects M above min(n, p) at construction", {
   d <- local_fixture()
-  expect_error(TRexSPCASelector$new(d$X, M, tFDR = 0, control = ctrl, seed = 1L))
-  expect_error(TRexSPCASelector$new(d$X, M, tFDR = 1, control = ctrl, seed = 1L))
+  expect_error(TRexSPCASelector$new(d$X, d$p + 1L, tFDR, control = ctrl, seed = 1L),
+               "from 1 to min\\(n, p\\) = 10")
+  expect_no_error(TRexSPCASelector$new(d$X, d$p, tFDR, control = ctrl, seed = 1L))
+})
+
+test_that("TRexSPCASelector takes tFDR in [0, 1] and rejects values outside", {
+  d <- local_fixture()
+  for (bad in c(-0.1, 1.5, NA_real_)) {
+    expect_error(TRexSPCASelector$new(d$X, M, tFDR = bad, control = ctrl, seed = 1L),
+                 "tFDR must be in \\[0, 1\\]")
+  }
+  # the two ends are valid, as for the other selectors
+  for (good in c(0, 1)) {
+    sel <- TRexSPCASelector$new(d$X, M, tFDR = good, control = ctrl, seed = 1L)
+    expect_no_error(sel$select())
+    expect_length(sel$active_sets, M)
+  }
 })
 
 test_that("TRexSPCASelector warns when lambda_2 == 0 (degenerate no-ridge)", {

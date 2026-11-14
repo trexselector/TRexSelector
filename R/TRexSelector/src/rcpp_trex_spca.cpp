@@ -25,10 +25,9 @@ namespace tg = trex::trex_selector_methods::ad::trex_gvs;
 /**
  * @brief Parses an R list into a TRexSPCAControlParameter C++ struct.
  *
- * @param spca_ctrl_list R list with keys:
- *   mode ("ActiveSet"/"Thresholded"), lambda2_ridge_loadings,
- *   gvs_type ("EN"/"IEN"), lambda_2, lambda2_method,
- *   ("CV_1SE"/"CV_MIN"/"GCV"), K, max_dummy_multiplier.
+ * @param spca_ctrl_list R list of trex_spca_control(): mode, lambda2_ridge_loadings,
+ *   gvs_type, lambda_2, lambda2_method, en_solver, tenet_aug_use_lars, K,
+ *   max_dummy_multiplier. Other keys are not read.
  * @return Populated TRexSPCAControlParameter instance.
  */
 TRexSPCAControlParameter parse_spca_control(const Rcpp::List& spca_ctrl_list) {
@@ -78,9 +77,9 @@ TRexSPCAControlParameter parse_spca_control(const Rcpp::List& spca_ctrl_list) {
         }
     }
 
-    // LARS-vs-LASSO inner path for the per-PC TENET_AUG sub-selector. The SPCA
-    // orchestrator copies gvs_ctrl (overriding only gvs_type/en_solver), so the
-    // flag flows through to each per-PC augmented solver.
+    // LARS or LASSO inner path of the TENET_AUG solver. The selector passes
+    // gvs_ctrl to the T-Rex+GVS run of each component and replaces only the
+    // solver fields, so the flag reaches every run.
     if (spca_ctrl_list.containsElementNamed("tenet_aug_use_lars")) {
         ctrl.gvs_ctrl.tenet_aug_use_lars =
             Rcpp::as<bool>(spca_ctrl_list["tenet_aug_use_lars"]);
@@ -155,27 +154,26 @@ static Rcpp::List spca_select_on_map(
     );
 }
 
-//' @title Run T-Rex Sparse PCA selection
+//' @title Run the T-Rex sparse PCA selection
 //'
-//' @description Orchestrates M rounds of ordinary PCA, T-Rex GVS FDR-controlled
-//'   variable selection, and sparse loading assembly to produce sparse principal
-//'   components.
+//' @description The ordinary PCA of the centered X, one T-Rex+GVS run with the
+//'   elastic net per component, and the assembly of the sparse loadings.
 //'
-//' @param X Design matrix (n x p). Column-centered internally; restored on return.
-//' @param M Integer, number of sparse PCs to extract.
-//' @param tFDR Numeric, target false discovery rate in (0, 1).
-//' @param spca_ctrl_list Named R list of control parameters (mode,
-//'   lambda2_ridge_loadings, gvs_type, lambda_2, lambda2_method,
-//'   K, max_dummy_multiplier).
-//' @param seed Integer random seed. \code{-1} (default) for non-deterministic.
+//' @param X Design matrix (n x p). Centered in place and restored on return.
+//' @param M Number of sparse principal components, 1 to min(n, p).
+//' @param tFDR Target FDR level of each component, between 0 and 1.
+//' @param spca_ctrl_list The list of trex_spca_control().
+//' @param seed Random seed. A negative value gives a run that is not reproducible.
+//' @param verbose Whether to print one line per component.
 //'
 //' @return Named list:
 //'   \itemize{
-//'     \item \code{Z} Score matrix (n x M).
-//'     \item \code{V} Loading matrix (p x M).
+//'     \item \code{Z} Scores of the sparse components (n x M).
+//'     \item \code{V} Sparse loadings (p x M).
 //'     \item \code{active_sets} List of M integer vectors (1-based indices).
-//'     \item \code{adjusted_ev} Numeric vector of adjusted explained variance (M).
-//'     \item \code{cumulative_ev} Numeric vector of cumulative explained variance (M).
+//'     \item \code{adjusted_ev} Adjusted explained variance per component (length M).
+//'     \item \code{cumulative_ev} Cumulative adjusted explained variance as a fraction of
+//'       the total variance (length M).
 //'   }
 //' @noRd
 // [[Rcpp::export]]
