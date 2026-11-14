@@ -245,11 +245,28 @@ TEST(TikLambda2PowerRule, Driver_SortsDeduplicatesAndFlagsBoundaries) {
 TEST(TikLambda2PowerRule, Driver_Validation) {
     Lambda2PowerRuleConfig cfg;
     const auto probe = [](double) { return Lambda2Probe{}; };
+    cfg.grid.clear();
     EXPECT_THROW(run_lambda2_power_rule(cfg, probe), std::invalid_argument);
     cfg.grid = {-1.0};
     EXPECT_THROW(run_lambda2_power_rule(cfg, probe), std::invalid_argument);
     cfg.grid = {std::numeric_limits<double>::infinity()};
     EXPECT_THROW(run_lambda2_power_rule(cfg, probe), std::invalid_argument);
+}
+
+
+/** @brief The pilot rule and the power rule share one default grid, so a
+ *  default config of the power rule runs. */
+TEST(TikLambda2PowerRule, DefaultGridIsTheGridOfThePilotRule) {
+    const std::vector<double> grid = default_lambda2_grid();
+    EXPECT_EQ(Lambda2PowerRuleConfig{}.grid, grid);
+    EXPECT_EQ(TRexTikhonovControlParameter{}.pilot_grid, grid);
+    ASSERT_FALSE(grid.empty());
+    EXPECT_DOUBLE_EQ(grid.front(), 0.0);
+    EXPECT_EQ(validate_lambda2_grid(grid), grid);   // ascending, no duplicates
+
+    const auto probe = [](double) { return Lambda2Probe{}; };
+    const auto res = run_lambda2_power_rule(Lambda2PowerRuleConfig{}, probe);
+    EXPECT_EQ(res.probes.size(), grid.size());
 }
 
 
@@ -304,6 +321,24 @@ TEST(TikLambda2PowerRule, Tikhonov_SharedSeedReproduces) {
         EXPECT_EQ(a.probes[k].selected, b.probes[k].selected);
         EXPECT_EQ(a.probes[k].T_stop, b.probes[k].T_stop);
     }
+}
+
+/** @brief The probes share their dummies through the seed. A negative seed
+ *  draws fresh dummies per probe and is refused by both rules. */
+TEST(TikLambda2PowerRule, NegativeSeedIsRefused) {
+    const BlockData d = testDesign();
+    Lambda2PowerRuleConfig cfg;
+    cfg.grid = {0.0, 1.0};
+    EXPECT_THROW(tikhonov_lambda2_power_rule(d.X, d.y, 0.1, centeringControl(d.groups), -1, cfg),
+                 std::invalid_argument);
+
+    gvs::TRexGVSControlParameter gvs_ctrl;
+    gvs_ctrl.prior_groups = d.groups;
+    gvs_ctrl.trex_ctrl    = baseControl();
+    gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    EXPECT_THROW(gvs_lambda2_power_rule(d.X, d.y, 0.1, gvs_ctrl, -1, cfg), std::invalid_argument);
+
+    EXPECT_NO_THROW(tikhonov_lambda2_power_rule(d.X, d.y, 0.1, centeringControl(d.groups), 0, cfg));
 }
 
 /** @brief The GVS overload (elastic-net ridge weight) runs the grid and

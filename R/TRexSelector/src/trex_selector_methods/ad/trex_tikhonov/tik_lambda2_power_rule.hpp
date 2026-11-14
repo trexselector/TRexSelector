@@ -59,6 +59,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstddef>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -87,8 +89,9 @@ struct Lambda2PowerRuleConfig {
     /** @brief lambda_2 candidates (>= 0, finite; sorted ascending and
      *  de-duplicated by the driver). Include 0 when "no penalty" must be
      *  an admissible answer — a prior that misfits the truth loses power
-     *  monotonically and the rule then switches it off. */
-    std::vector<double> grid;
+     *  monotonically and the rule then switches it off. Default:
+     *  `default_lambda2_grid()`, the grid of the pilot rule. */
+    std::vector<double> grid = default_lambda2_grid();
 
     /** @brief How many selections below the maximum still count as "on the
      *  plateau". Default: 1; 0 reads the largest selection. */
@@ -168,6 +171,22 @@ inline std::vector<double> lambda2_power_rule_grid(const Lambda2PowerRuleConfig&
 // ===================================================================================
 
 /**
+ * @brief The probes of a profile share their dummies through the seed, so a
+ *        negative seed, which draws fresh dummies per selector, is refused.
+ *
+ * @throws std::invalid_argument when seed < 0.
+ */
+inline void require_shared_seed(int seed, const char* who)
+{
+    if (seed < 0) {
+        throw std::invalid_argument(
+            std::string(who) + ": seed must be >= 0. The probes share their "
+            "dummies through the seed, and a negative seed draws fresh "
+            "dummies for every probe.");
+    }
+}
+
+/**
  * @brief Profile a selector over the grid and pick.
  *
  * @tparam Probe  Callable `Lambda2Probe(double lambda2)` running ONE full
@@ -218,8 +237,11 @@ Lambda2PowerRuleResult run_lambda2_power_rule(const Lambda2PowerRuleConfig& cfg,
  *              rest (penalty structure, K, groups, dummies, base control)
  *              is shared by every probe.
  * @param seed  Selector seed, the SAME for every probe (common dummies).
+ *              Must be >= 0.
  * @param cfg   Grid and tolerance.
  * @param verbose Selector verbosity.
+ *
+ * @throws std::invalid_argument when seed < 0.
  */
 inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd> X,
                                                           Eigen::Map<Eigen::VectorXd> y,
@@ -229,6 +251,7 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::Matr
                                                           const Lambda2PowerRuleConfig& cfg,
                                                           bool verbose = false)
 {
+    require_shared_seed(seed, "tikhonov_lambda2_power_rule");
     return run_lambda2_power_rule(cfg, [&](double l2) {
         ctrl.lambda_2 = l2;
         TRexTikhonovSelector selector(X, y, tFDR, ctrl, seed, verbose);
@@ -262,6 +285,8 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(const Eigen::MatrixXd&
  *        ridge weight), on the caller's buffers. Same contract as the
  *        Tikhonov overload; `lambda_2 = 0` on the grid is the plain lasso
  *        T-Rex.
+ *
+ * @throws std::invalid_argument when seed < 0.
  */
 inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd> X,
                                                      Eigen::Map<Eigen::VectorXd> y,
@@ -271,6 +296,7 @@ inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd>
                                                      const Lambda2PowerRuleConfig& cfg,
                                                      bool verbose = false)
 {
+    require_shared_seed(seed, "gvs_lambda2_power_rule");
     return run_lambda2_power_rule(cfg, [&](double l2) {
         ctrl.lambda_2 = l2;
         trex_gvs::TRexGVSSelector selector(X, y, tFDR, ctrl, seed, verbose);

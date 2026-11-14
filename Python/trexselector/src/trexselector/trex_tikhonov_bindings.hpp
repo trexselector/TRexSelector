@@ -362,7 +362,7 @@ inline void bind_trex_tikhonov(py::module& m) {
           py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
           py::arg("trex_control") = TRexControlParameter(),
           py::arg("seed") = 0,
-          py::arg("grid") = std::vector<double>{0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0},
+          py::arg("grid") = tik::default_lambda2_grid(),
           py::arg("knee_tolerance") = 1.0, py::arg("verbose") = false,
           "The knee of the full lambda_2 profile of the Tikhonov T-Rex: one FDR-controlled selection per grid value "
           "with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance "

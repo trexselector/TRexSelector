@@ -16,6 +16,27 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The power rule refuses a negative seed and has the default grid of the pilot rule
+
+Step 3 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 6 and 7).
+
+- The seed. `tikhonov_lambda2_power_rule()` and `gvs_lambda2_power_rule()` run one selection per grid
+  value with the same seed, so that the probes share their dummies and differ by the penalty alone. A
+  negative seed draws fresh dummies for every selector, and C++ accepted it: with seed 5 two calls gave
+  the counts 10 12 11 11 twice, with seed -1 they gave 11 10 11 12 and 10 10 14 11. Both functions
+  refuse a negative seed with std::invalid_argument (`require_shared_seed()`). R and the Python root
+  function had refused it already, the Python core function now does through C++.
+- The default grid. `Lambda2PowerRuleConfig::grid` was empty, so a default config failed with "the
+  lambda_2 grid is empty", while the pilot rule had 0, 1, 3, 10, 30, 100, 300, 1000, 3000 and R and
+  Python had written the same numbers into their bindings. `default_lambda2_grid()` in
+  tik_lambda2_pick.hpp holds the grid once, and `pilot_grid`, the config of the power rule and the
+  default of the Python core binding take it from there. The defaults in the signatures of the R
+  function and of the Python root function hold the same numbers until the two classes are reworked,
+  and a test on each surface pins that they agree.
+- Tests. C++ pins the refusal for both rules, that the default config runs and that the three defaults
+  are one grid. Python pins the refusal of the core function and its default grid, R and Python that
+  the power rule and the pilot rule agree.
+
 #### The Tikhonov selector checks its control at construction, and its penalty matrix once
 
 Step 2 of the C++ class of the Tikhonov selector (notes: TIKHONOV_cpp_findings.md, findings 2 to 5).

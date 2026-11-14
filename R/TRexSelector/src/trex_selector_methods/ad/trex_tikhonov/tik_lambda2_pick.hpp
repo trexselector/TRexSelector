@@ -156,6 +156,15 @@ inline GroupMajorityCount group_majority_count(const Eigen::VectorXd& phi,
 }
 
 /**
+ * @brief The default lambda_2 grid of the pilot rule and of the power rule.
+ *        It holds 0, so that "no penalty" is an admissible answer.
+ */
+inline std::vector<double> default_lambda2_grid()
+{
+    return {0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0};
+}
+
+/**
  * @brief The validated, ascending, de-duplicated lambda_2 grid.
  *
  * @throws std::invalid_argument on an empty grid or a negative / non-finite

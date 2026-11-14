@@ -475,3 +475,9 @@ test_that("GROUP_CENTERING refuses a supplied K that is not the centering matrix
   expect_identical(run(K_gc), run(NULL))
 })
 
+test_that("the power rule and the pilot rule have one default grid", {
+  grid <- eval(formals(trex_tikhonov_lambda2_power_rule)$grid)
+  expect_identical(grid, trex_tikhonov_control(tikhonov_K = diag(2))$pilot_grid)
+  expect_identical(grid, c(0, 1, 3, 10, 30, 100, 300, 1000, 3000))
+})
+

@@ -353,9 +353,9 @@ struct TRexTikhonovControlParameter {
      *  (n - 1) ZSCORE conversion applies, unlike the CV tuners). Sorted and
      *  de-duplicated internally. Keep 0 on it so that "no penalty" is an
      *  admissible answer: a prior that misfits the truth loses power
-     *  monotonically and the rule then switches it off. */
-    std::vector<double> pilot_grid = {0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0,
-                                      1000.0, 3000.0};
+     *  monotonically and the rule then switches it off. Default:
+     *  `default_lambda2_grid()`, 0, 1, 3, 10, 30, 100, 300, 1000, 3000. */
+    std::vector<double> pilot_grid = default_lambda2_grid();
 
     /** @brief Pilot experiments per grid point (>= 2; capped at
      *  `trex_ctrl.K`). The majority count has resolution 1/pilot_K. */

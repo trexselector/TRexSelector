@@ -508,3 +508,28 @@ def test_group_centering_refuses_another_matrix():
     # The right matrix and no matrix give the same run.
     assert np.array_equal(run(tsn.build_group_centering_k(groups)), run(None))
 
+
+def test_the_power_rule_and_the_pilot_rule_have_one_default_grid():
+    import inspect
+
+    grid = list(tsn.TRexTikhonovControlParameter().pilot_grid)
+    assert grid == [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0]
+    root_default = inspect.signature(tsn.tikhonov_lambda2_power_rule).parameters["grid"].default
+    assert list(root_default) == grid
+
+
+def test_the_core_power_rule_refuses_a_negative_seed():
+    """The probes share their dummies through the seed, so the core refuses a negative one."""
+    from trexselector.trex_selector_methods import ad as core
+
+    X, y, _, p = _small()
+    tik = tsn.TRexTikhonovControlParameter()
+    tik.tikhonov_K = np.eye(p)
+    base = tsn.TRexControlParameter()
+    base.K = 5
+    with pytest.raises(ValueError, match="seed must be >= 0"):
+        core.tikhonov_lambda2_power_rule(X, y, 0.3, tik, base, -1, [0.0, 1.0], 1.0, False)
+    # Without a grid the core takes the default grid of the pilot rule.
+    res = core.tikhonov_lambda2_power_rule(X, y, 0.3, tik, base, 3)
+    assert [pr.lambda2 for pr in res.probes] == list(tik.pilot_grid)
+
