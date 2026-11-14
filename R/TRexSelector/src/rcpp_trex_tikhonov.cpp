@@ -5,6 +5,7 @@
 // [[Rcpp::depends(RcppEigen)]]
 #include <RcppEigen.h>
 #include "rcpp_trex_tikhonov.h"
+#include "rcpp_trex_gvs.h"
 
 // std includes
 #include <optional>
@@ -196,6 +197,9 @@ TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control)
 // Shared parser from rcpp_trex_selector.cpp
 extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
 
+// Shared parser from rcpp_trex_gvs.cpp
+extern TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control);
+
 // Shared tuner-diagnostics converter from rcpp_trex_gvs.cpp
 extern Rcpp::List lambda2_cv_diagnostics_to_list(
     const trex::ml_methods::model_selection::lambda2_cv_diagnostics& d);
@@ -305,12 +309,8 @@ Rcpp::List trex_tikhonov_get_lambda2_cv_diagnostics(
 }
 
 
-//' @title Get the lambda_2 pilot record (ran == FALSE when no pilot ran)
-//' @noRd
-// [[Rcpp::export]]
-Rcpp::List trex_tikhonov_get_lambda2_pilot_result(
-    XPtr<RTRexTikhonovSelector> r_ptr) {
-    const Lambda2PilotResult& r = r_ptr->get()->getLambda2PilotResult();
+/** @brief The record of the lambda_2 pilot as an R list, the pick 1-based. */
+static Rcpp::List pilot_result_to_list(const Lambda2PilotResult& r) {
     auto counts = [](const std::vector<std::size_t>& v) {
         Rcpp::NumericVector out(v.size());
         for (std::size_t i = 0; i < v.size(); ++i) {
@@ -318,57 +318,79 @@ Rcpp::List trex_tikhonov_get_lambda2_pilot_result(
         }
         return out;
     };
+    // Rcpp::List::create() takes 20 elements at most, so the record is filled
+    // by hand. Every value is stored at once, which keeps it protected.
+    const R_xlen_t n = 21;
+    Rcpp::List out(n);
+    Rcpp::CharacterVector names(n);
+    R_xlen_t k = 0;
+    auto put = [&](const char* name, const Rcpp::RObject& value) {
+        out[k]   = value;
+        names[k] = name;
+        ++k;
+    };
+    put("ran",               Rcpp::wrap(r.ran));
+    put("grid",              Rcpp::wrap(r.grid));
+    put("grid_scale",        Rcpp::wrap(r.grid_scale));
+    put("counts",            counts(r.counts));
+    put("curve_majority",    rows_to_matrix(r.curve_majority));
+    put("curve_soft",        rows_to_matrix(r.curve_soft));
+    put("calibrated",        counts(r.calibrated));
+    put("group_majority",    counts(r.group_majority));
+    put("groups_qualifying", counts(r.groups_qualifying));
+    put("probe_seconds",     Rcpp::wrap(r.probe_seconds));
+    put("index",             Rcpp::wrap(static_cast<int>(r.index) + 1));  // 1-based
+    put("lambda2",           Rcpp::wrap(r.lambda2));
+    put("max_selected",      Rcpp::wrap(static_cast<double>(r.pick.max_selected)));
+    put("n_ties",            Rcpp::wrap(static_cast<double>(r.pick.n_ties)));
+    put("at_lower_end",      Rcpp::wrap(r.at_lower_end));
+    put("at_upper_end",      Rcpp::wrap(r.at_upper_end));
+    put("K_pilot",           Rcpp::wrap(static_cast<double>(r.K_pilot)));
+    put("T_pilot",           Rcpp::wrap(static_cast<double>(r.T_pilot)));
+    put("L_0",               Rcpp::wrap(static_cast<double>(r.L_0)));
+    put("dummy_tag",         Rcpp::wrap(static_cast<double>(r.dummy_tag)));
+    put("seconds",           Rcpp::wrap(r.seconds));
+    out.attr("names") = names;
+    return out;
+}
+
+
+//' @title Get the lambda_2 pilot record (ran == FALSE when no pilot ran)
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_tikhonov_get_lambda2_pilot_result(
+    XPtr<RTRexTikhonovSelector> r_ptr) {
+    return pilot_result_to_list(r_ptr->get()->getLambda2PilotResult());
+}
+
+
+//' @title Run the lambda_2 pilot alone and return its record
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_tikhonov_run_pilot_only(XPtr<RTRexTikhonovSelector> r_ptr) {
+    return pilot_result_to_list(r_ptr->get()->runPilotOnly());
+}
+
+
+//' @title Get the clusters the dummies of the last run were drawn for
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_tikhonov_get_dummy_clusters(XPtr<RTRexTikhonovSelector> r_ptr) {
+    const DummyClusters& c = r_ptr->get()->getDummyClusters();
+    Rcpp::IntegerVector groups(c.groups_vec.size());
+    for (Eigen::Index i = 0; i < c.groups_vec.size(); ++i) {
+        groups[i] = c.groups_vec[i] + 1;  // 0-based cluster IDs -> 1-based for R
+    }
     return Rcpp::List::create(
-        Rcpp::Named("ran")               = r.ran,
-        Rcpp::Named("grid")              = Rcpp::wrap(r.grid),
-        Rcpp::Named("grid_scale")        = r.grid_scale,
-        Rcpp::Named("counts")            = counts(r.counts),
-        Rcpp::Named("curve_majority")    = rows_to_matrix(r.curve_majority),
-        Rcpp::Named("curve_soft")        = rows_to_matrix(r.curve_soft),
-        Rcpp::Named("calibrated")        = counts(r.calibrated),
-        Rcpp::Named("group_majority")    = counts(r.group_majority),
-        Rcpp::Named("groups_qualifying") = counts(r.groups_qualifying),
-        Rcpp::Named("probe_seconds")     = Rcpp::wrap(r.probe_seconds),
-        Rcpp::Named("index")             = static_cast<int>(r.index) + 1,  // 1-based
-        Rcpp::Named("lambda2")           = r.lambda2,
-        Rcpp::Named("max_selected")      = static_cast<double>(r.pick.max_selected),
-        Rcpp::Named("n_ties")            = static_cast<double>(r.pick.n_ties),
-        Rcpp::Named("at_lower_end")      = r.at_lower_end,
-        Rcpp::Named("at_upper_end")      = r.at_upper_end,
-        Rcpp::Named("K_pilot")           = static_cast<double>(r.K_pilot),
-        Rcpp::Named("T_pilot")           = static_cast<double>(r.T_pilot),
-        Rcpp::Named("L_0")               = static_cast<double>(r.L_0),
-        Rcpp::Named("seconds")           = r.seconds
+        Rcpp::Named("groups")         = groups,
+        Rcpp::Named("max_clusters")   = static_cast<int>(c.max_clusters),
+        Rcpp::Named("hc_method_used") = c.hc_method_used
     );
 }
 
 
-//' @title The knee of the full lambda_2 profile: one selection per grid value
-//' @noRd
-// [[Rcpp::export]]
-Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
-    Rcpp::NumericMatrix X,
-    Rcpp::NumericVector y,
-    double tFDR,
-    Rcpp::List tik_control_list,
-    Rcpp::Nullable<Rcpp::List> trex_control_list,
-    int seed,
-    std::vector<double> grid,
-    double knee_tolerance,
-    bool verbose
-) {
-    // Every probe normalizes X in place and hands it back on return, so X
-    // and y are read through their maps and never copied.
-    Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
-    Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl =
-        tikhonov_run_control(tik_control_list, trex_control_list);
-    Lambda2PowerRuleConfig cfg;
-    cfg.grid           = std::move(grid);
-    cfg.knee_tolerance = knee_tolerance;
-    const Lambda2PowerRuleResult r = tikhonov_lambda2_power_rule(
-        X_map, y_map, tFDR, tik_ctrl, seed, cfg, verbose);
-
+/** @brief The result of a lambda_2 power rule as an R list, indices 1-based. */
+static Rcpp::List power_rule_result_to_list(const Lambda2PowerRuleResult& r) {
     auto one_based = [](const std::vector<std::size_t>& v) {
         Rcpp::IntegerVector out(static_cast<R_xlen_t>(v.size()));
         for (std::size_t i = 0; i < v.size(); ++i) {
@@ -407,9 +429,135 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
 }
 
 
+/** @brief Grid and tolerance of a power rule. */
+static Lambda2PowerRuleConfig power_rule_config(std::vector<double> grid, double knee_tolerance) {
+    Lambda2PowerRuleConfig cfg;
+    cfg.grid           = std::move(grid);
+    cfg.knee_tolerance = knee_tolerance;
+    return cfg;
+}
+
+
+//' @title The knee of the full lambda_2 profile: one selection per grid value
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
+    Rcpp::NumericMatrix X,
+    Rcpp::NumericVector y,
+    double tFDR,
+    Rcpp::List tik_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
+    int seed,
+    std::vector<double> grid,
+    double knee_tolerance,
+    bool verbose
+) {
+    // Every probe normalizes X in place and hands it back on return, so X
+    // and y are read through their maps and never copied.
+    Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
+    Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
+    const TRexTikhonovControlParameter tik_ctrl =
+        tikhonov_run_control(tik_control_list, trex_control_list);
+    return power_rule_result_to_list(tikhonov_lambda2_power_rule(
+        X_map, y_map, tFDR, tik_ctrl, seed,
+        power_rule_config(std::move(grid), knee_tolerance), verbose));
+}
+
+
+//' @title The power rule of the Tikhonov selector on a memory-mapped design
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_tikhonov_lambda2_power_rule_mmap_impl(
+    XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr,
+    Rcpp::NumericVector y,
+    double tFDR,
+    Rcpp::List tik_control_list,
+    Rcpp::Nullable<Rcpp::List> trex_control_list,
+    int seed,
+    std::vector<double> grid,
+    double knee_tolerance,
+    bool verbose
+) {
+    Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
+    const TRexTikhonovControlParameter tik_ctrl =
+        tikhonov_run_control(tik_control_list, trex_control_list);
+    // The probes work on the file through its Eigen::Map, as a selector does
+    return power_rule_result_to_list(tikhonov_lambda2_power_rule(
+        mapped_design_for(*X_ptr, tik_ctrl.trex_ctrl), y_map, tFDR, tik_ctrl, seed,
+        power_rule_config(std::move(grid), knee_tolerance), verbose));
+}
+
+
+//' @title The knee of the full lambda_2 profile of the GVS selector
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_gvs_lambda2_power_rule_impl(
+    Rcpp::NumericMatrix X,
+    Rcpp::NumericVector y,
+    double tFDR,
+    Rcpp::List gvs_control_list,
+    Rcpp::List trex_control_list,
+    int seed,
+    std::vector<double> grid,
+    double knee_tolerance,
+    bool verbose
+) {
+    Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
+    Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
+    const TRexGVSControlParameter gvs_ctrl = merge_gvs_control(
+        parse_gvs_parameter(gvs_control_list), parse_control_parameter(trex_control_list));
+    return power_rule_result_to_list(gvs_lambda2_power_rule(
+        X_map, y_map, tFDR, gvs_ctrl, seed,
+        power_rule_config(std::move(grid), knee_tolerance), verbose));
+}
+
+
+//' @title The power rule of the GVS selector on a memory-mapped design
+//' @noRd
+// [[Rcpp::export]]
+Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(
+    XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr,
+    Rcpp::NumericVector y,
+    double tFDR,
+    Rcpp::List gvs_control_list,
+    Rcpp::List trex_control_list,
+    int seed,
+    std::vector<double> grid,
+    double knee_tolerance,
+    bool verbose
+) {
+    Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
+    const TRexGVSControlParameter gvs_ctrl = merge_gvs_control(
+        parse_gvs_parameter(gvs_control_list), parse_control_parameter(trex_control_list));
+    return power_rule_result_to_list(gvs_lambda2_power_rule(
+        mapped_design_for(*X_ptr, gvs_ctrl.trex_ctrl), y_map, tFDR, gvs_ctrl, seed,
+        power_rule_config(std::move(grid), knee_tolerance), verbose));
+}
+
+
+//' @title The default lambda_2 grid of the pilot rule and of the power rules
+//' @noRd
+// [[Rcpp::export]]
+std::vector<double> trex_default_lambda2_grid_impl() {
+    return default_lambda2_grid();
+}
+
+
 //' @title Build K = Gamma^T Gamma from a Tikhonov operator Gamma
 //' @noRd
 // [[Rcpp::export]]
 Eigen::SparseMatrix<double> trex_tikhonov_gamma_to_k(SEXP gamma) {
     return TRexTikhonovSelector::gammaToK(as_sparse_matrix(gamma));
+}
+
+
+//' @title Build the centering matrix of a group assignment (1-based groups)
+//' @noRd
+// [[Rcpp::export]]
+Eigen::SparseMatrix<double> trex_tikhonov_group_centering_k(Rcpp::IntegerVector groups) {
+    std::vector<Eigen::Index> zero_based(static_cast<std::size_t>(groups.size()));
+    for (R_xlen_t i = 0; i < groups.size(); ++i) {
+        zero_based[static_cast<std::size_t>(i)] = groups[i] - 1;
+    }
+    return TRexTikhonovSelector::buildGroupCenteringK(zero_based);
 }

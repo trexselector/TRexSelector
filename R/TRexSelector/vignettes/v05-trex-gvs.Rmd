@@ -91,6 +91,10 @@ cross-validation. `lambda2_cv_diagnostics` is the health record of the tuner: wh
 seconds, and `n_profile_at_edge`, the number of $\lambda_2$ values whose profiled $\lambda_1$ optimum
 sat on a truncation edge of the path (0 is healthy).
 
+`trex_gvs_lambda2_power_rule()` chooses the penalty by the selector's own principle instead. It runs one
+selection per value of a grid with common dummies and returns the smallest $\lambda_2$ whose selection is
+within one selection of the largest, together with the selection of every grid value.
+
 ```{r cv}
 cv <- TRexGVSSelector$new(X, y, tFDR = 0.1, seed = 5, verbose = FALSE,
                           gvs_control = trex_gvs_control(gvs_type = "EN", cv_n_lambda = 100),

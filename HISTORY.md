@@ -16,6 +16,41 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The R Tikhonov class has what the C++ class has
+
+Step 2 of the rework of the R class of the Tikhonov selector (notes: TIKHONOV_findings.md, findings 3,
+5, 6 and 7). It is the R side of 5d06c2c.
+
+- `run_pilot_only()` runs the lambda_2 pilot without the selection and returns its record. It follows
+  the rule of C++: it needs the pilot rule, and a selector runs once.
+- The field `dummy_clusters` reports the clusters the dummies were drawn for, as a list with the names
+  of the fields of the R GVS selector (`groups` numbered from 1, `max_clusters`, `hc_method_used`).
+- The pilot record gains `dummy_tag`, which C++ and Python had. The record has 21 fields now, one more
+  than `Rcpp::List::create()` takes, so the glue fills the list element by element.
+- `trex_gvs_lambda2_power_rule()` is the power rule on the GVS selector. The R class of the GVS
+  selector held its solver handling and its length check of `groups` inline. Both moved into internal
+  functions that the class and the rule share (`.gvs_base_control()`, `.check_gvs_groups_length()`),
+  and the join of the two controls in the glue moved into `merge_gvs_control()`. The class behaves as
+  before.
+- `trex_tikhonov_lambda2_power_rule()` takes a memory-mapped design, which it had refused. The probes
+  work on the file through its Eigen::Map, as a selector does: `"readwrite"` mode, or `"readonly"`
+  under `scaling_mode = "NONE"`. The GVS rule takes one as well.
+- `trex_default_lambda2_grid()` returns the grid that C++ holds once. `pilot_grid` of
+  `trex_tikhonov_control()` and `grid` of the two rules default to the call of this function. R had the
+  nine numbers at two places.
+- `trex_build_group_centering_k()` builds the centering matrix of a group assignment, which C++ and
+  Python had.
+- `prior_groups` is checked in the words of R, with the check of `groups` in `trex_gvs_control()`
+  (`.check_group_numbers()`). Labels that start at 0 had given "prior_groups must be 0-based
+  non-negative integers" and a gap "Cluster ID 5 is missing". A wrong length is reported with the name
+  of the argument by the selector and by the power rule.
+- No result changes. The vignettes "T-Rex Tikhonov" and "T-Rex GVS" and the README name the new
+  functions.
+- On the way: the R glue compiles as one unit (`rcpp_bindings_unit.cpp`), so an incremental install
+  into a scratch library does not see a changed glue file. The test run of step 1 in the scratch
+  library had used the old glue for that reason. The clean build of `R CMD check` had the new one and
+  passed with the same 2,102 tests.
+
 #### The R Tikhonov class takes TIKNET only, as C++ does
 
 Step 1 of the rework of the R class of the Tikhonov selector (notes: TIKHONOV_findings.md, finding 1).

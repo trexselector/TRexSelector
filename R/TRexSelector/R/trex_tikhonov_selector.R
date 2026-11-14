@@ -17,6 +17,17 @@
 }
 
 
+# One group number per variable, checked with the name of the R argument.
+.check_tikhonov_groups_length <- function(tik_control, X) {
+  groups <- tik_control$prior_groups
+  if (!is.null(groups) && length(groups) != ncol(X)) {
+    stop("tik_control$prior_groups must have one entry per variable (p = ", ncol(X),
+         "). Got: ", length(groups), ".")
+  }
+  invisible(NULL)
+}
+
+
 #' @name TRexTikhonovSelector
 #'
 #' @title T-Rex Selector with a general Tikhonov penalty
@@ -111,6 +122,7 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
              "it carries the penalty matrix K or the penalty structure).")
       }
       .check_tikhonov_solver(control)
+      .check_tikhonov_groups_length(tik_control, X)
 
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
@@ -133,6 +145,20 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     select = function() {
       trex_tikhonov_select(private$ptr)
       invisible(self)
+    },
+
+    #' @description Run only the lambda_2 pilot, without the selection. The
+    #'   pilot builds the cluster model, runs the pilot experiments and picks
+    #'   lambda_2, and \code{X} is given back. It is for a caller who wants
+    #'   the pick alone. It needs \code{lambda_2 < 0} and
+    #'   \code{lambda2_method = "PILOT_KNEE"} in \code{tik_control} and is an
+    #'   error otherwise. A selector runs once: after \code{run_pilot_only()}
+    #'   a call of \code{select()} or of \code{run_pilot_only()} is an error,
+    #'   and so is \code{run_pilot_only()} after \code{select()}.
+    #' @return The record of the pilot, as the field \code{lambda2_pilot}
+    #'   holds it afterwards.
+    run_pilot_only = function() {
+      trex_tikhonov_run_pilot_only(private$ptr)
     }
   ),
   active = list(
@@ -179,12 +205,28 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   \code{max_selected}, \code{n_ties}, the boundary flags
     #'   \code{at_lower_end} / \code{at_upper_end} (widen the grid before
     #'   trusting a boundary pick), the budget actually used (\code{K_pilot},
-    #'   \code{T_pilot}, \code{L_0}) and the timings.
+    #'   \code{T_pilot}, \code{L_0}), the seed tag under which the pilot
+    #'   dummies were drawn (\code{dummy_tag}) and the timings.
     lambda2_pilot = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
       }
       trex_tikhonov_get_lambda2_pilot_result(private$ptr)
+    },
+
+    #' @field dummy_clusters The clusters the dummies of the last run were
+    #'   drawn for, a list with the names of the fields of
+    #'   \code{\link{TRexGVSSelector}}: \code{groups} (the cluster of each
+    #'   variable, numbered from 1), \code{max_clusters} (their number M) and
+    #'   \code{hc_method_used} (\code{"prior"} when \code{prior_groups} was
+    #'   supplied, else the linkage of the clustering). Before a run and with
+    #'   \code{cluster_dummies = FALSE} the record is empty: no groups, 0 and
+    #'   \code{""}.
+    dummy_clusters = function(value) {
+      if (!missing(value)) {
+        stop("Field is read-only.")
+      }
+      trex_tikhonov_get_dummy_clusters(private$ptr)
     }
   )
 )
@@ -206,8 +248,11 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #'   selection. The pick depends on y and lies outside the fixed-lambda_2 FDR
 #'   guarantee that each probe carries.
 #'
-#' @param X Feature matrix (n x p). Every probe normalizes it in place and
-#'   hands it back, so \code{X} is unchanged on return and never copied.
+#' @param X Feature matrix (n x p) in memory, or an \code{mmap_matrix}, the
+#'   handle of a memory-mapped file. Every probe normalizes it in place and
+#'   hands it back, so \code{X} is unchanged on return and never copied. A
+#'   memory-mapped design needs \code{"readwrite"} mode for that, and
+#'   \code{"readonly"} mode suffices under \code{scaling_mode = "NONE"}.
 #' @param y Response vector (length n).
 #' @param tFDR Target FDR level (default: 0.1).
 #' @param tik_control A Tikhonov control list from
@@ -219,9 +264,10 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
 #'   control that is passed must name the solver \code{"TIKNET"}.
 #' @param seed Selector seed, the same for every probe (default: 0). A
 #'   negative seed would draw fresh dummies per probe and is refused.
-#' @param grid lambda_2 candidates, stated for columns of unit norm (default
-#'   \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}), sorted and
-#'   de-duplicated. Under \code{scaling_mode = "ZSCORE"} the probes run at
+#' @param grid lambda_2 candidates, stated for columns of unit norm, sorted
+#'   and de-duplicated. The default is the grid of the pilot rule,
+#'   \code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10, 30, 100, 300,
+#'   1000, 3000. Under \code{scaling_mode = "ZSCORE"} the probes run at
 #'   these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
 #'   grid so that "no penalty" is an admissible answer.
 #' @param knee_tolerance Selections below the largest count that still
@@ -261,17 +307,32 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
                                              tik_control,
                                              control = NULL,
                                              seed = 0,
-                                             grid = c(0, 1, 3, 10, 30, 100,
-                                                      300, 1000, 3000),
+                                             grid = trex_default_lambda2_grid(),
                                              knee_tolerance = 1,
                                              verbose = FALSE) {
   if (missing(tik_control)) {
     stop("tik_control is required (build it with trex_tikhonov_control(); ",
          "it carries the penalty matrix K or the penalty structure).")
   }
+  .check_power_rule_arguments(seed, grid, knee_tolerance)
+  .check_tikhonov_solver(control)
+  .check_tikhonov_groups_length(tik_control, X)
+  y <- .as_double_vector(y)
   if (inherits(X, "MemoryMappedMatrix")) {
-    stop("trex_tikhonov_lambda2_power_rule() takes an in-memory matrix X.")
+    return(trex_tikhonov_lambda2_power_rule_mmap_impl(
+      get_ptr(X), y, tFDR, tik_control, control, as.integer(seed),
+      as.numeric(grid), as.numeric(knee_tolerance), verbose
+    ))
   }
+  X <- .as_double_matrix(X)
+  trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,
+                                        as.integer(seed), as.numeric(grid),
+                                        as.numeric(knee_tolerance), verbose)
+}
+
+
+# The arguments the two lambda_2 power rules share.
+.check_power_rule_arguments <- function(seed, grid, knee_tolerance) {
   if (!is.numeric(seed) || length(seed) != 1 || !is.finite(seed) || seed < 0) {
     stop("seed must be a single non-negative integer: the probes share ",
          "their dummies. Got: ", format(seed))
@@ -285,12 +346,30 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
     stop("knee_tolerance must be a single number >= 0. Got: ",
          format(knee_tolerance))
   }
-  .check_tikhonov_solver(control)
-  X <- .as_double_matrix(X)
-  y <- .as_double_vector(y)
-  trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,
-                                        as.integer(seed), as.numeric(grid),
-                                        as.numeric(knee_tolerance), verbose)
+  invisible(NULL)
+}
+
+
+#' @name trex_default_lambda2_grid
+#'
+#' @title The default lambda_2 grid of the pilot rule and of the power rules
+#'
+#' @description Returns the grid that the C++ core holds once: 0, 1, 3, 10, 30,
+#'   100, 300, 1000, 3000. It is the default of \code{pilot_grid} in
+#'   \code{\link{trex_tikhonov_control}} and of \code{grid} in
+#'   \code{\link{trex_tikhonov_lambda2_power_rule}} and
+#'   \code{\link{trex_gvs_lambda2_power_rule}}. The values are stated for
+#'   columns of unit norm.
+#'
+#' @return A numeric vector, ascending.
+#'
+#' @examples
+#' trex_default_lambda2_grid()
+#'
+#' @family T-Rex selectors and controls
+#' @export
+trex_default_lambda2_grid <- function() {
+  trex_default_lambda2_grid_impl()
 }
 
 
@@ -325,4 +404,40 @@ trex_gamma_to_k <- function(gamma) {
          "Matrix package installed.")
   }
   trex_tikhonov_gamma_to_k(gamma)
+}
+
+
+#' @name trex_build_group_centering_k
+#'
+#' @title Build the centering penalty matrix of a group assignment
+#'
+#' @description Computes the block-diagonal matrix
+#'   \code{K = blockdiag(I - J / p_m)} over the groups, with \code{p_m} the
+#'   size of group m and J the matrix of ones: the penalty under which the
+#'   members of a group share a coefficient. It is the matrix that
+#'   \code{penalty_structure = "GROUP_CENTERING"} of
+#'   \code{\link{trex_tikhonov_control}} stands for, so a selector with that
+#'   structure needs the groups alone. A group with one member contributes
+#'   nothing.
+#'
+#' @param prior_groups Integer vector with the group of each variable,
+#'   numbered 1 to M without gaps (length p).
+#'
+#' @return A sparse \code{Matrix::dgCMatrix} (p x p). Requires the Matrix
+#'   package (Suggests) for the sparse return class.
+#'
+#' @examples
+#' if (requireNamespace("Matrix", quietly = TRUE)) {
+#'   K <- trex_build_group_centering_k(rep(1:2, each = 3))
+#' }
+#'
+#' @family T-Rex selectors and controls
+#' @export
+trex_build_group_centering_k <- function(prior_groups) {
+  if (!requireNamespace("Matrix", quietly = TRUE)) {
+    stop("trex_build_group_centering_k() returns a sparse Matrix::dgCMatrix and ",
+         "needs the Matrix package installed.")
+  }
+  .check_group_numbers(prior_groups, "prior_groups")
+  trex_tikhonov_group_centering_k(as.integer(prior_groups))
 }

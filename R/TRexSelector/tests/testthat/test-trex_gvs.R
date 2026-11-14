@@ -719,3 +719,75 @@ test_that("the IEN tuner grids pass through and the tuner diagnostics are expose
   expect_false(d0$boundary_pick)
   expect_identical(d0$dfmax_ratio, 0)
 })
+
+
+# =============================================================================
+# The lambda_2 power rule on the GVS selector
+# =============================================================================
+
+test_that("the GVS power rule runs the grid and keeps the contract", {
+  set.seed(77)
+  n <- 120
+  p <- 30
+  z <- matrix(rnorm(n * 6), n, 6)
+  X <- z[, rep(1:6, each = 5)] * 0.75 + matrix(rnorm(n * p), n, p) * sqrt(1 - 0.75^2)
+  y <- as.numeric(rowSums(X[, 1:3]) * 3 + rnorm(n))
+  X0 <- X + 0
+  gvs <- trex_gvs_control(groups = rep(1:6, each = 5))
+  base <- trex_control(K = 5, max_dummy_multiplier = 2)
+  grid <- c(10, 0, 1, 10)
+  rule <- function(seed = 3, ...) {
+    trex_gvs_lambda2_power_rule(X, y, tFDR = 0.2, gvs_control = gvs, control = base,
+                                seed = seed, grid = grid, ...)
+  }
+
+  a <- rule()
+  expect_identical(a$grid, c(0, 1, 10))                 # sorted, de-duplicated
+  expect_identical(a$grid_scale, 1)
+  expect_length(a$probes, 3)
+  expect_identical(a$counts, vapply(a$probes, function(pr) length(pr$selected), 1))
+  expect_identical(a$max_selected, max(a$counts))
+  expect_identical(a$lambda2, a$grid[a$index])
+  expect_identical(a$selected, a$probes[[a$index]]$selected)
+  expect_identical(a$index, which(a$counts >= max(a$counts) - 1)[1])    # the knee
+  expect_equal(X, X0, tolerance = 1e-12)                # every probe hands X back
+  expect_identical(gvs$lambda_2, -1)                    # the control of the caller is not changed
+
+  # The same seed reproduces the profile
+  b <- rule()
+  expect_identical(lapply(b$probes, `[[`, "selected"), lapply(a$probes, `[[`, "selected"))
+
+  # The contract: a selector at the pick with the same seed selects the same variables
+  fixed <- gvs
+  fixed$lambda_2 <- a$lambda2
+  sel <- suppressWarnings(TRexGVSSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
+                                              gvs_control = fixed, control = base))
+  sel$select()
+  expect_identical(sort(sel$selected_indices), a$selected)
+
+  # Under ZSCORE the probes run at the grid times n - 1 (the equal selections are pinned in C++)
+  z_rule <- trex_gvs_lambda2_power_rule(X, y, tFDR = 0.2, gvs_control = gvs, seed = 3, grid = grid,
+                                        control = trex_control(K = 5, max_dummy_multiplier = 2,
+                                                               scaling_mode = "ZSCORE"))
+  expect_identical(z_rule$grid_scale, n - 1)
+  expect_equal(z_rule$grid, c(0, 1, 10) * (n - 1))
+  expect_identical(z_rule$lambda2, z_rule$grid[z_rule$index])
+
+  # The gates of the Tikhonov rule
+  expect_error(rule(seed = -1), "seed")
+  expect_error(rule(knee_tolerance = -1), "knee_tolerance")
+  expect_error(trex_gvs_lambda2_power_rule(X, y, grid = c(-1, 1)), "grid")
+  expect_error(trex_gvs_lambda2_power_rule(X, y, gvs_control = trex_gvs_control(groups = rep(1, p - 1))),
+               "gvs_control\\$groups must have one entry per variable")
+
+  # A memory-mapped design gives the run in memory
+  f <- tempfile(fileext = ".bin")
+  on.exit(unlink(f), add = TRUE)
+  mem_matrix_from(X, f)
+  on_file <- trex_gvs_lambda2_power_rule(mem_matrix(f, rows = n, cols = p, mode = "readwrite"), y,
+                                         tFDR = 0.2, gvs_control = gvs, control = base, seed = 3,
+                                         grid = grid)
+  expect_identical(on_file$counts, a$counts)
+  expect_identical(on_file$selected, a$selected)
+  expect_equal(as.matrix(mem_matrix(f, rows = n, cols = p, mode = "readonly")), X0, tolerance = 1e-12)
+})

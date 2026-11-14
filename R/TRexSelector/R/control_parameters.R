@@ -264,6 +264,19 @@ trex_control <- function(solver = "TLARS",
 }
 
 
+# Group numbers of an R argument: 1 to M without gaps, one whole number per
+# variable. The core counts from 0, so its own messages would not fit R.
+.check_group_numbers <- function(groups, name) {
+  whole <- is.numeric(groups) && length(groups) > 0 && !anyNA(groups) &&
+    all(groups == round(groups))
+  if (!whole || min(groups) < 1 || length(unique(groups)) != max(groups)) {
+    stop(name, " must number the groups 1 to M without gaps, with one whole ",
+         "number per variable.")
+  }
+  invisible(NULL)
+}
+
+
 #' @name trex_da_control
 #'
 #' @title TRex DA Control Parameters
@@ -486,12 +499,7 @@ trex_gvs_control <- function(gvs_type = "EN",
   }
   en_solver <- match.arg(en_solver, c("TENET", "TENET_AUG", "TCDENET"))
   if (!is.null(groups)) {
-    whole <- is.numeric(groups) && length(groups) > 0 && !anyNA(groups) &&
-      all(groups == round(groups))
-    if (!whole || min(groups) < 1 || length(unique(groups)) != max(groups)) {
-      stop("groups must number the groups 1 to M without gaps, with one whole ",
-           "number per variable.")
-    }
+    .check_group_numbers(groups, "groups")
   }
   dfmax_ok <- is.numeric(cv_dfmax_ratio) && length(cv_dfmax_ratio) == 1 &&
     is.finite(cv_dfmax_ratio)
@@ -757,8 +765,9 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   derives it from the selector seed, \code{>= 0} overrides it for CV
 #'   folds only.
 #' @param pilot_grid Pilot rule: lambda_2 candidates, stated for columns of
-#'   unit norm (default \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}),
-#'   sorted and de-duplicated internally. Under
+#'   unit norm, sorted and de-duplicated internally. The default is the grid
+#'   of the C++ core, \code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10,
+#'   30, 100, 300, 1000, 3000. Under
 #'   \code{scaling_mode = "ZSCORE"} the pilot runs at these values times
 #'   \code{n - 1}, as the CV rules return their pick, so one grid means the
 #'   same shrinkage under every scaling mode. The pick is reported on the
@@ -804,7 +813,9 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   with an informed K, i.i.d. dummies deform the dummy/null
 #'   exchangeability the FDR calibration relies on.
 #' @param prior_groups Integer vector of 1-based cluster IDs per variable
-#'   (length p) for the dummy clustering. \code{NULL} (default): clusters
+#'   (length p, numbered 1 to M without gaps) for the dummy clustering.
+#'   \code{\link{trex_build_group_centering_k}} builds the centering matrix
+#'   of such groups. \code{NULL} (default): clusters
 #'   are discovered by correlation-HAC with \code{corr_max} /
 #'   \code{hc_linkage}. Ignored when \code{cluster_dummies = FALSE}.
 #' @param corr_max Maximum cross-cluster |correlation| for the HAC dummy
@@ -837,8 +848,7 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
                                   cv_n_lambda2 = 100,
                                   cv_dfmax_ratio = 0.8,
                                   cv_seed = -1,
-                                  pilot_grid = c(0, 1, 3, 10, 30, 100,
-                                                 300, 1000, 3000),
+                                  pilot_grid = trex_default_lambda2_grid(),
                                   pilot_K = 10,
                                   pilot_T = 5,
                                   pilot_L_multiplier = 1,
@@ -861,6 +871,9 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
                                c("MAJORITY", "CALIBRATED", "GROUP_MAJORITY"))
   hc_linkage <- match.arg(tolower(hc_linkage),
                           c("single", "complete", "average", "wpgma"))
+  if (!is.null(prior_groups)) {
+    .check_group_numbers(prior_groups, "prior_groups")
+  }
   if (penalty_structure == "SPARSE_GENERAL" && is.null(tikhonov_K)) {
     stop("tikhonov_K is required (p x p penalty matrix; use trex_gamma_to_k() ",
          "to build K from a regularization operator Gamma) unless ",

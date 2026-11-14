@@ -238,8 +238,10 @@ through `ml_agglomerative_cluster()` and `ml_cut_tree()`.
   `trex_recall()` on index sets, `trex_fdp_dense()` and
   `trex_tpp_dense()` on coefficient vectors.
 - Design helpers: `trex_normalize_design()`,
-  `trex_dummy_distribution()`, `trex_gamma_to_k()` and
-  `trex_tikhonov_lambda2_power_rule()`.
+  `trex_dummy_distribution()`, `trex_gamma_to_k()`,
+  `trex_build_group_centering_k()`, `trex_default_lambda2_grid()`,
+  `trex_tikhonov_lambda2_power_rule()` and
+  `trex_gvs_lambda2_power_rule()`.
 
 ### Threads
 

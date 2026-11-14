@@ -1307,16 +1307,58 @@ trex_tikhonov_get_lambda2_pilot_result <- function(r_ptr) {
     .Call(`_TRexSelector_trex_tikhonov_get_lambda2_pilot_result`, r_ptr)
 }
 
+#' @title Run the lambda_2 pilot alone and return its record
+#' @noRd
+trex_tikhonov_run_pilot_only <- function(r_ptr) {
+    .Call(`_TRexSelector_trex_tikhonov_run_pilot_only`, r_ptr)
+}
+
+#' @title Get the clusters the dummies of the last run were drawn for
+#' @noRd
+trex_tikhonov_get_dummy_clusters <- function(r_ptr) {
+    .Call(`_TRexSelector_trex_tikhonov_get_dummy_clusters`, r_ptr)
+}
+
 #' @title The knee of the full lambda_2 profile: one selection per grid value
 #' @noRd
 trex_tikhonov_lambda2_power_rule_impl <- function(X, y, tFDR, tik_control_list, trex_control_list, seed, grid, knee_tolerance, verbose) {
     .Call(`_TRexSelector_trex_tikhonov_lambda2_power_rule_impl`, X, y, tFDR, tik_control_list, trex_control_list, seed, grid, knee_tolerance, verbose)
 }
 
+#' @title The power rule of the Tikhonov selector on a memory-mapped design
+#' @noRd
+trex_tikhonov_lambda2_power_rule_mmap_impl <- function(X_ptr, y, tFDR, tik_control_list, trex_control_list, seed, grid, knee_tolerance, verbose) {
+    .Call(`_TRexSelector_trex_tikhonov_lambda2_power_rule_mmap_impl`, X_ptr, y, tFDR, tik_control_list, trex_control_list, seed, grid, knee_tolerance, verbose)
+}
+
+#' @title The knee of the full lambda_2 profile of the GVS selector
+#' @noRd
+trex_gvs_lambda2_power_rule_impl <- function(X, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose) {
+    .Call(`_TRexSelector_trex_gvs_lambda2_power_rule_impl`, X, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose)
+}
+
+#' @title The power rule of the GVS selector on a memory-mapped design
+#' @noRd
+trex_gvs_lambda2_power_rule_mmap_impl <- function(X_ptr, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose) {
+    .Call(`_TRexSelector_trex_gvs_lambda2_power_rule_mmap_impl`, X_ptr, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose)
+}
+
+#' @title The default lambda_2 grid of the pilot rule and of the power rules
+#' @noRd
+trex_default_lambda2_grid_impl <- function() {
+    .Call(`_TRexSelector_trex_default_lambda2_grid_impl`)
+}
+
 #' @title Build K = Gamma^T Gamma from a Tikhonov operator Gamma
 #' @noRd
 trex_tikhonov_gamma_to_k <- function(gamma) {
     .Call(`_TRexSelector_trex_tikhonov_gamma_to_k`, gamma)
+}
+
+#' @title Build the centering matrix of a group assignment (1-based groups)
+#' @noRd
+trex_tikhonov_group_centering_k <- function(groups) {
+    .Call(`_TRexSelector_trex_tikhonov_group_centering_k`, groups)
 }
 
 #' @title CD family: KKT violation at every recorded step

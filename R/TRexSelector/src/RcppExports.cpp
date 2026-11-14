@@ -1951,6 +1951,28 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// trex_tikhonov_run_pilot_only
+Rcpp::List trex_tikhonov_run_pilot_only(XPtr<RTRexTikhonovSelector> r_ptr);
+RcppExport SEXP _TRexSelector_trex_tikhonov_run_pilot_only(SEXP r_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< XPtr<RTRexTikhonovSelector> >::type r_ptr(r_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_tikhonov_run_pilot_only(r_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trex_tikhonov_get_dummy_clusters
+Rcpp::List trex_tikhonov_get_dummy_clusters(XPtr<RTRexTikhonovSelector> r_ptr);
+RcppExport SEXP _TRexSelector_trex_tikhonov_get_dummy_clusters(SEXP r_ptrSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< XPtr<RTRexTikhonovSelector> >::type r_ptr(r_ptrSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_tikhonov_get_dummy_clusters(r_ptr));
+    return rcpp_result_gen;
+END_RCPP
+}
 // trex_tikhonov_lambda2_power_rule_impl
 Rcpp::List trex_tikhonov_lambda2_power_rule_impl(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List tik_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
 RcppExport SEXP _TRexSelector_trex_tikhonov_lambda2_power_rule_impl(SEXP XSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP tik_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
@@ -1970,6 +1992,73 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// trex_tikhonov_lambda2_power_rule_mmap_impl
+Rcpp::List trex_tikhonov_lambda2_power_rule_mmap_impl(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List tik_control_list, Rcpp::Nullable<Rcpp::List> trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
+RcppExport SEXP _TRexSelector_trex_tikhonov_lambda2_power_rule_mmap_impl(SEXP X_ptrSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP tik_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type tik_control_list(tik_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::Nullable<Rcpp::List> >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type grid(gridSEXP);
+    Rcpp::traits::input_parameter< double >::type knee_tolerance(knee_toleranceSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_tikhonov_lambda2_power_rule_mmap_impl(X_ptr, y, tFDR, tik_control_list, trex_control_list, seed, grid, knee_tolerance, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trex_gvs_lambda2_power_rule_impl
+Rcpp::List trex_gvs_lambda2_power_rule_impl(Rcpp::NumericMatrix X, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
+RcppExport SEXP _TRexSelector_trex_gvs_lambda2_power_rule_impl(SEXP XSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type X(XSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type grid(gridSEXP);
+    Rcpp::traits::input_parameter< double >::type knee_tolerance(knee_toleranceSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_gvs_lambda2_power_rule_impl(X, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trex_gvs_lambda2_power_rule_mmap_impl
+Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> X_ptr, Rcpp::NumericVector y, double tFDR, Rcpp::List gvs_control_list, Rcpp::List trex_control_list, int seed, std::vector<double> grid, double knee_tolerance, bool verbose);
+RcppExport SEXP _TRexSelector_trex_gvs_lambda2_power_rule_mmap_impl(SEXP X_ptrSEXP, SEXP ySEXP, SEXP tFDRSEXP, SEXP gvs_control_listSEXP, SEXP trex_control_listSEXP, SEXP seedSEXP, SEXP gridSEXP, SEXP knee_toleranceSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< XPtr<trex::utils::memmap::MemoryMappedMatrix<double>> >::type X_ptr(X_ptrSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
+    Rcpp::traits::input_parameter< double >::type tFDR(tFDRSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type gvs_control_list(gvs_control_listSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type trex_control_list(trex_control_listSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< std::vector<double> >::type grid(gridSEXP);
+    Rcpp::traits::input_parameter< double >::type knee_tolerance(knee_toleranceSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_gvs_lambda2_power_rule_mmap_impl(X_ptr, y, tFDR, gvs_control_list, trex_control_list, seed, grid, knee_tolerance, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trex_default_lambda2_grid_impl
+std::vector<double> trex_default_lambda2_grid_impl();
+RcppExport SEXP _TRexSelector_trex_default_lambda2_grid_impl() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(trex_default_lambda2_grid_impl());
+    return rcpp_result_gen;
+END_RCPP
+}
 // trex_tikhonov_gamma_to_k
 Eigen::SparseMatrix<double> trex_tikhonov_gamma_to_k(SEXP gamma);
 RcppExport SEXP _TRexSelector_trex_tikhonov_gamma_to_k(SEXP gammaSEXP) {
@@ -1978,6 +2067,17 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< SEXP >::type gamma(gammaSEXP);
     rcpp_result_gen = Rcpp::wrap(trex_tikhonov_gamma_to_k(gamma));
+    return rcpp_result_gen;
+END_RCPP
+}
+// trex_tikhonov_group_centering_k
+Eigen::SparseMatrix<double> trex_tikhonov_group_centering_k(Rcpp::IntegerVector groups);
+RcppExport SEXP _TRexSelector_trex_tikhonov_group_centering_k(SEXP groupsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type groups(groupsSEXP);
+    rcpp_result_gen = Rcpp::wrap(trex_tikhonov_group_centering_k(groups));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3301,8 +3401,15 @@ static const R_CallMethodDef CallEntries[] = {
     {"_TRexSelector_trex_tikhonov_get_lambda2_used", (DL_FUNC) &_TRexSelector_trex_tikhonov_get_lambda2_used, 1},
     {"_TRexSelector_trex_tikhonov_get_lambda2_cv_diagnostics", (DL_FUNC) &_TRexSelector_trex_tikhonov_get_lambda2_cv_diagnostics, 1},
     {"_TRexSelector_trex_tikhonov_get_lambda2_pilot_result", (DL_FUNC) &_TRexSelector_trex_tikhonov_get_lambda2_pilot_result, 1},
+    {"_TRexSelector_trex_tikhonov_run_pilot_only", (DL_FUNC) &_TRexSelector_trex_tikhonov_run_pilot_only, 1},
+    {"_TRexSelector_trex_tikhonov_get_dummy_clusters", (DL_FUNC) &_TRexSelector_trex_tikhonov_get_dummy_clusters, 1},
     {"_TRexSelector_trex_tikhonov_lambda2_power_rule_impl", (DL_FUNC) &_TRexSelector_trex_tikhonov_lambda2_power_rule_impl, 9},
+    {"_TRexSelector_trex_tikhonov_lambda2_power_rule_mmap_impl", (DL_FUNC) &_TRexSelector_trex_tikhonov_lambda2_power_rule_mmap_impl, 9},
+    {"_TRexSelector_trex_gvs_lambda2_power_rule_impl", (DL_FUNC) &_TRexSelector_trex_gvs_lambda2_power_rule_impl, 9},
+    {"_TRexSelector_trex_gvs_lambda2_power_rule_mmap_impl", (DL_FUNC) &_TRexSelector_trex_gvs_lambda2_power_rule_mmap_impl, 9},
+    {"_TRexSelector_trex_default_lambda2_grid_impl", (DL_FUNC) &_TRexSelector_trex_default_lambda2_grid_impl, 0},
     {"_TRexSelector_trex_tikhonov_gamma_to_k", (DL_FUNC) &_TRexSelector_trex_tikhonov_gamma_to_k, 1},
+    {"_TRexSelector_trex_tikhonov_group_centering_k", (DL_FUNC) &_TRexSelector_trex_tikhonov_group_centering_k, 1},
     {"_TRexSelector_tsolver_lars_create", (DL_FUNC) &_TRexSelector_tsolver_lars_create, 4},
     {"_TRexSelector_tsolver_tlasso_create", (DL_FUNC) &_TRexSelector_tsolver_tlasso_create, 4},
     {"_TRexSelector_tsolver_tstepwise_create", (DL_FUNC) &_TRexSelector_tsolver_tstepwise_create, 4},

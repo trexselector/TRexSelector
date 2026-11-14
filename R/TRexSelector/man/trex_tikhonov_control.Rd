@@ -15,7 +15,7 @@ trex_tikhonov_control(
   cv_n_lambda2 = 100,
   cv_dfmax_ratio = 0.8,
   cv_seed = -1,
-  pilot_grid = c(0, 1, 3, 10, 30, 100, 300, 1000, 3000),
+  pilot_grid = trex_default_lambda2_grid(),
   pilot_K = 10,
   pilot_T = 5,
   pilot_L_multiplier = 1,
@@ -91,8 +91,9 @@ derives it from the selector seed, \code{>= 0} overrides it for CV
 folds only.}
 
 \item{pilot_grid}{Pilot rule: lambda_2 candidates, stated for columns of
-unit norm (default \code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}),
-sorted and de-duplicated internally. Under
+unit norm, sorted and de-duplicated internally. The default is the grid
+of the C++ core, \code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10,
+30, 100, 300, 1000, 3000. Under
 \code{scaling_mode = "ZSCORE"} the pilot runs at these values times
 \code{n - 1}, as the CV rules return their pick, so one grid means the
 same shrinkage under every scaling mode. The pick is reported on the
@@ -148,7 +149,9 @@ with an informed K, i.i.d. dummies deform the dummy/null
 exchangeability the FDR calibration relies on.}
 
 \item{prior_groups}{Integer vector of 1-based cluster IDs per variable
-(length p) for the dummy clustering. \code{NULL} (default): clusters
+(length p, numbered 1 to M without gaps) for the dummy clustering.
+\code{\link{trex_build_group_centering_k}} builds the centering matrix
+of such groups. \code{NULL} (default): clusters
 are discovered by correlation-HAC with \code{corr_max} /
 \code{hc_linkage}. Ignored when \code{cluster_dummies = FALSE}.}
 
@@ -197,14 +200,17 @@ Other T-Rex selectors and controls:
 \code{\link{TRexSelector}},
 \code{\link{TRexTikhonovSelector}},
 \code{\link[=trex_biobank_control]{trex_biobank_control()}},
+\code{\link[=trex_build_group_centering_k]{trex_build_group_centering_k()}},
 \code{\link[=trex_control]{trex_control()}},
 \code{\link[=trex_da_control]{trex_da_control()}},
+\code{\link[=trex_default_lambda2_grid]{trex_default_lambda2_grid()}},
 \code{\link[=trex_dummy_distribution]{trex_dummy_distribution()}},
 \code{\link[=trex_fdp]{trex_fdp()}},
 \code{\link[=trex_fdp_dense]{trex_fdp_dense()}},
 \code{\link[=trex_gamma_to_k]{trex_gamma_to_k()}},
 \code{\link[=trex_get_num_threads]{trex_get_num_threads()}},
 \code{\link[=trex_gvs_control]{trex_gvs_control()}},
+\code{\link[=trex_gvs_lambda2_power_rule]{trex_gvs_lambda2_power_rule()}},
 \code{\link[=trex_normalize_design]{trex_normalize_design()}},
 \code{\link[=trex_precision]{trex_precision()}},
 \code{\link[=trex_recall]{trex_recall()}},

@@ -58,14 +58,17 @@ Other T-Rex selectors and controls:
 \code{\link{TRexScreeningSelector}},
 \code{\link{TRexSelector}},
 \code{\link[=trex_biobank_control]{trex_biobank_control()}},
+\code{\link[=trex_build_group_centering_k]{trex_build_group_centering_k()}},
 \code{\link[=trex_control]{trex_control()}},
 \code{\link[=trex_da_control]{trex_da_control()}},
+\code{\link[=trex_default_lambda2_grid]{trex_default_lambda2_grid()}},
 \code{\link[=trex_dummy_distribution]{trex_dummy_distribution()}},
 \code{\link[=trex_fdp]{trex_fdp()}},
 \code{\link[=trex_fdp_dense]{trex_fdp_dense()}},
 \code{\link[=trex_gamma_to_k]{trex_gamma_to_k()}},
 \code{\link[=trex_get_num_threads]{trex_get_num_threads()}},
 \code{\link[=trex_gvs_control]{trex_gvs_control()}},
+\code{\link[=trex_gvs_lambda2_power_rule]{trex_gvs_lambda2_power_rule()}},
 \code{\link[=trex_normalize_design]{trex_normalize_design()}},
 \code{\link[=trex_precision]{trex_precision()}},
 \code{\link[=trex_recall]{trex_recall()}},
@@ -114,7 +117,17 @@ per-grid-point curves over the pilot stopping times
 \code{max_selected}, \code{n_ties}, the boundary flags
 \code{at_lower_end} / \code{at_upper_end} (widen the grid before
 trusting a boundary pick), the budget actually used (\code{K_pilot},
-\code{T_pilot}, \code{L_0}) and the timings.}
+\code{T_pilot}, \code{L_0}), the seed tag under which the pilot
+dummies were drawn (\code{dummy_tag}) and the timings.}
+
+    \item{\code{dummy_clusters}}{The clusters the dummies of the last run were
+drawn for, a list with the names of the fields of
+\code{\link{TRexGVSSelector}}: \code{groups} (the cluster of each
+variable, numbered from 1), \code{max_clusters} (their number M) and
+\code{hc_method_used} (\code{"prior"} when \code{prior_groups} was
+supplied, else the linkage of the clustering). Before a run and with
+\code{cluster_dummies = FALSE} the record is empty: no groups, 0 and
+\code{""}.}
   }
   \if{html}{\out{</div>}}
 }
@@ -123,6 +136,7 @@ trusting a boundary pick), the budget actually used (\code{K_pilot},
   \itemize{
     \item \href{#method-TRexTikhonovSelector-initialize}{\code{TRexTikhonovSelector$new()}}
     \item \href{#method-TRexTikhonovSelector-select}{\code{TRexTikhonovSelector$select()}}
+    \item \href{#method-TRexTikhonovSelector-run_pilot_only}{\code{TRexTikhonovSelector$run_pilot_only()}}
     \item \href{#method-TRexTikhonovSelector-clone}{\code{TRexTikhonovSelector$clone()}}
   }
 }
@@ -193,6 +207,29 @@ error, see \code{\link{TRexSelector}}.
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexTikhonovSelector$select()}
     \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-TRexTikhonovSelector-run_pilot_only"></a>}}
+\if{latex}{\out{\hypertarget{method-TRexTikhonovSelector-run_pilot_only}{}}}
+\subsection{\code{TRexTikhonovSelector$run_pilot_only()}}{
+  Run only the lambda_2 pilot, without the selection. The
+pilot builds the cluster model, runs the pilot experiments and picks
+lambda_2, and \code{X} is given back. It is for a caller who wants
+the pick alone. It needs \code{lambda_2 < 0} and
+\code{lambda2_method = "PILOT_KNEE"} in \code{tik_control} and is an
+error otherwise. A selector runs once: after \code{run_pilot_only()}
+a call of \code{select()} or of \code{run_pilot_only()} is an error,
+and so is \code{run_pilot_only()} after \code{select()}.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{TRexTikhonovSelector$run_pilot_only()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The record of the pilot, as the field \code{lambda2_pilot}
+holds it afterwards.
   }
 }
 

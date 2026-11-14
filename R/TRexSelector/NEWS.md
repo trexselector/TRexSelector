@@ -102,6 +102,10 @@
 * `trex_gvs_control()` checks `groups` with the words of R: "groups must number the groups 1 to M
   without gaps". The errors of the core had asked for 0-based labels and had named a missing group
   by its 0-based number. A wrong length of `groups` is reported with the name of the argument.
+* `trex_tikhonov_control()` checks `prior_groups` the same way: "prior_groups must number the groups 1
+  to M without gaps". Up to 2.0.1 labels that started at 0 gave "prior_groups must be 0-based
+  non-negative integers", and a missing group was named by its 0-based number. A wrong length is
+  reported with the name of the argument, by the selector and by the power rule.
 * The help of `trex_gvs_control()` and of `TRexGVSSelector` is corrected. `corr_max` bounds the
   correlation between clusters with `"Single"` linkage only. A supplied `lambda_2` refers to the scale
   of the standardized columns, not to LARS units, so `scaling_mode = "ZSCORE"` needs the value times
@@ -148,6 +152,19 @@
   parameters existed in C++ and Python.
 * `tsolver_options()` gains `tikhonov_validated`. With `TRUE` the solvers `TIKNET_Solver` and
   `TCDTIKNET_Solver` take their penalty matrix as checked by the caller and skip their own check.
+* `TRexTikhonovSelector` gains what the C++ class has. The method `run_pilot_only()` runs the `lambda_2`
+  pilot without the selection and returns its record. The field `dummy_clusters` reports the clusters
+  the dummies were drawn for, with the names `groups`, `max_clusters` and `hc_method_used` of
+  `TRexGVSSelector`. The pilot record `lambda2_pilot` gains `dummy_tag`.
+* `trex_gvs_lambda2_power_rule()` is the power rule on `TRexGVSSelector`: one selection per value of a
+  `lambda_2` grid with common dummies, and the knee of that profile.
+* `trex_tikhonov_lambda2_power_rule()` takes a memory-mapped design, as the selectors do. Up to 2.0.1 it
+  refused one.
+* `trex_default_lambda2_grid()` returns the default `lambda_2` grid of the C++ core. It is the default
+  of `pilot_grid` in `trex_tikhonov_control()` and of `grid` in the two power rules, which held the
+  numbers themselves up to 2.0.1.
+* `trex_build_group_centering_k()` builds the centering matrix of a group assignment, the penalty of
+  `penalty_structure = "GROUP_CENTERING"`.
 
 ## Deprecated
 

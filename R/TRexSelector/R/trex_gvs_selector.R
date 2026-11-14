@@ -1,3 +1,50 @@
+# The base control of a GVS run, with the warnings of the solver choice.
+# EN: the solver comes from en_solver. control$solver is ignored, with a
+# warning unless it is "TLARS", the default of trex_control(), or matches.
+# IEN: control$solver names the solver ("TIENET", "TIENET_AUG", "TCDIENET").
+# "TLARS" gives "TIENET", and any other value warns and gives "TIENET".
+.gvs_base_control <- function(gvs_control, control) {
+  if (gvs_control$gvs_type == "IEN") {
+    ien_family <- c("TIENET", "TIENET_AUG", "TCDIENET")
+    if (!(control$solver %in% c("TLARS", ien_family))) {
+      warning("control$solver = \"", control$solver,
+              "\" is not an IEN-family solver; gvs_type = \"IEN\" ",
+              "accepts \"TIENET\", \"TIENET_AUG\", or \"TCDIENET\". ",
+              "Using \"TIENET\".")
+      control$solver <- "TLARS"  # glue defaults it to TIENET
+    }
+    .warn_cd_solver_name(control$solver)
+  } else {
+    derived_solver <- if (identical(gvs_control$en_solver, "TENET_AUG")) {
+      "TENET_AUG"
+    } else if (identical(gvs_control$en_solver, "TCDENET")) {
+      "TCDENET"
+    } else {
+      "TENET"
+    }
+    if (!(control$solver %in% c("TLARS", derived_solver))) {
+      warning("control$solver = \"", control$solver,
+              "\" is ignored by TRexGVSSelector: gvs_type = \"EN\" ",
+              "derives solver \"", derived_solver,
+              "\" from en_solver.")
+    }
+    # The C++ glue derives solver_type from en_solver regardless.
+    control$solver <- "TLARS"
+    .warn_cd_solver_name(gvs_control$en_solver, "en_solver")
+  }
+  control
+}
+
+# One group entry per variable, checked with the name of the R argument.
+.check_gvs_groups_length <- function(gvs_control, X) {
+  if (!is.null(gvs_control$groups) && length(gvs_control$groups) != ncol(X)) {
+    stop("gvs_control$groups must have one entry per variable (p = ", ncol(X),
+         "). Got: ", length(gvs_control$groups), ".")
+  }
+  invisible(NULL)
+}
+
+
 #' @name TRexGVSSelector
 #'
 #' @title T-Rex Selector for Grouped Variable Selection (T-Rex+GVS)
@@ -75,44 +122,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
                           gvs_control = trex_gvs_control(),
                           control = trex_control()) {
 
-      # Solver selection mirrors the C++ design:
-      #   EN  -> derived from en_solver (TENET / TENET_AUG / TCDENET);
-      #          control$solver is ignored (warn when it was explicitly set
-      #          to a non-matching value; "TLARS" is the trex_control()
-      #          default and cannot be distinguished from an explicit
-      #          choice, so it never warns).
-      #   IEN -> control$solver IS the IEN-solver choice: "TIENET" (native
-      #          pathwise, default), "TIENET_AUG" (row-augmented), or
-      #          "TCDIENET" (coordinate descent). The default "TLARS" maps
-      #          to "TIENET"; any other value warns and falls back.
-      if (gvs_control$gvs_type == "IEN") {
-        ien_family <- c("TIENET", "TIENET_AUG", "TCDIENET")
-        if (!(control$solver %in% c("TLARS", ien_family))) {
-          warning("control$solver = \"", control$solver,
-                  "\" is not an IEN-family solver; gvs_type = \"IEN\" ",
-                  "accepts \"TIENET\", \"TIENET_AUG\", or \"TCDIENET\". ",
-                  "Using \"TIENET\".")
-          control$solver <- "TLARS"  # glue defaults it to TIENET
-        }
-        .warn_cd_solver_name(control$solver)
-      } else {
-        derived_solver <- if (identical(gvs_control$en_solver, "TENET_AUG")) {
-          "TENET_AUG"
-        } else if (identical(gvs_control$en_solver, "TCDENET")) {
-          "TCDENET"
-        } else {
-          "TENET"
-        }
-        if (!(control$solver %in% c("TLARS", derived_solver))) {
-          warning("control$solver = \"", control$solver,
-                  "\" is ignored by TRexGVSSelector: gvs_type = \"EN\" ",
-                  "derives solver \"", derived_solver,
-                  "\" from en_solver.")
-        }
-        # The C++ glue derives solver_type from en_solver regardless.
-        control$solver <- "TLARS"
-        .warn_cd_solver_name(gvs_control$en_solver, "en_solver")
-      }
+      control <- .gvs_base_control(gvs_control, control)
 
       # lambda_2 == 0 is the degenerate no-ridge case, NOT automatic CV
       # (the sentinel for that is lambda_2 < 0). A user passing exactly 0
@@ -123,11 +133,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
                 "Use lambda_2 < 0 (e.g. -1) to auto-determine lambda_2 via CV.")
       }
 
-      # One group entry per variable, checked here with the name of the R argument.
-      if (!is.null(gvs_control$groups) && length(gvs_control$groups) != ncol(X)) {
-        stop("gvs_control$groups must have one entry per variable (p = ", ncol(X),
-             "). Got: ", length(gvs_control$groups), ".")
-      }
+      .check_gvs_groups_length(gvs_control, X)
 
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
@@ -231,3 +237,95 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     }
   )
 )
+
+
+#' @name trex_gvs_lambda2_power_rule
+#'
+#' @title The knee of the full lambda_2 profile of the T-Rex+GVS selector
+#'
+#' @description Runs one FDR-controlled selection of
+#'   \code{\link{TRexGVSSelector}} per value of \code{grid} for
+#'   \code{lambda_2}, the ridge part of the elastic net or of the informed
+#'   elastic net, with the same seed, so the probes share their dummies and
+#'   differ by the penalty weight alone. The pick is the smallest lambda_2
+#'   whose selection is within \code{knee_tolerance} selections of the largest
+#'   (the knee of the profile). The result holds every probe's selection. The
+#'   pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that
+#'   each probe carries. \code{\link{trex_tikhonov_lambda2_power_rule}} is the
+#'   same rule on the Tikhonov selector.
+#'
+#' @param X Feature matrix (n x p) in memory, or an \code{mmap_matrix}, the
+#'   handle of a memory-mapped file. Every probe normalizes it in place and
+#'   hands it back, so \code{X} is unchanged on return and never copied. A
+#'   memory-mapped design needs \code{"readwrite"} mode for that, and
+#'   \code{"readonly"} mode suffices under \code{scaling_mode = "NONE"}.
+#' @param y Response vector (length n).
+#' @param tFDR Target FDR level (default: 0.1).
+#' @param gvs_control A GVS control list from \code{\link{trex_gvs_control}()}
+#'   (default: \code{trex_gvs_control()}); its \code{lambda_2} is replaced
+#'   per probe, everything else is shared by every probe.
+#' @param control A control list from \code{\link{trex_control}()} (default:
+#'   \code{trex_control()}), taken as by \code{\link{TRexGVSSelector}}.
+#' @param seed Selector seed, the same for every probe (default: 0). A
+#'   negative seed would draw fresh dummies per probe and is refused.
+#' @param grid lambda_2 candidates, stated for columns of unit norm, sorted
+#'   and de-duplicated. The default is
+#'   \code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10, 30, 100, 300,
+#'   1000, 3000. Under \code{scaling_mode = "ZSCORE"} the probes run at these
+#'   values times \code{n - 1}. The value 0 is the T-Rex with the lasso.
+#' @param knee_tolerance Selections below the largest count that still
+#'   count as "on the plateau" (default: 1); 0 reads the largest selection,
+#'   ties toward the smallest lambda_2.
+#' @param verbose Whether the probes print their progress (default:
+#'   \code{FALSE}).
+#'
+#' @return A list with the fields of
+#'   \code{\link{trex_tikhonov_lambda2_power_rule}}: \code{lambda2} (the pick,
+#'   on the working scale: supplied as \code{lambda_2} it reproduces the
+#'   selection), \code{index} (1-based, into \code{grid}), \code{selected}
+#'   (the 1-based selection at the pick), \code{grid} (the values the probes
+#'   ran at, ascending and de-duplicated), \code{grid_scale} (the factor
+#'   between the supplied grid and \code{grid}, \code{n - 1} under
+#'   \code{"ZSCORE"} and 1 otherwise), \code{counts} (selection sizes per
+#'   grid value), \code{probes} (one list per grid value with
+#'   \code{lambda2}, \code{selected}, \code{T_stop} and \code{seconds}),
+#'   \code{max_selected}, \code{n_ties}, the boundary flags
+#'   \code{at_lower_end} and \code{at_upper_end} (the pick sits on the first
+#'   or on the last grid value, and a pick on the last one asks for a wider
+#'   grid) and \code{seconds}.
+#'
+#' @examples
+#' \donttest{
+#' data(Gauss_data)
+#' X <- Gauss_data$X
+#' y <- Gauss_data$y
+#' prof <- trex_gvs_lambda2_power_rule(X, y, tFDR = 0.1, seed = 1,
+#'                                     grid = c(0, 1, 10))
+#' prof$lambda2
+#' prof$counts
+#' }
+#' @family T-Rex selectors and controls
+#' @export
+trex_gvs_lambda2_power_rule <- function(X, y,
+                                        tFDR = 0.1,
+                                        gvs_control = trex_gvs_control(),
+                                        control = trex_control(),
+                                        seed = 0,
+                                        grid = trex_default_lambda2_grid(),
+                                        knee_tolerance = 1,
+                                        verbose = FALSE) {
+  .check_power_rule_arguments(seed, grid, knee_tolerance)
+  control <- .gvs_base_control(gvs_control, control)
+  .check_gvs_groups_length(gvs_control, X)
+  y <- .as_double_vector(y)
+  if (inherits(X, "MemoryMappedMatrix")) {
+    return(trex_gvs_lambda2_power_rule_mmap_impl(
+      get_ptr(X), y, tFDR, gvs_control, control, as.integer(seed),
+      as.numeric(grid), as.numeric(knee_tolerance), verbose
+    ))
+  }
+  X <- .as_double_matrix(X)
+  trex_gvs_lambda2_power_rule_impl(X, y, tFDR, gvs_control, control,
+                                   as.integer(seed), as.numeric(grid),
+                                   as.numeric(knee_tolerance), verbose)
+}

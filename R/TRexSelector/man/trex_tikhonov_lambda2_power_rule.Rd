@@ -11,14 +11,17 @@ trex_tikhonov_lambda2_power_rule(
   tik_control,
   control = NULL,
   seed = 0,
-  grid = c(0, 1, 3, 10, 30, 100, 300, 1000, 3000),
+  grid = trex_default_lambda2_grid(),
   knee_tolerance = 1,
   verbose = FALSE
 )
 }
 \arguments{
-\item{X}{Feature matrix (n x p). Every probe normalizes it in place and
-hands it back, so \code{X} is unchanged on return and never copied.}
+\item{X}{Feature matrix (n x p) in memory, or an \code{mmap_matrix}, the
+handle of a memory-mapped file. Every probe normalizes it in place and
+hands it back, so \code{X} is unchanged on return and never copied. A
+memory-mapped design needs \code{"readwrite"} mode for that, and
+\code{"readonly"} mode suffices under \code{scaling_mode = "NONE"}.}
 
 \item{y}{Response vector (length n).}
 
@@ -36,9 +39,10 @@ control that is passed must name the solver \code{"TIKNET"}.}
 \item{seed}{Selector seed, the same for every probe (default: 0). A
 negative seed would draw fresh dummies per probe and is refused.}
 
-\item{grid}{lambda_2 candidates, stated for columns of unit norm (default
-\code{c(0, 1, 3, 10, 30, 100, 300, 1000, 3000)}), sorted and
-de-duplicated. Under \code{scaling_mode = "ZSCORE"} the probes run at
+\item{grid}{lambda_2 candidates, stated for columns of unit norm, sorted
+and de-duplicated. The default is the grid of the pilot rule,
+\code{\link{trex_default_lambda2_grid}()}: 0, 1, 3, 10, 30, 100, 300,
+1000, 3000. Under \code{scaling_mode = "ZSCORE"} the probes run at
 these values times \code{n - 1}, as the pilot rule does. Keep 0 on the
 grid so that "no penalty" is an admissible answer.}
 
@@ -99,14 +103,17 @@ Other T-Rex selectors and controls:
 \code{\link{TRexSelector}},
 \code{\link{TRexTikhonovSelector}},
 \code{\link[=trex_biobank_control]{trex_biobank_control()}},
+\code{\link[=trex_build_group_centering_k]{trex_build_group_centering_k()}},
 \code{\link[=trex_control]{trex_control()}},
 \code{\link[=trex_da_control]{trex_da_control()}},
+\code{\link[=trex_default_lambda2_grid]{trex_default_lambda2_grid()}},
 \code{\link[=trex_dummy_distribution]{trex_dummy_distribution()}},
 \code{\link[=trex_fdp]{trex_fdp()}},
 \code{\link[=trex_fdp_dense]{trex_fdp_dense()}},
 \code{\link[=trex_gamma_to_k]{trex_gamma_to_k()}},
 \code{\link[=trex_get_num_threads]{trex_get_num_threads()}},
 \code{\link[=trex_gvs_control]{trex_gvs_control()}},
+\code{\link[=trex_gvs_lambda2_power_rule]{trex_gvs_lambda2_power_rule()}},
 \code{\link[=trex_normalize_design]{trex_normalize_design()}},
 \code{\link[=trex_precision]{trex_precision()}},
 \code{\link[=trex_recall]{trex_recall()}},

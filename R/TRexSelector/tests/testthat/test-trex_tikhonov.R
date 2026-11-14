@@ -224,8 +224,20 @@ test_that("the pilot rule picks lambda_2 from its grid and records the profile",
   expect_identical(pilot$grid[pilot$index], pilot$lambda2)
   expect_identical(sel$lambda2_used, pilot$lambda2)
   expect_identical(pilot$counts[pilot$index], pilot$max_selected)
+  # The pilot draws its dummies under a seed tag of its own
+  expect_identical(pilot$dummy_tag, 2^30)
   # The pilot is timed as the lambda_2 resolution step.
   expect_true(sel$lambda2_cv_diagnostics$ran)
+
+  # With shared dummies the pilot takes the first block of the main strategy
+  shared <- TRexTikhonovSelector$new(
+    d$X, d$y, tFDR = 0.2, seed = 42, verbose = FALSE,
+    tik_control = trex_tikhonov_control(
+      tikhonov_K = .group_mean_k(d$p), prior_groups = d$groups,
+      pilot_grid = c(0, 1), pilot_K = 5, pilot_T = 3, pilot_shared_dummies = TRUE),
+    control = .tik_base(K = 5, max_dummy_multiplier = 2))
+  shared$select()
+  expect_identical(shared$lambda2_pilot$dummy_tag, 1)
 })
 
 
@@ -508,10 +520,15 @@ test_that("GROUP_CENTERING refuses a supplied K that is not the centering matrix
   expect_identical(run(K_gc), run(NULL))
 })
 
-test_that("the power rule and the pilot rule have one default grid", {
-  grid <- eval(formals(trex_tikhonov_lambda2_power_rule)$grid)
-  expect_identical(grid, trex_tikhonov_control(tikhonov_K = diag(2))$pilot_grid)
+test_that("the power rules and the pilot rule have one default grid, the one of C++", {
+  grid <- trex_default_lambda2_grid()
   expect_identical(grid, c(0, 1, 3, 10, 30, 100, 300, 1000, 3000))
+  expect_identical(trex_tikhonov_control(tikhonov_K = diag(2))$pilot_grid, grid)
+  # R holds no copy of the numbers: the three defaults are the call of the function
+  call <- "trex_default_lambda2_grid()"
+  expect_identical(deparse(formals(trex_tikhonov_control)$pilot_grid), call)
+  expect_identical(deparse(formals(trex_tikhonov_lambda2_power_rule)$grid), call)
+  expect_identical(deparse(formals(trex_gvs_lambda2_power_rule)$grid), call)
 })
 
 test_that("a lambda_2 grid means the same shrinkage under ZSCORE as under L2", {
@@ -554,3 +571,162 @@ test_that("a lambda_2 grid means the same shrinkage under ZSCORE as under L2", {
   expect_identical(b$selected, a$selected)
 })
 
+# =============================================================================
+# What the C++ class has: the pilot alone, the clusters, the centering matrix
+# =============================================================================
+
+# The pilot rule on the grouped design with a small pilot
+.pilot_selector <- function(d, X = d$X + 0, ...) {
+  TRexTikhonovSelector$new(X, d$y, tFDR = 0.2, seed = 5, verbose = FALSE,
+                           tik_control = trex_tikhonov_control(
+                             penalty_structure = "GROUP_CENTERING", prior_groups = d$groups,
+                             pilot_grid = c(0, 1, 10), pilot_K = 5, ...),
+                           control = .tik_base(K = 10))
+}
+
+test_that("run_pilot_only() gives the pilot of a selection and spends the selector", {
+  d <- .make_tik_data()
+  full <- .pilot_selector(d)
+  full$select()
+
+  X <- d$X + 0
+  only <- .pilot_selector(d, X = X)
+  record <- only$run_pilot_only()
+  expect_true(record$ran)
+  expect_identical(record$grid, c(0, 1, 10))
+  expect_identical(record$counts, full$lambda2_pilot$counts)
+  expect_identical(record$lambda2, full$lambda2_pilot$lambda2)
+  expect_identical(only$lambda2_used, full$lambda2_used)
+  expect_identical(only$lambda2_pilot, record)     # the field holds the record
+  expect_equal(X, d$X, tolerance = 1e-12)          # X is given back
+
+  # A selector runs once
+  expect_error(only$select(), "has run already")
+  expect_error(only$run_pilot_only(), "has run already")
+  expect_error(full$run_pilot_only(), "has run already")
+})
+
+test_that("run_pilot_only() needs the pilot rule", {
+  d <- .make_tik_data()
+  fixed <- .pilot_selector(d, lambda_2 = 1)
+  expect_error(fixed$run_pilot_only(), "PILOT_KNEE")
+  # The refused call did not spend the selector
+  expect_no_error(fixed$select())
+  expect_identical(fixed$lambda2_used, 1)
+})
+
+test_that("the clusters of the dummies are reported", {
+  d <- .make_tik_data()
+  empty <- list(groups = integer(0), max_clusters = 0L, hc_method_used = "")
+
+  before <- .pilot_selector(d, lambda_2 = 1)
+  expect_identical(before$dummy_clusters, empty)
+  before$restore()
+
+  prior <- .pilot_selector(d, lambda_2 = 1)
+  prior$select()
+  expect_identical(prior$dummy_clusters,
+                   list(groups = as.integer(d$groups), max_clusters = 8L, hc_method_used = "prior"))
+
+  found <- function(...) {
+    sel <- TRexTikhonovSelector$new(d$X + 0, d$y, tFDR = 0.2, seed = 5, verbose = FALSE,
+                                    tik_control = trex_tikhonov_control(
+                                      tikhonov_K = diag(d$p), lambda_2 = 1, ...),
+                                    control = .tik_base(K = 5))
+    sel$select()
+    sel$dummy_clusters
+  }
+  single <- found()
+  expect_identical(single$hc_method_used, "single")
+  expect_length(single$groups, d$p)
+  expect_identical(sort(unique(single$groups)), seq_len(single$max_clusters))
+  expect_identical(found(hc_linkage = "complete")$hc_method_used, "complete")
+  expect_identical(found(cluster_dummies = FALSE), empty)
+
+  # The pilot alone reports them as well
+  only <- .pilot_selector(d)
+  only$run_pilot_only()
+  expect_identical(only$dummy_clusters$hc_method_used, "prior")
+  expect_error(only$dummy_clusters <- empty, "read-only")
+})
+
+test_that("prior_groups is checked in the words of R", {
+  d <- .make_tik_data()
+  numbers <- "prior_groups must number the groups 1 to M without gaps"
+  for (bad in list(c(0, 0, 1, 1), c(1, 1, 3, 3), c(1, 1.5, 2, 2), c(1, NA, 2, 2), "a")) {
+    expect_error(trex_tikhonov_control(tikhonov_K = diag(4), prior_groups = bad), numbers)
+  }
+  expect_no_error(trex_tikhonov_control(tikhonov_K = diag(4), prior_groups = c(2, 1, 1, 2)))
+
+  short <- trex_tikhonov_control(tikhonov_K = diag(d$p), prior_groups = rep(1, d$p - 1), lambda_2 = 1)
+  len <- "tik_control\\$prior_groups must have one entry per variable \\(p = 40\\). Got: 39."
+  expect_error(TRexTikhonovSelector$new(d$X, d$y, verbose = FALSE, tik_control = short), len)
+  expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = short, grid = c(0, 1)), len)
+})
+
+test_that("trex_build_group_centering_k builds the matrix of GROUP_CENTERING", {
+  skip_if_not_installed("Matrix")
+  K <- trex_build_group_centering_k(c(1, 1, 1, 2, 2, 3))
+  expect_s4_class(K, "dgCMatrix")
+  ref <- matrix(0, 6, 6)
+  ref[1:3, 1:3] <- diag(3) - 1 / 3
+  ref[4:5, 4:5] <- diag(2) - 1 / 2
+  expect_equal(unname(as.matrix(K)), ref)             # the singleton contributes nothing
+  # The order of the variables is free
+  expect_equal(unname(as.matrix(trex_build_group_centering_k(c(2, 1, 2)))),
+               rbind(c(0.5, 0, -0.5), 0, c(-0.5, 0, 0.5)))
+  numbers <- "prior_groups must number the groups 1 to M without gaps"
+  expect_error(trex_build_group_centering_k(c(0, 1)), numbers)
+  expect_error(trex_build_group_centering_k(c(1, 3)), numbers)
+
+  # GROUP_CENTERING takes the built matrix and runs as without one
+  d <- .make_tik_data()
+  run <- function(K) {
+    sel <- TRexTikhonovSelector$new(d$X + 0, d$y, tFDR = 0.2, seed = 5, verbose = FALSE,
+                                    tik_control = trex_tikhonov_control(
+                                      tikhonov_K = K, penalty_structure = "GROUP_CENTERING",
+                                      prior_groups = d$groups, lambda_2 = 1),
+                                    control = .tik_base(K = 5))
+    sel$select()
+    sel$selected_indices
+  }
+  expect_identical(run(trex_build_group_centering_k(d$groups)), run(NULL))
+})
+
+test_that("the power rule takes a memory-mapped design", {
+  d <- .make_tik_data()
+  n <- nrow(d$X)
+  f <- tempfile(fileext = ".bin")
+  on.exit(unlink(f), add = TRUE)
+  mem_matrix_from(d$X, f)
+  tik <- trex_tikhonov_control(tikhonov_K = .group_mean_k(d$p), prior_groups = d$groups)
+  rule <- function(X, ...) {
+    trex_tikhonov_lambda2_power_rule(X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
+                                     grid = c(0, 1, 10), control = .tik_base(K = 5, ...))
+  }
+  in_memory <- rule(d$X + 0)
+  on_file <- rule(mem_matrix(f, rows = n, cols = d$p, mode = "readwrite"))
+  for (field in c("lambda2", "index", "selected", "grid", "counts")) {
+    expect_identical(on_file[[field]], in_memory[[field]], info = field)
+  }
+  # Every probe hands the design back, so the file holds it as before
+  expect_equal(as.matrix(mem_matrix(f, rows = n, cols = d$p, mode = "readonly")), d$X,
+               tolerance = 1e-12)
+
+  # A read-only file is refused where the probes write, and serves under NONE
+  ro <- mem_matrix(f, rows = n, cols = d$p, mode = "readonly")
+  expect_error(rule(ro), "ReadOnly")
+  pre <- trex_normalize_design(d$X, d$y)
+  g <- tempfile(fileext = ".bin")
+  on.exit(unlink(g), add = TRUE)
+  mem_matrix_from(pre$X, g)
+  md5 <- unname(tools::md5sum(g))
+  none <- function(X) {
+    trex_tikhonov_lambda2_power_rule(X, pre$y, tFDR = 0.2, tik_control = tik, seed = 42,
+                                     grid = c(0, 1, 10),
+                                     control = .tik_base(K = 5, scaling_mode = "NONE"))
+  }
+  expect_identical(none(mem_matrix(g, rows = n, cols = d$p, mode = "readonly"))$selected,
+                   none(pre$X + 0)$selected)
+  expect_identical(unname(tools::md5sum(g)), md5)     # nothing was written
+})
