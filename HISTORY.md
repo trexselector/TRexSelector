@@ -16,6 +16,34 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### A selector runs once: a second select() is an error
+
+- The defect. `select()` gives X back when it ends (`denormalizeAndReleaseX()`). The guard at the start of
+  `select()` read a flag that only `restore()` and a failed `select()` set, so a second `select()` on the
+  same object ran on the design at its original scale, against dummies of unit norm, and returned a wrong
+  selection without an error. Probe: `TRexSelector` selects the 10 true variables of 60 in the first run
+  and all 60 in the second, in C++, R and Python. The installed R 2.0.0 does the same, so the published
+  R 2.0.1, Python 1.0.0 and C++ 1.0.0 have it. Found while reading the Tikhonov selector, whose
+  `runPilotOnly()` has the same hole: `runPilotOnly()` followed by `select()` selected 16 variables at
+  lambda_2 = 3000 where a fresh `select()` selects 12 at lambda_2 = 1.
+- The fix. `beginRun()` replaces `ensureNotReleased()`. It refuses a selector that gave X back or that
+  has run, and marks the selector as run. The three places where a run begins call it: `select()` of the
+  base class, `select()` of the screening selector, and `runPilotOnly()` of the Tikhonov selector. A
+  second call throws std::runtime_error ("this selector has run already"), under every scaling mode. The
+  results of the run stay readable, X is left alone, and a new selector on the same matrix repeats the
+  run. The error after `restore()` keeps its text.
+- `runPilotOnly()` and `select()` exclude each other in both orders, as the header had said without
+  enforcing it. A control without the pilot rule is refused before the run begins, so that selector can
+  still select.
+- A target FDR that is NaN was accepted by the base class (the check `tFDR < 0 || tFDR > 1` lets NaN
+  pass) and selected nothing. The check has the negated form now, as in the SPCA selector.
+- Texts. The header, the R help and the Python docstrings of `select()` state the rule, for the base
+  class and with one sentence for the derived selectors. Guide page 12 says it on the three surfaces.
+- Fabian asked for a proposal (2026-11-14, "What do you propose?"). The alternative, a second `select()`
+  that standardizes again and reruns, was not taken: the class holds state of the first run (warm
+  starts, the dummy store, memory-mapped files, the results), it was not built for reruns, and the error
+  matches the rule that already holds after `restore()`.
+
 #### The SPCA selector checks its bounds at construction, and its help agrees on the three surfaces
 
 - The bounds in C++. The constructor of `TRexSPCA` checked `M > min(n, p)` only. `M = 0` failed in

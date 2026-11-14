@@ -138,6 +138,7 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
     },
 
     #' @description Run the Dependency-Aware TRexSelector algorithm.
+    #'   A selector runs once: a second call is an error, see \code{\link{TRexSelector}}.
     select = function() {
       trex_da_select(private$ptr)
       invisible(self)

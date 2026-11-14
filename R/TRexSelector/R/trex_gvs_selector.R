@@ -145,7 +145,8 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       }
     },
 
-    #' @description Run the GVS algorithm.
+    #' @description Run the GVS algorithm. A selector runs once: a second call is an
+    #'   error, see \code{\link{TRexSelector}}.
     select = function() {
       trex_gvs_select(private$ptr)
       invisible(self)

@@ -230,6 +230,58 @@ test_that("the derived selectors inherit restore()", {
   expect_error(sel$select(), "restore")
 })
 
+test_that("a selector runs once: a second select() is an error and the results stay", {
+  set.seed(54)
+  n <- 50; p <- 30
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] * 2 + rnorm(n)
+  X0 <- X + 0
+  sel <- TRexSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE, control = trex_control(K = 5))
+  sel$select()
+  first <- sel$selected_indices
+  expect_error(sel$select(), "has run already")
+  expect_error(sel$select(), "has run already")     # and every later call
+  expect_identical(sel$selected_indices, first)
+  expect_equal(X, X0, tolerance = 1e-12)
+  # A new selector on the same matrix repeats the run
+  again <- TRexSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE, control = trex_control(K = 5))
+  again$select()
+  expect_identical(again$selected_indices, first)
+})
+
+test_that("the derived selectors run once as well", {
+  set.seed(55)
+  n <- 60; p <- 20
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 2] * 2 + rnorm(n)
+  X0 <- X + 0
+  makers <- list(
+    screening = function() TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE),
+    da = function() TRexDASelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
+                                       control = trex_control(K = 5)),
+    gvs = function() TRexGVSSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
+                                         gvs_control = trex_gvs_control(lambda_2 = 1),
+                                         control = trex_control(K = 5)),
+    tikhonov = function() TRexTikhonovSelector$new(X, y, tFDR = 0.2, seed = 3, verbose = FALSE,
+                                                   tik_control = trex_tikhonov_control(
+                                                     tikhonov_K = diag(p), lambda_2 = 1),
+                                                   control = trex_control(K = 5))
+  )
+  for (name in names(makers)) {
+    sel <- makers[[name]]()
+    sel$select()
+    expect_error(sel$select(), "has run already", info = name)
+    expect_equal(X, X0, tolerance = 1e-12, info = name)
+  }
+})
+
+test_that("a target FDR that is not a number is refused", {
+  set.seed(56)
+  X <- matrix(rnorm(40 * 10), 40, 10)
+  y <- X[, 1] + rnorm(40)
+  expect_error(TRexSelector$new(X, y, tFDR = NaN, verbose = FALSE), "tFDR must be in \\[0, 1\\]")
+})
+
 test_that("the selector control getters and num_dummies are exposed", {
   set.seed(53)
   n <- 40; p <- 20

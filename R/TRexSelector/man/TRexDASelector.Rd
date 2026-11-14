@@ -223,6 +223,7 @@ reproducible.}
 \if{latex}{\out{\hypertarget{method-TRexDASelector-select}{}}}
 \subsection{\code{TRexDASelector$select()}}{
   Run the Dependency-Aware TRexSelector algorithm.
+A selector runs once: a second call is an error, see \code{\link{TRexSelector}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexDASelector$select()}

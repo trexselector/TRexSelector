@@ -183,9 +183,13 @@ garbage-collected.
 \if{html}{\out{<a id="method-TRexSelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexSelector-select}{}}}
 \subsection{\code{TRexSelector$select()}}{
-  Run the TRexSelector algorithm. A \code{select()} that
-ends with an error gives \code{X} back at once (original scale) and
-retires the selector: construct a new one to run again.
+  Run the TRexSelector algorithm. A selector runs once:
+\code{select()} gives \code{X} back when it ends, so a second call
+is an error instead of a run on a design that is no longer
+standardized. Construct a new selector to run again. The fields keep
+the results of the run. A \code{select()} that ends with an error
+gives \code{X} back at once (original scale) and retires the
+selector as well.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexSelector$select()}

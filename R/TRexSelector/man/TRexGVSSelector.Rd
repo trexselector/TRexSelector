@@ -181,7 +181,8 @@ field is overridden; for "IEN" it selects the IEN-family solver.}
 \if{html}{\out{<a id="method-TRexGVSSelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexGVSSelector-select}{}}}
 \subsection{\code{TRexGVSSelector$select()}}{
-  Run the GVS algorithm.
+  Run the GVS algorithm. A selector runs once: a second call is an
+error, see \code{\link{TRexSelector}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexGVSSelector$select()}

@@ -120,7 +120,8 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
       }
     },
 
-    #' @description Run the Tikhonov T-Rex algorithm.
+    #' @description Run the Tikhonov T-Rex algorithm. A selector runs once: a second call is an
+    #'   error, see \code{\link{TRexSelector}}.
     select = function() {
       trex_tikhonov_select(private$ptr)
       invisible(self)

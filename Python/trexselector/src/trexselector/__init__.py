@@ -149,8 +149,11 @@ class TRexSelector:
         Executes the T-Rex selector algorithm.
         Releases the GIL to allow underlying C++ OpenMP multithreading to run in parallel.
 
-        A ``select()`` that ends with an error gives ``X`` back at once (original
-        scale) and retires the selector: construct a new one to run again.
+        A selector runs once: ``select()`` gives ``X`` back when it ends, so a
+        second call raises ``RuntimeError`` instead of running on a design that
+        is no longer standardized. Construct a new selector to run again. A
+        ``select()`` that ends with an error gives ``X`` back at once (original
+        scale) and retires the selector as well.
 
         Returns
         -------
@@ -287,7 +290,8 @@ class TRexDASelector(TRexSelector):
 
     def select(self) -> DASelectionResult:
         """
-        Run the selector.
+        Run the selector. A selector runs once: a second call raises
+        ``RuntimeError``, see ``TRexSelector.select``.
 
         Returns
         -------
@@ -399,7 +403,8 @@ class TRexGVSSelector(TRexSelector):
 
     def select(self) -> GVSSelectionResult:
         """
-        Run the selector.
+        Run the selector. A selector runs once: a second call raises
+        ``RuntimeError``, see ``TRexSelector.select``.
 
         Returns
         -------
@@ -618,7 +623,8 @@ class TRexScreeningSelector(TRexSelector):
 
     def select(self) -> ScreenTRexSelectionResult:
         """
-        Run the selector.
+        Run the selector. A selector runs once: a second call raises
+        ``RuntimeError``, see ``TRexSelector.select``.
 
         Returns
         -------

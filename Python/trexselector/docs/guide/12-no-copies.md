@@ -56,7 +56,9 @@ back when `select()` returns. The values come back up to rounding, because cente
 their inverse are floating-point operations. In between, `X` holds the working design. `restore()`
 writes back early for a selector that will not run, and a selector that is garbage collected without
 running writes back in its finalizer. A `select()` that ends with an error writes back at once and
-retires the selector.
+retires the selector. A selector runs once: after `select()` the design is back at its original
+scale, so a second `select()` on the same object raises `RuntimeError`, and a new selector is
+constructed for a new run.
 
 ```{code-cell} python
 n, p = 80, 40

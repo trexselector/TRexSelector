@@ -545,12 +545,15 @@ public:
      *        + pick) and release X, without the main selection.
      *
      * @details For callers that want the pick alone (a study that scores it
-     *   against selections it already has). The object is spent afterwards:
-     *   call either `runPilotOnly()` or `select()` on a selector, not both.
-     *   Requires `lambda_2 < 0` and a PILOT_* `lambda2_method`.
+     *   against selections it already has). A selector runs once: after
+     *   `runPilotOnly()` a call of `select()` or of `runPilotOnly()` throws,
+     *   and so does `runPilotOnly()` after `select()`.
+     *   Requires `lambda_2 < 0` and the pilot rule as `lambda2_method`.
      *
-     * @throws std::invalid_argument when the control does not request a
+     * @throws std::invalid_argument when the control does not request the
      *         pilot rule.
+     * @throws std::runtime_error when the selector has run already or gave
+     *         X back before.
      */
     const Lambda2PilotResult& runPilotOnly();
 

@@ -605,6 +605,67 @@ def test_restore_before_select_gives_x_back(fast_control):
     assert np.allclose(X, X0, atol=1e-12)
 
 
+def test_a_selector_runs_once(fast_control):
+    """A second select() raises instead of running on a design that is no longer standardized."""
+    rng = np.random.default_rng(79)
+    n, p = 50, 30
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, 0] * 2.0 + rng.standard_normal(n)
+    X0 = X.copy(order="F")
+    sel = trexselector.TRexSelector(X, y, tFDR=0.2, trex_control=fast_control, seed=3, verbose=False)
+    first = np.array(sel.select().selected_var)
+    for _ in range(2):
+        with pytest.raises(RuntimeError, match="has run already"):
+            sel.select()
+    assert np.allclose(X, X0, atol=1e-12)
+    # A new selector on the same array repeats the run.
+    again = trexselector.TRexSelector(X, y, tFDR=0.2, trex_control=fast_control, seed=3, verbose=False)
+    assert np.array_equal(np.array(again.select().selected_var), first)
+
+
+def test_the_derived_selectors_run_once(fast_control):
+    rng = np.random.default_rng(80)
+    n, p = 60, 20
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, 1] * 2.0 + rng.standard_normal(n)
+    X0 = X.copy(order="F")
+
+    def gvs():
+        ctrl = trexselector.TRexGVSControlParameter()
+        ctrl.lambda_2 = 1.0
+        return trexselector.TRexGVSSelector(X, y, tFDR=0.2, gvs_control=ctrl, trex_control=fast_control,
+                                            seed=3, verbose=False)
+
+    def tikhonov():
+        ctrl = trexselector.TRexTikhonovControlParameter()
+        ctrl.tikhonov_K = np.eye(p)
+        ctrl.lambda_2 = 1.0
+        return trexselector.TRexTikhonovSelector(X, y, tFDR=0.2, tik_control=ctrl, trex_control=fast_control,
+                                                 seed=3, verbose=False)
+
+    makers = {
+        "screening": lambda: trexselector.TRexScreeningSelector(X, y, seed=3, verbose=False),
+        "da": lambda: trexselector.TRexDASelector(X, y, tFDR=0.2, trex_control=fast_control, seed=3,
+                                                  verbose=False),
+        "gvs": gvs,
+        "tikhonov": tikhonov,
+    }
+    for name, make in makers.items():
+        sel = make()
+        sel.select()
+        with pytest.raises(RuntimeError, match="has run already"):
+            sel.select()
+        assert np.allclose(X, X0, atol=1e-12), name
+
+
+def test_a_target_that_is_not_a_number_is_refused(fast_control):
+    rng = np.random.default_rng(81)
+    X = np.asfortranarray(rng.standard_normal((40, 10)))
+    y = X[:, 0] + rng.standard_normal(40)
+    with pytest.raises(ValueError, match=r"tFDR must be in \[0, 1\]"):
+        trexselector.TRexSelector(X, y, tFDR=float("nan"), trex_control=fast_control, verbose=False)
+
+
 def test_num_dummies_is_exposed(fast_control):
     rng = np.random.default_rng(78)
     n, p = 40, 20

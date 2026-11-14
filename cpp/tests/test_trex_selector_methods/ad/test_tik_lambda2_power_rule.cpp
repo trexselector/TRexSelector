@@ -675,4 +675,47 @@ TEST(TikLambda2Pilot, RunPilotOnly) {
     EXPECT_TRUE(X.isApprox(d.X));   // X released and restored
 }
 
+/** @brief A selector runs once: runPilotOnly() and select() exclude each
+ *  other, in both orders, and neither runs twice. A refused call leaves X
+ *  and the record of the run alone. */
+TEST(TikLambda2Pilot, RunPilotOnlyAndSelectExcludeEachOther) {
+    const BlockData d = testDesign();
+    const auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    Eigen::VectorXd y = d.y;
+    Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
+
+    {
+        Eigen::MatrixXd X = d.X;
+        Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
+        TRexTikhonovSelector selector(Xm, ym, 0.1, ctrl, 2026, false);
+        const double pick = selector.runPilotOnly().lambda2;
+        EXPECT_THROW(selector.select(), std::runtime_error);
+        EXPECT_THROW(selector.runPilotOnly(), std::runtime_error);
+        EXPECT_DOUBLE_EQ(selector.getLambda2Used(), pick);
+        EXPECT_TRUE(X.isApprox(d.X));
+    }
+    {
+        Eigen::MatrixXd X = d.X;
+        Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
+        TRexTikhonovSelector selector(Xm, ym, 0.1, ctrl, 2026, false);
+        selector.select();
+        const std::vector<std::size_t> first = selector.getSelectedIndices();
+        EXPECT_THROW(selector.runPilotOnly(), std::runtime_error);
+        EXPECT_THROW(selector.select(), std::runtime_error);
+        EXPECT_EQ(selector.getSelectedIndices(), first);
+        EXPECT_TRUE(X.isApprox(d.X));
+    }
+    {
+        // A control without the pilot rule is refused before the run begins,
+        // so the selector can still select.
+        Eigen::MatrixXd X = d.X;
+        Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
+        auto fixed = ctrl;
+        fixed.lambda_2 = 1.0;
+        TRexTikhonovSelector selector(Xm, ym, 0.1, fixed, 2026, false);
+        EXPECT_THROW(selector.runPilotOnly(), std::invalid_argument);
+        EXPECT_NO_THROW(selector.select());
+    }
+}
+
 } // namespace trex::test::trex_selector_methods::ad::trex_tikhonov

@@ -90,7 +90,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       }
     },
 
-    #' @description Run the Screening algorithm.
+    #' @description Run the Screening algorithm. A selector runs once: a second call is an
+    #'   error, see \code{\link{TRexSelector}}.
     select = function() {
       trex_screening_select(private$ptr)
       invisible(self)

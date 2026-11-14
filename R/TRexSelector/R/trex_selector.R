@@ -77,9 +77,13 @@ TRexSelector <- R6::R6Class("TRexSelector",
       invisible(self)
     },
 
-    #' @description Run the TRexSelector algorithm. A \code{select()} that
-    #'   ends with an error gives \code{X} back at once (original scale) and
-    #'   retires the selector: construct a new one to run again.
+    #' @description Run the TRexSelector algorithm. A selector runs once:
+    #'   \code{select()} gives \code{X} back when it ends, so a second call
+    #'   is an error instead of a run on a design that is no longer
+    #'   standardized. Construct a new selector to run again. The fields keep
+    #'   the results of the run. A \code{select()} that ends with an error
+    #'   gives \code{X} back at once (original scale) and retires the
+    #'   selector as well.
     #' @return invisible(self)
     select = function() {
       trex_selector_select(private$ptr)

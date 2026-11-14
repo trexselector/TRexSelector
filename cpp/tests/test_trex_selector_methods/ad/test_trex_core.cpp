@@ -364,6 +364,8 @@ TEST(TRexCoreTest, Exceptions_InvalidParameters) {
                  std::invalid_argument);
     EXPECT_THROW(TRexSelector(X_map, y_map, 1.5, trex_ctrl),
                  std::invalid_argument);
+    EXPECT_THROW(TRexSelector(X_map, y_map, std::numeric_limits<double>::quiet_NaN(), trex_ctrl),
+                 std::invalid_argument);
 
     // Test invalid K
     trex_ctrl.K = 0;

@@ -36,6 +36,12 @@
 
 ## Fixed
 
+* A selector runs once. `select()` gives the design back when it ends, and up to 2.0.1 a second
+  `select()` on the same object ran on the design at its original scale, without an error, and returned
+  a wrong selection (all variables in a test with 10 true ones among 60). The second call is an error
+  now, for `TRexSelector`, `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector` and
+  `TRexTikhonovSelector`. Construct a new selector to run again. The fields keep the results of the run.
+* A target FDR that is `NaN` is refused. Up to 2.0.1 it was accepted and nothing was selected.
 * The help of `trex_da_control()` no longer offers `hc_linkage = "Ward"`, which the selector rejects, and
   the error names the supported linkages. The help of the fields `FDP_hat_array_BT`, `Phi_array_BT` and
   `R_array_BT` of `TRexDASelector` states what the arrays hold. The vignette "T-Rex+DA" is titled

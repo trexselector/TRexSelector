@@ -157,7 +157,8 @@ reproducible.}
 \if{html}{\out{<a id="method-TRexScreeningSelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexScreeningSelector-select}{}}}
 \subsection{\code{TRexScreeningSelector$select()}}{
-  Run the Screening algorithm.
+  Run the Screening algorithm. A selector runs once: a second call is an
+error, see \code{\link{TRexSelector}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexScreeningSelector$select()}

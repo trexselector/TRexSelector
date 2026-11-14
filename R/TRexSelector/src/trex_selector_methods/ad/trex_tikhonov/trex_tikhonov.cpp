@@ -659,6 +659,7 @@ const Lambda2PilotResult& TRexTikhonovSelector::runPilotOnly() {
             "TRexTikhonovSelector::runPilotOnly: requires lambda_2 < 0 and a "
             "PILOT_* lambda2_method.");
     }
+    beginRun();
     const GiveXBackOnError give_x_back(*this);
     if (trex_tik_ctrl_.cluster_dummies) {
         setupClusterModel();

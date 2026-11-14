@@ -534,8 +534,10 @@ inline void bind_trex_core(py::module& m_tsm) {
              "select() then raises, construct a new one. Without it, an unselected "
              "selector gives X back only when it is garbage-collected.")
         .def("select", &PyTRexSelector::select, py::call_guard<py::gil_scoped_release>(),
-             "Run the T-Rex algorithm and return a SelectionResult. A select() that ends with an error gives X "
-             "back at once (original scale) and retires the selector: construct a new one to run again.")
+             "Run the T-Rex algorithm and return a SelectionResult. A selector runs once: select() gives X "
+             "back when it ends, so a second call raises RuntimeError instead of running on a design that is no "
+             "longer standardized. Construct a new selector to run again. A select() that ends with an error "
+             "gives X back at once (original scale) and retires the selector as well.")
         .def("getTFDR", &PyTRexSelector::getTFDR, "Return the target FDR.")
         .def("getK", &PyTRexSelector::getK, "Return K: the number of random experiments.")
         .def("getMaxNumDummies", &PyTRexSelector::getMaxNumDummies, "Return the cap of the dummy multiplier "

@@ -356,14 +356,18 @@ protected:
      */
     bool X_is_normalized_{false};
 
-    /** @brief True after restore() gave X back before select(): the
-     *  selector's normalized view is gone and select() must refuse. */
+    /** @brief True after restore() or a failed run gave X back: the
+     *  selector's normalized view is gone and a run must refuse. */
     bool released_{false};
 
-    /** @brief Throws if X was given back before: by restore(), or by a
-     *  select() that ended with an error. Every select() implementation (base
-     *  and overrides) calls it first. */
-    void ensureNotReleased() const;
+    /** @brief True from the start of the first run. A selector runs once. */
+    bool has_run_{false};
+
+    /** @brief Entry of a run. Throws std::runtime_error if X was given back
+     *  before (restore(), a failed run) or if the selector has run already,
+     *  and marks the selector as run. Every run calls it first: select() of
+     *  the base and of the variants, and a variant's own run. */
+    void beginRun();
 
     /** @brief Scope guard of the select() implementations: an exception that
      *  leaves the scope gives X back (original scale, claim released) and
@@ -556,9 +560,13 @@ public:
     /**
      * @brief Run T-Rex selection algorithm.
      *
-     * @details A select() that ends with an exception gives X back at once
-     *  (original scale, claim released) and retires the selector: a later
-     *  select() throws, construct a new selector.
+     * @details A selector runs once. select() gives X back when it ends, so
+     *  a second call throws std::runtime_error instead of running on a design
+     *  that is no longer standardized: construct a new selector to run
+     *  again. The results of the run stay readable.
+     *
+     *  A select() that ends with an exception gives X back at once (original
+     *  scale, claim released) and retires the selector as well.
      *
      * @return SelectionResult containing selected variables and
      *         diagnostics.

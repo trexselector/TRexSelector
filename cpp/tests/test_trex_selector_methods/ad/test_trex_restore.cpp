@@ -130,4 +130,65 @@ TEST(TRexRestore, ScreeningSelectorHonoursRestore) {
     EXPECT_THROW(sel.select(), std::runtime_error);
 }
 
+
+
+/** @brief A selector runs once. select() gives X back when it ends, so a
+ *         second call throws instead of running on a design that is no
+ *         longer standardized. The results of the run stay readable. */
+TEST(TRexRestore, SecondSelectThrows) {
+    Data d;
+    const Eigen::MatrixXd X0 = d.X;
+    Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
+    Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
+
+    TRexSelector sel(Xm, ym, 0.2, smallControl(), 3, false);
+    sel.select();
+    const std::vector<std::size_t> first = sel.getSelectedIndices();
+    const Eigen::MatrixXd X_after = d.X;
+
+    EXPECT_THROW(sel.select(), std::runtime_error);
+    EXPECT_THROW(sel.select(), std::runtime_error);            // and every later call
+    EXPECT_EQ(sel.getSelectedIndices(), first);                // the results stay
+    EXPECT_EQ((d.X - X_after).cwiseAbs().maxCoeff(), 0.0);     // X is left alone
+    EXPECT_TRUE(d.X.isApprox(X0, 1e-12));
+
+    // A new selector on the same matrix repeats the run.
+    TRexSelector again(Xm, ym, 0.2, smallControl(), 3, false);
+    again.select();
+    EXPECT_EQ(again.getSelectedIndices(), first);
+}
+
+
+/** @brief The rule holds under ScalingMode::NONE as well, where the selector
+ *         writes nothing into X. */
+TEST(TRexRestore, SecondSelectThrowsUnderScalingNone) {
+    Data d;
+    // A design the user standardized: centered columns of unit L2 norm.
+    d.X.rowwise() -= d.X.colwise().mean();
+    d.X.colwise().normalize();
+    Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
+    Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
+
+    TRexControlParameter ctrl = smallControl();
+    ctrl.scaling_mode = trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode::NONE;
+    TRexSelector sel(Xm, ym, 0.2, ctrl, 3, false);
+    EXPECT_NO_THROW(sel.select());
+    EXPECT_THROW(sel.select(), std::runtime_error);
+}
+
+
+/** @brief The screening selector has its own select() and follows the rule. */
+TEST(TRexRestore, ScreeningSelectorRunsOnce) {
+    Data d;
+    const Eigen::MatrixXd X0 = d.X;
+    Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
+    Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
+
+    ScreenTRexControlParameter sctrl;
+    ScreenTRexSelector sel(Xm, ym, sctrl, /*seed=*/7);
+    EXPECT_NO_THROW(sel.select());
+    EXPECT_THROW(sel.select(), std::runtime_error);
+    EXPECT_TRUE(d.X.isApprox(X0, 1e-12));
+}
+
 } // namespace trex::test::trex_selector_methods::restore

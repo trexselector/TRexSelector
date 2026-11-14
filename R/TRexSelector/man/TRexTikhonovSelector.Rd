@@ -183,7 +183,8 @@ it.}
 \if{html}{\out{<a id="method-TRexTikhonovSelector-select"></a>}}
 \if{latex}{\out{\hypertarget{method-TRexTikhonovSelector-select}{}}}
 \subsection{\code{TRexTikhonovSelector$select()}}{
-  Run the Tikhonov T-Rex algorithm.
+  Run the Tikhonov T-Rex algorithm. A selector runs once: a second call is an
+error, see \code{\link{TRexSelector}}.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexTikhonovSelector$select()}

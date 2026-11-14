@@ -240,13 +240,20 @@ void TRexSelector::restore() {
 }
 
 
-void TRexSelector::ensureNotReleased() const {
+void TRexSelector::beginRun() {
     if (released_) {
         throw std::runtime_error(
             "TRexSelector::select(): restore() gave X back before select() ran; "
             "this selector can no longer run, construct a new one. (A select() "
             "that ended with an error gives X back as well.)");
     }
+    if (has_run_) {
+        throw std::runtime_error(
+            "TRexSelector: this selector has run already and can no longer run. "
+            "A run gives X back when it ends, so a second run would work on a "
+            "design that is no longer standardized. Construct a new one.");
+    }
+    has_run_ = true;
 }
 
 
@@ -283,7 +290,8 @@ void TRexSelector::validateTRexParameters() const {
         throw std::invalid_argument("Response vector y contains NaN or Inf values.");
     }
 
-    if (tFDR_ < 0.0 || tFDR_ > 1.0) {
+    // The negated form refuses NaN as well.
+    if (!(tFDR_ >= 0.0 && tFDR_ <= 1.0)) {
         throw std::invalid_argument(
             "Target FDR tFDR must be in [0, 1]. Got: " + std::to_string(tFDR_));
     }
@@ -361,7 +369,7 @@ void TRexSelector::validateTRexParameters() const {
 
 TRexSelector::SelectionResult TRexSelector::select() {
 
-    ensureNotReleased();
+    beginRun();
     const GiveXBackOnError give_x_back(*this);
 
     // 1. Voting grid and optimization point

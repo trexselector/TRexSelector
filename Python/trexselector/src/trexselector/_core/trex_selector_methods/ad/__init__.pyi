@@ -2410,7 +2410,7 @@ class TRexSelector:
         """
     def select(self) -> SelectionResult:
         """
-        Run the T-Rex algorithm and return a SelectionResult. A select() that ends with an error gives X back at once (original scale) and retires the selector: construct a new one to run again.
+        Run the T-Rex algorithm and return a SelectionResult. A selector runs once: select() gives X back when it ends, so a second call raises RuntimeError instead of running on a design that is no longer standardized. Construct a new selector to run again. A select() that ends with an error gives X back at once (original scale) and retires the selector as well.
         """
 class TRexTikhonovControlParameter:
     """

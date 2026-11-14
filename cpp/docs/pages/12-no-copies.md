@@ -32,7 +32,9 @@ back when `select()` returns. The values come back up to rounding, because cente
 their inverse are floating-point operations. In between, `X` holds the working design. `restore()`
 writes back early for a selector that will not run, and a selector that is destroyed without running
 writes back in its destructor. A `select()` that ends with an exception writes back at once and
-retires the selector.
+retires the selector. A selector runs once: after `select()` the design is back at its original
+scale, so a second `select()` on the same object throws `std::runtime_error`, and a new selector is
+constructed for a new run.
 
 \snippet{trimleft} no_copies.cpp selector
 \output{no_copies.selector.txt}
