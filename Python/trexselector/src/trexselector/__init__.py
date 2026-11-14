@@ -574,7 +574,9 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
 @_with_core_notes(PyTRexScreeningSelector)
 class TRexScreeningSelector(TRexSelector):
     """
-    T-Rex Selector with fast variable screening via dummy comparison.
+    T-Rex screening selector (T-Rex+Screening): fast FDR-controlled variable
+    screening in one pass of the random experiments, until one dummy is
+    included (T = 1), with as many dummies as variables (L = p).
 
     Parameters
     ----------
@@ -606,24 +608,7 @@ class TRexScreeningSelector(TRexSelector):
         if trex_control is None:
             trex_control = TRexControlParameter()
 
-        # ScreenTRex accepts STANDARD, SEEDED, PERMUTATION, and
-        # PERMUTATION_SEEDED (screening is a single pass at L = p; the L-loop
-        # growth strategies HCONCAT / SKIPL have no meaning there). The
-        # trex_control default (HCONCAT) silently maps to STANDARD — it is
-        # indistinguishable from an explicit choice, same convention as
-        # TLARS elsewhere; any other unsupported value warns.
-        _screen_ok = (LLoopStrategy.STANDARD, LLoopStrategy.SEEDED,
-                      LLoopStrategy.PERMUTATION, LLoopStrategy.PERMUTATION_SEEDED)
-        if trex_control.lloop_strategy not in _screen_ok:
-            if trex_control.lloop_strategy != LLoopStrategy.HCONCAT:
-                warnings.warn(
-                    f"lloop_strategy = {trex_control.lloop_strategy.name} is not "
-                    f"supported by screening (single pass at L = p); using "
-                    f"STANDARD.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-            trex_control.lloop_strategy = LLoopStrategy.STANDARD
+        # The core validates the L-loop strategy. The control is passed on as it is.
         _validate_core_solver_type(trex_control)
 
         self._selector: PyTRexScreeningSelector = PyTRexScreeningSelector(self.X, self.y,

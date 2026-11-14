@@ -16,6 +16,44 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The screening takes the same strategies on the three surfaces, and its help is corrected
+
+- Rule of Fabian, 2026-11-14: "we aim for standards, so parametrizations between Cpp, Python, and R are
+  not allowed to vary, except it is not possible in the respective language. Cpp serves as the reference
+  for the texts." A binding passes the control on and lets the core decide.
+- The strategies of the screening. The core takes STANDARD (default), SEEDED, PERMUTATION and
+  PERMUTATION_SEEDED and refuses HCONCAT and SKIPL, because the screening is one pass at L = p and has
+  no L-loop to grow (confirmed by Fabian the same day: "HCONCAT and SKIPL make no sense there.
+  PERMUTATION for Screening is valid. default is Standard"). R overwrote the strategy of the control
+  with STANDARD in `TRexScreeningSelector` and in `TRexBiobankScreeningSelector`, so SEEDED and the two
+  permutations could not be chosen in R, and a chosen one was replaced without a word. The Python root
+  class ran HCONCAT as STANDARD without a word and SKIPL with a warning, and wrote STANDARD into the
+  control object of the caller. Both now pass the control on. R runs the four strategies, and R and
+  Python refuse HCONCAT and SKIPL with the message of the core.
+- The variants of the screening are filters. The C++ texts of `ScreenTRexMethod` called them
+  "Dependency-Aware T-Rex (...)". Fabian: "Screen TRex does not call Dependency-Aware T-Rex it uses
+  dependency aware politics or filters." The texts now say "Screening with the dependency-aware filter
+  for ...", and R and Python carry the C++ texts.
+- The fields of the result have one text. In R `estimated_correlation` was the "Covariance max value",
+  `beta_mat` the "Complete variables parameter space", `dummy_betas` the "Dummy variables parameter
+  space", `confidence_level` "Bounds the bootstrap estimates" and `used_bootstrap` "Employs
+  bootstrapping". Python gave `beta_mat` the shape p x T_stop, it has one value per variable. Python
+  said that the bootstrap serves the FDR estimation. It makes the selection, and the estimate stays one
+  over the number of selected variables.
+- The values of the base class after a screening run are documented: T_stop 1, L 1, p dummies, the
+  voting threshold 0.5, no target FDR (0), a 1 x 1 matrix with the number of selected variables, and a
+  1 x 1 matrix with 0 for the FDP estimates. The screening estimates no FDP per voting level, and
+  `screen_trex()` of the 1.x versions of the R package returns none either, so the 0 stays.
+- The AR(1) window carries the sentence that was corrected for the dependency-aware selector. The class
+  opens with "T-Rex screening selector (T-Rex+Screening): fast FDR-controlled variable screening in one
+  pass of the random experiments, until one dummy is included (T = 1), with as many dummies as
+  variables (L = p)". The class documentation of R and Python names the strategies, as the C++ one did.
+- Tests. R and Python pin that the strategy of the control reaches the selector (the permutation runs
+  differ from the default run, each strategy equals its seeded twin), that HCONCAT and SKIPL are
+  refused, and that Python leaves the control of the caller as it is. R pins the same for the biobank
+  screening. C++, R and Python pin the fixed values of the base class and the fields of the result.
+  C++ tests 724 of 724, R tests 1,986, Python tests 731.
+
 #### The help of the GVS selector agrees on the three surfaces and with the code
 
 - The help texts of the selector, of its control and of its result were read side by side in C++, R

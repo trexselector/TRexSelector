@@ -335,3 +335,23 @@ test_that("TRexBiobankScreeningSelector gives every phenotype its own seed", {
   differing <- sum(!vapply(multi, function(r) identical(r$selected_indices_screen_ordinary, first), logical(1)))
   expect_gt(differing, 0)
 })
+
+
+test_that("TRexBiobankScreeningSelector takes the four strategies of the core and refuses HCONCAT and SKIPL", {
+  set.seed(11)
+  n <- 100
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
+  run <- function(strategy) {
+    sel <- TRexBiobankScreeningSelector$new(X, y, seed = 3, verbose = FALSE,
+                                            control = trex_control(K = 10, lloop_strategy = strategy))
+    sel$select()$selected_indices
+  }
+  expect_identical(run("SEEDED"), run("STANDARD"))
+  expect_identical(run("PERMUTATION_SEEDED"), run("PERMUTATION"))
+  for (strategy in c("HCONCAT", "SKIPL")) {
+    expect_error(run(strategy), "only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED", fixed = TRUE)
+  }
+})
+

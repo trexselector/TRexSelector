@@ -57,7 +57,10 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
     #' @param screen_control A screen control list from \code{\link{trex_screen_control}()}
     #'   (default: \code{trex_screen_control()}).
     #' @param control A control list from \code{\link{trex_control}()} (default:
-    #'   \code{trex_control()}). The \code{lloop_strategy} field is forced to "STANDARD".
+    #'   \code{trex_control()}). The screening takes the values \code{"STANDARD"} (default),
+    #'   \code{"SEEDED"}, \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} of
+    #'   \code{lloop_strategy} and refuses \code{"HCONCAT"} and \code{"SKIPL"}, as
+    #'   \code{\link{TRexScreeningSelector}} does.
     initialize = function(X, Y,
                           tFDR = 0.1,
                           seed = -1,
@@ -69,10 +72,6 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
       .warn_cd_solver_name(control$solver)
 
       biobank_control_list <- c(list(target_FDR_trex = tFDR), biobank_control)
-
-      # Biobank/screening always uses STANDARD L-loop strategy
-      screen_control$lloop_strategy <- "STANDARD"
-      control$lloop_strategy <- "STANDARD"
 
       y_mmap <- inherits(Y, "mmap_matrix")
       if (!is.numeric(Y) && !y_mmap) {

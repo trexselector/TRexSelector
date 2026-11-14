@@ -526,25 +526,32 @@ trex_gvs_control <- function(gvs_type = "EN",
 #' @description Build a control list for the screening step in TRexScreeningSelector and
 #'   TRexBiobankScreeningSelector.
 #'
-#' @param use_bootstrap_CI Whether to use bootstrap confidence intervals for screening
-#'   (default: FALSE).
+#' @param use_bootstrap_CI Whether the confidence-based screening (bootstrap) makes the
+#'   selection (default: FALSE). The FDR estimate stays one over the number of selected
+#'   variables.
 #' @param R_boot Number of bootstrap resamples, at least 2 (default: 1000).
 #' @param ci_grid_step Step of the grid over the confidence level, in \code{(0, 1]}
 #'   (default: 0.001).
-#' @param trex_method Screening method: "TREX", "TREX_DA_AR1", "TREX_DA_EQUI",
-#'   "TREX_DA_BLOCK_EQUI", "TREX_DA_NN" (default: "TREX"). "TREX_DA_NN" compares a variable
-#'   with the neighbors inside the AR(1) window whose sample correlation reaches
-#'   \code{rho_thr_DA}, and a variable without such a neighbor keeps its relative occurrence.
+#' @param trex_method Variant of the screening (default: "TREX"). "TREX" screens without a
+#'   dependency-aware filter. The other variants apply a dependency-aware filter to the
+#'   relative occurrences. "TREX_DA_AR1", for a first-order autoregressive dependency,
+#'   compares a variable with the neighbors inside the AR(1) window. "TREX_DA_EQUI", for
+#'   equi-correlated variables, compares a variable with all other variables.
+#'   "TREX_DA_BLOCK_EQUI", for block equi-correlated variables, makes the same comparison
+#'   inside contiguous blocks. "TREX_DA_NN" compares a variable with the neighbors inside the
+#'   AR(1) window whose sample correlation reaches \code{rho_thr_DA}, and a variable without
+#'   such a neighbor keeps its relative occurrence.
 #' @param cor_coef Correlation coefficient of the dependency-aware variants. -2.0 triggers
 #'   auto-estimation (default: -2.0). The variants use the magnitude of a supplied coefficient.
 #'   Any other value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.
 #' @param rho_thr_DA Correlation threshold of the dependency-aware variants (default: 0.02).
-#'   "TREX_DA_AR1": the window around a variable holds the lags whose correlation
-#'   \code{abs(cor_coef)^lag} reaches the threshold, range \code{[0, 1)}. "TREX_DA_NN": the
-#'   same window, of which the variables stay whose sample correlation with the variable
-#'   reaches the threshold, range \code{[0, 1)}. "TREX_DA_EQUI" and
-#'   "TREX_DA_BLOCK_EQUI": the correction is skipped when \code{abs(cor_coef)} does not exceed
-#'   the threshold, range \code{[0, 1]}.
+#'   "TREX_DA_AR1": the window around a variable reaches
+#'   \code{ceiling(log(rho_thr_DA) / log(abs(cor_coef)))} columns to each side, up to the
+#'   first lag whose correlation \code{abs(cor_coef)^lag} has fallen to the threshold, range
+#'   \code{[0, 1)}. "TREX_DA_NN": the same window, of which the variables stay whose sample
+#'   correlation with the variable reaches the threshold, range \code{[0, 1)}.
+#'   "TREX_DA_EQUI" and "TREX_DA_BLOCK_EQUI": the filter is skipped when
+#'   \code{abs(cor_coef)} does not exceed the threshold, range \code{[0, 1]}.
 #' @param n_blocks Number of blocks of "TREX_DA_BLOCK_EQUI", between 1 and the number of
 #'   variables (default: 5).
 #'

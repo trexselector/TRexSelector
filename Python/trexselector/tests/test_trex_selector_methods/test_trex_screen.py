@@ -1,6 +1,8 @@
 """
 Tests for TRexScreeningSelector.
 """
+import warnings
+
 import numpy as np
 import pytest
 import trexselector
@@ -295,3 +297,82 @@ def test_screen_auto_estimate_cor(signal_data):
     assert res is not None
     # estimated_correlation should have been filled in
     assert isinstance(res.estimated_correlation, float)
+
+
+def _screen_design():
+    rng = np.random.default_rng(11)
+    n, p = 100, 60
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, :5] @ np.full(5, 3.0) + rng.standard_normal(n)
+    return X, y, n, p
+
+
+def _screen_phi(X, y, strategy):
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 10
+    ctrl.lloop_strategy = getattr(trexselector.LLoopStrategy, strategy)
+    sel = trexselector.TRexScreeningSelector(X, y, trex_control=ctrl, seed=3, verbose=False)
+    sel.select()
+    return np.asarray(sel.phi_mat).copy(), ctrl
+
+
+def test_screen_takes_the_four_strategies_of_the_core():
+    """The strategy of the control reaches the selector, and each strategy equals its seeded twin."""
+    X, y, n, p = _screen_design()
+    standard, _ = _screen_phi(X, y, "STANDARD")
+    permutation, _ = _screen_phi(X, y, "PERMUTATION")
+    assert np.array_equal(_screen_phi(X, y, "SEEDED")[0], standard)
+    assert np.array_equal(_screen_phi(X, y, "PERMUTATION_SEEDED")[0], permutation)
+    assert not np.array_equal(permutation, standard)
+
+
+@pytest.mark.parametrize("strategy", ["HCONCAT", "SKIPL"])
+def test_screen_refuses_the_growth_strategies(strategy):
+    """The screening is one pass at L = p. The root class neither remaps nor changes the control."""
+    X, y, n, p = _screen_design()
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.lloop_strategy = getattr(trexselector.LLoopStrategy, strategy)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        with pytest.raises(ValueError, match="only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED"):
+            trexselector.TRexScreeningSelector(X, y, trex_control=ctrl, verbose=False)
+    assert ctrl.lloop_strategy == getattr(trexselector.LLoopStrategy, strategy)
+
+
+def test_screen_base_attributes_hold_the_fixed_values_of_a_screening_run():
+    """One pass at T = 1 and L = p, without a target and without a calibration."""
+    X, y, n, p = _screen_design()
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 10
+    sel = trexselector.TRexScreeningSelector(X, y, trex_control=ctrl, seed=3, verbose=False)
+    res = sel.select()
+    n_selected = len(sel.selected_indices)
+
+    assert sel.T_stop == 1
+    assert sel.L == 1
+    assert sel.num_dummies == p
+    assert sel.v_thresh == 0.5
+    assert sel.tFDR == 0.0
+    assert np.asarray(sel.r_mat).shape == (1, 1)
+    assert np.asarray(sel.r_mat)[0, 0] == n_selected
+    assert np.asarray(sel.fdp_hat_mat).shape == (1, 1)
+    assert np.asarray(sel.fdp_hat_mat)[0, 0] == 0.0
+    assert np.array_equal(np.asarray(sel.phi_prime).ravel(), np.asarray(sel.phi_mat).ravel())
+    assert res.estimated_FDR == 1.0 / max(1, n_selected)
+
+    # The fields of the screening without bootstrap and without a filter
+    assert not res.used_bootstrap
+    assert res.confidence_level == 0.0
+    assert res.estimated_correlation == 0.0
+    assert np.asarray(res.beta_mat).shape == (p,)
+    assert np.asarray(res.dummy_betas).size > 0
+    assert np.all(np.asarray(res.dummy_betas) != 0.0)
+
+    # A supplied coefficient of a dependency-aware variant is reported as it is
+    screen_ctrl = trexselector.ScreenTRexControlParameter()
+    screen_ctrl.trex_method = trexselector.ScreenTRexMethod.TREX_DA_AR1
+    screen_ctrl.cor_coef = 0.5
+    filtered = trexselector.TRexScreeningSelector(X, y, screen_control=screen_ctrl, trex_control=ctrl, seed=3,
+                                                  verbose=False)
+    assert filtered.select().estimated_correlation == 0.5
+

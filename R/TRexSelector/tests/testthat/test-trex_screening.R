@@ -392,3 +392,78 @@ test_that("TRexScreeningSelector DA-method variants run without error and return
     expect_equal(sort(idx), which(sv), label = paste(tm, "consistency"))
   }
 })
+
+
+test_that("TRexScreeningSelector takes the four strategies of the core and refuses HCONCAT and SKIPL", {
+  set.seed(11)
+  n <- 100
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
+  run <- function(strategy) {
+    sel <- TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE,
+                                     control = trex_control(K = 10, lloop_strategy = strategy))
+    sel$select()
+    sel$phi_mat
+  }
+
+  # The strategy of the control reaches the selector: the permutation runs differ from
+  # the default run, and each strategy equals its seeded twin
+  standard <- run("STANDARD")
+  permutation <- run("PERMUTATION")
+  expect_identical(run("SEEDED"), standard)
+  expect_identical(run("PERMUTATION_SEEDED"), permutation)
+  expect_false(identical(permutation, standard))
+
+  # The screening is one pass at L = p, so the growth strategies are refused
+  for (strategy in c("HCONCAT", "SKIPL")) {
+    expect_error(run(strategy), "only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED", fixed = TRUE)
+  }
+})
+
+
+test_that("TRexScreeningSelector holds the fixed values of a screening run in the inherited fields", {
+  set.seed(11)
+  n <- 100
+  p <- 60
+  X <- matrix(rnorm(n * p), n, p)
+  y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
+  sel <- TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE, control = trex_control(K = 10))
+  sel$select()
+  n_selected <- length(sel$selected_indices)
+
+  # One pass at T = 1 and L = p, without a target and without a calibration
+  expect_equal(sel$T_stop, 1)
+  expect_equal(sel$L, 1)
+  expect_equal(sel$num_dummies, p)
+  expect_identical(sel$v_thresh, 0.5)
+  expect_identical(sel$tFDR, 0)
+  expect_equal(dim(sel$r_mat), c(1L, 1L))
+  expect_equal(sel$r_mat[1, 1], n_selected)
+  expect_equal(dim(sel$fdp_hat_mat), c(1L, 1L))
+  expect_identical(sel$fdp_hat_mat[1, 1], 0)
+  expect_equal(as.numeric(sel$phi_prime), as.numeric(sel$phi_mat))
+  expect_identical(sel$estimated_FDR, 1 / max(1, n_selected))
+
+  # The fields of the screening without bootstrap and without a filter
+  expect_false(sel$used_bootstrap)
+  expect_identical(sel$confidence_level, 0)
+  expect_identical(sel$estimated_correlation, 0)
+  expect_equal(dim(sel$beta_mat), c(p, 1L))
+  expect_gt(length(sel$dummy_betas), 0L)
+  expect_true(all(sel$dummy_betas != 0))
+
+  # The bootstrap reports its confidence level, and a supplied coefficient is reported as it is
+  boot <- TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE, control = trex_control(K = 10),
+                                    screen_control = trex_screen_control(use_bootstrap_CI = TRUE, R_boot = 200))
+  boot$select()
+  expect_true(boot$used_bootstrap)
+  expect_gt(boot$confidence_level, 0)
+  expect_lt(boot$confidence_level, 1)
+  ar1 <- TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE, control = trex_control(K = 10),
+                                   screen_control = trex_screen_control(trex_method = "TREX_DA_AR1",
+                                                                        cor_coef = 0.5))
+  ar1$select()
+  expect_identical(ar1$estimated_correlation, 0.5)
+})
+

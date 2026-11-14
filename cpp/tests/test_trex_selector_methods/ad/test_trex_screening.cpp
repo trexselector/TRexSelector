@@ -412,6 +412,52 @@ TEST_F(TRexScreeningTest, Equivalence_SeededMatchesStandard) {
 }
 
 
+/** @brief The getters of the base class hold the fixed values of a screening
+ *         run, and the result holds the fields of the screening. */
+TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
+    ScreenTRexControlParameter screen_params;
+    screen_params.trex_ctrl.K = 5;
+
+    ScreenTRexSelector selector(X_map, y_map, screen_params, 42, false);
+    selector.select();
+    const auto& res = selector.getScreenResult();
+    const auto p = X.cols();
+    const double n_selected = static_cast<double>(res.selected_var.sum());
+
+    // One pass at T = 1 and L = p, without a target and without a calibration
+    EXPECT_EQ(selector.getTStop(), 1u);
+    EXPECT_EQ(selector.getDummyMultiplierL(), 1u);
+    EXPECT_EQ(selector.getNumDummies(), static_cast<std::size_t>(p));
+    EXPECT_DOUBLE_EQ(selector.getVotingThreshold(), 0.5);
+    EXPECT_DOUBLE_EQ(selector.getTFDR(), 0.0);
+
+    ASSERT_EQ(selector.getRMat().size(), 1);
+    EXPECT_DOUBLE_EQ(selector.getRMat()(0, 0), n_selected);
+    ASSERT_EQ(selector.getFDPHatMat().size(), 1);
+    EXPECT_DOUBLE_EQ(selector.getFDPHatMat()(0, 0), 0.0);
+    ASSERT_EQ(selector.getPhiMat().rows(), 1);
+    EXPECT_TRUE(selector.getPhiPrime() == selector.getPhiMat().row(0).transpose());
+
+    // The FDR estimate is a field of the result
+    EXPECT_DOUBLE_EQ(res.estimated_FDR, 1.0 / std::max(1.0, n_selected));
+
+    // The fields of the screening without bootstrap and without a filter
+    EXPECT_FALSE(res.used_bootstrap);
+    EXPECT_DOUBLE_EQ(res.confidence_level, 0.0);
+    EXPECT_DOUBLE_EQ(res.estimated_correlation, 0.0);
+    EXPECT_EQ(res.beta_mat.size(), p);
+    EXPECT_GT(res.dummy_betas.size(), 0);
+    EXPECT_TRUE((res.dummy_betas.array() != 0.0).all());
+
+    // A supplied coefficient of a dependency-aware variant is reported as it is
+    screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+    screen_params.cor_coef = 0.5;
+    ScreenTRexSelector filtered(X_map, y_map, screen_params, 42, false);
+    filtered.select();
+    EXPECT_DOUBLE_EQ(filtered.getScreenResult().estimated_correlation, 0.5);
+}
+
+
 /** @brief Test execution of Ordinary Screening */
 TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
     ScreenTRexControlParameter screen_params;

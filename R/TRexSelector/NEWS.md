@@ -20,6 +20,11 @@
 * `hc_linkage` of `trex_da_control()`, `trex_gvs_control()` and `trex_tikhonov_control()` takes the
   linkage in lower case, `"single"`, `"complete"`, `"average"` or `"wpgma"`, as the field
   `hc_method_used` returns it. The capitalized names of 2.0.1 (`"Single"`) are still accepted.
+* `TRexScreeningSelector` and `TRexBiobankScreeningSelector` take the `lloop_strategy` of the control.
+  Up to 2.0.1 they replaced it by `"STANDARD"` without a word. `"SEEDED"`, `"PERMUTATION"` and
+  `"PERMUTATION_SEEDED"` now run, as in C++ and Python, and `"HCONCAT"` and `"SKIPL"` are refused with
+  an error, because the screening is one pass at L = p. The default `"STANDARD"` gives the results of
+  2.0.1.
 
 ## Fixed
 
@@ -65,6 +70,11 @@
   `gvs_type` is the penalty of the grouped selection. The fields `lambda2_used`, `max_clusters`,
   `hc_method_used` and `groups` say what they hold, and the help names the L-loop strategies the
   selector takes.
+* The help of `TRexScreeningSelector` and of `trex_screen_control()` is corrected. The fields
+  `estimated_correlation`, `beta_mat`, `dummy_betas`, `confidence_level` and `used_bootstrap` say what
+  they hold. The variants of `trex_method` are described as dependency-aware filters of the screening.
+  A new section says which values the fields inherited from `TRexSelector` have after a screening run,
+  among them `fdp_hat_mat`, which stays 0, because the screening estimates no FDP per voting level.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a

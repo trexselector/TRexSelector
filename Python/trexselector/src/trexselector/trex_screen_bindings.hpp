@@ -103,37 +103,41 @@ public:
  * @param m The Python module to bind against.
  */
 inline void bind_trex_screen(py::module& m) {
-    py::enum_<ScreenTRexMethod>(m, "ScreenTRexMethod", "Screening TRex baseline variants.")
-        .value("TREX", ScreenTRexMethod::TREX, "T-Rex screening without a dependency-aware correction.")
-        .value("TREX_DA_AR1", ScreenTRexMethod::TREX_DA_AR1, "T-Rex screening with the dependency-aware correction "
-            "for AR(1) dependency.")
-        .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "T-Rex screening with the dependency-aware correction "
-            "for equi-correlated variables.")
-        .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "T-Rex screening with the dependency-aware "
-            "correction for block equi-correlated variables.")
-        .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "T-Rex screening with the nearest neighbors inside the "
-            "AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, "
-            "and a variable without such a neighbor keeps its relative occurrence.")
+    py::enum_<ScreenTRexMethod>(m, "ScreenTRexMethod", "Variants of the screening: without or with a "
+        "dependency-aware filter on the relative occurrences.")
+        .value("TREX", ScreenTRexMethod::TREX, "Screening without a dependency-aware filter.")
+        .value("TREX_DA_AR1", ScreenTRexMethod::TREX_DA_AR1, "Screening with the dependency-aware filter for a "
+            "first-order autoregressive dependency: a variable is compared with the neighbors inside the AR(1) "
+            "window.")
+        .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "Screening with the dependency-aware filter for "
+            "equi-correlated variables: a variable is compared with all other variables.")
+        .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "Screening with the dependency-aware "
+            "filter for block equi-correlated variables: the same comparison inside contiguous blocks.")
+        .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "Screening with the dependency-aware filter of the "
+            "nearest neighbors: a variable is compared with the neighbors inside the AR(1) window whose sample "
+            "correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative "
+            "occurrence.")
         .export_values();
 
     py::class_<ScreenTRexControlParameter>(m, "ScreenTRexControlParameter", "Control parameters for "
         "TRexScreeningSelector.")
         .def(py::init<>())
-        .def_readwrite("use_bootstrap_CI", &ScreenTRexControlParameter::use_bootstrap_CI, "Use bootstrap confidence "
-            "intervals for FDR estimation (default false).")
+        .def_readwrite("use_bootstrap_CI", &ScreenTRexControlParameter::use_bootstrap_CI, "Whether the "
+            "confidence-based screening (bootstrap) makes the selection (default False). The FDR estimate stays one "
+            "over the number of selected variables.")
         .def_readwrite("R_boot", &ScreenTRexControlParameter::R_boot, "Number of bootstrap resamples, at least 2 "
             "(default 1000).")
         .def_readwrite("ci_grid_step", &ScreenTRexControlParameter::ci_grid_step, "Step of the grid over the "
             "confidence level, in (0, 1] (default 0.001).")
-        .def_readwrite("trex_method", &ScreenTRexControlParameter::trex_method, "Screening method variant to use (see "
-            "ScreenTRexMethod).")
+        .def_readwrite("trex_method", &ScreenTRexControlParameter::trex_method, "Variant of the screening (default "
+            "TREX). See ScreenTRexMethod.")
         .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold of the "
-            "dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags "
-            "whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_NN: the same "
-            "window, of which the variables stay whose sample correlation with the variable reaches the threshold, "
-            "range [0, 1). TREX_DA_EQUI and "
-            "TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range "
-            "[0, 1].")
+            "dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable reaches "
+            "ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation "
+            "abs(cor_coef)**lag has fallen to the threshold, range [0, 1). TREX_DA_NN: the same window, of which "
+            "the variables stay whose sample correlation with the variable reaches the threshold, range [0, 1). "
+            "TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when abs(cor_coef) does not exceed the "
+            "threshold, range [0, 1].")
         .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Correlation coefficient of the "
             "dependency-aware variants; setting the parameter to -2 estimates it from the data. The variants use the "
             "magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced "
@@ -149,21 +153,38 @@ inline void bind_trex_screen(py::module& m) {
         "extended with screening-specific fields.")
         .def_readonly("estimated_FDR", &ScreenTRexSelectionResult::estimated_FDR, "Estimated false discovery rate, "
             "one over the number of selected variables. An empty selection reports 1.")
-        .def_readonly("used_bootstrap", &ScreenTRexSelectionResult::used_bootstrap, "Whether bootstrap CI was used for "
-            "FDR estimation.")
-        .def_readonly("confidence_level",      &ScreenTRexSelectionResult::confidence_level,      "Bootstrap "
-            "confidence "
-            "level achieved.")
-        .def_readonly("beta_mat",               &ScreenTRexSelectionResult::beta_mat,               "Coefficient "
-            "matrix "
-            "averaged over K experiments (p x T_stop).")
-        .def_readonly("dummy_betas",            &ScreenTRexSelectionResult::dummy_betas,            "Non-zero dummy "
-            "coefficients collected during screening.")
-        .def_readonly("estimated_correlation",  &ScreenTRexSelectionResult::estimated_correlation,  "Estimated "
-            "correlation used by DA-based screening variants.");
+        .def_readonly("used_bootstrap", &ScreenTRexSelectionResult::used_bootstrap, "Whether the confidence-based "
+            "screening (bootstrap) made the selection.")
+        .def_readonly("confidence_level", &ScreenTRexSelectionResult::confidence_level, "Confidence level that the "
+            "grid search of the bootstrap picked. 0 without the bootstrap.")
+        .def_readonly("beta_mat", &ScreenTRexSelectionResult::beta_mat, "Coefficients of the variables, averaged "
+            "over the K experiments (one per variable).")
+        .def_readonly("dummy_betas", &ScreenTRexSelectionResult::dummy_betas, "Non-zero coefficients of the dummies, "
+            "collected over the K experiments. They are the sample of the bootstrap.")
+        .def_readonly("estimated_correlation", &ScreenTRexSelectionResult::estimated_correlation, "Correlation "
+            "coefficient of the dependency-aware variants: the supplied value, or the estimate from the data. 0 "
+            "for TREX.");
 
     py::class_<PyScreenTRexSelector, PyTRexSelector>(m, "TRexScreeningSelector",
-        "T-Rex Selector with fast variable screening via dummy comparison.\n"
+        "T-Rex screening selector (T-Rex+Screening): fast FDR-controlled variable screening in one\n"
+        "pass of the random experiments, until one dummy is included (T = 1), with as many dummies\n"
+        "as variables (L = p).\n"
+        "\n"
+        "Notes\n"
+        "-----\n"
+        "Attributes of the base class after a screening run. The screening has no target FDR and\n"
+        "no calibration, so the attributes of TRexSelector hold fixed values: T_stop is 1, L is 1,\n"
+        "num_dummies is p, v_thresh is 0.5 and tFDR is 0. r_mat is a 1 x 1 matrix with the number\n"
+        "of selected variables, phi_prime equals the relative occurrences, and fdp_hat_mat is a\n"
+        "1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR estimate of the\n"
+        "run is estimated_FDR of the result.\n"
+        "\n"
+        "L-loop strategies. The screening takes the strategies STANDARD (default), SEEDED,\n"
+        "PERMUTATION and PERMUTATION_SEEDED. SEEDED gives the results of STANDARD and keeps one\n"
+        "dummy matrix in memory at a time. PERMUTATION_SEEDED gives the results of PERMUTATION\n"
+        "without storing the base dummy matrix. HCONCAT and SKIPL are refused, because they\n"
+        "describe the growth of the dummy matrix over the L-loop, and the screening is one pass\n"
+        "at L = p.\n"
         "\n"
         "References\n"
         "----------\n"
@@ -180,7 +201,8 @@ inline void bind_trex_screen(py::module& m) {
              py::arg("trex_control") = TRexControlParameter(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct the screening selector. X and y are accessed zero-copy via Eigen::Map.")
+             "Construct the screening selector. X and y are accessed zero-copy via Eigen::Map. A negative\n"
+             "seed (default: -1) gives a run that is not reproducible.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, const ScreenTRexControlParameter&,
             const TRexControlParameter&, int, bool>(),
              py::arg("X").noconvert(), py::arg("y"),

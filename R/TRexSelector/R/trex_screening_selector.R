@@ -4,9 +4,26 @@
 
 #' @name TRexScreeningSelector
 #'
-#' @title Screen T-Rex Selector
+#' @title T-Rex Screening Selector (T-Rex+Screening)
 #'
-#' @description Fast variable screening algorithm based on TRex architecture.
+#' @description Fast FDR-controlled variable screening in one pass of the random experiments, until
+#'   one dummy is included (T = 1), with as many dummies as variables (L = p).
+#'
+#' @section Fields inherited from TRexSelector:
+#' The screening has no target FDR and no calibration, so the fields of \code{TRexSelector} hold fixed
+#' values after a run: \code{T_stop} is 1, \code{L} is 1, \code{num_dummies} is \code{p},
+#' \code{v_thresh} is 0.5 and \code{tFDR} is 0. \code{r_mat} is a 1 x 1 matrix with the number of
+#' selected variables, \code{phi_prime} equals the relative occurrences, and \code{fdp_hat_mat} is a
+#' 1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR estimate of the run is
+#' \code{estimated_FDR}.
+#'
+#' @section L-loop strategies:
+#' The screening takes the strategies \code{"STANDARD"} (default), \code{"SEEDED"},
+#' \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} of \code{\link{trex_control}()}.
+#' \code{"SEEDED"} gives the results of \code{"STANDARD"} and keeps one dummy matrix in memory at a
+#' time. \code{"PERMUTATION_SEEDED"} gives the results of \code{"PERMUTATION"} without storing the base
+#' dummy matrix. \code{"HCONCAT"} and \code{"SKIPL"} are refused, because they describe the growth of
+#' the dummy matrix over the L-loop, and the screening is one pass at L = p.
 #'
 #' @importFrom R6 R6Class
 #'
@@ -41,12 +58,14 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
     #'   needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
     #'   writes nothing and \code{"readonly"} mode suffices.
     #' @param y Response vector.
-    #' @param seed Random seed (default: -1).
+    #' @param seed Random seed. A negative value (default: -1) gives a run that is not
+    #'   reproducible.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param screen_control A screen control list from \code{\link{trex_screen_control}()}
     #'   (default: \code{trex_screen_control()}).
     #' @param control A control list from \code{\link{trex_control}()} (default:
-    #'   \code{trex_control()}). The \code{lloop_strategy} field is forced to "STANDARD".
+    #'   \code{trex_control()}). See the section on the L-loop strategies for the values of
+    #'   \code{lloop_strategy} that the screening takes.
     initialize = function(X, y,
                           seed = -1,
                           verbose = TRUE,
@@ -54,9 +73,6 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
                           control = trex_control()) {
 
       .warn_cd_solver_name(control$solver)
-
-      # Screening always uses STANDARD L-loop strategy
-      control$lloop_strategy <- "STANDARD"
 
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
@@ -90,7 +106,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       trex_screening_get_estimated_fdr(private$ptr)
     },
 
-    #' @field used_bootstrap Employs bootstrapping.
+    #' @field used_bootstrap Whether the confidence-based screening (bootstrap) made the
+    #'   selection.
     used_bootstrap = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -98,7 +115,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       trex_screening_get_used_bootstrap(private$ptr)
     },
 
-    #' @field confidence_level Bounds the bootstrap estimates.
+    #' @field confidence_level Confidence level that the grid search of the bootstrap picked.
+    #'   0 without the bootstrap.
     confidence_level = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -106,7 +124,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       trex_screening_get_confidence_level(private$ptr)
     },
 
-    #' @field estimated_correlation Covariance max value.
+    #' @field estimated_correlation Correlation coefficient of the dependency-aware variants:
+    #'   the supplied value, or the estimate from the data. 0 for "TREX".
     estimated_correlation = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -114,7 +133,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       trex_screening_get_estimated_correlation(private$ptr)
     },
 
-    #' @field beta_mat Complete variables parameter space.
+    #' @field beta_mat Coefficients of the variables, averaged over the K experiments (one
+    #'   per variable, a p x 1 matrix).
     beta_mat = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")
@@ -122,7 +142,8 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       trex_screening_get_beta_mat(private$ptr)
     },
 
-    #' @field dummy_betas Dummy variables parameter space.
+    #' @field dummy_betas Non-zero coefficients of the dummies, collected over the K
+    #'   experiments. They are the sample of the bootstrap.
     dummy_betas = function(value) {
       if (!missing(value)) {
         stop("Field is read-only.")

@@ -108,7 +108,10 @@ a single phenotype is reproduced by a single-phenotype run with that seed.}
       \item{\code{screen_control}}{A screen control list from \code{\link{trex_screen_control}()}
 (default: \code{trex_screen_control()}).}
       \item{\code{control}}{A control list from \code{\link{trex_control}()} (default:
-\code{trex_control()}). The \code{lloop_strategy} field is forced to "STANDARD".}
+\code{trex_control()}). The screening takes the values \code{"STANDARD"} (default),
+\code{"SEEDED"}, \code{"PERMUTATION"} and \code{"PERMUTATION_SEEDED"} of
+\code{lloop_strategy} and refuses \code{"HCONCAT"} and \code{"SKIPL"}, as
+\code{\link{TRexScreeningSelector}} does.}
     }
     \if{html}{\out{</div>}}
   }

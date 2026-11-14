@@ -7,7 +7,8 @@
 /**
  * @file trex_screening.hpp
  *
- * @brief Screen-TRex Selector — fast FDR-controlled screening at T=1, L=p.
+ * @brief T-Rex screening selector (T-Rex+Screening): fast FDR-controlled
+ *        screening at T = 1, L = p.
  */
 // ===================================================================================
 
@@ -35,29 +36,40 @@ namespace er = trex::trex_selector_methods::ad::utils::experiment_runner;
 // ===================================================================================
 
 /**
- * @brief Screen-TRex variants available.
+ * @brief Variants of the screening: without or with a dependency-aware filter
+ *        on the relative occurrences.
  */
 enum class ScreenTRexMethod {
-    /** @brief Standard T-Rex */
+    /** @brief Screening without a dependency-aware filter. */
     TREX,
 
-    /** @brief Dependency-Aware T-Rex (Auto-Regressive 1) */
+    /** @brief Screening with the dependency-aware filter for a first-order
+     *  autoregressive dependency: a variable is compared with the neighbors
+     *  inside the AR(1) window. */
     TREX_DA_AR1,
 
-    /** @brief Dependency-Aware T-Rex (Equi-Correlated) */
+    /** @brief Screening with the dependency-aware filter for equi-correlated
+     *  variables: a variable is compared with all other variables. */
     TREX_DA_EQUI,
 
-    /** @brief Dependency-Aware T-Rex (Block-Equi-Correlated) */
+    /** @brief Screening with the dependency-aware filter for block
+     *  equi-correlated variables: the same comparison inside contiguous
+     *  blocks. */
     TREX_DA_BLOCK_EQUI,
 
-    /** @brief Dependency-Aware T-Rex (nearest neighbors inside the AR(1) window) */
+    /** @brief Screening with the dependency-aware filter of the nearest
+     *  neighbors: a variable is compared with the neighbors inside the AR(1)
+     *  window whose sample correlation reaches rho_thr_DA, and a variable
+     *  without such a neighbor keeps its relative occurrence. */
     TREX_DA_NN
 };
 
 
 /** @brief Configuration for Screen-TRex specific parameters. */
 struct ScreenTRexControlParameter {
-    /** @brief If true, perform the Confidence-Based Screen-TRex (bootstrapping). */
+    /** @brief Whether the confidence-based screening (bootstrap) makes the
+     *  selection (default: false). The FDR estimate stays one over the number
+     *  of selected variables. */
     bool use_bootstrap_CI = false;
 
     /** @brief Number of bootstrap resamples, at least 2 (default: 1000). */
@@ -66,15 +78,17 @@ struct ScreenTRexControlParameter {
     /** @brief Step of the grid over the confidence level, in (0, 1] (default: 0.001). */
     double ci_grid_step = 0.001;
 
-    /** @brief Screen-TRex variant to use (default: TREX). */
+    /** @brief Variant of the screening (default: TREX). See ScreenTRexMethod. */
     ScreenTRexMethod trex_method = ScreenTRexMethod::TREX;
 
     /** @brief Correlation threshold of the dependency-aware variants (default: 0.02).
-     *  TREX_DA_AR1: the window around a variable holds the lags whose
-     *  correlation |cor_coef|^lag reaches the threshold, range [0, 1).
+     *  TREX_DA_AR1: the window around a variable reaches
+     *  ceil(log(rho_thr_DA) / log(|cor_coef|)) columns to each side, up to
+     *  the first lag whose correlation |cor_coef|^lag has fallen to the
+     *  threshold, range [0, 1).
      *  TREX_DA_NN: the same window, of which the variables stay whose sample
      *  correlation with the variable reaches the threshold, range [0, 1).
-     *  TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when
+     *  TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when
      *  |cor_coef| does not exceed the threshold, range [0, 1].
      */
     double rho_thr_DA = 0.02;
@@ -116,19 +130,24 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
      *  an empty selection reports 1. */
     double estimated_FDR = 0.0;
 
-    /** @brief Whether bootstrap CI was applied. */
+    /** @brief Whether the confidence-based screening (bootstrap) made the
+     *  selection. */
     bool used_bootstrap = false;
 
-    /** @brief Confidence level selected by bootstrap grid search. */
+    /** @brief Confidence level that the grid search of the bootstrap picked.
+     *  0 without the bootstrap. */
     double confidence_level = 0.0;
 
-    /** @brief Averaged beta coefficients for original features (p × 1). */
+    /** @brief Coefficients of the variables, averaged over the K experiments
+     *  (one per variable, p x 1). */
     Eigen::VectorXd beta_mat;
 
-    /** @brief Non-zero dummy coefficients collected for bootstrap. */
+    /** @brief Non-zero coefficients of the dummies, collected over the K
+     *  experiments. They are the sample of the bootstrap. */
     Eigen::VectorXd dummy_betas;
 
-    /** @brief Estimated / used correlation coefficient (for DA variants). */
+    /** @brief Correlation coefficient of the dependency-aware variants: the
+     *  supplied value, or the estimate from the data. 0 for TREX. */
     double estimated_correlation = 0.0;
 };
 
@@ -138,13 +157,25 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
 // ===================================================================================
 
 /**
- * @brief Screen-TRex Selector.
+ * @brief T-Rex screening selector (T-Rex+Screening): fast FDR-controlled variable
+ *        screening in one pass of the random experiments, until one dummy is
+ *        included (T = 1), with as many dummies as variables (L = p).
  *
  * @details
  *  Overrides TRexSelector::select() to run K experiments at T=1, L=p with no
  *  T-loop or L-loop calibration.  Supports ordinary thresholding (Phi > 0.5),
- *  a bootstrap-CI variant, and Dependency-Aware (DA) Phi adjustment for AR(1)
- *  and equi-correlated designs.
+ *  a bootstrap-CI variant, and dependency-aware filters on Phi for AR(1) and
+ *  equi-correlated designs.
+ *
+ *  Getters of the base class after a screening run:
+ *  ------------------------------------------------
+ *  The screening has no target FDR and no calibration, so the getters of the
+ *  base class hold fixed values: getTStop() is 1, getDummyMultiplierL() is 1,
+ *  getNumDummies() is p, getVotingThreshold() is 0.5 and getTFDR() is 0.
+ *  getRMat() is a 1 x 1 matrix with the number of selected variables,
+ *  getPhiPrime() equals the relative occurrences, and getFDPHatMat() is a
+ *  1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR
+ *  estimate of the run is estimated_FDR of the result.
  *
  *  Supported dummy strategies: STANDARD, SEEDED, PERMUTATION, and
  *  PERMUTATION_SEEDED (single pass at L = p, T = 1 — the L-loop growth
@@ -210,7 +241,8 @@ public:
      *                      as `trex_screen_ctrl.trex_ctrl`. Accepted
      *                      lloop_strategy: STANDARD, SEEDED, PERMUTATION,
      *                      PERMUTATION_SEEDED.
-     * @param seed          Random seed (< 0 for non-deterministic).
+     * @param seed          Random seed. A negative value (default: -1) gives a run
+     *                      that is not reproducible.
      * @param verbose       Enable verbose output.
      *
      * @throws std::invalid_argument on an unsupported lloop_strategy

@@ -1195,7 +1195,7 @@ class ScreenTRexControlParameter:
     @property
     def rho_thr_DA(self) -> float:
         """
-        Correlation threshold of the dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable holds the lags whose correlation abs(cor_coef)**lag reaches the threshold, range [0, 1). TREX_DA_NN: the same window, of which the variables stay whose sample correlation with the variable reaches the threshold, range [0, 1). TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the correction is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
+        Correlation threshold of the dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable reaches ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation abs(cor_coef)**lag has fallen to the threshold, range [0, 1). TREX_DA_NN: the same window, of which the variables stay whose sample correlation with the variable reaches the threshold, range [0, 1). TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when abs(cor_coef) does not exceed the threshold, range [0, 1].
         """
     @rho_thr_DA.setter
     def rho_thr_DA(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1211,7 +1211,7 @@ class ScreenTRexControlParameter:
     @property
     def trex_method(self) -> ScreenTRexMethod:
         """
-        Screening method variant to use (see ScreenTRexMethod).
+        Variant of the screening (default TREX). See ScreenTRexMethod.
         """
     @trex_method.setter
     def trex_method(self, arg0: ScreenTRexMethod) -> None:
@@ -1219,26 +1219,26 @@ class ScreenTRexControlParameter:
     @property
     def use_bootstrap_CI(self) -> bool:
         """
-        Use bootstrap confidence intervals for FDR estimation (default false).
+        Whether the confidence-based screening (bootstrap) makes the selection (default False). The FDR estimate stays one over the number of selected variables.
         """
     @use_bootstrap_CI.setter
     def use_bootstrap_CI(self, arg0: bool) -> None:
         ...
 class ScreenTRexMethod:
     """
-    Screening TRex baseline variants.
+    Variants of the screening: without or with a dependency-aware filter on the relative occurrences.
     
     Members:
     
-      TREX : T-Rex screening without a dependency-aware correction.
+      TREX : Screening without a dependency-aware filter.
     
-      TREX_DA_AR1 : T-Rex screening with the dependency-aware correction for AR(1) dependency.
+      TREX_DA_AR1 : Screening with the dependency-aware filter for a first-order autoregressive dependency: a variable is compared with the neighbors inside the AR(1) window.
     
-      TREX_DA_EQUI : T-Rex screening with the dependency-aware correction for equi-correlated variables.
+      TREX_DA_EQUI : Screening with the dependency-aware filter for equi-correlated variables: a variable is compared with all other variables.
     
-      TREX_DA_BLOCK_EQUI : T-Rex screening with the dependency-aware correction for block equi-correlated variables.
+      TREX_DA_BLOCK_EQUI : Screening with the dependency-aware filter for block equi-correlated variables: the same comparison inside contiguous blocks.
     
-      TREX_DA_NN : T-Rex screening with the nearest neighbors inside the AR(1) window: a variable is compared with the neighbors whose sample correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative occurrence.
+      TREX_DA_NN : Screening with the dependency-aware filter of the nearest neighbors: a variable is compared with the neighbors inside the AR(1) window whose sample correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative occurrence.
     """
     TREX: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX: 0>
     TREX_DA_AR1: typing.ClassVar[ScreenTRexMethod]  # value = <ScreenTRexMethod.TREX_DA_AR1: 1>
@@ -1287,17 +1287,17 @@ class ScreenTRexSelectionResult(SelectionResult):
     @property
     def beta_mat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Coefficient matrix averaged over K experiments (p x T_stop).
+        Coefficients of the variables, averaged over the K experiments (one per variable).
         """
     @property
     def confidence_level(self) -> float:
         """
-        Bootstrap confidence level achieved.
+        Confidence level that the grid search of the bootstrap picked. 0 without the bootstrap.
         """
     @property
     def dummy_betas(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Non-zero dummy coefficients collected during screening.
+        Non-zero coefficients of the dummies, collected over the K experiments. They are the sample of the bootstrap.
         """
     @property
     def estimated_FDR(self) -> float:
@@ -1307,12 +1307,12 @@ class ScreenTRexSelectionResult(SelectionResult):
     @property
     def estimated_correlation(self) -> float:
         """
-        Estimated correlation used by DA-based screening variants.
+        Correlation coefficient of the dependency-aware variants: the supplied value, or the estimate from the data. 0 for TREX.
         """
     @property
     def used_bootstrap(self) -> bool:
         """
-        Whether bootstrap CI was used for FDR estimation.
+        Whether the confidence-based screening (bootstrap) made the selection.
         """
 class SelectionResult:
     """
@@ -2215,7 +2215,25 @@ class TRexSPCASelector:
         """
 class TRexScreeningSelector(TRexSelector):
     """
-    T-Rex Selector with fast variable screening via dummy comparison.
+    T-Rex screening selector (T-Rex+Screening): fast FDR-controlled variable screening in one
+    pass of the random experiments, until one dummy is included (T = 1), with as many dummies
+    as variables (L = p).
+    
+    Notes
+    -----
+    Attributes of the base class after a screening run. The screening has no target FDR and
+    no calibration, so the attributes of TRexSelector hold fixed values: T_stop is 1, L is 1,
+    num_dummies is p, v_thresh is 0.5 and tFDR is 0. r_mat is a 1 x 1 matrix with the number
+    of selected variables, phi_prime equals the relative occurrences, and fdp_hat_mat is a
+    1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR estimate of the
+    run is estimated_FDR of the result.
+    
+    L-loop strategies. The screening takes the strategies STANDARD (default), SEEDED,
+    PERMUTATION and PERMUTATION_SEEDED. SEEDED gives the results of STANDARD and keeps one
+    dummy matrix in memory at a time. PERMUTATION_SEEDED gives the results of PERMUTATION
+    without storing the base dummy matrix. HCONCAT and SKIPL are refused, because they
+    describe the growth of the dummy matrix over the L-loop, and the screening is one pass
+    at L = p.
     
     References
     ----------
@@ -2229,7 +2247,8 @@ class TRexScreeningSelector(TRexSelector):
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], screen_control: ScreenTRexControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the screening selector. X and y are accessed zero-copy via Eigen::Map.
+        Construct the screening selector. X and y are accessed zero-copy via Eigen::Map. A negative
+        seed (default: -1) gives a run that is not reproducible.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], screen_control: ScreenTRexControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
