@@ -160,8 +160,8 @@ agglomerative clustering through `agglomerative_cluster()` and `cut_tree()` of `
 * Metrics in `trexselector.utils`: `compute_fdp()`, `compute_tpp()`, `compute_precision()` and `compute_recall()`
   on index sets, `compute_fdp_dense()` and `compute_tpp_dense()` on coefficient vectors, and the counts
   `true_positives_count()`, `false_positives_count()` and `false_negatives_count()`.
-* Design helpers at the package root: `normalize_design()`, `gamma_to_k()`, `build_group_centering_k()` and
-  `tikhonov_lambda2_power_rule()`.
+* Design helpers at the package root: `normalize_design()`, `gamma_to_k()`, `build_group_centering_k()`,
+  `default_lambda2_grid()`, `tikhonov_lambda2_power_rule()` and `gvs_lambda2_power_rule()`.
 
 ### Threads
 

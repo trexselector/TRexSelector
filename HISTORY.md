@@ -16,6 +16,27 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The Python Tikhonov class has what the C++ class has
+
+Step 4 of the rework of the Python class of the Tikhonov selector (notes: TIKHONOV_findings.md, findings
+3 and 5).
+
+- `run_pilot_only()` of the root class (`runPilotOnly()` of the core class) runs the lambda_2 pilot
+  without the selection and returns its record. It follows the rule of C++: it needs the pilot rule, and
+  a selector runs once.
+- `dummy_clusters` of the root class (`getDummyClusters()` of the core class) reports the clusters the
+  dummies were drawn for, as the record `DummyClusters` with the field names of the GVS result.
+- `gvs_lambda2_power_rule()` is the power rule on the GVS selector, which C++ has beside the one for
+  the Tikhonov selector. The join of the two controls of the Python GVS class moved into one function,
+  `merge_gvs_control()`, which the class and the rule share. The class behaves as before.
+- `default_lambda2_grid()` returns the grid that C++ holds once. The two root functions of the power
+  rule take `grid = None` and read it from there, where the Tikhonov one had the numbers a second time.
+- The three new names are exported at the package root and in `trex_selector_methods.ad`.
+- Tests. Python pins that the pilot alone gives the pilot of a selection, that it needs the pilot rule
+  and spends the selector, the record of the clusters before a run, for supplied groups, for found
+  clusters and without cluster dummies, and the GVS rule (the grid, the pick, the same seed, a negative
+  seed, the control of the caller unchanged). Python tests 786.
+
 #### The Python Tikhonov class takes TIKNET only, as C++ does
 
 Step 3 of the rework of the Python class of the Tikhonov selector. It corrects 74fef7c, which had kept

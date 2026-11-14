@@ -37,11 +37,12 @@ from .trex_selector_methods.ad import (
     TRexSPCASelector as PyTRexSPCASelector,
     Lambda2CVDiagnostics,
     TikLambda2Method, PilotStatistic, TikPenaltyStructure,
-    Lambda2PickInfo, Lambda2PilotResult, Lambda2Probe, Lambda2PowerRuleResult,
+    Lambda2PickInfo, Lambda2PilotResult, Lambda2Probe, Lambda2PowerRuleResult, DummyClusters,
     TRexTikhonovControlParameter,
     TRexTikhonovSelector as PyTRexTikhonovSelector,
-    gamma_to_k, build_group_centering_k,
+    gamma_to_k, build_group_centering_k, default_lambda2_grid,
     tikhonov_lambda2_power_rule as _tikhonov_lambda2_power_rule,
+    gvs_lambda2_power_rule as _gvs_lambda2_power_rule,
     normalize_design,
 )
 
@@ -513,13 +514,40 @@ class TRexTikhonovSelector(TRexSelector):
         pilot rule resolved lambda_2)."""
         return self._selector.getLambda2PilotResult()
 
+    @property
+    def dummy_clusters(self) -> DummyClusters:
+        """The clusters the dummies of the last run were drawn for (DummyClusters): ``groups_vec``, the
+        cluster of each variable, ``max_clusters`` and ``hc_method_used``. The record is empty before a run
+        and with ``cluster_dummies = False``."""
+        return self._selector.getDummyClusters()
+
+    def run_pilot_only(self) -> Lambda2PilotResult:
+        """
+        Run only the lambda_2 pilot, without the selection.
+
+        The pilot builds the cluster model, runs the pilot experiments and
+        picks lambda_2, and X is given back. It is for a caller who wants the
+        pick alone. It needs ``lambda_2 < 0`` and
+        ``lambda2_method = TikLambda2Method.PILOT_KNEE`` in ``tik_control``
+        (``ValueError`` otherwise).
+
+        A selector runs once: after ``run_pilot_only()`` a call of ``select()``
+        or of ``run_pilot_only()`` raises ``RuntimeError``, and so does
+        ``run_pilot_only()`` after ``select()``.
+
+        Returns
+        -------
+        Lambda2PilotResult
+            The record of the pilot, as ``lambda2_pilot`` holds it afterwards.
+        """
+        return self._selector.runPilotOnly()
+
 
 def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                                 tik_control: TRexTikhonovControlParameter | None = None,
                                 trex_control: TRexControlParameter | None = None,
                                 seed: int = 0,
-                                grid: "list[float] | np.ndarray" = (0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0,
-                                                                   1000.0, 3000.0),
+                                grid: "list[float] | np.ndarray | None" = None,
                                 knee_tolerance: float = 1.0,
                                 verbose: bool = False) -> Lambda2PowerRuleResult:
     """
@@ -537,6 +565,8 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
     depends on y and lies outside the fixed-lambda_2 FDR guarantee that each
     probe carries.
 
+    Without ``grid`` the default grid of the pilot rule is used,
+    ``default_lambda2_grid()``: 0, 1, 3, 10, 30, 100, 300, 1000, 3000.
     ``grid`` is stated for columns of unit norm. Under ``ScalingMode.ZSCORE``
     the probes run at its values times n - 1, as the pilot rule does, and the
     pick is reported on that working scale (``grid_scale`` of the result holds
@@ -559,8 +589,54 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
         raise ValueError("seed must be non-negative: the probes share their dummies.")
     X = np.asfortranarray(X, dtype=np.float64)
     y = np.asfortranarray(y, dtype=np.float64)
+    grid = default_lambda2_grid() if grid is None else [float(v) for v in grid]
     return _tikhonov_lambda2_power_rule(X, y, tFDR, tik_control, trex_control, int(seed),
-                                        [float(v) for v in grid], float(knee_tolerance), verbose)
+                                        grid, float(knee_tolerance), verbose)
+
+
+def gvs_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
+                           gvs_control: TRexGVSControlParameter | None = None,
+                           trex_control: TRexControlParameter | None = None,
+                           seed: int = 0,
+                           grid: "list[float] | np.ndarray | None" = None,
+                           knee_tolerance: float = 1.0,
+                           verbose: bool = False) -> Lambda2PowerRuleResult:
+    """
+    The knee of the full lambda_2 profile of the GVS selector.
+
+    Runs one FDR-controlled selection of ``TRexGVSSelector`` per value of
+    ``grid`` for ``lambda_2``, the ridge part of the elastic net or of the
+    informed elastic net, with the same seed, so the probes share their
+    dummies and differ by the penalty weight alone. The pick is the smallest
+    lambda_2 whose selection is within ``knee_tolerance`` selections of the
+    largest (0 reads the largest selection, ties toward the smallest
+    lambda_2). The result holds every probe's selection
+    (``Lambda2PowerRuleResult``). The pick depends on y and lies outside the
+    fixed-lambda_2 FDR guarantee that each probe carries.
+
+    Without ``grid`` the default grid is used, ``default_lambda2_grid()``.
+    ``grid`` is stated for columns of unit norm. Under ``ScalingMode.ZSCORE``
+    the probes run at its values times n - 1, and the pick is reported on that
+    working scale (``grid_scale`` of the result holds the factor).
+
+    ``gvs_control`` and ``trex_control`` are taken as by ``TRexGVSSelector``,
+    and ``lambda_2`` of ``gvs_control`` is replaced per probe. ``X`` and ``y``
+    are converted to Fortran-ordered float64 arrays once (no copy when they
+    already are): every probe normalizes X in place and hands it back, so X is
+    unchanged on return. A negative seed would draw fresh dummies per probe
+    and is refused.
+    """
+    if gvs_control is None:
+        gvs_control = TRexGVSControlParameter()
+    if trex_control is None:
+        trex_control = TRexControlParameter()
+    if seed < 0:
+        raise ValueError("seed must be non-negative: the probes share their dummies.")
+    X = np.asfortranarray(X, dtype=np.float64)
+    y = np.asfortranarray(y, dtype=np.float64)
+    grid = default_lambda2_grid() if grid is None else [float(v) for v in grid]
+    return _gvs_lambda2_power_rule(X, y, tFDR, gvs_control, trex_control, int(seed),
+                                   grid, float(knee_tolerance), verbose)
 
 
 @_with_core_notes(PyTRexScreeningSelector)
@@ -865,6 +941,9 @@ __all__ = [
     "Lambda2Probe",
     "Lambda2PowerRuleResult",
     "tikhonov_lambda2_power_rule",
+    "gvs_lambda2_power_rule",
+    "default_lambda2_grid",
+    "DummyClusters",
     # Submodules
     "ml_methods",
     "tsolvers",

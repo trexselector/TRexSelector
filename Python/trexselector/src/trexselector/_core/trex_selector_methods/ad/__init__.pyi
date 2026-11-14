@@ -7,7 +7,7 @@ import numpy
 import numpy.typing
 import scipy.sparse
 import typing
-__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'gamma_to_k', 'normalize_design', 'tikhonov_lambda2_power_rule']
+__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyClusters', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'default_lambda2_grid', 'gamma_to_k', 'gvs_lambda2_power_rule', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
     """
     Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.
@@ -236,6 +236,27 @@ class DASelectionResult(SelectionResult):
     def rho_thresh(self) -> float:
         """
         Correlation threshold of the selected cell of the calibration grid (BT, NN and PRIOR_GROUPS). -2 for AR1 and EQUI and when no cell meets the target.
+        """
+class DummyClusters:
+    """
+    The clusters of the variables for which the dummies of a run were drawn. The fields have the names of the GVS result.
+    """
+    def __init__(self) -> None:
+        ...
+    @property
+    def groups_vec(self) -> typing.Annotated[numpy.typing.NDArray[numpy.int32], "[m, 1]"]:
+        """
+        Cluster of each variable (0-based, length p). Empty when the dummies are not drawn per cluster or no run was made.
+        """
+    @property
+    def hc_method_used(self) -> str:
+        """
+        Origin of the clusters: "prior" when prior_groups was supplied, else the linkage of the clustering, "single", "complete", "average" or "wpgma". Empty when there are no clusters.
+        """
+    @property
+    def max_clusters(self) -> int:
+        """
+        Number of clusters (0 when there are none).
         """
 class DummyDistribution:
     """
@@ -2655,6 +2676,10 @@ class TRexTikhonovSelector(TRexSelector):
         """
         Construct on a design that is not writable, for example the to_numpy() view of a MemoryMappedMatrix opened with AccessMode.ReadOnly. X must be a Fortran-contiguous float64 array and is accessed zero-copy. The selector standardizes the design in place and restores it under ScalingMode.L2 and ScalingMode.ZSCORE, which needs a writable array. Under ScalingMode.NONE it writes nothing and accepts an array that is not writable. Otherwise ValueError is raised.
         """
+    def getDummyClusters(self) -> DummyClusters:
+        """
+        Return the DummyClusters of the last run: the clusters the dummies were drawn for.
+        """
     def getLambda2CVDiagnostics(self) -> Lambda2CVDiagnostics:
         """
         Return the lambda_2 tuner health record of the last select().
@@ -2666,6 +2691,10 @@ class TRexTikhonovSelector(TRexSelector):
     def getLambda2Used(self) -> float:
         """
         lambda_2 used by the last select() (solver scale); -1 before select().
+        """
+    def runPilotOnly(self) -> Lambda2PilotResult:
+        """
+        Run only the lambda_2 pilot (the cluster model, the pilot experiments and the pick), give X back and return the Lambda2PilotResult. It needs lambda_2 < 0 and lambda2_method = PILOT_KNEE (ValueError otherwise). A selector runs once: after it select() and runPilotOnly() raise RuntimeError, and so does runPilotOnly() after select().
         """
 class TikLambda2Method:
     """
@@ -2774,9 +2803,17 @@ def build_group_centering_k(prior_groups: collections.abc.Sequence[typing.Suppor
     """
     Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment. Returns a scipy.sparse.csc_matrix (p x p).
     """
+def default_lambda2_grid() -> list[float]:
+    """
+    The default lambda_2 grid of the pilot rule and of the power rule: 0, 1, 3, 10, 30, 100, 300, 1000, 3000. It holds 0, so that no penalty is an admissible answer.
+    """
 def gamma_to_k(gamma: scipy.sparse.csc_matrix) -> scipy.sparse.csc_matrix:
     """
     Build the penalty matrix K = Gamma^T Gamma from a (q x p) Tikhonov operator Gamma, a scipy.sparse matrix or a dense array. Returns a scipy.sparse.csc_matrix (p x p).
+    """
+def gvs_lambda2_power_rule(X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, gvs_control: TRexGVSControlParameter = ..., trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = 0, grid: collections.abc.Sequence[typing.SupportsFloat | typing.SupportsIndex] = [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0], knee_tolerance: typing.SupportsFloat | typing.SupportsIndex = 1.0, verbose: bool = False) -> Lambda2PowerRuleResult:
+    """
+    The power rule on the GVS selector: one FDR-controlled selection per value of grid for lambda_2, the ridge part of the elastic net or of the informed elastic net, with the same seed (common dummies), then the smallest lambda_2 whose selection is within knee_tolerance selections of the largest. The grid is stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1. gvs_control and trex_control are taken as by TRexGVSSelector, and lambda_2 of gvs_control is replaced per probe. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and hands it back. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe carries. A negative seed is refused.
     """
 def normalize_design(X: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, n]"], y: typing.Annotated[numpy.typing.ArrayLike, numpy.float64, "[m, 1]"], scaling_mode: ScalingMode = ..., eps: typing.SupportsFloat | typing.SupportsIndex = 1e-06, n_threads: typing.SupportsInt | typing.SupportsIndex | None = None) -> dict:
     """

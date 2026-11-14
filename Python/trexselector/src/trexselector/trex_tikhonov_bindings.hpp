@@ -32,6 +32,7 @@
 #include <trex_selector_methods/ad/trex_tikhonov/tik_lambda2_pick.hpp>
 #include <trex_selector_methods/ad/trex_tikhonov/tik_lambda2_power_rule.hpp>
 #include "trex_core_bindings.hpp"
+#include "trex_gvs_bindings.hpp"
 
 // =====================================================================================
 
@@ -134,6 +135,18 @@ public:
     const tik::Lambda2PilotResult& getLambda2PilotResult() const {
         return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
             ->getLambda2PilotResult();
+    }
+
+    /** @brief Run only the lambda_2 pilot and give X back. */
+    tik::Lambda2PilotResult runPilotOnly() {
+        return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
+            ->runPilotOnly();
+    }
+
+    /** @brief The clusters the dummies of the last run were drawn for. */
+    const tik::DummyClusters& getDummyClusters() const {
+        return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
+            ->getDummyClusters();
     }
 };
 
@@ -259,6 +272,18 @@ inline void bind_trex_tikhonov(py::module& m) {
         .def_readonly("seconds",           &tik::Lambda2PilotResult::seconds,           "Wall-clock seconds of the "
             "whole pilot.");
 
+    py::class_<tik::DummyClusters>(m, "DummyClusters",
+        "The clusters of the variables for which the dummies of a run were drawn. The fields have the names of "
+            "the GVS result.")
+        .def(py::init<>())
+        .def_readonly("groups_vec",     &tik::DummyClusters::groups_vec,     "Cluster of each variable (0-based, "
+            "length p). Empty when the dummies are not drawn per cluster or no run was made.")
+        .def_readonly("max_clusters",   &tik::DummyClusters::max_clusters,   "Number of clusters (0 when there are "
+            "none).")
+        .def_readonly("hc_method_used", &tik::DummyClusters::hc_method_used, "Origin of the clusters: \"prior\" "
+            "when prior_groups was supplied, else the linkage of the clustering, \"single\", \"complete\", "
+            "\"average\" or \"wpgma\". Empty when there are no clusters.");
+
     py::class_<tik::TRexTikhonovControlParameter>(m, "TRexTikhonovControlParameter",
         "Control parameters for TRexTikhonovSelector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, "
             "or GROUP_CENTERING built from groups), the lambda_2 rule, and the cluster-aware dummies.")
@@ -350,6 +375,39 @@ inline void bind_trex_tikhonov(py::module& m) {
           "Build the GROUP_CENTERING penalty K = blockdiag(I - J/p_m) from a 0-based group assignment. Returns a "
           "scipy.sparse.csc_matrix (p x p).");
 
+    m.def("default_lambda2_grid", &tik::default_lambda2_grid,
+          "The default lambda_2 grid of the pilot rule and of the power rule: 0, 1, 3, 10, 30, 100, 300, 1000, "
+          "3000. It holds 0, so that no penalty is an admissible answer.");
+
+    m.def("gvs_lambda2_power_rule",
+          [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
+             const TRexGVSControlParameter& gvs_control, const TRexControlParameter& trex_control,
+             int seed, const std::vector<double>& grid, double knee_tolerance, bool verbose) {
+              // Every probe normalizes X in place and hands it back on return,
+              // so X and y are read through maps and never copied.
+              Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
+              Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
+              tik::Lambda2PowerRuleConfig cfg;
+              cfg.grid           = grid;
+              cfg.knee_tolerance = knee_tolerance;
+              return tik::gvs_lambda2_power_rule(X_map, y_map, tFDR, merge_gvs_control(gvs_control, trex_control),
+                                                 seed, cfg, verbose);
+          },
+          py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
+          py::arg("gvs_control") = TRexGVSControlParameter(),
+          py::arg("trex_control") = TRexControlParameter(),
+          py::arg("seed") = 0,
+          py::arg("grid") = tik::default_lambda2_grid(),
+          py::arg("knee_tolerance") = 1.0, py::arg("verbose") = false,
+          "The power rule on the GVS selector: one FDR-controlled selection per value of grid for lambda_2, the "
+          "ridge part of the elastic net or of the informed elastic net, with the same seed (common dummies), then "
+          "the smallest lambda_2 whose selection is within knee_tolerance selections of the largest. The grid is "
+          "stated for columns of unit norm, and under ScalingMode.ZSCORE the probes run at its values times n - 1. "
+          "gvs_control and trex_control are taken as by TRexGVSSelector, and lambda_2 of gvs_control is replaced "
+          "per probe. X (F-contiguous float64) and y are accessed zero-copy: every probe normalizes X in place and "
+          "hands it back. The pick depends on y and lies outside the fixed-lambda_2 FDR guarantee that each probe "
+          "carries. A negative seed is refused.");
+
     m.def("tikhonov_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
              const tik::TRexTikhonovControlParameter& tik_control,
@@ -433,7 +491,14 @@ inline void bind_trex_tikhonov(py::module& m) {
             "health record of the last select().")
         .def("getLambda2PilotResult", &PyTRexTikhonovSelector::getLambda2PilotResult, "Return the lambda_2 pilot "
             "record "
-            "of the last select().");
+            "of the last select().")
+        .def("runPilotOnly", &PyTRexTikhonovSelector::runPilotOnly, py::call_guard<py::gil_scoped_release>(),
+             "Run only the lambda_2 pilot (the cluster model, the pilot experiments and the pick), give X back and "
+             "return the Lambda2PilotResult. It needs lambda_2 < 0 and lambda2_method = PILOT_KNEE (ValueError "
+             "otherwise). A selector runs once: after it select() and runPilotOnly() raise RuntimeError, and so "
+             "does runPilotOnly() after select().")
+        .def("getDummyClusters", &PyTRexTikhonovSelector::getDummyClusters, "Return the DummyClusters of the last "
+            "run: the clusters the dummies were drawn for.");
 }
 // =====================================================================================
 #endif /* End of TREX_PYTHON_TREX_TIKHONOV_BINDINGS_HPP */

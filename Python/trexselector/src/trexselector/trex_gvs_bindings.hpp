@@ -31,6 +31,52 @@ namespace gvs_sd = trex::trex_selector_methods::ad::utils::solver_dispatch;
 // =====================================================================================
 
 /**
+ * @brief The control of a GVS run from the two controls of Python. The C++
+ *        constructor takes one control that nests the base control as
+ *        `trex_ctrl`. The solver is set as GVS requires:
+ *        EN  -> derived from en_solver (TENET / TENET_AUG / TCDENET),
+ *        IEN -> an IEN-family solver of the base control (TIENET /
+ *               TIENET_AUG / TCDIENET), and TIENET for any other.
+ *        A deprecated coordinate-descent solver raises its warning here.
+ */
+inline TRexGVSControlParameter merge_gvs_control(
+    const TRexGVSControlParameter& gvs_control,
+    const TRexControlParameter& trex_control)
+{
+    TRexGVSControlParameter gvs_ctrl = gvs_control;
+    gvs_ctrl.trex_ctrl = trex_control;
+    if (gvs_ctrl.gvs_type == GVSType::IEN) {
+        const auto st = gvs_ctrl.trex_ctrl.solver_type;
+        const bool ien_family =
+            st == gvs_sd::SolverTypeForTRex::TIENET ||
+            st == gvs_sd::SolverTypeForTRex::TIENET_AUG ||
+            st == gvs_sd::SolverTypeForTRex::TCDIENET;
+        if (!ien_family) {
+            gvs_ctrl.trex_ctrl.solver_type =
+                gvs_sd::SolverTypeForTRex::TIENET;
+        }
+        warn_if_cd_solver_type(gvs_ctrl.trex_ctrl.solver_type);
+    } else { // EN
+        warn_if_cd_en_solver(gvs_ctrl.en_solver);
+        switch (gvs_ctrl.en_solver) {
+            case ENSolverType::TENET_AUG:
+                gvs_ctrl.trex_ctrl.solver_type =
+                    gvs_sd::SolverTypeForTRex::TENET_AUG;
+                break;
+            case ENSolverType::TCDENET:
+                gvs_ctrl.trex_ctrl.solver_type =
+                    gvs_sd::SolverTypeForTRex::TCDENET;
+                break;
+            default:
+                gvs_ctrl.trex_ctrl.solver_type =
+                    gvs_sd::SolverTypeForTRex::TENET;
+        }
+    }
+    return gvs_ctrl;
+}
+
+
+/**
  * @brief Python wrapper class for TRexGVSSelector leveraging zero-copy references.
  */
 class PyTRexGVSSelector : public PyTRexSelector {
@@ -61,43 +107,7 @@ public:
         this->y_map_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y.data(),
                                                                   y.size());
 
-        // The C++ constructor takes a single control struct that nests the
-        // base algorithmic parameters as `trex_ctrl`. Merge the separately-
-        // supplied `trex_control` and set the solver_type GVS requires,
-        // mirroring the R surface:
-        //   EN  -> derived from en_solver (TENET / TENET_AUG / TCDENET);
-        //   IEN -> honors an IEN-family trex_control.solver_type (TIENET /
-        //          TIENET_AUG / TCDIENET), defaulting anything else to
-        //          TIENET (the native pathwise IEN solver).
-        TRexGVSControlParameter gvs_ctrl = gvs_control;
-        gvs_ctrl.trex_ctrl = trex_control;
-        if (gvs_ctrl.gvs_type == GVSType::IEN) {
-            const auto st = gvs_ctrl.trex_ctrl.solver_type;
-            const bool ien_family =
-                st == gvs_sd::SolverTypeForTRex::TIENET ||
-                st == gvs_sd::SolverTypeForTRex::TIENET_AUG ||
-                st == gvs_sd::SolverTypeForTRex::TCDIENET;
-            if (!ien_family) {
-                gvs_ctrl.trex_ctrl.solver_type =
-                    gvs_sd::SolverTypeForTRex::TIENET;
-            }
-            warn_if_cd_solver_type(gvs_ctrl.trex_ctrl.solver_type);
-        } else { // EN
-            warn_if_cd_en_solver(gvs_ctrl.en_solver);
-            switch (gvs_ctrl.en_solver) {
-                case ENSolverType::TENET_AUG:
-                    gvs_ctrl.trex_ctrl.solver_type =
-                        gvs_sd::SolverTypeForTRex::TENET_AUG;
-                    break;
-                case ENSolverType::TCDENET:
-                    gvs_ctrl.trex_ctrl.solver_type =
-                        gvs_sd::SolverTypeForTRex::TCDENET;
-                    break;
-                default:
-                    gvs_ctrl.trex_ctrl.solver_type =
-                        gvs_sd::SolverTypeForTRex::TENET;
-            }
-        }
+        const TRexGVSControlParameter gvs_ctrl = merge_gvs_control(gvs_control, trex_control);
 
         this->selector_ = std::make_unique<TRexGVSSelector>(
             *(this->X_map_), *(this->y_map_), tFDR, gvs_ctrl, seed, verbose

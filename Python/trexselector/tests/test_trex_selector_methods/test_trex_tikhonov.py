@@ -556,8 +556,10 @@ def test_the_power_rule_and_the_pilot_rule_have_one_default_grid():
 
     grid = list(tsn.TRexTikhonovControlParameter().pilot_grid)
     assert grid == [0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0]
-    root_default = inspect.signature(tsn.tikhonov_lambda2_power_rule).parameters["grid"].default
-    assert list(root_default) == grid
+    # The grid stands once, in C++. The root functions take it from there when none is passed.
+    assert list(tsn.default_lambda2_grid()) == grid
+    for rule in (tsn.tikhonov_lambda2_power_rule, tsn.gvs_lambda2_power_rule):
+        assert inspect.signature(rule).parameters["grid"].default is None
 
 
 def test_the_core_power_rule_refuses_a_negative_seed():
@@ -674,4 +676,121 @@ def test_a_large_penalty_matrix_stays_sparse():
     assert ctrl.tikhonov_K.nnz == p * size
     chain = tsn.gamma_to_k(K[:1000, :1000])
     assert chain.shape == (1000, 1000)
+
+
+# ---------------------------------------------------------------------------
+# What the C++ class has: the pilot alone, the clusters of the dummies, the GVS power rule
+# ---------------------------------------------------------------------------
+
+def _pilot_selector(X, y, groups, **fields):
+    tik = tsn.TRexTikhonovControlParameter()
+    tik.penalty_structure = tsn.TikPenaltyStructure.GROUP_CENTERING
+    tik.prior_groups = list(groups)
+    tik.pilot_grid = [0.0, 1.0, 10.0]
+    tik.pilot_K = 5
+    for name, value in fields.items():
+        setattr(tik, name, value)
+    return tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tFDR=0.2, tik_control=tik,
+                                    trex_control=_base_control(K=10, mult=10), seed=5, verbose=False)
+
+
+def test_run_pilot_only_gives_the_pilot_of_a_selection():
+    X, y, groups = _grouped_data()
+    full = _pilot_selector(X, y, groups)
+    full.select()
+
+    Xf = np.asfortranarray(X.copy())
+    X0 = Xf.copy(order="F")
+    tik = tsn.TRexTikhonovControlParameter()
+    tik.penalty_structure = tsn.TikPenaltyStructure.GROUP_CENTERING
+    tik.prior_groups = list(groups)
+    tik.pilot_grid = [0.0, 1.0, 10.0]
+    tik.pilot_K = 5
+    only = tsn.TRexTikhonovSelector(Xf, y, tFDR=0.2, tik_control=tik, trex_control=_base_control(K=10, mult=10),
+                                    seed=5, verbose=False)
+    record = only.run_pilot_only()
+    assert record.ran
+    assert list(record.counts) == list(full.lambda2_pilot.counts)
+    assert record.lambda2 == full.lambda2_pilot.lambda2
+    assert only.lambda2_used == full.lambda2_used
+    assert list(only.lambda2_pilot.counts) == list(record.counts)
+    np.testing.assert_allclose(Xf, X0, atol=1e-12)        # X is given back
+
+    # A selector runs once.
+    with pytest.raises(RuntimeError, match="has run already"):
+        only.select()
+    with pytest.raises(RuntimeError, match="has run already"):
+        only.run_pilot_only()
+    with pytest.raises(RuntimeError, match="has run already"):
+        full.run_pilot_only()
+
+
+def test_run_pilot_only_needs_the_pilot_rule():
+    X, y, groups = _grouped_data()
+    fixed = _pilot_selector(X, y, groups, lambda_2=1.0)
+    with pytest.raises(ValueError, match="PILOT_KNEE"):
+        fixed.run_pilot_only()
+    fixed.select()                                           # the refused call did not spend the selector
+
+
+def test_dummy_clusters_are_reported():
+    X, y, groups = _grouped_data()
+    p = X.shape[1]
+
+    before = _pilot_selector(X, y, groups, lambda_2=1.0)
+    record = before.dummy_clusters
+    assert len(record.groups_vec) == 0 and record.max_clusters == 0 and record.hc_method_used == ""
+    before.restore()
+
+    prior = _pilot_selector(X, y, groups, lambda_2=1.0)
+    prior.select()
+    assert list(prior.dummy_clusters.groups_vec) == list(groups)
+    assert prior.dummy_clusters.max_clusters == len(set(groups))
+    assert prior.dummy_clusters.hc_method_used == "prior"
+
+    def found(**fields):
+        tik = _tik_control(np.eye(p), 1.0)
+        for name, value in fields.items():
+            setattr(tik, name, value)
+        sel = tsn.TRexTikhonovSelector(np.asfortranarray(X.copy()), y, tFDR=0.2, tik_control=tik,
+                                       trex_control=_base_control(), seed=5, verbose=False)
+        sel.select()
+        return sel.dummy_clusters
+
+    single = found()
+    assert single.hc_method_used == "single"
+    assert len(single.groups_vec) == p
+    assert sorted(set(int(g) for g in single.groups_vec)) == list(range(single.max_clusters))
+
+    none = found(cluster_dummies=False)
+    assert len(none.groups_vec) == 0 and none.max_clusters == 0 and none.hc_method_used == ""
+
+
+def test_the_gvs_power_rule_runs_the_grid():
+    X, y, groups = _grouped_data()
+    gvs = tsn.TRexGVSControlParameter()
+    gvs.prior_groups = list(groups)
+    base = tsn.TRexControlParameter()
+    base.K = 5
+    base.max_dummy_multiplier = 2
+    grid = [0.0, 1.0, 10.0]
+
+    def rule(seed=3, **kw):
+        return tsn.gvs_lambda2_power_rule(np.asfortranarray(X.copy()), y, tFDR=0.2, gvs_control=gvs,
+                                          trex_control=base, seed=seed, grid=grid, **kw)
+
+    a = rule()
+    assert [pr.lambda2 for pr in a.probes] == grid
+    counts = list(a.counts())
+    assert a.pick.max_selected == max(counts)
+    assert len(a.selection()) == counts[a.index]
+    assert a.lambda2 == grid[a.index]
+    assert a.grid_scale == 1.0
+
+    b = rule()                                               # the same seed reproduces the profile
+    assert [list(pr.selected) for pr in b.probes] == [list(pr.selected) for pr in a.probes]
+
+    with pytest.raises(ValueError, match="non-negative"):
+        rule(seed=-1)
+    assert gvs.lambda_2 == -1.0                              # the control of the caller is not changed
 

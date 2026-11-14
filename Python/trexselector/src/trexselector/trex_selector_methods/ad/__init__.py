@@ -48,9 +48,12 @@ from ..._core.trex_selector_methods.ad import (
     Lambda2PowerRuleResult,
     TRexTikhonovControlParameter,
     TRexTikhonovSelector,
+    DummyClusters,
     gamma_to_k,
     build_group_centering_k,
+    default_lambda2_grid,
     tikhonov_lambda2_power_rule,
+    gvs_lambda2_power_rule,
 )
 
 __all__ = [
@@ -95,7 +98,10 @@ __all__ = [
     "Lambda2PowerRuleResult",
     "TRexTikhonovControlParameter",
     "TRexTikhonovSelector",
+    "DummyClusters",
     "gamma_to_k",
     "build_group_centering_k",
+    "default_lambda2_grid",
     "tikhonov_lambda2_power_rule",
+    "gvs_lambda2_power_rule",
 ]
