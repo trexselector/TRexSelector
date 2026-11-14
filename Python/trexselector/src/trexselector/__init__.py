@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
+import inspect
 import warnings
 
 from importlib.metadata import PackageNotFoundError, version as _pkg_version
@@ -73,11 +74,30 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
             'TRexTikhonovSelector.')
 
 
+def _with_core_notes(core_cls):
+    """Class decorator: append the notes and the references of the core class.
+
+    The binding docstring of the core class holds the notes of a selector and
+    its rendered reference list. The selector of the package root takes both
+    from there, so the text has one source.
+    """
+    def decorate(cls):
+        own = inspect.cleandoc(cls.__doc__ or "")
+        lines = inspect.cleandoc(core_cls.__doc__ or "").splitlines()
+        # First section heading: a title line above a line of dashes
+        start = next((i for i in range(len(lines) - 1)
+                      if lines[i].strip() and lines[i + 1].strip()
+                      and set(lines[i + 1].strip()) == {"-"}), None)
+        if own and start is not None:
+            cls.__doc__ = own + "\n\n" + "\n".join(lines[start:]) + "\n"
+        return cls
+    return decorate
+
+
+@_with_core_notes(PyTRexSelector)
 class TRexSelector:
     """
-    Python wrapper for the C++ TRexSelector.
-
-    This class performs FDR-controlled variable selection using the T-Rex selector.
+    T-Rex Selector: FDR-controlled variable selection via dummy comparison.
 
     X is used without a copy when it is a Fortran-contiguous float64 array, for
     example the ``to_numpy()`` view of a ``MemoryMappedMatrix``. The selector
@@ -91,6 +111,22 @@ class TRexSelector:
     release: a selector that receives one of them raises ``FutureWarning``. Use
     ``TLASSO``, ``TENET``, ``TIENET`` and ``TIKNET``, the homotopy solvers of the
     same problems.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix.
+    y : numpy.ndarray of shape (n,)
+        Response vector.
+    tFDR : float, default 0.1
+        Target FDR level.
+    trex_control : TRexControlParameter, optional
+        Control parameters of the T-Rex selector. The defaults apply when it
+        is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+    verbose : bool, default True
+        Whether to print progress.
     """
 
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
@@ -205,10 +241,30 @@ class TRexSelector:
         return self._selector.getSelectedIndices()
 
 
+@_with_core_notes(PyTRexDASelector)
 class TRexDASelector(TRexSelector):
     """
     Dependency-aware T-Rex selector (T-Rex+DA): FDR-controlled variable
     selection for dependent variables.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix, used as described for ``TRexSelector``.
+    y : numpy.ndarray of shape (n,)
+        Response vector.
+    tFDR : float, default 0.1
+        Target FDR level.
+    da_control : TRexDAControlParameter, optional
+        Control parameters of the dependency-aware correction. The defaults
+        apply when it is omitted.
+    trex_control : TRexControlParameter, optional
+        Control parameters of the T-Rex selector. The defaults apply when it
+        is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+    verbose : bool, default True
+        Whether to print progress.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  da_control: TRexDAControlParameter | None = None,
@@ -230,18 +286,46 @@ class TRexDASelector(TRexSelector):
                                                             seed, verbose)
 
     def select(self) -> DASelectionResult:
+        """
+        Run the selector.
+
+        Returns
+        -------
+        DASelectionResult
+            The selection with the record of the dependency estimation.
+        """
         self._selector.select()
         return self._selector.getDAResult()
 
 
+@_with_core_notes(PyTRexGVSSelector)
 class TRexGVSSelector(TRexSelector):
     """
-    Python wrapper for the C++ TRexGVSSelector (Group Variable Selection).
+    TRex Selector with Group Variable Selection support.
 
     The coordinate-descent solvers of the two tracks, ``ENSolverType.TCDENET``
     and ``SolverTypeForTRex.TCDIENET``, are deprecated and will be removed in
     the next minor release: the selector raises ``FutureWarning`` for them.
     Use ``ENSolverType.TENET`` and ``SolverTypeForTRex.TIENET``.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix, used as described for ``TRexSelector``.
+    y : numpy.ndarray of shape (n,)
+        Response vector.
+    tFDR : float, default 0.1
+        Target FDR level.
+    gvs_control : TRexGVSControlParameter, optional
+        Control parameters of the group variable selection. The defaults
+        apply when it is omitted.
+    trex_control : TRexControlParameter, optional
+        Control parameters of the T-Rex selector. The defaults apply when it
+        is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+    verbose : bool, default True
+        Whether to print progress.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  gvs_control: TRexGVSControlParameter | None = None,
@@ -313,6 +397,14 @@ class TRexGVSSelector(TRexSelector):
                                                               seed, verbose)
 
     def select(self) -> GVSSelectionResult:
+        """
+        Run the selector.
+
+        Returns
+        -------
+        GVSSelectionResult
+            The selection with the GVS-specific fields.
+        """
         self._selector.select()
         return self._selector.getGVSResult()
 
@@ -339,9 +431,11 @@ class TRexGVSSelector(TRexSelector):
         return self._selector.getLambda2CVDiagnostics()
 
 
+@_with_core_notes(PyTRexTikhonovSelector)
 class TRexTikhonovSelector(TRexSelector):
     """
-    Python wrapper for the C++ TRexTikhonovSelector (general-Tikhonov T-Rex).
+    T-Rex selector with a general Tikhonov penalty (TIKNET, or the deprecated
+    TCDTIKNET) and cluster-aware dummies.
 
     The penalty comes from ``tik_control``: a dense p x p PSD matrix
     ``tikhonov_K`` (``penalty_structure = SPARSE_GENERAL``, converted to sparse
@@ -355,6 +449,25 @@ class TRexTikhonovSelector(TRexSelector):
     raises ``RuntimeError`` instead of returning a selection from an
     unconverged path. TCDTIKNET is deprecated and will be removed in the next
     minor release: the selector raises ``FutureWarning`` for it.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix, used as described for ``TRexSelector``.
+    y : numpy.ndarray of shape (n,)
+        Response vector.
+    tFDR : float, default 0.1
+        Target FDR level.
+    tik_control : TRexTikhonovControlParameter
+        Control parameters of the Tikhonov selector. Required, because it
+        carries the penalty matrix ``tikhonov_K`` or the penalty structure.
+    trex_control : TRexControlParameter, optional
+        Control parameters of the T-Rex selector. The defaults apply when it
+        is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+    verbose : bool, default True
+        Whether to print progress.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                  tik_control: TRexTikhonovControlParameter | None = None,
@@ -457,9 +570,27 @@ def tikhonov_lambda2_power_rule(X: np.ndarray, y: np.ndarray, tFDR: float = 0.1,
                                         [float(v) for v in grid], float(knee_tolerance), verbose)
 
 
+@_with_core_notes(PyTRexScreeningSelector)
 class TRexScreeningSelector(TRexSelector):
     """
-    Python wrapper for the C++ TRexScreeningSelector.
+    T-Rex Selector with fast variable screening via dummy comparison.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix, used as described for ``TRexSelector``.
+    y : numpy.ndarray of shape (n,)
+        Response vector.
+    screen_control : ScreenTRexControlParameter, optional
+        Control parameters of the screening. The defaults apply when it is
+        omitted.
+    trex_control : TRexControlParameter, optional
+        Control parameters of the T-Rex selector. The defaults apply when it
+        is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+    verbose : bool, default True
+        Whether to print progress.
     """
     def __init__(self, X: np.ndarray, y: np.ndarray,
                  screen_control: ScreenTRexControlParameter | None = None,
@@ -500,13 +631,23 @@ class TRexScreeningSelector(TRexSelector):
                                                                           seed, verbose)
 
     def select(self) -> ScreenTRexSelectionResult:
+        """
+        Run the selector.
+
+        Returns
+        -------
+        ScreenTRexSelectionResult
+            The selection with the screening-specific fields.
+        """
         self._selector.select()
         return self._selector.getScreenResult()
 
 
+@_with_core_notes(PyBiobankScreeningSelector)
 class TRexBiobankScreeningSelector:
     """
-    Python wrapper for the C++ TRexBiobankScreeningSelector orchestrator.
+    Biobank-scale T-Rex selector for FDR-controlled variable selection across
+    one or many phenotypes.
 
     Dispatches to screenPhenotype() for a single 1-D response vector
     or screenPhenotypes() for a m-D response matrix.
@@ -516,6 +657,22 @@ class TRexBiobankScreeningSelector:
     array that is not writable, for example the ``to_numpy()`` view of a
     ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``. A response
     matrix Y is only read, so it may be such an array under every scaling mode.
+
+    Parameters
+    ----------
+    X : numpy.ndarray of shape (n, p)
+        Design matrix.
+    Y : numpy.ndarray of shape (n,) or (n, m)
+        Response vector of one phenotype, or a matrix with one column per
+        phenotype.
+    bio_ctrl : BiobankScreenTRexControl, optional
+        Control parameters of the biobank screening. The defaults apply when
+        it is omitted.
+    seed : int, default -1
+        Random seed. A negative value gives a run that is not reproducible.
+        With several phenotypes, phenotype i (0-based) runs with seed + i.
+    verbose : bool, default False
+        Whether to print progress.
     """
 
     def __init__(self, X: np.ndarray, Y,
@@ -551,42 +708,42 @@ class TRexBiobankScreeningSelector:
         return self._selector.screenPhenotype()
 
 
+@_with_core_notes(PyTRexSPCASelector)
 class TRexSPCASelector:
     """
-    Python wrapper for T-Rex Sparse PCA selection.
+    T-Rex Sparse PCA selector.
 
     Extracts sparse principal components under FDR control. For each of the
     M components, ordinary PCA identifies a PC-response direction, T-Rex GVS
     selects a sparse active set at the target FDR, and a sparse loading vector
     is assembled. Explained variance is adjusted for non-orthogonality via QR.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n, p)
+        Design matrix. Stored by reference; centered in-place during
+        ``select()`` and restored on return. The centering happens under
+        every scaling mode, so an array that is not writable (the view of
+        a ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``)
+        raises ``ValueError`` in ``select()``.
+    spca_ctrl : TRexSPCAControlParameter, optional
+        Algorithmic control. Defaults to ``TRexSPCAControlParameter()``.
+        ``gvs_ctrl.gvs_type`` must stay ``GVSType.EN`` (the default):
+        T-Rex SPCA is defined on the elastic net, and ``GVSType.IEN``
+        raises ``ValueError`` in ``select()``. The EN solver flavour is
+        chosen via ``spca_ctrl.en_solver``. The GVS ridge penalty follows
+        ``gvs_ctrl.lambda_2``: ``< 0`` (default) auto-determines it via
+        ``gvs_ctrl.lambda2_method``, ``0`` is the degenerate pure T-LASSO
+        case, and ``> 0`` fixes it in LARS units.
+    seed : int, optional
+        Random seed. ``-1`` (default) for non-deterministic (hardware
+        entropy). ``>= 0`` for reproducible per-PC runs.
     """
 
     def __init__(self,
                  X: np.ndarray,
                  spca_ctrl: TRexSPCAControlParameter | None = None,
                  seed: int = -1):
-        """
-        Parameters
-        ----------
-        X : ndarray, shape (n, p)
-            Design matrix. Stored by reference; centered in-place during
-            ``select()`` and restored on return. The centering happens under
-            every scaling mode, so an array that is not writable (the view of
-            a ``MemoryMappedMatrix`` opened with ``AccessMode.ReadOnly``)
-            raises ``ValueError`` in ``select()``.
-        spca_ctrl : TRexSPCAControlParameter, optional
-            Algorithmic control. Defaults to ``TRexSPCAControlParameter()``.
-            ``gvs_ctrl.gvs_type`` must stay ``GVSType.EN`` (the default):
-            T-Rex SPCA is defined on the elastic net, and ``GVSType.IEN``
-            raises ``ValueError`` in ``select()``. The EN solver flavour is
-            chosen via ``spca_ctrl.en_solver``. The GVS ridge penalty follows
-            ``gvs_ctrl.lambda_2``: ``< 0`` (default) auto-determines it via
-            ``gvs_ctrl.lambda2_method``, ``0`` is the degenerate pure T-LASSO
-            case, and ``> 0`` fixes it in LARS units.
-        seed : int, optional
-            Random seed. ``-1`` (default) for non-deterministic (hardware
-            entropy). ``>= 0`` for reproducible per-PC runs.
-        """
         self.X = np.asfortranarray(X, dtype=np.float64)
         self._ctrl = spca_ctrl if spca_ctrl is not None else TRexSPCAControlParameter()
         self._seed = seed

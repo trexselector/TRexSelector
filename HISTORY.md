@@ -16,6 +16,25 @@ until the release is prepared.
 
 ### 2026-11-14
 
+#### The selectors of the Python package root carry their documentation
+
+- `trexselector.TRexDASelector`, the class of the guides, showed one line under `help()`. The notes on
+  the penalty and the reference list sat on the core class in `trexselector.trex_selector_methods.ad`,
+  the binding of the C++ class with its getter methods. All seven selectors were built this way, and
+  most of their texts opened with "Python wrapper for the C++ ...".
+- Each selector of the package root now opens with what it is, lists the parameters of its constructor
+  and ends with the notes and the reference list of its core class. A decorator takes these sections
+  from the binding docstring at import, so the rendered reference lists keep one source. `select()` of
+  the dependency-aware, the grouped and the screening selector names the result class it returns. The
+  parameters of the SPCA selector moved from its constructor to the class text.
+- The reference page of the selectors documents the seven classes of the package root first, then the
+  controls, results and enums with the core classes. It had said that the classes of the core module
+  are "re-exported at the package root", which does not hold for the selectors.
+- Left for the comparison of each method: the attributes of the selectors (`T_stop`, `L`, `v_thresh`
+  and the others) have no texts yet, and the opening lines are those of the core classes.
+- Tests. A new Python test file pins for the seven selectors that the text lists every constructor
+  parameter and ends with the sections of the core class. Python tests 720.
+
 #### The FDR limitation of BT, NN and the prior groups stands in the help of the three surfaces
 
 - The file header of the dependency-aware selector in C++ carried a paragraph that R and Python lacked.
