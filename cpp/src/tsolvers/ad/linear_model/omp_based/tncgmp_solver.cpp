@@ -90,6 +90,7 @@ void TNCGMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
             break;
         }
         pruneTiedDummies(new_vars, T_stop, early_stop);
+        applyExchangeableTieBreak(new_vars);
 
         std::size_t j_new = new_vars[0]; // Take the top tied variable
 

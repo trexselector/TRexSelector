@@ -54,6 +54,7 @@ void TACGP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
         }
 
         pruneTiedDummies(new_vars, T_stop, early_stop);
+        applyExchangeableTieBreak(new_vars);
 
         // ================================================================
         // STEP 2: Update active set (with inherited dummy tracking)

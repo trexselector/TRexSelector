@@ -13,6 +13,17 @@
 * Selections of `"AR1"` can differ slightly from 2.0.1. Those of `"EQUI"` did not change in any tested
   setting. The help of `TRexDASelector` and the vignette "T-Rex+DA" state the construction, the
   deviation from the papers and the evidence.
+* `TRexDASelector` runs the greedy solvers with the exchangeable-tie band by default. `exch_tie_alpha`
+  of `trex_control()` defaults to -1, which leaves the choice to the selector: `TRexDASelector` runs
+  with a band of 0.25, every other selector without the band. A value of 0 switches the band off, and a
+  positive value sets its width. Up to 2.0.1 the default was 0. Without the band the selector exceeded
+  a target FDR of 0.2 with every greedy solver at a correlation of 0.9 between neighbouring variables,
+  with an FDR of 0.21 to 0.27 in a Monte Carlo study on AR(1) designs (1,000 runs per setting), against
+  0.13 to 0.17 with the band. Selections of `TRexDASelector` with a greedy solver can differ from
+  2.0.1, and `exch_tie_alpha = 0` gives the run of 2.0.1.
+* The exchangeable-tie band acts in every greedy solver. `"TGP"`, `"TACGP"`, `"TMP"` and `"TNCGMP"`
+  ignored `exch_tie_alpha` up to 2.0.1, in a selector and as the stand-alone classes `TGP_Solver`,
+  `TACGP_Solver`, `TMP_Solver` and `TNCGMP_Solver`. The help of the option names the seven solvers.
 * `tsolver_options()` defaults to `lambda2 = 0.1` and `rho_afs = 0.3`, the values a selector hands to its
   solvers. Up to 2.0.1 they were 0 and 1. A stand-alone elastic-net solver built without `lambda2` no
   longer equals its lasso, and a stand-alone `TAFS_Solver` no longer runs forward stepwise. `lambda2 = 0`

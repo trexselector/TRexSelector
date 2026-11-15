@@ -651,8 +651,9 @@ design (\code{tsolver_options(n_threads = )}): 1 serial, at least 1.
 \if{html}{\out{<a id="method-TSolver_Base-set_exchangeable_tie"></a>}}
 \if{latex}{\out{\hypertarget{method-TSolver_Base-set_exchangeable_tie}{}}}
 \subsection{\code{TSolver_Base$set_exchangeable_tie()}}{
-  Exchangeable-tie band for the greedy solvers (TOMP / TAFS
-families); \code{alpha <= 0} turns it off.
+  Exchangeable-tie band of the greedy solvers (TOMP, TOOLS,
+TGP, TACGP, TMP, TNCGMP and TAFS); \code{alpha <= 0} turns it off.
+The path solvers ignore it.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TSolver_Base$set_exchangeable_tie(alpha, floor = 0.5)}

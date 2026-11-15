@@ -181,6 +181,43 @@ def test_set_exchangeable_tie_reproducible(make_solver):
     assert run(0.0, 123) == ref
 
 
+_GREEDY = [
+    ("omp_based", "TOMP_Solver", {}),
+    ("omp_based", "TOOLS_Solver", {}),
+    ("omp_based", "TGP_Solver", {}),
+    ("omp_based", "TACGP_Solver", {}),
+    ("omp_based", "TMP_Solver", {}),
+    ("omp_based", "TNCGMP_Solver", {}),
+    ("omp_based", "TNCGMP_Solver", {"ncgmp_variant": 1}),
+    ("afs_based", "TAFS_Solver", {}),
+]
+
+
+@pytest.mark.parametrize("module, name, extra", _GREEDY)
+def test_every_greedy_solver_draws_its_first_pick_from_the_tie_set(module, name, extra):
+    """The band off gives one first pick, the band on draws it from the cluster (columns 0 to 3)."""
+    import trexselector
+    solver_class = getattr(getattr(trexselector.tsolvers.ad, module), name)
+    X, D, y = _clustered_data()
+
+    def first_pick(alpha, seed):
+        options = SolverOptions(exch_tie_alpha=alpha, tie_seed=seed)
+        for field, value in extra.items():
+            setattr(options, field, type(getattr(options, field))(value))
+        s = solver_class(X.copy(order="F"), D.copy(order="F"), y.copy(order="F"), options)
+        s.executeStep(1, True)
+        return abs(s.getActions()[0][0]) - 1
+
+    seeds = range(1, 25)
+    off = [first_pick(0.0, seed) for seed in seeds]
+    # A band this wide holds every column that correlates with the top one
+    on = [first_pick(1e6, seed) for seed in seeds]
+    assert off[0] < 4 and len(set(off)) == 1
+    assert all(pick < 4 for pick in on)
+    assert len(set(on)) >= 2
+    assert first_pick(1e6, 5) == first_pick(1e6, 5)
+
+
 def test_solver_options_keywords_and_fields(data):
     """SolverOptions: keyword constructor, unknown keywords rejected, fields round-trip,
     and the options reach the solver."""

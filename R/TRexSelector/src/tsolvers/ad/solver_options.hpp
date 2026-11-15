@@ -129,11 +129,11 @@ struct SolverOptions {
      *  from std::random_device, i.e. nondeterministic. */
     long long tie_seed = 0;
 
-    /** @brief Exchangeable-tie band width for the greedy solvers (TOMP, TAFS
-     *  families), in units of the pairwise ranking-noise sd: statistically
-     *  indistinguishable top candidates within highly correlated clusters
-     *  are picked uniformly at random per step. 0 (default): off. Ignored by
-     *  the path solvers. */
+    /** @brief Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS,
+     *  TGP, TACGP, TMP, TNCGMP and TAFS), in units of the pairwise
+     *  ranking-noise sd: statistically indistinguishable top candidates
+     *  within highly correlated clusters are picked uniformly at random per
+     *  step. 0 (default): off. The path solvers ignore it. */
     double exch_tie_alpha = 0.0;
 
     /** @brief Minimum |correlation| for exchangeable-tie candidates in

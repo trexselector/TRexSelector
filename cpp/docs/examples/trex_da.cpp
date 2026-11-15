@@ -136,7 +136,6 @@ int main() {
     TRexControlParameter greedy_ctrl;
     greedy_ctrl.solver_type = SolverTypeForTRex::TOMP;
     greedy_ctrl.K = 10;
-    greedy_ctrl.solver_params.exch_tie_alpha = 0.25;
 
     TRexDAControlParameter bt_ctrl;
     bt_ctrl.method = DAMethod::BT;

@@ -68,9 +68,9 @@ above about a million entries of the design, and never inside a parallel
 region of the caller. The T-Rex selectors set it from
 \code{trex_control(max_inner_threads = )}.}
 
-\item{exch_tie_alpha}{Exchangeable-tie band width for the greedy solvers
-(TOMP and TAFS families), in units of the pairwise ranking-noise sd;
-0 (default) turns it off. Ignored by the path solvers.}
+\item{exch_tie_alpha}{Exchangeable-tie band width of the greedy solvers
+(TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS), in units of the pairwise
+ranking-noise sd; 0 (default) turns it off. The path solvers ignore it.}
 
 \item{exch_tie_floor}{Minimum absolute correlation for exchangeable-tie
 candidates, in [0, 1). Default 0.5.}

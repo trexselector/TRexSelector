@@ -15,10 +15,12 @@
 // std includes
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <random>
 #include <set>
+#include <vector>
 
 // Eigen includes
 #include <Eigen/Dense>
@@ -30,6 +32,8 @@
 #include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_aug_solver.hpp>
+#include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tacgp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tmp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
@@ -754,6 +758,138 @@ TEST(TieSeedDispatch, AugmentedWrappersForwardThroughBasePointer) {
     // The seed decides the survivor, so the equalities above are not vacuous
     EXPECT_EQ(seen_tenet.size(), 2u);
     EXPECT_EQ(seen_tienet.size(), 2u);
+}
+
+
+// ========================================================================================
+// Exchangeable-tie band of the greedy solvers
+// ========================================================================================
+
+namespace {
+
+/** @brief Design whose signal sits in one cluster of four nearly equal columns (0 to 3). */
+struct ClusterDesign {
+    Eigen::MatrixXd X, D;
+    Eigen::VectorXd y;
+
+    ClusterDesign() {
+        const Eigen::Index n = 120, p = 12;
+        std::mt19937 rng(7);
+        std::normal_distribution<double> normal(0.0, 1.0);
+        auto draw = [&](Eigen::Index rows, Eigen::Index cols) {
+            Eigen::MatrixXd M(rows, cols);
+            for (Eigen::Index j = 0; j < cols; ++j) {
+                for (Eigen::Index i = 0; i < rows; ++i) { M(i, j) = normal(rng); }
+            }
+            return M;
+        };
+        const Eigen::VectorXd base = draw(n, 1);
+        X = draw(n, p);
+        for (Eigen::Index j = 0; j < 4; ++j) { X.col(j) = base + 0.1 * X.col(j); }
+        D = draw(n, p);
+        y = 3.0 * base + 0.5 * draw(n, 1);
+    }
+};
+
+/** @brief Variable of the first step of a solver run with the given band and tie seed. */
+template <class Solver>
+std::size_t firstPick(const ClusterDesign& d, double alpha, long long tie_seed,
+                      trex::tsolvers::ad::SolverOptions options = {}) {
+    Eigen::MatrixXd Xc = d.X, Dc = d.D;
+    Eigen::VectorXd yc = d.y;
+    Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
+    Eigen::Map<Eigen::MatrixXd> D_map(Dc.data(), Dc.rows(), Dc.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
+    options.exch_tie_alpha = alpha;
+    options.exch_tie_floor = 0.5;
+    options.tie_seed = tie_seed;
+    Solver solver(X_map, D_map, y_map, options);
+    solver.executeStep(1, true);
+    return static_cast<std::size_t>(std::abs(solver.getActions().front().front())) - 1;
+}
+
+/** @brief The band off gives one first pick, the band on draws it from the cluster. */
+template <class Solver>
+void expectBandDrawsFromTheCluster(const char* name, trex::tsolvers::ad::SolverOptions options = {}) {
+    SCOPED_TRACE(name);
+    const ClusterDesign d;
+    // A band this wide holds every column that correlates with the top one
+    const double wide = 1e6;
+    const std::size_t off = firstPick<Solver>(d, 0.0, 1, options);
+    EXPECT_LT(off, 4u);
+    std::set<std::size_t> picks;
+    for (long long seed = 1; seed <= 24; ++seed) {
+        EXPECT_EQ(firstPick<Solver>(d, 0.0, seed, options), off) << "band off, seed " << seed;
+        const std::size_t pick = firstPick<Solver>(d, wide, seed, options);
+        EXPECT_LT(pick, 4u) << "band on, seed " << seed;
+        picks.insert(pick);
+    }
+    EXPECT_GE(picks.size(), 2u) << "the band never changed the first pick";
+    EXPECT_EQ(firstPick<Solver>(d, wide, 5, options), firstPick<Solver>(d, wide, 5, options));
+}
+
+/** @brief Matching pursuit with access to the band, to probe single candidates. */
+struct BandProbe : trex::tsolvers::ad::linear_model::omp_based::TMP_Solver {
+    using TMP_Solver::TMP_Solver;
+
+    std::size_t pickFor(std::size_t candidate) {
+        std::vector<std::size_t> step{candidate};
+        applyExchangeableTieBreak(step);
+        return step.front();
+    }
+};
+
+} // namespace
+
+
+/** @brief Every greedy solver applies the exchangeable-tie band. */
+TEST(ExchangeableTieBand, EveryGreedySolverDrawsItsPickFromTheTieSet) {
+    using namespace trex::tsolvers::ad::linear_model::omp_based;
+    using trex::tsolvers::ad::linear_model::afs_based::TAFS_Solver;
+    expectBandDrawsFromTheCluster<TOMP_Solver>("TOMP");
+    expectBandDrawsFromTheCluster<TOOLS_Solver>("TOOLS");
+    expectBandDrawsFromTheCluster<TGP_Solver>("TGP");
+    expectBandDrawsFromTheCluster<TACGP_Solver>("TACGP");
+    expectBandDrawsFromTheCluster<TMP_Solver>("TMP");
+    expectBandDrawsFromTheCluster<TNCGMP_Solver>("TNCGMP, line search");
+    trex::tsolvers::ad::SolverOptions corrective;
+    corrective.ncgmp_variant = trex::tsolvers::ad::NCGMPVariant::FullyCorrective;
+    expectBandDrawsFromTheCluster<TNCGMP_Solver>("TNCGMP, fully corrective", corrective);
+    expectBandDrawsFromTheCluster<TAFS_Solver>("TAFS");
+}
+
+
+/** @brief The band leaves a re-selected active variable alone and draws for an inactive one. */
+TEST(ExchangeableTieBand, ReselectedActiveVariableKeepsItsPick) {
+    const ClusterDesign d;
+    Eigen::MatrixXd Xc = d.X, Dc = d.D;
+    Eigen::VectorXd yc = d.y;
+    Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
+    Eigen::Map<Eigen::MatrixXd> D_map(Dc.data(), Dc.rows(), Dc.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
+    const std::size_t p = static_cast<std::size_t>(d.X.cols());
+
+    // Floor 0 and a wide band: every inactive variable is a candidate
+    trex::tsolvers::ad::SolverOptions options;
+    options.exch_tie_alpha = 1e6;
+    options.exch_tie_floor = 0.0;
+    BandProbe solver(X_map, D_map, y_map, options);
+    solver.executeStep(1, true);
+
+    std::vector<std::size_t> active_real, inactive_real;
+    for (std::size_t j : solver.getActives()) { if (j < p) { active_real.push_back(j); } }
+    for (std::size_t j : solver.getInactives()) { if (j < p) { inactive_real.push_back(j); } }
+    ASSERT_FALSE(active_real.empty());
+    ASSERT_GE(inactive_real.size(), 3u);
+
+    std::set<std::size_t> drawn;
+    for (std::uint32_t seed = 1; seed <= 24; ++seed) {
+        solver.setTieSeed(seed);
+        EXPECT_EQ(solver.pickFor(active_real.front()), active_real.front()) << "seed " << seed;
+        drawn.insert(solver.pickFor(inactive_real.front()));
+    }
+    // The probe is live: an inactive candidate is drawn from the tie set
+    EXPECT_GE(drawn.size(), 2u);
 }
 
 // ========================================================================================

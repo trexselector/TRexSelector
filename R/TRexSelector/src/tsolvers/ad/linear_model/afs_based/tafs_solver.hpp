@@ -69,7 +69,7 @@ public:
      * @param y Map to the response vector.
      * @param options Every other input (SolverOptions); this solver reads
      *        rho_afs, the shrinkage parameter in (0, 1] (1 yields forward
-     *        stepwise).
+     *        stepwise), and exch_tie_alpha / exch_tie_floor.
      */
     TAFS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                 Eigen::Map<Eigen::MatrixXd>& D,

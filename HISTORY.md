@@ -4,8 +4,9 @@
 
 The fix release after R 2.0.1. It collects the work since the sources of R 2.0.1
 went to CRAN, and it changes results in several places. The dependency-aware selector takes its
-penalty from the last step for all methods, and its AR1 window follows the magnitude of the
-coefficient. The Tikhonov selector runs on the homotopy solver TIKNET alone. The biobank
+penalty from the last step for all methods, its AR1 window follows the magnitude of the
+coefficient, and it runs the greedy solvers with the exchangeable-tie band by default. The Tikhonov
+selector runs on the homotopy solver TIKNET alone. The biobank
 screening gives every phenotype its own seed, and the screening selector reports an FDR estimate of 1
 for an empty selection. A coordinate-descent solve that has not converged is an error. Beside the
 corrections the screening selector gains a nearest-neighbor variant, a read-only memory-mapped design
@@ -14,6 +15,43 @@ its removal in the next minor releases, and the R package compiles in less time.
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
 ### 2026-11-15
+
+#### The exchangeable-tie band is on by default under T-Rex+DA and acts in every greedy solver
+
+Fabian, 2026-11-12: "is the tie-breaking mechanism still needed once the DA variants are changed?"
+Evidence: notes/handover_2026-11-15/tie_band_sim/ (two runs, 132,000 selector runs, ANALYSIS.md).
+
+- The band is still needed. On the designs of the Examples demo that motivated it (AR(1) columns,
+  n = 300, p = 1,000, 10 actives, SNR 2, target 0.2, K = 20, method AR1, 1,000 runs per cell) each of
+  the seven greedy solvers exceeded the target at a correlation of 0.9 without the band, with an FDR
+  of 0.21 to 0.27 in all three supports and by more than two standard errors in every cell. With a
+  band of 0.25 the FDR was 0.13 to 0.17, at a TPR lower by 0.07 to 0.13. The numbers of TOMP and TAFS
+  equal those of July 2026, so the penalty of the last step did not touch the cause: the false
+  discoveries sit beside the active variables. Below 0.9 the target held without the band (0.07 to
+  0.10 at 0.8), and the band cost 0.03 to 0.05 in TPR at 0.8, at most 0.01 at 0.7 and nothing at
+  0.5. T-LARS stayed at or below 0.09 in every cell.
+- Fabian: "let us set the band on by default, so that we stay below the target FDR", in the fix
+  release. `exch_tie_alpha` of SolverHyperparameters defaults to -1, "the selector decides".
+  TRexDASelector resolves it to DA_EXCH_TIE_ALPHA = 0.25 in its constructor. Every other selector
+  runs without the band, 0 switches it off and a positive value sets it. The stand-alone option of
+  SolverOptions keeps 0. In R the default of `trex_control(exch_tie_alpha = )` is -1.
+- Fabian: "all the solvers need the band". TGP, TACGP, TMP and TNCGMP had none, although the guides
+  named "the orthogonal matching pursuit family". They call `applyExchangeableTieBreak()` in their
+  step now. In the run they behave as TOMP does, with an FDR of 0.22 to 0.27 without the band at 0.9
+  and of 0.14 to 0.15 with it.
+- A guard in `applyExchangeableTieBreak()`: a top candidate that is already active is not replaced.
+  TGP, TACGP, TMP and the line-search TNCGMP re-select active variables, and the band decides which
+  member of a cluster enters, not whether a variable is refined. TOMP, TOOLS and TAFS never see an
+  active candidate, and on the new build they reproduce the rows of the first run.
+- Documentation: the help of the option on the three surfaces names the seven solvers and the
+  default. The class documentation of the dependency-aware selector gains the section on greedy
+  solvers with the evidence. Guide page 04 states the default with the numbers, and its example runs
+  on the default control. The header of the solver dispatch said "trex+DA" and says T-Rex+DA.
+- Tests on the three surfaces: with a wide band each of the seven solvers (both variants of TNCGMP)
+  draws its first pick from the cluster and has one first pick without the band. The default run of
+  the dependency-aware selector equals the run with 0.25 and differs from the run with 0. The default
+  run of the plain selector equals the run with 0. In C++ a probe on TMP shows that an active
+  candidate keeps its pick.
 
 #### The release files carry R 2.0.2
 

@@ -15,6 +15,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 // project trex includes
@@ -936,6 +937,109 @@ TEST(TRexDATest, Method_PriorGroups_NegativeLabelThrows) {
     EXPECT_THROW({
         TRexDASelector selector(X_map, y_map, 0.1, da_ctrl);
     }, std::invalid_argument);
+}
+
+
+// ========================================================================================
+// Exchangeable-tie band: the default leaves the choice to the selector
+// ========================================================================================
+
+namespace {
+
+/** @brief Ten clusters of four nearly equal columns, the signal in the first three clusters. */
+struct ClusteredDesign {
+    Eigen::MatrixXd X;
+    Eigen::VectorXd y;
+
+    ClusteredDesign() {
+        const Eigen::Index n = 120, clusters = 10, size = 4;
+        std::mt19937 rng(11);
+        std::normal_distribution<double> normal(0.0, 1.0);
+        X.resize(n, clusters * size);
+        y = Eigen::VectorXd::Zero(n);
+        for (Eigen::Index c = 0; c < clusters; ++c) {
+            Eigen::VectorXd base(n);
+            for (Eigen::Index i = 0; i < n; ++i) { base(i) = normal(rng); }
+            for (Eigen::Index j = 0; j < size; ++j) {
+                for (Eigen::Index i = 0; i < n; ++i) { X(i, c * size + j) = base(i) + 0.1 * normal(rng); }
+            }
+            if (c < 3) { y += 3.0 * base; }
+        }
+        for (Eigen::Index i = 0; i < n; ++i) { y(i) += normal(rng); }
+    }
+};
+
+struct BandRun {
+    std::vector<std::size_t> selected;
+    Eigen::MatrixXd phi;
+};
+
+/** @brief Two runs differ when the T-loops ended at different steps or an occurrence differs. */
+bool differ(const BandRun& a, const BandRun& b) {
+    if (a.phi.rows() != b.phi.rows() || a.phi.cols() != b.phi.cols()) { return true; }
+    return a.phi.size() > 0 && (a.phi - b.phi).cwiseAbs().maxCoeff() > 0.0;
+}
+
+/** @brief One seeded run with TOMP. `alpha` unset keeps the default of the control. */
+template <class Selector>
+BandRun runWithBand(const ClusteredDesign& d, const double* alpha) {
+    Eigen::MatrixXd Xc = d.X;
+    Eigen::VectorXd yc = d.y;
+    Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
+    Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
+    TRexControlParameter trex_ctrl;
+    trex_ctrl.K = 50;
+    trex_ctrl.max_dummy_multiplier = 2;
+    trex_ctrl.solver_type = disp::SolverTypeForTRex::TOMP;
+    if (alpha != nullptr) { trex_ctrl.solver_params.exch_tie_alpha = *alpha; }
+    if constexpr (std::is_same_v<Selector, TRexDASelector>) {
+        TRexDAControlParameter da_ctrl;
+        da_ctrl.method = DAMethod::BT;
+        da_ctrl.trex_ctrl = trex_ctrl;
+        TRexDASelector selector(X_map, y_map, 0.2, da_ctrl, 5, false);
+        selector.select();
+        return {selector.getSelectedIndices(), selector.getPhiMat()};
+    } else {
+        TRexSelector selector(X_map, y_map, 0.2, trex_ctrl, 5, false);
+        selector.select();
+        return {selector.getSelectedIndices(), selector.getPhiMat()};
+    }
+}
+
+} // namespace
+
+
+/** @brief A band left to the selector runs with the DA width, and 0 switches it off. */
+TEST(TRexDATest, Band_LeftToTheSelectorRunsWithTheDAWidth) {
+    EXPECT_EQ(TRexControlParameter().solver_params.exch_tie_alpha, -1.0);
+    EXPECT_EQ(DA_EXCH_TIE_ALPHA, 0.25);
+
+    const ClusteredDesign d;
+    const double da_width = DA_EXCH_TIE_ALPHA, off = 0.0;
+    const BandRun by_default = runWithBand<TRexDASelector>(d, nullptr);
+    const BandRun with_width = runWithBand<TRexDASelector>(d, &da_width);
+    const BandRun without = runWithBand<TRexDASelector>(d, &off);
+
+    // The default is the run with the DA width
+    EXPECT_EQ(by_default.selected, with_width.selected);
+    EXPECT_FALSE(differ(by_default, with_width));
+
+    // 0 gives another run: the band draws in ten clusters of 50 experiments
+    EXPECT_TRUE(differ(without, by_default));
+}
+
+
+/** @brief The plain selector runs without the band unless the control sets it. */
+TEST(TRexDATest, Band_LeftToTheSelectorIsOffForThePlainSelector) {
+    const ClusteredDesign d;
+    const double off = 0.0, on = DA_EXCH_TIE_ALPHA;
+    const BandRun by_default = runWithBand<TRexSelector>(d, nullptr);
+    const BandRun without = runWithBand<TRexSelector>(d, &off);
+    const BandRun with_width = runWithBand<TRexSelector>(d, &on);
+
+    EXPECT_EQ(by_default.selected, without.selected);
+    EXPECT_FALSE(differ(by_default, without));
+    EXPECT_TRUE(differ(with_width, by_default));
 }
 
 

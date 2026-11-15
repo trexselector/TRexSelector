@@ -327,8 +327,9 @@ inline void bind_trex_core(py::module& m_tsm) {
             "random experiments. A stand-alone solver defaults to machine epsilon (SolverOptions.tol). The "
             "two tolerances serve different purposes and differ on purpose.")
         .def_readwrite("exch_tie_alpha", &disp::SolverHyperparameters::exch_tie_alpha, "Exchangeable-tie band width "
-            "for "
-            "greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under T-Rex+DA: 0.25.")
+            "of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS) in pairwise ranking-noise sd "
+            "units. -1 (default): the selector decides. TRexDASelector runs with 0.25, every other selector without "
+            "the band. 0 = off, also under T-Rex+DA. The path solvers ignore the option.")
         .def_readwrite("exch_tie_floor", &disp::SolverHyperparameters::exch_tie_floor, "Minimum |correlation| for "
             "exchangeable-tie candidates in (0, 1); ignored unless exch_tie_alpha > 0.")
         .def_readwrite("tenet_aug_use_lars", &disp::SolverHyperparameters::tenet_aug_use_lars, "TENET_AUG: False "

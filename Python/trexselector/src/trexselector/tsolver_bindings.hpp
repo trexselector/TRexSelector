@@ -713,7 +713,8 @@ inline void bind_solver_options(py::module& m) {
             "1. A pass splits only above about a million entries and never inside a parallel region "
             "of the caller. The T-Rex selectors set it from max_inner_threads.")
        .def_readwrite("exch_tie_alpha", &SolverOptions::exch_tie_alpha,
-            "Exchangeable-tie band width for the greedy solvers (TOMP/TAFS families); 0 (default) = off.")
+            "Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS); "
+            "0 (default) = off. The path solvers ignore it.")
        .def_readwrite("exch_tie_floor", &SolverOptions::exch_tie_floor,
             "Minimum |correlation| for exchangeable-tie candidates in [0, 1). Default 0.5.")
        .def_readwrite("lambda2", &SolverOptions::lambda2,
@@ -1059,7 +1060,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
-        "Greedy: reads options.exch_tie_alpha / exch_tie_floor.");
+        "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
     bind_standard_tsolver<TGP_Solver>(m_omp, "TGP_Solver",
         "Terminating gradient pursuit (T-GP) solver.\n"
         "\n"
@@ -1069,7 +1070,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "  vol. 56, no. 6, pp. 2370-2382, 2008.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
-        "  pp. 2511-2515.\n");
+        "  pp. 2511-2515.\n",
+        "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
     bind_standard_tsolver<TACGP_Solver>(m_omp, "TACGP_Solver",
         "Terminating approximate conjugate gradient pursuit (T-ACGP) solver.\n"
         "\n"
@@ -1079,7 +1081,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "  vol. 56, no. 6, pp. 2370-2382, 2008.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
-        "  pp. 2511-2515.\n");
+        "  pp. 2511-2515.\n",
+        "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
     bind_standard_tsolver<TMP_Solver>(m_omp, "TMP_Solver",
         "Terminating matching pursuit (T-MP) solver.\n"
         "\n"
@@ -1089,7 +1092,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Trans. Signal Process., vol. 41, no. 12, pp. 3397-3415, 1993, doi: 10.1109/78.258082.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
-        "  pp. 2511-2515.\n");
+        "  pp. 2511-2515.\n",
+        "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
     bind_standard_tsolver<TOOLS_Solver>(m_omp, "TOOLS_Solver",
         "Terminating orthogonal least squares (T-OLS) solver.\n"
         "\n"
@@ -1102,7 +1106,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "  and Orthogonal Least Squares,\" unpublished note, draft of March 29, 2007.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
-        "  pp. 2511-2515.\n");
+        "  pp. 2511-2515.\n",
+        "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
     bind_standard_tsolver<TNCGMP_Solver>(m_omp, "TNCGMP_Solver",
         "Terminating norm-corrective generalized matching pursuit (T-NCGMP) solver.\n"
         "\n"
@@ -1114,7 +1119,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
-        "Reads options.ncgmp_variant (LineSearch or FullyCorrective).");
+        "Reads options.ncgmp_variant (LineSearch or FullyCorrective) and options.exch_tie_alpha / "
+        "exch_tie_floor, the exchangeable-tie band.");
 
     // -------------------------------------------------------------------------
     // AFS-based sub-module

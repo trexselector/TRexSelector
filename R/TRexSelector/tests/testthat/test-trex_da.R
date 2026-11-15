@@ -583,3 +583,49 @@ test_that("TRexDASelector AR1 and EQUI report -2 as rho_thresh and no grid", {
     expect_length(selector$FDP_hat_array_BT, 0L)
   }
 })
+
+
+# =============================================================================
+# The exchangeable-tie band: the default leaves the choice to the selector
+# =============================================================================
+
+test_that("TRexDASelector runs a greedy solver with the band unless the control sets it", {
+  # Ten clusters of four nearly equal columns, the signal in the first three
+  set.seed(11)
+  n <- 120L
+  bases <- matrix(rnorm(n * 10), n, 10)
+  X <- bases[, rep(1:10, each = 4)] + 0.1 * matrix(rnorm(n * 40), n, 40)
+  y <- drop(3 * rowSums(bases[, 1:3]) + rnorm(n))
+
+  run <- function(da, ...) {
+    control <- trex_control(K = 50, solver = "TOMP", max_dummy_multiplier = 2, ...)
+    sel <- if (da) {
+      TRexDASelector$new(X + 0, y, tFDR = 0.2, seed = 5, verbose = FALSE,
+                         da_control = trex_da_control(da_method = "BT"), control = control)
+    } else {
+      TRexSelector$new(X + 0, y, tFDR = 0.2, seed = 5, verbose = FALSE, control = control)
+    }
+    sel$select()
+    list(selected = sel$selected_indices, phi = sel$phi_mat)
+  }
+  # Two runs differ when the T-loops ended at different steps or an occurrence differs
+  differ <- function(a, b) !identical(dim(a$phi), dim(b$phi)) || any(a$phi != b$phi)
+
+  expect_equal(trex_control()$exch_tie_alpha, -1)
+
+  # T-Rex+DA: the default is the run with 0.25, and 0 gives another run
+  da_default <- run(TRUE)
+  da_width <- run(TRUE, exch_tie_alpha = 0.25)
+  da_off <- run(TRUE, exch_tie_alpha = 0)
+  expect_identical(da_default$selected, da_width$selected)
+  expect_false(differ(da_default, da_width))
+  expect_true(differ(da_default, da_off))
+
+  # The plain selector: the default is the run without the band
+  plain_default <- run(FALSE)
+  plain_off <- run(FALSE, exch_tie_alpha = 0)
+  plain_width <- run(FALSE, exch_tie_alpha = 0.25)
+  expect_identical(plain_default$selected, plain_off$selected)
+  expect_false(differ(plain_default, plain_off))
+  expect_true(differ(plain_default, plain_width))
+})

@@ -162,9 +162,9 @@ test_that("TRexSelector multiple solver methods return 1-based indices consisten
 
 
 test_that("exchangeable tie-breaking is plumbed through for greedy solvers", {
-  # Control defaults: feature off, floor 0.5.
+  # Control defaults: the band is left to the selector (-1), floor 0.5.
   ctrl <- trex_control()
-  expect_equal(ctrl$exch_tie_alpha, 0)
+  expect_equal(ctrl$exch_tie_alpha, -1)
   expect_equal(ctrl$exch_tie_floor, 0.5)
 
   # A correlated cluster so the exchangeable tie set is non-trivial.

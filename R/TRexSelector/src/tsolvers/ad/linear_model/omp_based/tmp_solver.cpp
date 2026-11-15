@@ -51,6 +51,7 @@ void TMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
         }
 
         pruneTiedDummies(new_vars, T_stop, early_stop);
+        applyExchangeableTieBreak(new_vars);
 
         // MP: single-atom update — take primary atom after tie-breaking
         const std::size_t col_idx = new_vars[0];

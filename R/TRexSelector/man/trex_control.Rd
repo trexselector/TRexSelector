@@ -21,7 +21,7 @@ trex_control(
   lambda2 = 0.1,
   rho_afs = 0.3,
   ncgmp_variant = 0,
-  exch_tie_alpha = 0,
+  exch_tie_alpha = -1,
   exch_tie_floor = 0.5,
   tenet_aug_use_lars = FALSE,
   cd_lambda_rel_tol = 1e-06,
@@ -122,14 +122,15 @@ The two tolerances serve different purposes and differ on purpose.}
 
 \item{ncgmp_variant}{NCGMP variant: 0 = line_search, 1 = fully_corrective (default: 0).}
 
-\item{exch_tie_alpha}{Exchangeable-tie band width for greedy solvers
-(TOMP/TAFS), in units of the pairwise ranking-noise sd. When > 0,
-statistically indistinguishable top candidates within highly correlated
-clusters are picked uniformly at random per step, restoring the
-within-experiment occurrence spread that the dependency-aware (DA)
-deflation's FDR control relies on. Recommended for greedy solvers under
-T-Rex+DA: 0.25. \code{0} (default) turns the feature off (exact legacy
-behavior; ignored by path solvers).}
+\item{exch_tie_alpha}{Exchangeable-tie band width of the greedy solvers
+(TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS), in units of the pairwise
+ranking-noise sd. When > 0, statistically indistinguishable top
+candidates within highly correlated clusters are picked uniformly at
+random per step, restoring the within-experiment occurrence spread that
+the dependency-aware (DA) deflation's FDR control relies on.
+\code{-1} (default): the selector decides. \code{TRexDASelector} runs
+with 0.25, every other selector without the band. \code{0} turns the
+band off, also under T-Rex+DA. The path solvers ignore the option.}
 
 \item{exch_tie_floor}{Minimum absolute correlation for exchangeable-tie
 candidates, in (0, 1) (default: 0.5). Ignored unless

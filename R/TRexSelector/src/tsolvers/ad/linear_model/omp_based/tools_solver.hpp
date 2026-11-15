@@ -74,7 +74,8 @@ public:
      * @param options Every other input (SolverOptions): the preprocessing flags
      *        normalize (normalize the predictors), intercept (include an
      *        intercept term) and verbose (verbose output), the tolerance and
-     *        the tie-breaking.
+     *        the tie-breaking (exch_tie_alpha / exch_tie_floor, the
+     *        exchangeable-tie band of the greedy solvers).
      */
     TOOLS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,

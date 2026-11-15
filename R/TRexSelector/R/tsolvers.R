@@ -61,9 +61,9 @@ NULL
 #'   above about a million entries of the design, and never inside a parallel
 #'   region of the caller. The T-Rex selectors set it from
 #'   \code{trex_control(max_inner_threads = )}.
-#' @param exch_tie_alpha Exchangeable-tie band width for the greedy solvers
-#'   (TOMP and TAFS families), in units of the pairwise ranking-noise sd;
-#'   0 (default) turns it off. Ignored by the path solvers.
+#' @param exch_tie_alpha Exchangeable-tie band width of the greedy solvers
+#'   (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS), in units of the pairwise
+#'   ranking-noise sd; 0 (default) turns it off. The path solvers ignore it.
 #' @param exch_tie_floor Minimum absolute correlation for exchangeable-tie
 #'   candidates, in [0, 1). Default 0.5.
 #' @param lambda2 L2 (ridge / group-ridge) penalty weight, >= 0. Read by
@@ -463,8 +463,9 @@ TSolver_Base <- R6::R6Class(
       tsolver_get_num_threads(self$ptr)
     },
 
-    #' @description Exchangeable-tie band for the greedy solvers (TOMP / TAFS
-    #'   families); \code{alpha <= 0} turns it off.
+    #' @description Exchangeable-tie band of the greedy solvers (TOMP, TOOLS,
+    #'   TGP, TACGP, TMP, TNCGMP and TAFS); \code{alpha <= 0} turns it off.
+    #'   The path solvers ignore it.
     #' @param alpha Band width in units of the ranking-noise sd.
     #' @param floor Minimum |correlation| of a tie candidate (default 0.5).
     #' @return Invisibly returns \code{self}.

@@ -79,7 +79,8 @@ public:
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
      * @param options Every other input (SolverOptions); this solver reads
-     *        ncgmp_variant (Line Search or Fully Corrective).
+     *        ncgmp_variant (Line Search or Fully Corrective) and
+     *        exch_tie_alpha / exch_tie_floor.
      */
     TNCGMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,

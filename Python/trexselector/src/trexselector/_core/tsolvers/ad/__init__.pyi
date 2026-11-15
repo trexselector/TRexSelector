@@ -169,7 +169,7 @@ class SolverOptions:
     @property
     def exch_tie_alpha(self) -> float:
         """
-        Exchangeable-tie band width for the greedy solvers (TOMP/TAFS families); 0 (default) = off.
+        Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS); 0 (default) = off. The path solvers ignore it.
         """
     @exch_tie_alpha.setter
     def exch_tie_alpha(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:

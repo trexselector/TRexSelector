@@ -102,8 +102,8 @@ public:
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
      * @param options Every other input (SolverOptions): preprocessing flags,
-     *        tolerance and tie-breaking (the greedy family reads
-     *        exch_tie_alpha / exch_tie_floor).
+     *        tolerance and tie-breaking (exch_tie_alpha / exch_tie_floor,
+     *        the exchangeable-tie band of the greedy solvers).
      */
     TOMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                 Eigen::Map<Eigen::MatrixXd>& D,

@@ -138,14 +138,16 @@ struct SolverHyperparameters {
      *  A stand-alone solver defaults to machine epsilon (SolverOptions::tol).
      *  The two tolerances serve different purposes and differ on purpose. */
     double tol = 1e-6;      //
-    /** @brief Exchangeable-tie band width for greedy solvers (TOMP/TAFS), in
-     * units of the pairwise ranking-noise sd. When > 0, statistically
-     * indistinguishable top candidates within highly correlated clusters are
-     * picked uniformly at random per step, restoring the within-experiment
-     * occurrence spread that the DA deflation's FDR control relies on.
-     * Recommended for greedy solvers under trex+DA: 0.25.
-     * 0 = off (exact legacy behavior; ignored by path solvers). */
-    double exch_tie_alpha = 0.0;
+    /** @brief Exchangeable-tie band width of the greedy solvers (TOMP,
+     * TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS), in units of the pairwise
+     * ranking-noise sd. When > 0, statistically indistinguishable top
+     * candidates within highly correlated clusters are picked uniformly at
+     * random per step, restoring the within-experiment occurrence spread
+     * that the DA deflation's FDR control relies on.
+     * -1 (default): the selector decides. The T-Rex+DA selector runs with
+     * 0.25, every other selector without the band. 0 = off, also under
+     * T-Rex+DA. The path solvers ignore the option. */
+    double exch_tie_alpha = -1.0;
     /** @brief Minimum |correlation| for exchangeable-tie candidates in
      * (0, 1) (ignored unless exch_tie_alpha > 0). */
     double exch_tie_floor = 0.5;

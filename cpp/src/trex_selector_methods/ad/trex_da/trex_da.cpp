@@ -43,6 +43,18 @@ namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
 // Constructor
 // ===================================================================================
 
+namespace {
+
+/** @brief Base control of a T-Rex+DA run: a band left to the selector gets the DA width. */
+tc::TRexControlParameter withDependencyAwareBand(tc::TRexControlParameter ctrl) {
+    if (ctrl.solver_params.exch_tie_alpha < 0.0) {
+        ctrl.solver_params.exch_tie_alpha = DA_EXCH_TIE_ALPHA;
+    }
+    return ctrl;
+}
+
+} // namespace
+
 TRexDASelector::TRexDASelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
@@ -51,9 +63,12 @@ TRexDASelector::TRexDASelector(
     int seed,
     bool verbose
 ) :
-    TRexSelector(X, y, tFDR, trex_da_ctrl.trex_ctrl, seed, verbose),
+    TRexSelector(X, y, tFDR, withDependencyAwareBand(trex_da_ctrl.trex_ctrl), seed, verbose),
     trex_da_ctrl_(std::move(trex_da_ctrl))
 {
+    // The stored control shows the band the run uses.
+    trex_da_ctrl_.trex_ctrl.solver_params.exch_tie_alpha = trex_ctrl_.solver_params.exch_tie_alpha;
+
     // Resolve hc_grid_length default
     if (trex_da_ctrl_.hc_grid_length == 0) {
         trex_da_ctrl_.hc_grid_length = std::min<std::size_t>(20, p_);

@@ -692,6 +692,8 @@ void TSolver_Base::applyExchangeableTieBreak(std::vector<std::size_t>& new_vars)
         if (a > cmax) { cmax = a; jstar = j; }
     }
     if (jstar >= dummy_start_idx_) { return; }  // dummy pick stays deterministic
+    // A re-selected active variable is no new entry (TGP, TACGP, TMP, TNCGMP).
+    if (std::find(actives_.begin(), actives_.end(), jstar) != actives_.end()) { return; }
 
     // Pairwise ranking-noise scale: the gap c_j* - c_k = (x_j* - x_k)^T r has
     // sd ~ ||x_j* -/+ x_k|| * ||r|| / sqrt(n) under exchangeability. The

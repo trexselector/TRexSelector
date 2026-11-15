@@ -376,7 +376,8 @@ public:
 
     /**
      * @brief Configure exchangeability-calibrated stochastic tie-breaking for
-     *        greedy candidate selection (TOMP/TAFS).
+     *        greedy candidate selection (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP
+     *        and TAFS).
      *
      * @details When alpha > 0 and the step's top candidate j* is a real
      * predictor, the inactive real predictors k with |corr(x_j*, x_k)| >=
@@ -396,8 +397,11 @@ public:
      * indistinguishable picks restores the within-trial occurrence spread
      * across exchangeable cluster members that the DA FDR control relies on
      * (LARS-type solvers produce this spread via their path geometry).
-     * Recommended alpha for greedy solvers under trex+DA: 0.25.
-     * Default 0 = off (exact legacy behavior).
+     * The T-Rex+DA selector runs these solvers with alpha = 0.25 unless its
+     * control sets the band. Default 0 = off (exact legacy behavior). The
+     * path solvers never call the band. A top candidate that is already
+     * active (TGP, TACGP, TMP and the line-search TNCGMP re-select
+     * variables) is never replaced.
      *
      * @param alpha Band width in units of the pairwise noise sd (<= 0: off).
      * @param floor Minimum |correlation| for exchangeability candidates,
@@ -858,10 +862,12 @@ protected:
 
     /**
      * @brief Replace the step's additions with one random member of the
-     *        exchangeable tie set (greedy solvers; see setExchangeableTie()).
+     *        exchangeable tie set (called by the greedy solvers; see
+     *        setExchangeableTie()).
      *
-     * @details No-op when exch_tie_alpha_ <= 0, when new_vars is empty, or
-     * when the top candidate is a dummy. Otherwise, if at least one inactive
+     * @details No-op when exch_tie_alpha_ <= 0, when new_vars is empty, when
+     * the top candidate is a dummy or when it is already active (a
+     * re-selection). Otherwise, if at least one inactive
      * real predictor is exchangeable with the top candidate (correlation >=
      * exch_tie_floor_ and gap within the noise band), new_vars is replaced
      * by a single uniformly drawn member of the tie set. Uses rng_, so

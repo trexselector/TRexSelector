@@ -1489,7 +1489,7 @@ class SolverHyperparameters:
     @property
     def exch_tie_alpha(self) -> float:
         """
-        Exchangeable-tie band width for greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under T-Rex+DA: 0.25.
+        Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS) in pairwise ranking-noise sd units. -1 (default): the selector decides. TRexDASelector runs with 0.25, every other selector without the band. 0 = off, also under T-Rex+DA. The path solvers ignore the option.
         """
     @exch_tie_alpha.setter
     def exch_tie_alpha(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1968,6 +1968,18 @@ class TRexDASelector(TRexSelector):
     become statistically exchangeable. This is inherent to the method, and it also appears in
     the 1.x versions of the R package. Mitigate with the default BTSelectionMode.FeasibleOnly
     and by preferring a greedy solver (TOMP) in designs with high correlation.
+    
+    Greedy solvers and the exchangeable-tie band. A greedy solver (TOMP, TOOLS, TGP, TACGP,
+    TMP, TNCGMP, TAFS) picks the top candidate of a correlated cluster deterministically,
+    which removes the spread of occurrences within the cluster that the penalty relies on.
+    The selector therefore runs a greedy solver with the exchangeable-tie band at 0.25 when
+    solver_params.exch_tie_alpha of the base control is left at its default of -1. A value of
+    0 switches the band off, and a positive value sets its width. The path solvers ignore the
+    band. Evidence: a Monte Carlo study on AR(1) designs (1,000 runs per setting, target FDR
+    0.2, method AR1, November 2026). At a correlation of 0.9 each of the seven greedy
+    solvers had an FDR of 0.21 to 0.27 without the band and of 0.13 to 0.17 with it, at a
+    true positive rate lower by 0.07 to 0.13. At correlations up to 0.8 the target held
+    without the band as well.
     
     References
     ----------

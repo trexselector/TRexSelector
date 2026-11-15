@@ -120,7 +120,8 @@ public:
      *        normalize (each column of X and D scaled to unit L2-norm),
      *        intercept (X, D and y centered, intercept fitted) and verbose
      *        (status and diagnostics during execution), the tolerance and the
-     *        tie-breaking.
+     *        tie-breaking (exch_tie_alpha / exch_tie_floor, the
+     *        exchangeable-tie band of the greedy solvers).
      */
     TACGP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,

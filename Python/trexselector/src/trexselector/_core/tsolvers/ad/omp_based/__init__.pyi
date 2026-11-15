@@ -67,7 +67,7 @@ class TACGP_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). 
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         
@@ -225,7 +225,7 @@ class TGP_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). 
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         
@@ -383,7 +383,7 @@ class TMP_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). 
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         
@@ -542,7 +542,7 @@ class TNCGMP_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.ncgmp_variant (LineSearch or FullyCorrective).
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.ncgmp_variant (LineSearch or FullyCorrective) and options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         
@@ -705,7 +705,7 @@ class TOMP_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Greedy: reads options.exch_tie_alpha / exch_tie_floor.
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         
@@ -866,7 +866,7 @@ class TOOLS_Solver:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], D: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], options: trexselector._core.tsolvers.ad.SolverOptions = ...) -> None:
         """
-        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). 
+        Initializes the solver via zero-copy views of X, D and y; every other input comes from `options` (SolverOptions). Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.
         
         X and D are Fortran-ordered float64 arrays, which the solver shares without a copy. An array of another layout or type is refused with TypeError, and numpy.asfortranarray() converts it once.
         

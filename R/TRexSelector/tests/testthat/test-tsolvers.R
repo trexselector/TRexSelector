@@ -666,3 +666,43 @@ test_that("tikhonov_validated lets a Tikhonov solver skip the check of its matri
                       options = tsolver_options(lambda2 = 1, tikhonov_validated = TRUE))$restore())
 })
 
+
+# =============================================================================
+# The exchangeable-tie band of the greedy solvers
+# =============================================================================
+
+test_that("every greedy solver draws its first pick from the tie set when the band is on", {
+  # The signal sits in one cluster of four nearly equal columns (1 to 4)
+  set.seed(7)
+  nc <- 120L
+  pc <- 12L
+  base <- rnorm(nc)
+  Xc <- matrix(rnorm(nc * pc), nc, pc)
+  for (j in 1:4) Xc[, j] <- base + 0.1 * Xc[, j]
+  Dc <- matrix(rnorm(nc * pc), nc, pc)
+  yc <- 3 * base + 0.5 * rnorm(nc)
+
+  first_pick <- function(class, alpha, seed, ...) {
+    s <- class$new(Xc + 0, Dc + 0, yc + 0,
+                   options = tsolver_options(exch_tie_alpha = alpha, tie_seed = seed, ...))
+    on.exit(s$restore(), add = TRUE)
+    s$execute_step(T_stop = 1)
+    abs(s$get_actions(r_index = TRUE)[[1]][1])
+  }
+  solvers <- list(TOMP = list(TOMP_Solver), TOOLS = list(TOOLS_Solver), TGP = list(TGP_Solver),
+                  TACGP = list(TACGP_Solver), TMP = list(TMP_Solver), TNCGMP = list(TNCGMP_Solver),
+                  `TNCGMP, fully corrective` = list(TNCGMP_Solver, ncgmp_variant = "fully_corrective"),
+                  TAFS = list(TAFS_Solver))
+  seeds <- 1:24
+  for (name in names(solvers)) {
+    pick <- function(alpha, seed) do.call(first_pick, c(solvers[[name]], list(alpha = alpha, seed = seed)))
+    off <- vapply(seeds, function(seed) pick(0, seed), numeric(1))
+    # A band this wide holds every column that correlates with the top one
+    on <- vapply(seeds, function(seed) pick(1e6, seed), numeric(1))
+    expect_true(off[1] <= 4, label = paste(name, "picks inside the cluster without the band"))
+    expect_true(all(off == off[1]), label = paste(name, "has one first pick without the band"))
+    expect_true(all(on <= 4), label = paste(name, "picks inside the cluster with the band"))
+    expect_true(length(unique(on)) >= 2L, label = paste(name, "draws its first pick with the band"))
+    expect_identical(pick(1e6, 5), pick(1e6, 5), label = paste(name, "repeats a seeded run"))
+  }
+})

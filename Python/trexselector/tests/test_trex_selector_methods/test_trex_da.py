@@ -324,3 +324,62 @@ def test_da_prior_groups_set_the_method(signal_data, fast_control):
     sel = trexselector.TRexDASelector(X, y, da_control=da_ctrl, trex_control=fast_control, verbose=False)
     res = sel.select()
     assert res.method == trexselector.DAMethod.PRIOR_GROUPS
+
+
+# ---------------------------------------------------------------------------
+# The exchangeable-tie band: the default leaves the choice to the selector
+# ---------------------------------------------------------------------------
+
+def _clustered_design():
+    """Ten clusters of four nearly equal columns, the signal in the first three."""
+    rng = np.random.default_rng(11)
+    n = 120
+    bases = rng.standard_normal((n, 10))
+    X = np.repeat(bases, 4, axis=1) + 0.1 * rng.standard_normal((n, 40))
+    y = 3.0 * bases[:, :3].sum(axis=1) + rng.standard_normal(n)
+    return np.asfortranarray(X), y
+
+
+def _band_run(selector_class, alpha=None):
+    X, y = _clustered_design()
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 50
+    ctrl.max_dummy_multiplier = 2
+    ctrl.solver_type = trexselector.SolverTypeForTRex.TOMP
+    if alpha is not None:
+        ctrl.solver_params.exch_tie_alpha = alpha
+    kwargs = dict(tFDR=0.2, trex_control=ctrl, seed=5, verbose=False)
+    if selector_class is trexselector.TRexDASelector:
+        da_ctrl = trexselector.TRexDAControlParameter()
+        da_ctrl.method = trexselector.DAMethod.BT
+        kwargs["da_control"] = da_ctrl
+    selector = selector_class(X, y, **kwargs)
+    selector.select()
+    # The occurrences of the selector: for BT they belong to the reference threshold
+    return np.asarray(selector.selected_indices).copy(), np.asarray(selector.phi_mat).copy()
+
+
+def _differ(a, b):
+    """Two runs differ when the T-loops ended at different steps or an occurrence differs."""
+    return a[1].shape != b[1].shape or bool(np.any(a[1] != b[1]))
+
+
+def test_band_left_to_the_selector_runs_with_the_da_width():
+    """T-Rex+DA runs a greedy solver with a band of 0.25 by default, and 0 switches it off."""
+    assert trexselector.TRexControlParameter().solver_params.exch_tie_alpha == -1.0
+    by_default = _band_run(trexselector.TRexDASelector)
+    with_width = _band_run(trexselector.TRexDASelector, 0.25)
+    without = _band_run(trexselector.TRexDASelector, 0.0)
+    assert np.array_equal(by_default[0], with_width[0])
+    assert not _differ(by_default, with_width)
+    assert _differ(by_default, without)
+
+
+def test_band_left_to_the_selector_is_off_for_the_plain_selector():
+    """The plain selector runs without the band unless the control sets it."""
+    by_default = _band_run(trexselector.TRexSelector)
+    without = _band_run(trexselector.TRexSelector, 0.0)
+    with_width = _band_run(trexselector.TRexSelector, 0.25)
+    assert np.array_equal(by_default[0], without[0])
+    assert not _differ(by_default, without)
+    assert _differ(by_default, with_width)

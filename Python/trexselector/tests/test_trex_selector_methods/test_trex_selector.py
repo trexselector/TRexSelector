@@ -374,7 +374,7 @@ class TestSolverHyperparameters:
     def test_exchangeable_tie_fields(self):
         hp = SolverHyperparameters()
         # Defaults: off, floor 0.5.
-        assert hp.exch_tie_alpha == pytest.approx(0.0)
+        assert hp.exch_tie_alpha == pytest.approx(-1.0)  # left to the selector
         assert hp.exch_tie_floor == pytest.approx(0.5)
         hp.exch_tie_alpha = 0.25
         hp.exch_tie_floor = 0.7

@@ -141,11 +141,18 @@ method applied.
 ## Greedy solvers under T-Rex+DA
 
 The deflation relies on the spread of occurrences within a group of dependent variables. A greedy
-solver (the orthogonal matching pursuit family, T-AFS) picks the top candidate of a tie
-deterministically and removes that spread. `exch_tie_alpha` of the solver hyperparameters,
-`solver_params` of TRexControlParameter, restores it, since statistically indistinguishable top
-candidates within a correlated cluster are then picked uniformly at random per step. The recommended
-value for greedy solvers under T-Rex+DA is 0.25. The path solvers ignore the option.
+solver (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS) picks the top candidate of a tie
+deterministically and removes that spread. The exchangeable-tie band restores it, since statistically
+indistinguishable top candidates within a correlated cluster are then picked uniformly at random per
+step. T-Rex+DA therefore runs a greedy solver with a band of 0.25 unless the control sets it.
+`exch_tie_alpha` of the solver hyperparameters, `solver_params` of TRexControlParameter, takes another
+width, and 0 switches the band off. The path solvers ignore the option.
+
+Without the band the greedy solvers can exceed the target FDR at a high correlation. In a Monte Carlo
+study on AR(1) designs with a correlation of 0.9 (1,000 runs per setting, target FDR 0.2) each of the
+seven greedy solvers had an FDR of 0.21 to 0.27 without the band and of 0.13 to 0.17 with it, at a
+true positive rate lower by 0.07 to 0.13. At correlations up to 0.8 the target held without the band
+as well, and the band cost 0.03 to 0.05 of the true positive rate there.
 
 \snippet{trimleft} trex_da.cpp greedy
 \output{trex_da.greedy.txt}
