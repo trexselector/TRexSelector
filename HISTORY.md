@@ -16,6 +16,22 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### NEWS.md of 2.0.2 read as a whole: one wrong entry and the missing corrections
+
+- One entry was wrong against the published sources. It said that the default solver name of 2.0.1 gave
+  TIKNET in the Tikhonov selector and that the selections do not change. 2.0.1 ran TCDTIKNET by default
+  (a4491de changed that), so the results of every run without a named solver change. The entry says so
+  now, with the numbers of a4491de.
+- The corrections of 2026-11-10 to 2026-11-12 had no line, because their commits describe them in
+  HISTORY alone. Added in the user's view: the seed per phenotype of the biobank screening (8d2189f),
+  the FDR estimate of 1 at an empty selection and the checked bootstrap parameters (416cf1c), the error
+  on an unconverged coordinate-descent solve and the design given back after an error (555b300), the
+  AR1 window for a negative coefficient (a077253), the warning for a coefficient outside [-1, 1] and
+  the three new parameters of `trex_screen_control()` (79c4101), the read-only memory-mapped design
+  with `D` and `Y` as memory-mapped files (9ab85fd), the FDR level of a biobank result (3f36bb6), the
+  help example of the dependency-aware selector (45c2dd3) and the shorter compile (c66f5e1).
+- Two blank lines that split the lists of "Changed" and "Fixed" are gone.
+
 #### Three bibliography entries completed and their reference lines rendered anew
 
 The fields were read from the pages of the papers on 2026-11-12 and waited for the staged work of that

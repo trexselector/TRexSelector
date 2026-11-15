@@ -40,12 +40,19 @@
 * `TRexSPCASelector` takes `tFDR` in [0, 1], as the other selectors do and as C++ and Python do. Up to
   2.0.1 it refused 0 and 1. An `M` above `min(n, p)` is refused at construction. Up to 2.0.1 that error
   came in `select()`.
-* `TRexTikhonovSelector` and `trex_tikhonov_lambda2_power_rule()` run the solver `"TIKNET"` alone, as
-  C++ and Python do. Their `control` defaults to `NULL`, which runs the defaults of `trex_control()`
-  with the solver `"TIKNET"`. A control that is passed is taken as it is and has to name the solver,
-  `trex_control(solver = "TIKNET", ...)`. Up to 2.0.1 the default `"TLARS"` of `trex_control()` gave
-  `"TIKNET"` without a word, and every other solver gave a warning and `"TIKNET"`. Both are errors now,
-  so a call that passes `trex_control(K = 10)` needs the solver in it. The selections do not change.
+* `TRexTikhonovSelector` and `trex_tikhonov_lambda2_power_rule()` run on the homotopy solver `"TIKNET"`
+  and on it alone, as C++ and Python do. Up to 2.0.1 the default was the coordinate-descent solver
+  `"TCDTIKNET"`, which stops at its sweep budget before it has converged once `lambda_2` times the
+  penalty matrix is large. The default pilot rule then picked the largest `lambda_2` of its grid from
+  unconverged runs: on the chain Laplacian of the vignette the default run of 2.0.1 selected 33
+  variables with an FDP of 0.70 at a target of 0.1. Results change for every run of 2.0.1 that named
+  no solver.
+* The `control` of `TRexTikhonovSelector` and of `trex_tikhonov_lambda2_power_rule()` defaults to
+  `NULL`, which runs the defaults of `trex_control()` with the solver `"TIKNET"`. A control that is
+  passed is taken as it is and has to name the solver, `trex_control(solver = "TIKNET", ...)`. Up to
+  2.0.1 the default `"TLARS"` of `trex_control()` was replaced by the default solver without a word,
+  and every other solver gave a warning and was replaced. Both are errors now, so a call that passes
+  `trex_control(K = 10)` needs the solver in it.
 * `TRexTikhonovSelector` no longer accepts the coordinate-descent solver `"TCDTIKNET"`, on any of the
   three surfaces. It was not finally developed: once `lambda_2` times K is large it stops at its sweep
   budget before it has converged. A base control that names it is an error. With it goes
@@ -60,7 +67,21 @@
   `trex_control(K = 10)` needs the solver in it, and `gvs_type = "IEN"` needs a base control,
   `trex_control(solver = "TIENET", ...)`, where 2.0.1 ran `"TIENET"` on its own. The selections do not
   change.
-
+* `TRexBiobankScreeningSelector` gives every phenotype a seed of its own. With a seed `s` the first
+  phenotype runs with `s`, the second with `s + 1` and so on, for its screening and for its fallback
+  T-Rex selector. Up to 2.0.1 all phenotypes of a seeded run competed against the same dummies. The
+  results of the first phenotype and of a run with one phenotype do not change, those of the later
+  phenotypes of a seeded run do.
+* `estimated_FDR` of `TRexScreeningSelector` is 1 for an empty selection, as its estimator
+  1 / max(1, R) says. Up to 2.0.1 it was 0. `TRexBiobankScreeningSelector` decides as before with its
+  default acceptance window of 0.05 to 0.15, and only the two screening estimates that it reports for
+  an empty result move from 0 to 1.
+* A coordinate-descent solver that stops at its sweep budget `cd_max_sweeps` before it has converged
+  ends with an error. Up to 2.0.1 it warned once, and the selection was built on the iterate it had.
+  The message names the budget, the violation and the way out, a larger `cd_max_sweeps` or the homotopy
+  solver of the same problem.
+* A `select()` that ends with an error gives the design back at once. Up to 2.0.1 the design stayed
+  standardized until the selector was removed.
 * `tloop_max_stagnant_steps = 0` of `trex_control()` is refused, as in C++ and Python. A value of 0 has
   no meaning of its own, and up to 2.0.1 it acted as 1. Use 1 for the same run.
 * The errors of the data normalizer count rows and columns from 1, as R does. Up to 2.0.1 a constant
@@ -68,6 +89,8 @@
   not finite is named as `X[3, 7]`, and the scaling mode is spelled as the argument,
   `scaling_mode = "NONE"`. This holds for the seven selectors, the two power rules and
   `trex_normalize_design()`.
+* The package compiles in less time. The Rcpp bindings compile as one unit, so the build has 37 objects
+  where 2.0.1 had 48.
 
 ## Fixed
 
@@ -77,6 +100,14 @@
   now, for `TRexSelector`, `TRexDASelector`, `TRexGVSSelector`, `TRexScreeningSelector` and
   `TRexTikhonovSelector`. Construct a new selector to run again. The fields keep the results of the run.
 * A target FDR that is `NaN` is refused. Up to 2.0.1 it was accepted and nothing was selected.
+* The AR1 window of `TRexDASelector` follows the magnitude of `cor_coef`. Up to 2.0.1 a supplied
+  negative coefficient gave the window of all variables. `rho_thr_DA = 1` is refused for
+  `da_method = "AR1"`, where it switched the correction off without a message. Runs with the estimated
+  coefficient do not change.
+* A supplied `cor_coef` outside [-1, 1] gives a warning and is replaced by the estimate. Up to 2.0.1
+  only the value -2 requested the estimate, and a value such as -1.5 was taken as a coefficient.
+* `TRexScreeningSelector` checks `R_boot` and `ci_grid_step` of `trex_screen_control()` at construction.
+  `R_boot` is at least 2, and `ci_grid_step` lies in (0, 1]. Up to 2.0.1 a step of 0 never ended.
 * `TRexTikhonovSelector` checks its control at construction. A penalty matrix that is not finite, not
   symmetric or not positive semi-definite, and a wrong number of folds of a cross-validation rule were
   reported in `select()`, under the name of a solver or a tuner. `lambda_2 = NaN` ended in an internal
@@ -143,7 +174,11 @@
   of `method_used` and says that `use_bootstrap_CI` of the screening control has no effect there,
   because both variants are computed for every phenotype. Its example printed `NULL`, because
   `Gauss_data$y` is a one-column matrix and the selector then returns a list of records. It now passes
-  a vector and prints the selection.
+  a vector and prints the selection. The help also says what `estimated_FDR` of a result is, the
+  estimate of the accepted screening variant or, for a fallback result, the target level of the T-Rex
+  selector, and that `used_fallback_trex` tells the two apart.
+* The help example of `TRexDASelector` runs on an AR(1) design. The example of 2.0.1 ran on independent
+  columns and selected nothing.
 * The vignette "T-Rex Tikhonov: a general penalty matrix" and the help of `trex_tikhonov_control()` say
   which penalty is which. The group-mean matrix reproduces the penalty of the informed elastic net, the
   centering matrix of `penalty_structure = "GROUP_CENTERING"` asks the members of a group to share a
@@ -179,7 +214,6 @@
   standardized columns, not to LARS units. The help of the control says that every other parameter of
   the inner T-Rex+GVS runs stays at its default. The short form of the method is T-Rex+SPCA. The
   vignette "T-Rex SPCA" gives `adjusted_ev` and `cumulative_ev` with their right units.
-
 * The help of `TRexSelector` says what `T_stop` is, the stopping time at which the T-loop stopped, and
   that the selection is taken from an earlier stopping time. It states the rule of the selection: the
   largest number of selected variables among the stopping times before `T_stop` whose FDP estimate does
@@ -217,6 +251,15 @@
   at the default threshold and gained power at larger thresholds, at the price of more false
   discoveries. With a threshold at or above the correlation of the data no neighbour is left, and the
   variant selects as `"TREX"`.
+* `trex_screen_control()` gains `cor_coef`, `rho_thr_DA` and `n_blocks`, the parameters of the
+  dependency-aware variants, as in C++ and Python. They are checked at construction: `rho_thr_DA` lies
+  in [0, 1], below 1 for `"TREX_DA_AR1"`, and `n_blocks` between 1 and p for `"TREX_DA_BLOCK_EQUI"`.
+* A memory-mapped design opened with `mem_matrix(mode = "readonly")` serves wherever nothing is written
+  into it: every selector under `scaling_mode = "NONE"` and every T-solver with `normalize` and
+  `intercept` off. Up to 2.0.1 such a design was refused everywhere. `TRexSPCASelector` centers the
+  design in every run and refuses it with a message of its own.
+* The dummy matrix `D` of a T-solver and the response matrix `Y` of `TRexBiobankScreeningSelector` can
+  be memory-mapped files, as the design `X` could.
 * `trex_dummy_distribution()` gains `p1` and `p2`, the two probabilities of `"Mammen"`, as in C++ and
   Python. Without them the golden-ratio probabilities apply, as before.
 * `trex_da_control()` gains `bt_selection_mode` and `trex_gvs_control()` gains `group_labels`. Both
