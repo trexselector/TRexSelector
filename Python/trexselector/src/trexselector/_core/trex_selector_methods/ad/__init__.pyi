@@ -80,7 +80,7 @@ class BiobankScreenTRexControl:
     @property
     def trex_screen_ctrl(self) -> ScreenTRexControlParameter:
         """
-        Nested Screen-TRex control shared by both the screening and fallback-T-Rex paths. Set the screening method via trex_screen_ctrl.trex_method and the base algorithm (K, solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its lloop_strategy defaults to STANDARD; accepted values are STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED (validated at construction). Its use_bootstrap_CI has no effect here: the biobank screening computes the ordinary and the bootstrap variant for every phenotype.
+        Nested T-Rex+Screening control shared by both the screening and fallback-T-Rex paths. Set the screening method via trex_screen_ctrl.trex_method and the base algorithm (K, solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its lloop_strategy defaults to STANDARD; accepted values are STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED (validated at construction). Its use_bootstrap_CI has no effect here: the biobank screening computes the ordinary and the bootstrap variant for every phenotype.
         """
     @trex_screen_ctrl.setter
     def trex_screen_ctrl(self, arg0: ScreenTRexControlParameter) -> None:

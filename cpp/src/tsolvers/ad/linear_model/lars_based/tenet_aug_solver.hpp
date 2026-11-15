@@ -67,8 +67,8 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *
  * @details Delegates all LARS logic to an inner TLASSO_Solver running on
  * the augmented (n+p+L)-row system.  The augmentation encodes the ridge
- * penalty in the data itself, yielding the same Gram structure as R's
- * trex_GVS() reference implementation.
+ * penalty in the data itself, yielding the same Gram structure as the
+ * T-Rex+GVS selector of the 1.x versions (trex(method = "trex+GVS")).
  *
  * Public interface: pass X, D, y, lambda2 and call executeStep() /
  * getBetaPathSparse().  In-memory warm-starting is supported via the inner

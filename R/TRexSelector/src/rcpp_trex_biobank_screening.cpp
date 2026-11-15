@@ -24,8 +24,8 @@ BiobankScreenTRexControl parse_biobank_screen_parameter(
     if (biobank_control.containsElementNamed("upper_bound_FDR"))
         params.upper_bound_FDR = biobank_control["upper_bound_FDR"];
 
-    // The Screen-TRex control nests the base T-Rex control (single source of
-    // truth shared by the Screen-TRex path and the plain T-Rex fallback).
+    // The T-Rex+Screening control nests the base T-Rex control (single source of
+    // truth shared by the T-Rex+Screening path and the plain T-Rex fallback).
     params.trex_screen_ctrl = parse_screen_parameter(screen_control);
     params.trex_screen_ctrl.trex_ctrl = parse_control_parameter(trex_control);
     validate_core_solver_type(params.trex_screen_ctrl.trex_ctrl);

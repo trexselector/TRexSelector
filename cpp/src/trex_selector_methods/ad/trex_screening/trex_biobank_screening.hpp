@@ -7,9 +7,9 @@
 /**
  * @file trex_biobank_screening.hpp
  *
- * @brief Genomics biobank screening implementing Algorithm 1 from the Screen-TRex paper.
+ * @brief Genomics biobank screening implementing Algorithm 1 from the screening paper.
  *
- * @details Coordinates Screen-TRex and T-Rex selectors for efficient large-scale
+ * @details Coordinates T-Rex+Screening and T-Rex selectors for efficient large-scale
  *          phenotype screening of genomics biobanks.
  */
 // ===================================================================================
@@ -71,14 +71,14 @@ struct BiobankScreenTRexResult {
      *  phenotype, a fallback result included. */
     double estimated_FDR_screen_bootstrap;
 
-    /** @brief Selected indices from ordinary Screen-TRex
+    /** @brief Selected indices from ordinary T-Rex+Screening
      *
      * @details Stored for every phenotype, also when another method gave the
      *  final selection.
      */
     std::vector<std::size_t> selected_indices_screen_ordinary;
 
-    /** @brief Selected indices from bootstrap Screen-TRex
+    /** @brief Selected indices from bootstrap T-Rex+Screening
      *
      * @details Stored for every phenotype, also when another method gave the
      *  final selection.
@@ -103,7 +103,7 @@ struct BiobankScreenTRexControl {
      * @brief Lower bound α_l for acceptable estimated FDR.
      *
      * @details If estimated FDR < α_l, power might be too low.
-     *          Algorithm 1 uses this to determine whether to accept Screen-TRex result.
+     *          Algorithm 1 uses this to determine whether to accept T-Rex+Screening result.
      */
     double lower_bound_FDR = 0.05;
 
@@ -111,12 +111,12 @@ struct BiobankScreenTRexControl {
      * @brief Upper bound α_u for acceptable estimated FDR.
      *
      * @details If estimated FDR > α_u, false discoveries might be too many.
-     *          Algorithm 1 uses this to determine whether to accept Screen-TRex result.
+     *          Algorithm 1 uses this to determine whether to accept T-Rex+Screening result.
      */
     double upper_bound_FDR = 0.15;
 
-    /** @brief Control parameters forwarded to the Screen-TRex selector (nests
-     *  its own base trex_ctrl, shared by both the Screen-TRex path and the
+    /** @brief Control parameters forwarded to the T-Rex+Screening selector (nests
+     *  its own base trex_ctrl, shared by both the T-Rex+Screening path and the
      *  fallback plain T-Rex path — single source of truth for the base
      *  algorithmic control). Its use_bootstrap_CI has no effect here: the
      *  biobank screening computes the ordinary and the bootstrap variant for
@@ -179,7 +179,7 @@ protected:
     /** @brief Pointer to phenotype matrix for multiple phenotype mode (n x q) */
     Eigen::Map<Eigen::MatrixXd>* Y_;
 
-    /** @brief Control parameters for Biobank Screen-TRex */
+    /** @brief Control parameters for the biobank screening */
     BiobankScreenTRexControl bio_ctrl_;
 
     /** @brief Random seed for reproducibility. Phenotype i runs with
@@ -200,7 +200,7 @@ public:
      *
      * @param X Design matrix (n x p)
      * @param y Phenotype vector (n x 1)
-     * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
+     * @param bio_ctrl Control parameters for the biobank screening (moved)
      * @param seed Random seed. A negative value (default: -1) gives a run that is
      *             not reproducible.
      * @param verbose If true, print progress messages (default: false)
@@ -221,7 +221,7 @@ public:
      * @param Y Phenotype matrix (n x q). Only read, one column at a time, so
      *          its memory may be read-only, for example a memory-mapped file
      *          opened ReadOnly (MemoryMappedMatrix::getReaderMap()).
-     * @param bio_ctrl Control parameters for Biobank Screen-TRex (moved)
+     * @param bio_ctrl Control parameters for the biobank screening (moved)
      * @param seed Random seed. A negative value (default: -1) gives a run that is
      *             not reproducible.
      *             Phenotype i (0-based) runs with seed + i, so the phenotypes
@@ -264,13 +264,13 @@ public:
     // ======================================================================
 
     /**
-     * @brief Screen a single phenotype using Biobank Screen-TRex (Algorithm 1).
+     * @brief Screen a single phenotype using the biobank screening (Algorithm 1).
      *
      * @details Procedure:
-     *          1. Run bootstrap-CI Screen-TRex: get α̂_C and A_G^(C)(γ, 1)
-     *          2. Run ordinary Screen-TRex: get α̂ and A_p(0.5, 1)
+     *          1. Run bootstrap-CI T-Rex+Screening: get α̂_C and A_G^(C)(γ, 1)
+     *          2. Run ordinary T-Rex+Screening: get α̂ and A_p(0.5, 1)
      *          3. Apply Algorithm 1 decision logic
-     *          4. Return selected set (Screen-TRex) or run fallback T-REx
+     *          4. Return selected set (T-Rex+Screening) or run fallback T-REx
      *
      * @return Screening result with selected variables and metadata.
      *
@@ -281,7 +281,7 @@ public:
 
 
     /**
-     * @brief Screen all phenotypes in matrix Y using Biobank Screen-TRex (Algorithm 1).
+     * @brief Screen all phenotypes in matrix Y using the biobank screening (Algorithm 1).
      *
      * @return Screening results for all phenotypes with selected variables and metadata.
      *
@@ -301,10 +301,10 @@ public:
         /** @brief Total number of phenotypes. */
         std::size_t num_phenotypes;
 
-        /** @brief Number using ordinary Screen-TRex result. */
+        /** @brief Number using ordinary T-Rex+Screening result. */
         std::size_t num_used_screen_ordinary = 0;
 
-        /** @brief Number using bootstrap-CI Screen-TRex result. */
+        /** @brief Number using bootstrap-CI T-Rex+Screening result. */
         std::size_t num_used_screen_bootstrap = 0;
 
         /** @brief Number of phenotypes using fallback T-REx result. */
@@ -376,12 +376,12 @@ protected:
      * @brief Apply Algorithm 1's decision logic (Step 2.2).
      *
      * @details Choses between:
-     *      - Bootstrap-CI Screen-TRex result A_G^(C)(γ, 1) with estimate α̂_C
-     *      - Ordinary Screen-TRex result A_p(0.5, 1) with estimate α̂
+     *      - Bootstrap-CI T-Rex+Screening result A_G^(C)(γ, 1) with estimate α̂_C
+     *      - Ordinary T-Rex+Screening result A_p(0.5, 1) with estimate α̂
      *      - Fallback T-REx selector result
      *
-     * @param sctrex_result_bootstrap Result from bootstrap-CI Screen-TRex.
-     * @param sctrex_result_ordinary Result from ordinary Screen-TRex.
+     * @param sctrex_result_bootstrap Result from bootstrap-CI T-Rex+Screening.
+     * @param sctrex_result_ordinary Result from ordinary T-Rex+Screening.
      * @param y Phenotype vector.
      * @param phenotype_index Index of the phenotype being screened.
      *

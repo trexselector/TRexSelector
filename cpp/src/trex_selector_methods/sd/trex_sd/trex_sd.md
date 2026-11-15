@@ -526,7 +526,7 @@ The method is not finished. Ordered by expected value:
    TRexSD `SDAlgo` dispatch, Sections 3, 6, 8; General + OMP is the new
    recommended default). Remaining: a logistic AFS analogue
    (`vd_afs_logistic` counterpart), integration with screening
-   (Screen-TRex) for the very-large-$p$ regime, and GVS-style grouping.
+   (T-Rex+Screening) for the very-large-$p$ regime, and GVS-style grouping.
    Open greedy-specific question: an AFS $\rho$ sweep (only
    $\rho \in \{0.3, 1\}$ is characterized; the $\rho \to 0$ limit should
    interpolate back to LARS behavior).

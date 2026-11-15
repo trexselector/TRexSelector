@@ -16,6 +16,24 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### The old method names leave the comments, the help texts and the progress messages
+
+Fabian, 2026-11-14: the short forms are T-Rex+DA, T-Rex+GVS and T-Rex+Screening, and the names
+"DA-TRex / GVS-TRex / Screen-TRex" change with the step of the core selector.
+
+- 79 lines of the screening sources, the experiment runner, the R glue of the screening and the Python
+  bindings. "Screen-TRex" is T-Rex+Screening, "Biobank Screen-TRex" is the biobank screening, and the
+  progress messages of the two screening selectors follow. The strings of `method_used` ("Screen-TRex
+  (ordinary)", "Screen-TRex (bootstrap-CI)") stay: they are results and belong to the naming pass.
+- "the R reference" is "the 1.x versions" in trex_screening.cpp, trex_sd.hpp and the two augmented
+  elastic-net solvers. The tests and HISTORY keep the old words.
+- The help of `TENETAug_Solver` (R) and the header of the C++ solver named a function `trex_GVS()` of
+  the old package. The 1.x versions have no such function. Both name the T-Rex+GVS selector of the 1.x
+  versions and give the call, `trex(method = "trex+GVS")` (Fabian: the name is T-Rex+GVS, the lower-case
+  string is the value of the argument).
+- Comments, help texts and progress messages only. RcppExports.R, the help page, the vendored copy and
+  the stub follow.
+
 #### The core selector: the help on the three surfaces, the dummy distributions, the positions of R
 
 Step 3 of the documentation comparison for `TRexSelector`, its control and its result, the last of the

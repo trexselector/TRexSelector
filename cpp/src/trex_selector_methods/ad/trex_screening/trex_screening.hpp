@@ -32,7 +32,7 @@ namespace tc = trex::trex_selector_methods::ad::trex_core;
 namespace er = trex::trex_selector_methods::ad::utils::experiment_runner;
 
 // ===================================================================================
-// Enums & Control Structures for Screen-TRex
+// Enums & Control Structures for T-Rex+Screening
 // ===================================================================================
 
 /**
@@ -65,7 +65,7 @@ enum class ScreenTRexMethod {
 };
 
 
-/** @brief Configuration for Screen-TRex specific parameters. */
+/** @brief Configuration for T-Rex+Screening specific parameters. */
 struct ScreenTRexControlParameter {
     /** @brief Whether the confidence-based screening (bootstrap) makes the
      *  selection (default: false). The FDR estimate stays one over the number
@@ -107,7 +107,7 @@ struct ScreenTRexControlParameter {
     std::size_t n_blocks = 5;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
-     *  Screen-TRex accepts `lloop_strategy` in {STANDARD, SEEDED,
+     *  T-Rex+Screening accepts `lloop_strategy` in {STANDARD, SEEDED,
      *  PERMUTATION, PERMUTATION_SEEDED} (validated by
      *  `validateScreenTRexStrategy()`; HCONCAT / SKIPL describe L-loop
      *  growth, which screening does not have). The base class's own
@@ -120,10 +120,10 @@ struct ScreenTRexControlParameter {
 };
 
 
-/** @brief Result structure for Screen-TRex, extending SelectionResult.
+/** @brief Result structure for T-Rex+Screening, extending SelectionResult.
  *
  * @details
- *  Adds Screen-TRex specific diagnostics on top of the standard result.
+ *  Adds T-Rex+Screening specific diagnostics on top of the standard result.
  */
 struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
     /** @brief Estimated FDR = 1 / max(1, R) with R selected variables, so
@@ -190,8 +190,8 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
  *  when TRexControlParameter::use_memory_mapping is set.
  *
  *  Variants:
- *  1. Ordinary Screen-TRex: selects variables where Phi > 0.5.
- *  2. Confidence-Based Screen-TRex: bootstrap CI on dummy betas.
+ *  1. Ordinary T-Rex+Screening: selects variables where Phi > 0.5.
+ *  2. Confidence-Based T-Rex+Screening: bootstrap CI on dummy betas.
  *  3. DA-AR1: adjusts Phi using a local AR(1) neighborhood window.
  *  4. DA-EQUI: adjusts Phi using a global equi-correlation comparison.
  *  5. DA-BLOCK-EQUI: the same comparison inside contiguous blocks.
@@ -211,10 +211,10 @@ class ScreenTRexSelector : public tc::TRexSelector {
 
 protected:
     // ==========================================================================
-    // Screen-TRex Data Members
+    // T-Rex+Screening Data Members
     // ==========================================================================
 
-    /** @brief Screen-TRex control parameters (nests the base trex_ctrl). */
+    /** @brief T-Rex+Screening control parameters (nests the base trex_ctrl). */
     ScreenTRexControlParameter trex_screen_ctrl_;
 
     /** @brief Sum of betas for original features across K experiments (p × 1). */
@@ -223,7 +223,7 @@ protected:
     /** @brief Non-zero dummy betas collected across K experiments. */
     std::vector<double> collected_dummy_betas_;
 
-    /** @brief Full Screen-TRex result from the last select() call. */
+    /** @brief Full T-Rex+Screening result from the last select() call. */
     ScreenTRexSelectionResult screen_result_;
 
 public:
@@ -236,7 +236,7 @@ public:
      *
      * @param X             Feature matrix (n × p) — Eigen::Map, not copied.
      * @param y             Response vector (n × 1) — Eigen::Map, copied internally.
-     * @param trex_screen_ctrl Screen-TRex specific parameters, nesting the base
+     * @param trex_screen_ctrl T-Rex+Screening specific parameters, nesting the base
      *                      algorithmic control (solver, dummy strategy, memmap)
      *                      as `trex_screen_ctrl.trex_ctrl`. Accepted
      *                      lloop_strategy: STANDARD, SEEDED, PERMUTATION,
@@ -276,14 +276,14 @@ public:
     // ==========================================================================
 
     /**
-     * @brief Run Screen-TRex selection (T=1, L=p).
+     * @brief Run T-Rex+Screening selection (T=1, L=p).
      *
      * @details Overrides the base class select().  Bypasses the T-loop and L-loop
      *          to run exactly one fixed-budget experiment set, then selects variables
      *          via ordinary thresholding or bootstrap CI on dummy betas.
      *
      * @return SelectionResult (sliced to base type). Use getScreenResult() for
-     *         full Screen-TRex diagnostics.
+     *         full T-Rex+Screening diagnostics.
      */
     virtual SelectionResult select() override;
 
@@ -292,7 +292,7 @@ public:
     // ==========================================================================
 
     /**
-     * @brief Retrieve the full Screen-TRex result from the last select() call.
+     * @brief Retrieve the full T-Rex+Screening result from the last select() call.
      *
      * @return Const reference to ScreenTRexSelectionResult.
      */
@@ -300,10 +300,10 @@ public:
 
 
     /**
-     * @brief Apply bootstrap screening to an existing ordinary Screen-TRex result.
+     * @brief Apply bootstrap screening to an existing ordinary T-Rex+Screening result.
      *
      * @details Reuses Phi, beta_mat, and dummy_betas from a prior ordinary
-     *          select() call to derive the confidence-based Screen-TRex result
+     *          select() call to derive the confidence-based T-Rex+Screening result
      *          without re-running the K experiments.  This is used by the biobank
      *          orchestrator (Algorithm 1) to obtain both α̂ and α̂_C from a single
      *          set of K experiments.
@@ -320,7 +320,7 @@ public:
 
 protected:
     // =========================================================================
-    // Core Screen-TRex Operations
+    // Core T-Rex+Screening Operations
     // =========================================================================
 
     /**
@@ -335,7 +335,7 @@ protected:
 
 
     /**
-     * @brief Ordinary Screen-TRex: select variables where Phi > 0.5.
+     * @brief Ordinary T-Rex+Screening: select variables where Phi > 0.5.
      *
      * @param Phi        Relative occurrences (p × 1).
      * @param result_out Result object to populate.
@@ -347,10 +347,10 @@ protected:
 
 
     /**
-     * @brief Confidence-Based Screen-TRex: bootstrap CI on dummy betas.
+     * @brief Confidence-Based T-Rex+Screening: bootstrap CI on dummy betas.
      *
      * @details Grid-searches gamma ∈ [0, 1) for the smallest confidence level
-     *          such that the number of selections ≤ ordinary Screen-TRex count.
+     *          such that the number of selections ≤ ordinary T-Rex+Screening count.
      *
      * @param Phi        Relative occurrences (p × 1).
      * @param beta_means Averaged beta coefficients (p × 1).

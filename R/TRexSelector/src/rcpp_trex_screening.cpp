@@ -1,5 +1,5 @@
 // =============================================================================
-// rcpp_trex_screening.cpp - Rcpp bindings for Screen-TRexSelector
+// rcpp_trex_screening.cpp - Rcpp bindings for ScreenTRexSelector
 // =============================================================================
 
 // [[Rcpp::depends(RcppEigen)]]
@@ -17,7 +17,7 @@ extern void validate_core_solver_type(const TRexControlParameter& params);
  * @brief Parses an R list into a ScreenTRexControlParameter C++ struct.
  *
  * Configures bootstrap iterations, confidence thresholds, the base T-Rex
- * methodology mapped to the Screen-TRex variant and the parameters of the
+ * methodology mapped to the T-Rex+Screening variant and the parameters of the
  * dependency-aware variants.
  *
  * @param control List of parameters passed from R.
@@ -80,11 +80,11 @@ ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control) {
 
 //' @title Create RTRexScreeningSelector
 //'
-//' @details Instantiates a Screen-TRex selector object.
+//' @details Instantiates a T-Rex+Screening selector object.
 //'
 //' @param X Design matrix (n x p).
 //' @param y Response vector (n).
-//' @param screen_control_list List of Screen-TRex specific control parameters.
+//' @param screen_control_list List of T-Rex+Screening specific control parameters.
 //' @param trex_control_list List of general T-Rex control parameters.
 //' @param seed Random seed for reproducibility.
 //' @param verbose Whether to print progress messages.
@@ -118,11 +118,11 @@ XPtr<RTRexScreeningSelector> trex_screening_create(
 
 //' @title Create RTRexScreeningSelector from mmap
 //'
-//' @details Instantiates a Screen-TRex selector object using a memory-mapped design matrix
+//' @details Instantiates a T-Rex+Screening selector object using a memory-mapped design matrix
 //'
 //' @param X_ptr Pointer to MemoryMappedMatrix for the design matrix.
 //' @param y Response vector (n).
-//' @param screen_control_list List of Screen-TRex specific control parameters.
+//' @param screen_control_list List of T-Rex+Screening specific control parameters.
 //' @param trex_control_list List of general T-Rex control parameters.
 //' @param seed Random seed for reproducibility.
 //' @param verbose Whether to print progress messages.
@@ -152,7 +152,7 @@ XPtr<RTRexScreeningSelector> trex_screening_mmap_create(
 
 //' @title Run RTRexScreeningSelector
 //'
-//' @details Executes the selection procedure of the Screen-TRex selector.
+//' @details Executes the selection procedure of the T-Rex+Screening selector.
 //'
 //' @param r_ptr Pointer to the RTRexScreeningSelector instance
 //'
@@ -209,7 +209,7 @@ Eigen::MatrixXd trex_screening_get_dummy_betas(XPtr<RTRexScreeningSelector> r_pt
 
 //' @title Get Selected Indices
 //'
-//' @details Retrieves the indices of the selected variables from the Screen-TRex selector.
+//' @details Retrieves the indices of the selected variables from the T-Rex+Screening selector.
 //'
 //' @param r_ptr Pointer to the RTRexScreeningSelector instance.
 //'

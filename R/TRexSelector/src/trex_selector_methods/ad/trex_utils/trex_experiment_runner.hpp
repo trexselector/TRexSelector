@@ -177,7 +177,7 @@ struct ExperimentRunnerConfig {
     bool verbose = false;
     double eps = std::numeric_limits<double>::epsilon();
 
-    // --- Screen-TRex beta collection ---
+    // --- T-Rex+Screening beta collection ---
     /** @brief If true, also accumulate per-experiment beta sums and non-zero dummy betas.
      *  Used by ScreenTRexSelector for bootstrap and mean-coefficient computation.
      *  Only meaningful when T_stop == 1. */
@@ -849,7 +849,7 @@ private:
      *          least T dummies are active and record which original
      *          predictors (j < p) have nonzero coefficients at that step.
      *          When cfg.collect_screen_betas is set, the last step's
-     *          coefficients are captured as well (Screen-TRex).
+     *          coefficients are captured as well (T-Rex+Screening).
      *
      * @param bp Sparse beta path from the solver (consumed by value).
      * @param cfg Runner configuration (for p, T_stop, eps).
@@ -912,7 +912,7 @@ private:
             }
         }
 
-        // --- Optional Screen-TRex beta collection (last path step) ---
+        // --- Optional T-Rex+Screening beta collection (last path step) ---
         if (cfg.collect_screen_betas) {
             const auto& last = bp.steps.back();
             for (std::size_t e = 0; e < last.idx.size(); ++e) {
@@ -980,7 +980,7 @@ private:
         results.phi_T_mat = std::move(phi_T_mat);
         results.Phi = results.phi_T_mat.col(static_cast<Eigen::Index>(T_stop - 1));
 
-        // --- Optional Screen-TRex beta collection ---
+        // --- Optional T-Rex+Screening beta collection ---
         if (cfg.collect_screen_betas) {
             Eigen::VectorXd b_sums =
                 Eigen::VectorXd::Zero(static_cast<Eigen::Index>(p));

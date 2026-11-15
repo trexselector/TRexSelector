@@ -9,25 +9,25 @@ from ..._core.trex_selector_methods.ad import (
     TRexControlParameter,
     SelectionResult,
     TRexSelector,
-    # DA-TRex
+    # T-Rex+DA
     DAMethod,
     BTSelectionMode,
     TRexDAControlParameter,
     DASelectionResult,
     TRexDASelector,
-    # GVS-TRex
+    # T-Rex+GVS
     GVSType,
     ENSolverType,
     LambdaSelectionMethod,
     TRexGVSControlParameter,
     GVSSelectionResult,
     TRexGVSSelector,
-    # Screen-TRex
+    # T-Rex+Screening
     ScreenTRexMethod,
     ScreenTRexControlParameter,
     ScreenTRexSelectionResult,
     TRexScreeningSelector,
-    # Biobank Screen-TRex
+    # Biobank screening
     BiobankScreenTRexControl,
     BiobankScreenTRexResult,
     TRexBiobankScreeningSelector,

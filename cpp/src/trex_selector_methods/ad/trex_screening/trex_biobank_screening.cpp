@@ -4,7 +4,7 @@
 /**
  * @file trex_biobank_screening.cpp
  *
- * @brief Biobank Screen-TRex implementation (Algorithm 1).
+ * @brief Biobank screening implementation (Algorithm 1).
  */
 // ===================================================================================
 
@@ -46,7 +46,7 @@ BiobankScreenTRex::BiobankScreenTRex(
 {
     validateBiobankStrategy();
     printProgressMessage(
-        "Biobank Screen-TRex: Single phenotype mode"
+        "Biobank screening: Single phenotype mode"
     );
 }
 
@@ -66,7 +66,7 @@ BiobankScreenTRex::BiobankScreenTRex(
 {
     validateBiobankStrategy();
     printProgressMessage(
-        "Biobank Screen-TRex: Multiple phenotype mode"
+        "Biobank screening: Multiple phenotype mode"
     );
 }
 
@@ -127,7 +127,7 @@ std::vector<BiobankScreenTRexResult> BiobankScreenTRex::screenPhenotypes() {
     results.reserve(num_phenotypes);
 
     if (verbose_) {
-        TREX_INFO( "=== Biobank Screen-TRex (Algorithm 1) ===" );
+        TREX_INFO( "=== Biobank screening (Algorithm 1) ===" );
         TREX_INFO( "Phenotypes: " << num_phenotypes );
         TREX_INFO( "FDR range: [" << bio_ctrl_.lower_bound_FDR
                   << ", " << bio_ctrl_.upper_bound_FDR << "]" );
@@ -190,16 +190,16 @@ BiobankScreenTRexResult BiobankScreenTRex::screenSinglePhenotype(
     );
 
     // =========================================================
-    // 2.1: Run Screen-TRex ONCE (ordinary mode) and derive
+    // 2.1: Run T-Rex+Screening ONCE (ordinary mode) and derive
     //      both α̂ (ordinary) and α̂_C (bootstrap) from the
     //      same K experiments (Algorithm 1, Step 2.1).
     // =========================================================
 
     if (verbose_) {
-        printProgressMessage("  Running Screen-TRex (K experiments)...");
+        printProgressMessage("  Running T-Rex+Screening (K experiments)...");
     }
 
-    // Run ordinary Screen-TRex (collects Phi, beta_mat, dummy_betas)
+    // Run ordinary T-Rex+Screening (collects Phi, beta_mat, dummy_betas)
     bio_ctrl_.trex_screen_ctrl.use_bootstrap_CI = false;
 
     ts::ScreenTRexSelector sctrex(
@@ -322,7 +322,7 @@ BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
 
 
     // ---------------------------------------------------
-    // Case 1: Bootstrap-CI Screen-TRex
+    // Case 1: Bootstrap-CI T-Rex+Screening
     // Condition: α_l ≤ α̂_C ≤ α_u AND
     //            max{α̂_C, α̂·I(α̂ ≤ α_u)} = α̂_C
     // ---------------------------------------------------
@@ -341,7 +341,7 @@ BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
     }
 
     // ---------------------------------------------------
-    // Case 2: Ordinary Screen-TRex
+    // Case 2: Ordinary T-Rex+Screening
     // Condition: α_l ≤ α̂ ≤ α_u AND
     //            max{α̂_C·I(α̂_C ≤ α_u), α̂} = α̂
     // ---------------------------------------------------
@@ -364,7 +364,7 @@ BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
     // Case 3: Neither condition met -> Fallback to T-Rex
     // ---------------------------------------------------
     if (verbose_) {
-        TREX_INFO( "  [Info] Screen-TRex estimates (Ord: " << alpha_hat
+        TREX_INFO( "  [Info] T-Rex+Screening estimates (Ord: " << alpha_hat
                   << ", Boot: " << alpha_hat_C << ") outside bounds ["
                   << alpha_l << ", " << alpha_u << "]. Running Fallback T-Rex..." );
     }

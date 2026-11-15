@@ -214,7 +214,7 @@ TENETAug_Solver::TENETAug_Solver(
         // whereas inner re-normalisation (normalize=true) makes the path diverge
         // from the reference. The augmented columns must be fed to the LASSO
         // as constructed; the caller is responsible for any external scaling of
-        // X/D (and centering of y), exactly as in the R reference.
+        // X/D (and centering of y), exactly as in the 1.x versions.
         inner_normalize = false;
         inner_intercept = false;
         // The appended ridge rows are not centered: the augmented design

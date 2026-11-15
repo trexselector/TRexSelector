@@ -29,7 +29,7 @@ public:
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X);
         this->y_map_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y);
 
-        // The Screen-TRex control nests the base T-Rex control; merge the
+        // The T-Rex+Screening control nests the base T-Rex control; merge the
         // separately-supplied trex_control into that nested field.
         ScreenTRexControlParameter screen_ctrl = screen_control;
         screen_ctrl.trex_ctrl = trex_control;

@@ -55,7 +55,7 @@
  *  owned, so memoryBytes() grows with 8 (n + M)(p + L + 1) bytes (M = 0 at
  *  lambda2 = 0).
  *
- *  NOTE (R parity): the R reference (lm_dummy.R, GVS_type == "IEN") instead
+ *  NOTE: the 1.x versions (lm_dummy.R, GVS_type == "IEN") instead
  *  rescales the AUGMENTED system (`X_Dummy <- scale(X_Dummy)`; centered
  *  response over n + M entries). That convention divides data and penalty
  *  rows by sqrt(||x_j||^2 + lambda2/p_m) — a per-column reweighting of

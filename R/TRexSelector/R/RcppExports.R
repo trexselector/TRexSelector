@@ -959,11 +959,11 @@ trex_gvs_get_hc_method_used <- function(r_ptr) {
 
 #' @title Create RTRexScreeningSelector
 #'
-#' @details Instantiates a Screen-TRex selector object.
+#' @details Instantiates a T-Rex+Screening selector object.
 #'
 #' @param X Design matrix (n x p).
 #' @param y Response vector (n).
-#' @param screen_control_list List of Screen-TRex specific control parameters.
+#' @param screen_control_list List of T-Rex+Screening specific control parameters.
 #' @param trex_control_list List of general T-Rex control parameters.
 #' @param seed Random seed for reproducibility.
 #' @param verbose Whether to print progress messages.
@@ -978,11 +978,11 @@ trex_screening_create <- function(X, y, screen_control_list, trex_control_list, 
 
 #' @title Create RTRexScreeningSelector from mmap
 #'
-#' @details Instantiates a Screen-TRex selector object using a memory-mapped design matrix
+#' @details Instantiates a T-Rex+Screening selector object using a memory-mapped design matrix
 #'
 #' @param X_ptr Pointer to MemoryMappedMatrix for the design matrix.
 #' @param y Response vector (n).
-#' @param screen_control_list List of Screen-TRex specific control parameters.
+#' @param screen_control_list List of T-Rex+Screening specific control parameters.
 #' @param trex_control_list List of general T-Rex control parameters.
 #' @param seed Random seed for reproducibility.
 #' @param verbose Whether to print progress messages.
@@ -995,7 +995,7 @@ trex_screening_mmap_create <- function(X_ptr, y, screen_control_list, trex_contr
 
 #' @title Run RTRexScreeningSelector
 #'
-#' @details Executes the selection procedure of the Screen-TRex selector.
+#' @details Executes the selection procedure of the T-Rex+Screening selector.
 #'
 #' @param r_ptr Pointer to the RTRexScreeningSelector instance
 #'
@@ -1043,7 +1043,7 @@ trex_screening_get_dummy_betas <- function(r_ptr) {
 
 #' @title Get Selected Indices
 #'
-#' @details Retrieves the indices of the selected variables from the Screen-TRex selector.
+#' @details Retrieves the indices of the selected variables from the T-Rex+Screening selector.
 #'
 #' @param r_ptr Pointer to the RTRexScreeningSelector instance.
 #'

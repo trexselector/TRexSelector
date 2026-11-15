@@ -205,7 +205,7 @@ inline void bind_trex_screening_biobanks(py::module& m) {
             "range of the FDR estimate of the screening (default 0.15). An estimate above it suggests too many "
             "false discoveries.")
         .def_readwrite("trex_screen_ctrl", &BiobankScreenTRexControl::trex_screen_ctrl,
-                       "Nested Screen-TRex control shared by both the screening and "
+                       "Nested T-Rex+Screening control shared by both the screening and "
                        "fallback-T-Rex paths. Set the screening method via "
                        "trex_screen_ctrl.trex_method and the base algorithm (K, "
                        "solver_type, ...) via trex_screen_ctrl.trex_ctrl. Its "

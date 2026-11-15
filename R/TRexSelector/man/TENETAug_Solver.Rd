@@ -6,8 +6,9 @@
 \description{
 Terminating Elastic Net solver via row augmentation (TENETAug). The ridge
 penalty is encoded in an augmented data system solved by an inner T-LASSO
-(or pure T-LARS) path, matching the R reference implementation of
-\code{trex_GVS()}. Inherits all common methods from \code{\link{TSolver_Base}}.
+(or pure T-LARS) path, as the T-Rex+GVS selector of the 1.x versions does
+(\code{trex(method = "trex+GVS")}). Inherits all common methods from
+\code{\link{TSolver_Base}}.
 }
 \examples{
 set.seed(1)

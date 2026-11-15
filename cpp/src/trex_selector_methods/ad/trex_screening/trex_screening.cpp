@@ -4,7 +4,7 @@
 /**
  * @file trex_screening.cpp
  *
- * @brief Screen-TRex Selector implementation.
+ * @brief T-Rex+Screening Selector implementation.
  */
 // ===================================================================================
 
@@ -67,7 +67,7 @@ ScreenTRexSelector::ScreenTRexSelector(
     int  seed,
     bool verbose
 ) : tc::TRexSelector(X, y,
-                     /*tFDR=*/0.0,  // Screen-TRex does not use FDR calibration
+                     /*tFDR=*/0.0,  // T-Rex+Screening does not use FDR calibration
                      prepareScreenBaseCtrl(trex_screen_ctrl),
                      seed,
                      verbose),
@@ -175,7 +175,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
     beginRun();
     const GiveXBackOnError give_x_back(*this);
 
-    // 1. Enforce Screen-TRex fixed parameters: T = 1, L = p
+    // 1. Enforce T-Rex+Screening fixed parameters: T = 1, L = p
     T_stop_             = 1;
     num_dummies_        = p_;
     dummy_multiplier_LL_ = 1;
@@ -193,7 +193,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
         } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN) {
             variant = "DA-NN";
         }
-        printProgress("Starting Screen-TRex [" + mode + ", " + variant
+        printProgress("Starting T-Rex+Screening [" + mode + ", " + variant
                       + "] (T=1, L=p=" + std::to_string(p_) + ")...");
     }
 
@@ -248,7 +248,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
         Eigen::MatrixXd::Ones(1, 1)
         * static_cast<double>(screen_result_.selected_var.sum());
 
-    // FDP_hat_mat: not calibrated for Screen-TRex (no T-loop / FDR sweep)
+    // FDP_hat_mat: not calibrated for T-Rex+Screening (no T-loop / FDR sweep)
     screen_result_.FDP_hat_mat = Eigen::MatrixXd::Zero(1, 1);
 
     // voting_grid: standard K-grid (for downstream compatibility)
@@ -265,7 +265,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
     storeResults(screen_result_);
 
     if (verbose_) {
-        printProgress("Screen-TRex: selected "
+        printProgress("T-Rex+Screening: selected "
                       + std::to_string(getNumSelected()) + " variables.");
     }
 
@@ -643,7 +643,7 @@ double ScreenTRexSelector::estimateAR1Correlation() const {
             ρ̂ = Σ(x_t · x_{t-1}) / Σ(x_t²)
         Returns |mean ρ̂|.
 
-        No row-mean centering: matches the R reference which fits
+        No row-mean centering: matches the 1.x versions, which fit
         arima(row, order=c(1,0,0), include.mean=FALSE) on column-
         centered (but not row-centered) data.
     */
