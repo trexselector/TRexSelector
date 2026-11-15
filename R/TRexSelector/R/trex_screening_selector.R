@@ -77,16 +77,16 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_screening_mmap_create(
+        private$ptr <- .r_positions(trex_screening_mmap_create(
           get_ptr(X), y, screen_control, control, seed, verbose
-        )
+        ))
       } else {
         X <- .as_double_matrix(X)
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_screening_create(
+        private$ptr <- .r_positions(trex_screening_create(
           X, y, screen_control, control, seed, verbose
-        )
+        ))
       }
     },
 

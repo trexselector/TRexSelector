@@ -130,11 +130,19 @@ test_that("TRexSelector correctly guards against edge-case hyperparameter inputs
     "opt_threshold"
   )
 
-  # tloop_max_stagnant_steps cannot be negative
+  # tloop_max_stagnant_steps is at least 1
   expect_error(
     TRexSelector$new(X, y, verbose = FALSE, control = trex_control(tloop_max_stagnant_steps = -1)),
     "tloop_max_stagnant_steps"
   )
+  expect_error(trex_control(tloop_max_stagnant_steps = 0), "tloop_max_stagnant_steps must be >= 1. Got: 0",
+               fixed = TRUE)
+  # a hand-built control reaches the check of the core
+  expect_error(
+    TRexSelector$new(X, y, verbose = FALSE, control = list(tloop_max_stagnant_steps = 0)),
+    "tloop_max_stagnant_steps must be >= 1. Got: 0", fixed = TRUE
+  )
+  expect_silent(trex_control(tloop_max_stagnant_steps = 1))
 
   # The thread options are whole numbers of at least 1 (there is no "every core" value)
   expect_error(
@@ -201,6 +209,14 @@ test_that("trex_dummy_distribution rejects unknown type", {
   expect_error(trex_dummy_distribution("GaussianMixture"), "Unknown distribution type")
 })
 
+test_that("trex_dummy_distribution passes the Mammen probabilities on", {
+  d <- trex_dummy_distribution("Mammen", p1 = 0.7, p2 = 0.3)
+  expect_equal(d$type, "Mammen")
+  expect_equal(d$p1, 0.7)
+  expect_equal(d$p2, 0.3)
+  expect_null(trex_dummy_distribution("Mammen")$p1)
+})
+
 test_that("trex_control includes dummy_distribution field", {
   ctrl <- trex_control()
   expect_true("dummy_distribution" %in% names(ctrl))
@@ -231,6 +247,84 @@ test_that("TRexSelector runs with Rademacher dummy distribution", {
   result <- sel$select()
   expect_type(result$selected_var, "logical")
   expect_length(result$selected_var, p)
+})
+
+test_that("the Mammen probabilities reach the dummy draw", {
+  set.seed(3)
+  n <- 60; p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] + X[, 2] + rnorm(n)
+  run <- function(...) {
+    sel <- TRexSelector$new(X + 0, y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                            control = trex_control(
+                              K = 5,
+                              dummy_distribution = trex_dummy_distribution("Mammen", ...)
+                            ))
+    sel$select()
+    sel$phi_mat
+  }
+  golden <- (sqrt(5) + 1) / (2 * sqrt(5))
+  # the defaults of the core are the golden-ratio probabilities
+  expect_identical(run(), run(p1 = golden, p2 = 1 - golden))
+  # other probabilities draw other dummies
+  expect_false(identical(run(), run(p1 = 0.5, p2 = 0.5)))
+})
+
+test_that("the sparse Rademacher dummies run with the default s = 0.1", {
+  set.seed(4)
+  n <- 60; p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  y <- X[, 1] + X[, 2] + rnorm(n)
+  run <- function(...) {
+    sel <- TRexSelector$new(X + 0, y, tFDR = 0.2, seed = 11, verbose = FALSE,
+                            control = trex_control(
+                              K = 5,
+                              dummy_distribution = trex_dummy_distribution("ConstrainedSparseRademacher", ...)
+                            ))
+    sel$select()
+    sel$phi_mat
+  }
+  expect_identical(run(), run(s = 0.1))
+})
+
+# =======================================================================================
+# The errors of the data normalizer count rows and columns from 1 in R.
+# =======================================================================================
+
+test_that("a constant column is named by its R position", {
+  set.seed(5)
+  n <- 40; p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  X[, 5] <- 1
+  y <- rnorm(n)
+  msg <- tryCatch(TRexSelector$new(X + 0, y, verbose = FALSE), error = conditionMessage)
+  expect_match(msg, "column 5 of X is constant", fixed = TRUE)
+  expect_false(grepl("0-based", msg, fixed = TRUE))
+  expect_match(msg, "scaling_mode = \"NONE\"", fixed = TRUE)
+  expect_error(trex_normalize_design(X, y), "column 5 of X is constant", fixed = TRUE)
+  X[, 5] <- 0
+  expect_error(TRexSelector$new(X + 0, y, verbose = FALSE, control = trex_control(scaling_mode = "NONE")),
+               "column 5 of X has L2 norm", fixed = TRUE)
+})
+
+test_that("an entry that is not finite is named by its R position", {
+  set.seed(6)
+  n <- 40; p <- 12
+  X <- matrix(rnorm(n * p), n, p)
+  X[3, 7] <- NA
+  y <- rnorm(n)
+  msg <- tryCatch(TRexSelector$new(X + 0, y, verbose = FALSE), error = conditionMessage)
+  expect_match(msg, "X[3, 7] is not finite", fixed = TRUE)
+  expect_match(msg, "impute column 7 before", fixed = TRUE)
+  expect_false(grepl("0-based", msg, fixed = TRUE))
+  expect_error(TRexDASelector$new(X + 0, y, verbose = FALSE), "X[3, 7] is not finite", fixed = TRUE)
+})
+
+test_that("an error without a position passes unchanged", {
+  set.seed(7)
+  X <- matrix(rnorm(40 * 12), 40, 12)
+  expect_error(TRexSelector$new(X, rnorm(40), tFDR = 2, verbose = FALSE), "Target FDR tFDR must be in [0, 1]",
+               fixed = TRUE)
 })
 
 test_that("TRexSelector runs with StudentT dummy distribution (df=3)", {

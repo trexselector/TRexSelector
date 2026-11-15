@@ -111,7 +111,7 @@ TRexSelector::TRexSelector(
         ctrl.resolveThreadOptions();
         // Resolve the AUTO stagnation default by solver family: greedy
         // solvers need the noise-trap guard; equiangular LARS-path solvers
-        // terminate properly on their own (R reference / paper behavior).
+        // terminate properly on their own (as in the 1.x versions and the paper).
         if (!ctrl.tloop_stagnation_stop.has_value()) {
             ctrl.tloop_stagnation_stop = isGreedySolver(ctrl.solver_type);
         }
@@ -314,6 +314,11 @@ void TRexSelector::validateTRexParameters() const {
             + std::to_string(trex_ctrl_.opt_threshold));
     }
 
+    if (trex_ctrl_.tloop_max_stagnant_steps == 0) {
+        throw std::invalid_argument(
+            "tloop_max_stagnant_steps must be >= 1. Got: 0");
+    }
+
     // Only strictly validate solver params if present
     // (Assuming lambda2, rho_afs, and ncgmp_variant are inside trex_ctrl_.solver_params)
     if (trex_ctrl_.solver_params.lambda2 < 0.0) {
@@ -498,13 +503,13 @@ er::ExperimentRunnerConfig TRexSelector::buildRunnerConfig(
     // PERMUTATION path, so both variants produce bit-identical experiments).
     cfg.permutation_base_id   = permutation_base_seed_;
     // Coefficient-activeness threshold for the beta paths. This must match the
-    // R reference (random_experiments uses eps = .Machine$double.eps), NOT the
+    // 1.x versions (random_experiments uses eps = .Machine$double.eps), NOT the
     // solver convergence tolerance (solver_params.tol, default 1e-6). Using the
     // larger solver tol here delays detection of a freshly-entered dummy whose
     // coefficient is still below 1e-6, shifting the "T-th dummy entered"
     // milestone to a later LARS step where extra original predictors have
     // entered. That systematically inflates phi_T_mat and causes over-selection
-    // (higher FDR) relative to the R reference.
+    // (higher FDR) relative to the 1.x versions.
     cfg.eps                   = std::numeric_limits<double>::epsilon();
 
     return cfg;
@@ -523,7 +528,7 @@ Eigen::VectorXd TRexSelector::createVotingGrid(std::size_t K) const {
     // Machine epsilon on purpose (not eps_ = solver tolerance): the sentinel
     // must stay above the last regular grid point 1 - 1/K for any K, which a
     // large user-supplied solver tol (e.g. 1e-2 with K >= 100) would violate,
-    // making the grid non-monotone. This also matches the R reference
+    // making the grid non-monotone. This also matches the 1.x versions
     // (V = seq(0.5, 1 - .Machine$double.eps, by = 1/K)).
     const double v_end   = 1.0 - std::numeric_limits<double>::epsilon();
 
@@ -658,7 +663,7 @@ Eigen::VectorXd TRexSelector::computePhiPrime(
         }
     }
 
-    // Upper clamp only (Phi' > 1 -> 1): a deviation from the R reference and
+    // Upper clamp only (Phi' > 1 -> 1): a deviation from the 1.x versions and
     // the T-Rex paper that prevents negative false-discovery mass and can only
     // raise FDP_hat (conservative). Phi' < 0 stays, as in the paper: a variable
     // then carries more than one expected false discovery. A lower clamp at 0
@@ -700,9 +705,11 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
         return result;
     }
 
-    // Drop the last T-row (the stopping-criterion boundary step) when T > 1.
-    // Matches R reference: FDP_hat_mat[-T_stop, , drop = FALSE]. A fixed-T
-    // budget (lambda_2 pilot) has no boundary step and keeps every row.
+    // Drop the last T-row when T > 1, as the 1.x versions do
+    // (FDP_hat_mat[-T_stop, , drop = FALSE]). After an exit by the FDP rule it
+    // is the step that broke the rule. After an exit at T_max or by the
+    // stagnation stop it is a feasible step and is dropped all the same, which
+    // mirrors the 1.x versions. A fixed-T budget (lambda_2 pilot) keeps every row.
     if (safe_T > 1 && drop_last_row) { --safe_T; }
 
     Eigen::MatrixXd FDP_use = FDP_hat_mat.topRows(safe_T);

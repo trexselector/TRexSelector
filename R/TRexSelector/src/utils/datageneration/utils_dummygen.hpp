@@ -526,13 +526,14 @@ struct Distribution {
      *          each entry is +1 or -1 with probability s/2 each, and 0 with
      *          probability 1 - s.
      *
-     * @param s Sparsity parameter in (0, 1]. s = 1 recovers the Rademacher distribution.
+     * @param s Sparsity parameter in (0, 1] (default: 0.1). s = 1 recovers the Rademacher
+     *          distribution.
      *
      * @return Distribution instance for Constrained Sparse Rademacher distribution.
      *
      * @throws std::invalid_argument if s is not in (0, 1].
      */
-    static Distribution ConstrainedSparseRademacher(const double s) {
+    static Distribution ConstrainedSparseRademacher(const double s = 0.1) {
         if (s <= 0.0 || s > 1.0) {
             throw std::invalid_argument("Sparsity parameter s must be in (0, 1].");
         }

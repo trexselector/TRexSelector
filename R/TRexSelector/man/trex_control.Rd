@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_control}
 \alias{trex_control}
-\title{TRex Control Parameters}
+\title{T-Rex Control Parameters}
 \usage{
 trex_control(
   solver = "TLARS",
@@ -55,7 +55,7 @@ deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
 accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
 homotopy solvers of the same problems.}
 
-\item{K}{Number of random experiments (default: 20).}
+\item{K}{Number of random experiments (default: 20, at least 2).}
 
 \item{tloop_stagnation_stop}{Whether to stop the T-loop on stagnation. NULL
 (default) leaves the choice to the C++ core, the same rule on every
@@ -64,7 +64,10 @@ TIENET, TIENET_AUG, TIKNET and the CD family TCDLASSO, TCDENET, TCDIENET,
 TCDTIKNET), TRUE for the greedy ones (the OMP family, TSTEPWISE,
 TSTAGEWISE, TAFS, TNCGMP, TOOLS).}
 
-\item{tloop_max_stagnant_steps}{Steps before stagnation trigger (default: 5).}
+\item{tloop_max_stagnant_steps}{Number of T steps in a row without a growing
+selection that ends the T-loop under the stagnation stop (default: 5, at
+least 1). The selection is counted at the highest voting level whose FDP
+estimate does not exceed \code{tFDR}.}
 
 \item{parallel_rnd_experiments}{Run the K random experiments in parallel
 (default: \code{FALSE}, the experiments run in sequence). Inside a
@@ -72,7 +75,8 @@ parallel run every solver runs serially; the lean L-loop strategies
 (\code{"SEEDED"}, \code{"PERMUTATION"}, \code{"PERMUTATION_SEEDED"})
 always run their experiments in sequence. Was \code{use_openmp}.}
 
-\item{use_memory_mapping}{Use out-of-core memory mapping (default: FALSE).}
+\item{use_memory_mapping}{Keep the dummy matrices in memory-mapped files
+instead of in memory (default: FALSE).}
 
 \item{max_outer_threads}{Threads of the parallel K-loop (default: 1; a
 whole number of at least 1), capped at \code{K}. Ignored while
@@ -90,15 +94,22 @@ this many times the number of variables (default: 10).}
 \item{use_max_T_stop}{Whether the T-loop ends at \code{ceiling(n / 2)} at the latest
 (default: TRUE). Without the bound it can run up to the number of dummies.}
 
-\item{opt_threshold}{Optimization threshold (default: 0.75).}
+\item{opt_threshold}{Reference voting level of the L-loop (default: 0.75, in
+\code{[0, 1]}). The L-loop raises L until the FDP estimate at the largest
+voting level that does not exceed \code{opt_threshold} is at or below
+\code{tFDR}.}
 
-\item{lloop_strategy}{L-loop strategy: "SKIPL", "STANDARD", "HCONCAT",
-"PERMUTATION", "PERMUTATION_SEEDED", or "SEEDED" (default: "STANDARD",
-as in C++ and Python).
-The SEEDED variants re-derive dummies from the seed at every step and
-store nothing: "SEEDED" is the storage-free twin of "STANDARD" (fresh
-dummies at every L step, bit-identical to "STANDARD" for the same seed)
-and "PERMUTATION_SEEDED" the storage-free twin of "PERMUTATION".}
+\item{lloop_strategy}{L-loop strategy (default: "STANDARD", as in C++ and
+Python). "STANDARD" draws fresh dummies at every L step, as the 1.x
+versions do. "HCONCAT" keeps the dummies of the earlier steps and appends
+p columns per step, which is faster. The two gave the same FDR in
+simulations and can select differently. "PERMUTATION" stores one base
+dummy matrix and permutes its rows per experiment. "SKIPL" skips the
+L-loop and runs with \code{max_dummy_multiplier} times p dummies at once.
+The seeded variants re-derive the dummies from the seed at every step and
+store nothing: "SEEDED" is the storage-free twin of "STANDARD"
+(bit-identical to "STANDARD" for the same seed) and "PERMUTATION_SEEDED"
+the storage-free twin of "PERMUTATION".}
 
 \item{tol}{Numerical tolerance of the selector (default: 1e-6): the threshold of
 its own comparisons and the tolerance of the solvers in its random experiments.
@@ -117,7 +128,7 @@ statistically indistinguishable top candidates within highly correlated
 clusters are picked uniformly at random per step, restoring the
 within-experiment occurrence spread that the dependency-aware (DA)
 deflation's FDR control relies on. Recommended for greedy solvers under
-trex+DA: 0.25. \code{0} (default) turns the feature off (exact legacy
+T-Rex+DA: 0.25. \code{0} (default) turns the feature off (exact legacy
 behavior; ignored by path solvers).}
 
 \item{exch_tie_floor}{Minimum absolute correlation for exchangeable-tie
@@ -194,21 +205,18 @@ memory-mapped design must be open in \code{"readwrite"} mode; under
 \code{"NONE"} nothing is written and \code{"readonly"} mode suffices.}
 }
 \value{
-A named list suitable for passing to TRex selector constructors.
+A named list for the constructors of the T-Rex selectors.
 }
 \description{
-Build a control list for TRex selector algorithms.
+Build a control list for the T-Rex selectors.
 }
 \note{
-\strong{Seed recommendation for Monte Carlo FDR simulations:} always pass
-\code{seed = -1} (the default) to \code{TRexSelector$new()} or any other
-selector constructor when running repeated trials. A fixed integer seed
-causes every trial to draw K per-experiment dummy seeds as
-\code{mix_seed(fixed, 0)}, \code{mix_seed(fixed, 1)}, \ldots — deterministic but
-structurally correlated across trials — which can inflate the empirical FDR
-in a sweep. With \code{seed = -1} each of the K experiments independently
-draws hardware entropy via \code{std::random_device}, matching the
-behaviour of the standalone C++ demo.
+\strong{Seeds.} The seed is an argument of the selector constructors, for
+example \code{TRexSelector$new()}. A seed of 0 or more makes a run
+deterministic and reproducible: the same seed draws the same dummies. A
+negative seed (the default -1) draws them from the hardware entropy
+source, and the run is not reproducible bit by bit. A Monte Carlo study
+gives every trial a seed of its own, or uses -1.
 }
 \examples{
 trex_control()

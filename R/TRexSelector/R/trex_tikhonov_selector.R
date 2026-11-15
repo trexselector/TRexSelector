@@ -204,16 +204,16 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_tikhonov_mmap_create(
+        private$ptr <- .r_positions(trex_tikhonov_mmap_create(
           get_ptr(X), y, tFDR, tik_control, control, seed, verbose
-        )
+        ))
       } else {
         X <- .as_double_matrix(X)
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_tikhonov_create(
+        private$ptr <- .r_positions(trex_tikhonov_create(
           X, y, tFDR, tik_control, control, seed, verbose
-        )
+        ))
       }
     },
 
@@ -236,7 +236,7 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #' @return The record of the pilot, as the field \code{lambda2_pilot}
     #'   holds it afterwards.
     run_pilot_only = function() {
-      trex_tikhonov_run_pilot_only(private$ptr)
+      .r_positions(trex_tikhonov_run_pilot_only(private$ptr))
     }
   ),
   active = list(
@@ -442,15 +442,15 @@ trex_tikhonov_lambda2_power_rule <- function(X, y,
   .check_tikhonov_groups_length(tik_control, X)
   y <- .as_double_vector(y)
   if (inherits(X, "MemoryMappedMatrix")) {
-    return(trex_tikhonov_lambda2_power_rule_mmap_impl(
+    return(.r_positions(trex_tikhonov_lambda2_power_rule_mmap_impl(
       get_ptr(X), y, tFDR, tik_control, control, as.integer(seed),
       as.numeric(grid), as.numeric(knee_tolerance), verbose
-    ))
+    )))
   }
   X <- .as_double_matrix(X)
-  trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,
+  .r_positions(trex_tikhonov_lambda2_power_rule_impl(X, y, tFDR, tik_control, control,
                                         as.integer(seed), as.numeric(grid),
-                                        as.numeric(knee_tolerance), verbose)
+                                        as.numeric(knee_tolerance), verbose))
 }
 
 

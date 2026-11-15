@@ -73,6 +73,8 @@ TEST(DummyGenTest, DistributionFactories) {
     EXPECT_DOUBLE_EQ(csr.constrained_sparse_rademacher_s, 0.5);
     EXPECT_THROW(Distribution::ConstrainedSparseRademacher(1.5), std::invalid_argument);
     EXPECT_THROW(Distribution::ConstrainedSparseRademacher(-0.1), std::invalid_argument);
+    // the sparsity parameter defaults to 0.1
+    EXPECT_DOUBLE_EQ(Distribution::ConstrainedSparseRademacher().constrained_sparse_rademacher_s, 0.1);
 }
 
 

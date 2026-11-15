@@ -61,6 +61,14 @@
   `trex_control(solver = "TIENET", ...)`, where 2.0.1 ran `"TIENET"` on its own. The selections do not
   change.
 
+* `tloop_max_stagnant_steps = 0` of `trex_control()` is refused, as in C++ and Python. A value of 0 has
+  no meaning of its own, and up to 2.0.1 it acted as 1. Use 1 for the same run.
+* The errors of the data normalizer count rows and columns from 1, as R does. Up to 2.0.1 a constant
+  fifth column was reported as "column 4 (0-based)". The message now says "column 5", an entry that is
+  not finite is named as `X[3, 7]`, and the scaling mode is spelled as the argument,
+  `scaling_mode = "NONE"`. This holds for the seven selectors, the two power rules and
+  `trex_normalize_design()`.
+
 ## Fixed
 
 * A selector runs once. `select()` gives the design back when it ends, and up to 2.0.1 a second
@@ -172,8 +180,28 @@
   the inner T-Rex+GVS runs stays at its default. The short form of the method is T-Rex+SPCA. The
   vignette "T-Rex SPCA" gives `adjusted_ev` and `cumulative_ev` with their right units.
 
+* The help of `TRexSelector` says what `T_stop` is, the stopping time at which the T-loop stopped, and
+  that the selection is taken from an earlier stopping time. It states the rule of the selection: the
+  largest number of selected variables among the stopping times before `T_stop` whose FDP estimate does
+  not exceed the target. `r_mat` therefore has one row less than `fdp_hat_mat` and `phi_mat`. The help
+  of `x_l2_norms` says that the field holds the scale divisors of the scaling mode: the L2 norms under
+  `"L2"`, the sample standard deviations under `"ZSCORE"`, ones under `"NONE"`. The vignette "The T-Rex
+  selector" explains `T_stop` in the same way.
+* The help of `trex_control()` says what `opt_threshold` is (the reference voting level of the L-loop),
+  what each L-loop strategy does, that `use_memory_mapping` concerns the dummy matrices and what
+  `tloop_max_stagnant_steps` counts. Its note on seeds no longer says that a fixed seed raises the FDR
+  of a Monte Carlo study: a seed of 0 or more makes a run reproducible, and a study gives every trial a
+  seed of its own or uses -1.
+* The help of `trex_dummy_distribution()` names the defaults, among them `s = 0.1` of
+  `"ConstrainedSparseRademacher"`, and says that `a` is also the lower bound of `"Triangle"` and `b` its
+  mode.
+* The vignette "The T-Rex selector" describes the stagnation stop as it works (the selection no longer
+  grows) and says that `scaling_mode = "NONE"` rejects all-zero columns only.
+
 ## New
 
+* `trex_dummy_distribution()` gains `p1` and `p2`, the two probabilities of `"Mammen"`, as in C++ and
+  Python. Without them the golden-ratio probabilities apply, as before.
 * `trex_da_control()` gains `bt_selection_mode` and `trex_gvs_control()` gains `group_labels`. Both
   parameters existed in C++ and Python.
 * `tsolver_options()` gains `tikhonov_validated`. With `TRUE` the solvers `TIKNET_Solver` and

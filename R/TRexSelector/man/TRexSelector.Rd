@@ -67,7 +67,11 @@ Other T-Rex selectors and controls:
     \item{\code{v_thresh}}{The chosen voting threshold.}
 
     \item{\code{T_stop}}{Stopping time: the number of included dummies at which
-the T-loop stopped.}
+the T-loop stopped, so the random experiments ran until \code{T_stop}
+dummies were included. For \code{T_stop > 1} it is not the stopping
+time of the selection: the selection is taken from the stopping times
+1 to \code{T_stop - 1}, mostly from \code{T_stop - 1} and sometimes
+from an earlier one (see \code{select()}).}
 
     \item{\code{L}}{Calibrated dummy multiplier L (the selector uses
 L * p dummies).}
@@ -81,17 +85,24 @@ selection searches.}
     \item{\code{phi_mat}}{Relative occurrences of the original variables over
 the K random experiments after each T step (rows).}
 
-    \item{\code{r_mat}}{Number of selected variables per T step (rows) and
-voting level (columns).}
+    \item{\code{r_mat}}{Number of selected variables per stopping time (rows) and
+voting level (columns). It has \code{T_stop - 1} rows, the stopping
+time \code{T_stop} is not part of it, and one row for
+\code{T_stop = 1}.}
 
     \item{\code{phi_prime}}{Calibrated relative occurrences used by the FDP
 estimate (length p), at most 1 and possibly negative.}
 
-    \item{\code{x_means}}{computed means of the predictor variables}
+    \item{\code{x_means}}{Column means of \code{X} that the selector subtracted
+(zeros under \code{scaling_mode = "NONE"}).}
 
-    \item{\code{x_l2_norms}}{computed L2 norms of the scaled predictors}
+    \item{\code{x_l2_norms}}{Scale divisors of the columns of \code{X}: the L2
+norms of the centered columns under \code{scaling_mode = "L2"}, the
+sample standard deviations under \code{"ZSCORE"}, ones under
+\code{"NONE"}.}
 
-    \item{\code{y_mean}}{computed mean of the response sequence}
+    \item{\code{y_mean}}{Mean of \code{y} that the selector subtracted (0 under
+\code{scaling_mode = "NONE"}).}
 
     \item{\code{tFDR}}{The target FDR level.}
 
@@ -146,13 +157,19 @@ solver family is resolved.}
     \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{X}}{Feature matrix in memory, or an \code{mmap_matrix}, the handle
-of a memory-mapped file. Both are bound without a copy. The selector
+of a memory-mapped file. A numeric matrix of type double and a
+memory-mapped file are bound without a copy. Any other matrix or a
+data frame is converted first, which is a copy. The selector
 standardizes a memory-mapped design in place and restores it, which
 needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
 writes nothing and \code{"readonly"} mode suffices.}
-      \item{\code{y}}{Response vector.}
-      \item{\code{tFDR}}{Target FDR level (default: 0.1).}
-      \item{\code{seed}}{Random seed (default: -1).}
+      \item{\code{y}}{Response vector. The selector works on a copy of it.}
+      \item{\code{tFDR}}{Target FDR level in \code{[0, 1]} (default: 0.1).}
+      \item{\code{seed}}{Random seed (default: -1). A seed of 0 or more makes the run
+deterministic and reproducible: the same seed draws the same dummies.
+A negative seed draws them from the hardware entropy source, and the
+run is not reproducible bit by bit. A Monte Carlo study gives every
+trial a seed of its own, or uses -1.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{control}}{A control list from \code{\link{trex_control}()} (default:
 \code{trex_control()}).}
@@ -193,6 +210,17 @@ standardized. Construct a new selector to run again. The fields keep
 the results of the run. A \code{select()} that ends with an error
 gives \code{X} back at once (original scale) and retires the
 selector as well.
+
+The T-loop raises the stopping time until the FDP estimate at the
+highest voting level exceeds \code{tFDR}, or until its bound or the
+stagnation stop ends it, and \code{T_stop} is where it stopped. The
+selection is the cell with the largest number of
+selected variables among the stopping times 1 to \code{T_stop - 1}
+(the stopping time 1 for \code{T_stop = 1}) and the voting levels
+whose FDP estimate does not exceed \code{tFDR}. Among equal counts
+the highest voting level wins, then the latest stopping time. The
+stopping time of the selection is therefore below \code{T_stop},
+mostly by one and sometimes by more.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{TRexSelector$select()}

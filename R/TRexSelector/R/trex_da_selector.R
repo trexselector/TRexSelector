@@ -124,16 +124,16 @@ TRexDASelector <- R6::R6Class("TRexDASelector",
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_da_mmap_create(
+        private$ptr <- .r_positions(trex_da_mmap_create(
           get_ptr(X), y, tFDR, da_control, control, seed, verbose
-        )
+        ))
       } else {
         X <- .as_double_matrix(X)
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_da_create(
+        private$ptr <- .r_positions(trex_da_create(
           X, y, tFDR, da_control, control, seed, verbose
-        )
+        ))
       }
     },
 

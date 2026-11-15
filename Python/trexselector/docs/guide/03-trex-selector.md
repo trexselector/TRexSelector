@@ -95,10 +95,12 @@ sel.selected_indices
 `seed` seeds the dummy draws. With a fixed seed a run is reproducible on one platform. The dummies
 come from the C++ standard library's random engines, whose Normal distribution differs between
 standard library implementations, so a seeded run on macOS, Linux and Windows draws different
-dummies and can select differently in the borderline cases. For a Monte Carlo study over many trials
-pass `seed=-1` (the default): every trial then draws its own dummies from the hardware entropy
-source, while a fixed seed would give every trial the same per-experiment seeds and correlate the
-trials.
+dummies and can select differently in the borderline cases.
+
+A seed of 0 or more makes a run deterministic. A Monte Carlo study over many trials gives every
+trial a seed of its own, which keeps the study reproducible, or passes `seed=-1` (the default). With
+-1 every trial draws its dummies from the hardware entropy source, and the study is not reproducible
+bit by bit.
 
 ### The number of random experiments
 
@@ -112,8 +114,9 @@ sel.voting_grid
 ### Early stopping of the T-loop
 
 The T-loop raises the stopping time $T$ one dummy at a time. `use_max_T_stop = True` (default)
-bounds it by $\lceil n / 2 \rceil$, and `tloop_stagnation_stop` stops the loop when the FDP estimate
-has not improved for `tloop_max_stagnant_steps` steps. The stagnation stop defaults to `None`, which
+bounds it by $\lceil n / 2 \rceil$, and `tloop_stagnation_stop` stops the loop when the selection at
+the highest feasible voting level has not grown for `tloop_max_stagnant_steps` steps in a row. The
+stagnation stop defaults to `None`, which
 resolves to off for the path solvers (T-LARS, T-LASSO, the elastic nets) and to on for the greedy
 solvers.
 
@@ -128,8 +131,16 @@ print("v_thresh:", sel.v_thresh)
 `fdp_hat_mat` is the FDP estimate per stopping time (rows, up to `T_stop`) and voting level
 (columns), `r_mat` the number of selected variables per stopping time and voting level, and
 `phi_mat` the relative occurrence of each variable over the $K$ experiments after each stopping
-time. The selection sits where the estimate is below the target and the count is largest. The rows
-are 0-based, so the row of the last stopping time is `T_stop - 1`.
+time. The rows are 0-based, so the row of the last stopping time is `T_stop - 1`.
+
+`T_stop` is the stopping time at which the T-loop stopped, so the random experiments ran until
+`T_stop` dummies were included. It is not the stopping time of the selection. The loop stops when the
+estimate at the highest voting level exceeds the target, or earlier at its bound or by the stagnation
+stop, and the selection is the cell with the
+largest count among the stopping times before `T_stop` whose estimate does not exceed the target.
+Among equal counts the highest voting level wins, then the latest stopping time. The selection
+therefore sits one stopping time before `T_stop` in most runs and sometimes earlier, and `r_mat` has
+one row less than the other two matrices.
 
 ```{code-cell} python
 fdp = sel.fdp_hat_mat
@@ -154,8 +165,9 @@ ax.legend()
 plt.show()
 ```
 
-Relative occurrences after the last stopping time. The true support stands out, the dashed line is
-the voting level the selection was read at.
+Relative occurrences at `T_stop`, the last stopping time. The true support stands out, and the dashed
+line is the voting level of the selection. The selection itself is taken from an earlier stopping
+time, as described above.
 
 `phi_prime` is the calibrated occurrence that enters the FDP estimate (at most 1, possibly
 negative), `x_means`, `x_l2_norms` and `y_mean` are the centering and scaling constants the selector
@@ -256,8 +268,8 @@ n_sel.select()
 np.array_equal(n_sel.selected_indices, sel.selected_indices)
 ```
 
-Non-finite entries and constant columns are rejected in every mode with a `ValueError` that names
-the column.
+Non-finite entries and constant columns are rejected with a `ValueError` that names the column. Under
+`ScalingMode.NONE` a constant column runs and only an all-zero column is rejected.
 
 ## The design is used in place
 

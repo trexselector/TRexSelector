@@ -17,6 +17,15 @@ def test_instantiation(signal_data, fast_control):
     assert sel is not None
 
 
+def test_a_stagnation_window_of_zero_steps_is_refused(signal_data, fast_control):
+    X, y, _, _ = signal_data
+    fast_control.tloop_max_stagnant_steps = 0
+    with pytest.raises(ValueError, match="tloop_max_stagnant_steps must be >= 1"):
+        trexselector.TRexSelector(X, y, trex_control=fast_control, seed=1, verbose=False)
+    fast_control.tloop_max_stagnant_steps = 1
+    trexselector.TRexSelector(X, y, trex_control=fast_control, seed=1, verbose=False).restore()
+
+
 def test_dimension_mismatch_raises(signal_data, fast_control):
     X, y, n, p = signal_data
     y_bad = np.random.randn(n + 10)
@@ -297,6 +306,8 @@ class TestDummyDistributionFactories:
         d = DummyDistribution.constrained_sparse_rademacher(s=0.5)
         assert d.get_type() == DummyDistribution.Type.ConstrainedSparseRademacher
         assert d.constrained_sparse_rademacher_s == pytest.approx(0.5)
+        # the sparsity parameter defaults to 0.1, as in C++ and R
+        assert DummyDistribution.constrained_sparse_rademacher().constrained_sparse_rademacher_s == pytest.approx(0.1)
 
     def test_logistic(self):
         d = DummyDistribution.logistic(location=0.0, scale=0.55)

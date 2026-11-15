@@ -1,5 +1,5 @@
 # =============================================================================
-# Control parameter constructor functions for TRex selector variants.
+# Control parameter constructor functions for the T-Rex selector variants.
 #
 # These mirror the Cpp struct hierarchy:
 #   trex_control()        -> TRexControlParameter
@@ -11,19 +11,16 @@
 
 #' @name trex_control
 #'
-#' @title TRex Control Parameters
+#' @title T-Rex Control Parameters
 #'
-#' @description Build a control list for TRex selector algorithms.
+#' @description Build a control list for the T-Rex selectors.
 #'
-#' @note **Seed recommendation for Monte Carlo FDR simulations:** always pass
-#'   \code{seed = -1} (the default) to \code{TRexSelector$new()} or any other
-#'   selector constructor when running repeated trials. A fixed integer seed
-#'   causes every trial to draw K per-experiment dummy seeds as
-#'   \code{mix_seed(fixed, 0)}, \code{mix_seed(fixed, 1)}, \ldots — deterministic but
-#'   structurally correlated across trials — which can inflate the empirical FDR
-#'   in a sweep. With \code{seed = -1} each of the K experiments independently
-#'   draws hardware entropy via \code{std::random_device}, matching the
-#'   behaviour of the standalone C++ demo.
+#' @note **Seeds.** The seed is an argument of the selector constructors, for
+#'   example \code{TRexSelector$new()}. A seed of 0 or more makes a run
+#'   deterministic and reproducible: the same seed draws the same dummies. A
+#'   negative seed (the default -1) draws them from the hardware entropy
+#'   source, and the run is not reproducible bit by bit. A Monte Carlo study
+#'   gives every trial a seed of its own, or uses -1.
 #'
 #' @param solver Solver algorithm: "TLARS", "TLASSO", "TENET", "TENET_AUG",
 #'   "TSTAGEWISE", "TSTEPWISE", "TOMP", "TGP", "TACGP", "TMP", "TNCGMP",
@@ -44,20 +41,24 @@
 #'   deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
 #'   accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
 #'   homotopy solvers of the same problems.
-#' @param K Number of random experiments (default: 20).
+#' @param K Number of random experiments (default: 20, at least 2).
 #' @param tloop_stagnation_stop Whether to stop the T-loop on stagnation. NULL
 #'   (default) leaves the choice to the C++ core, the same rule on every
 #'   surface: FALSE for the path solvers (TLARS, TLASSO, TENET, TENET_AUG,
 #'   TIENET, TIENET_AUG, TIKNET and the CD family TCDLASSO, TCDENET, TCDIENET,
 #'   TCDTIKNET), TRUE for the greedy ones (the OMP family, TSTEPWISE,
 #'   TSTAGEWISE, TAFS, TNCGMP, TOOLS).
-#' @param tloop_max_stagnant_steps Steps before stagnation trigger (default: 5).
+#' @param tloop_max_stagnant_steps Number of T steps in a row without a growing
+#'   selection that ends the T-loop under the stagnation stop (default: 5, at
+#'   least 1). The selection is counted at the highest voting level whose FDP
+#'   estimate does not exceed \code{tFDR}.
 #' @param parallel_rnd_experiments Run the K random experiments in parallel
 #'   (default: \code{FALSE}, the experiments run in sequence). Inside a
 #'   parallel run every solver runs serially; the lean L-loop strategies
 #'   (\code{"SEEDED"}, \code{"PERMUTATION"}, \code{"PERMUTATION_SEEDED"})
 #'   always run their experiments in sequence. Was \code{use_openmp}.
-#' @param use_memory_mapping Use out-of-core memory mapping (default: FALSE).
+#' @param use_memory_mapping Keep the dummy matrices in memory-mapped files
+#'   instead of in memory (default: FALSE).
 #' @param max_outer_threads Threads of the parallel K-loop (default: 1; a
 #'   whole number of at least 1), capped at \code{K}. Ignored while
 #'   \code{parallel_rnd_experiments} is \code{FALSE}.
@@ -70,14 +71,21 @@
 #'   this many times the number of variables (default: 10).
 #' @param use_max_T_stop Whether the T-loop ends at \code{ceiling(n / 2)} at the latest
 #'   (default: TRUE). Without the bound it can run up to the number of dummies.
-#' @param opt_threshold Optimization threshold (default: 0.75).
-#' @param lloop_strategy L-loop strategy: "SKIPL", "STANDARD", "HCONCAT",
-#'   "PERMUTATION", "PERMUTATION_SEEDED", or "SEEDED" (default: "STANDARD",
-#'   as in C++ and Python).
-#'   The SEEDED variants re-derive dummies from the seed at every step and
-#'   store nothing: "SEEDED" is the storage-free twin of "STANDARD" (fresh
-#'   dummies at every L step, bit-identical to "STANDARD" for the same seed)
-#'   and "PERMUTATION_SEEDED" the storage-free twin of "PERMUTATION".
+#' @param opt_threshold Reference voting level of the L-loop (default: 0.75, in
+#'   \code{[0, 1]}). The L-loop raises L until the FDP estimate at the largest
+#'   voting level that does not exceed \code{opt_threshold} is at or below
+#'   \code{tFDR}.
+#' @param lloop_strategy L-loop strategy (default: "STANDARD", as in C++ and
+#'   Python). "STANDARD" draws fresh dummies at every L step, as the 1.x
+#'   versions do. "HCONCAT" keeps the dummies of the earlier steps and appends
+#'   p columns per step, which is faster. The two gave the same FDR in
+#'   simulations and can select differently. "PERMUTATION" stores one base
+#'   dummy matrix and permutes its rows per experiment. "SKIPL" skips the
+#'   L-loop and runs with \code{max_dummy_multiplier} times p dummies at once.
+#'   The seeded variants re-derive the dummies from the seed at every step and
+#'   store nothing: "SEEDED" is the storage-free twin of "STANDARD"
+#'   (bit-identical to "STANDARD" for the same seed) and "PERMUTATION_SEEDED"
+#'   the storage-free twin of "PERMUTATION".
 #' @param tol Numerical tolerance of the selector (default: 1e-6): the threshold of
 #'   its own comparisons and the tolerance of the solvers in its random experiments.
 #'   A stand-alone solver defaults to machine epsilon (\code{\link{tsolver_options}}).
@@ -91,7 +99,7 @@
 #'   clusters are picked uniformly at random per step, restoring the
 #'   within-experiment occurrence spread that the dependency-aware (DA)
 #'   deflation's FDR control relies on. Recommended for greedy solvers under
-#'   trex+DA: 0.25. \code{0} (default) turns the feature off (exact legacy
+#'   T-Rex+DA: 0.25. \code{0} (default) turns the feature off (exact legacy
 #'   behavior; ignored by path solvers).
 #' @param exch_tie_floor Minimum absolute correlation for exchangeable-tie
 #'   candidates, in (0, 1) (default: 0.5). Ignored unless
@@ -157,7 +165,7 @@
 #'   memory-mapped design must be open in \code{"readwrite"} mode; under
 #'   \code{"NONE"} nothing is written and \code{"readonly"} mode suffices.
 #'
-#' @return A named list suitable for passing to TRex selector constructors.
+#' @return A named list for the constructors of the T-Rex selectors.
 #'
 #' @examples
 #' trex_control()
@@ -203,8 +211,8 @@ trex_control <- function(solver = "TLARS",
          paste(scaling_mode, collapse = ", "))
   }
   scaling_mode <- scaling_mode[1]
-  if (tloop_max_stagnant_steps < 0) {
-    stop("tloop_max_stagnant_steps must be >= 0. Got: ", tloop_max_stagnant_steps)
+  if (tloop_max_stagnant_steps < 1) {
+    stop("tloop_max_stagnant_steps must be >= 1. Got: ", tloop_max_stagnant_steps)
   }
   if (max_outer_threads < 1) {
     stop("max_outer_threads must be >= 1. Got: ", max_outer_threads)
@@ -279,7 +287,7 @@ trex_control <- function(solver = "TLARS",
 
 #' @name trex_da_control
 #'
-#' @title TRex DA Control Parameters
+#' @title T-Rex+DA Control Parameters
 #'
 #' @description Build a control list for the dependency-aware correction of TRexDASelector.
 #'
@@ -357,7 +365,7 @@ trex_da_control <- function(da_method = "BT",
 
 #' @name trex_gvs_control
 #'
-#' @title TRex GVS Control Parameters
+#' @title T-Rex+GVS Control Parameters
 #'
 #' @description Build a control list for the grouped variable selection of
 #'   \code{\link{TRexGVSSelector}}. The solver follows \code{gvs_type}. For
@@ -529,7 +537,7 @@ trex_gvs_control <- function(gvs_type = "EN",
 
 #' @name trex_screen_control
 #'
-#' @title TRex Screen Control Parameters
+#' @title T-Rex+Screening Control Parameters
 #'
 #' @description Build a control list for the screening step in TRexScreeningSelector and
 #'   TRexBiobankScreeningSelector.
@@ -592,7 +600,7 @@ trex_screen_control <- function(use_bootstrap_CI = FALSE,
 
 #' @name trex_biobank_control
 #'
-#' @title TRex Biobank Control Parameters
+#' @title T-Rex Biobank Screening Control Parameters
 #'
 #' @description Build a control list for TRexBiobankScreeningSelector: the accepted range of
 #'   the FDR estimate of the screening and the target FDR level of the fallback T-Rex
@@ -626,7 +634,7 @@ trex_biobank_control <- function(lower_bound_FDR = 0.05,
 
 #' @name trex_dummy_distribution
 #'
-#' @title TRex Dummy Variable Distribution
+#' @title T-Rex Dummy Variable Distribution
 #'
 #' @description Build a distribution specification for the dummy variables
 #'   injected by the T-Rex Selector. Pass the result to the
@@ -638,16 +646,23 @@ trex_biobank_control <- function(lower_bound_FDR = 0.05,
 #'   \code{"Triangle"}, \code{"UniformSphere"},
 #'   \code{"Mammen"}, \code{"ConstrainedSparseRademacher"}, \code{"Logistic"}.
 #'   Defaults to \code{"Normal"}.
-#' @param a   Scale / upper-bound parameter (used by \code{"Uniform"}).
-#' @param df  Degrees of freedom (used by \code{"StudentT"}).
-#' @param location  Location parameter (used by \code{"Laplace"},
-#'   \code{"Gumbel"}, \code{"Logistic"}).
-#' @param scale  Scale parameter (used by \code{"Laplace"},
-#'   \code{"Gumbel"}, \code{"Logistic"}).
-#' @param b  Upper vertex of the triangle (used by \code{"Triangle"}).
-#' @param c  Right boundary of the triangle (used by \code{"Triangle"}).
-#' @param dim  Dimension of the sphere (used by \code{"UniformSphere"}).
-#' @param s  Sparsity parameter (used by \code{"ConstrainedSparseRademacher"}).
+#' @param a  Half-range of \code{"Uniform"}, which draws from U(-a, a) (default:
+#'   sqrt(3), unit variance), or lower bound of \code{"Triangle"} (default:
+#'   -sqrt(6)).
+#' @param df  Degrees of freedom of \code{"StudentT"} (default: 5).
+#' @param location  Location parameter of \code{"Laplace"}, \code{"Gumbel"}
+#'   and \code{"Logistic"} (default: 0).
+#' @param scale  Scale parameter of \code{"Laplace"} (default: 1/sqrt(2)),
+#'   \code{"Gumbel"} (default: 1) and \code{"Logistic"} (default: sqrt(3)/pi).
+#' @param b  Mode of \code{"Triangle"} (default: 0).
+#' @param c  Upper bound of \code{"Triangle"} (default: sqrt(6)).
+#' @param dim  Dimension of the sphere of \code{"UniformSphere"} (default: 3).
+#' @param s  Sparsity parameter of \code{"ConstrainedSparseRademacher"} in
+#'   (0, 1] (default: 0.1). An entry is +1 or -1 with probability s/2 each and
+#'   0 otherwise, and s = 1 gives the Rademacher distribution.
+#' @param p1,p2  Probabilities of the two points of \code{"Mammen"},
+#'   -(sqrt(5) - 1)/2 and (sqrt(5) + 1)/2 (defaults: (sqrt(5) + 1)/(2 sqrt(5))
+#'   and (sqrt(5) - 1)/(2 sqrt(5))).
 #'
 #' @return A named list describing the dummy distribution, for use in
 #'   \code{\link{trex_control}}.
@@ -677,7 +692,9 @@ trex_dummy_distribution <- function(type     = "Normal",
                                     b        = NULL,
                                     c        = NULL,
                                     dim      = NULL,
-                                    s        = NULL) {
+                                    s        = NULL,
+                                    p1       = NULL,
+                                    p2       = NULL) {
   valid_types <- c("Normal", "Uniform", "Rademacher", "StudentT",
                    "Laplace", "Gumbel", "Triangle",
                    "UniformSphere", "Mammen", "ConstrainedSparseRademacher",
@@ -695,13 +712,15 @@ trex_dummy_distribution <- function(type     = "Normal",
   if (!is.null(c))        dist$c        <- c
   if (!is.null(dim))      dist$dim      <- dim
   if (!is.null(s))        dist$s        <- s
+  if (!is.null(p1))       dist$p1       <- p1
+  if (!is.null(p2))       dist$p2       <- p2
   dist
 }
 
 
 #' @name trex_tikhonov_control
 #'
-#' @title TRex Tikhonov Control Parameters
+#' @title T-Rex+Tikhonov Control Parameters
 #'
 #' @description Build the control list of \code{\link{TRexTikhonovSelector}}, the
 #'   T-Rex selector with a general Tikhonov penalty (T-Rex+Tikhonov). The list

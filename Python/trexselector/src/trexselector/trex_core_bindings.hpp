@@ -84,11 +84,11 @@ public:
      * @brief Zero-copy constructor for the TRexSelector wrapper.
      *
      * @param X Reference to the design matrix (n × p).
-     * @param y Reference to the response vector (n × 1).
-     * @param tFDR Target False Discovery Rate threshold.
-     * @param trex_control Configuration parameters for the algorithm.
-     * @param seed Random seed for reproducible computations.
-     * @param verbose If true, prompts standard out messaging during select().
+     * @param y Reference to the response vector (n × 1), copied by the selector.
+     * @param tFDR Target False Discovery Rate in [0, 1].
+     * @param trex_control Control parameters of the algorithm.
+     * @param seed Random seed (< 0 for a run that is not reproducible).
+     * @param verbose Enable verbose output.
      */
     PyTRexSelector(
         Eigen::Ref<Eigen::MatrixXd> X,
@@ -144,61 +144,61 @@ public:
     /** @brief Number of dummies used by the last select() (the L-loop's calibration). */
     std::size_t getNumDummies() const noexcept { return selector_->getNumDummies(); }
 
-    /** @brief Get Target FDR. */
+    /** @brief Get target FDR level. */
     double getTFDR() const { return selector_->getTFDR(); }
 
-    /** @brief Get total configurations count for K random simulations. */
+    /** @brief Get number of random experiments K. */
     std::size_t getK() const { return selector_->getK(); }
 
-    /** @brief Get the explicitly stated dummy boundary variable count. */
+    /** @brief Get the cap of the dummy multiplier (max_dummy_multiplier). */
     std::size_t getMaxNumDummies() const { return selector_->getMaxNumDummies(); }
 
-    /** @brief Get exact strict upper length paths executed across arrays. */
+    /** @brief Check whether the bound on the stopping time is on (use_max_T_stop). */
     bool getMaxTStop() const { return selector_->getMaxTStop(); }
 
-    /** @brief Get flag highlighting stagnation stoppage active evaluations. */
+    /** @brief Check if the stagnation stop is enabled. */
     bool getStagnationCheck() const { return selector_->getStagnationCheck(); }
 
-    /** @brief Get Predictor X Array normalizations mapping averages. */
+    /** @brief Get means of the design matrix columns. */
     const Eigen::VectorXd& getXMeans() const { return selector_->getXMeans(); }
 
-    /** @brief Get Precalculated absolute variance measurements from matrix entries. */
+    /** @brief Get the scale divisors of the design matrix columns. */
     const Eigen::VectorXd& getXL2Norms() const { return selector_->getXL2Norms(); }
 
-    /** @brief Get Target Y distribution uniform calculations. */
+    /** @brief Get mean of the response vector. */
     double getYMean() const { return selector_->getYMean(); }
 
-    /** @brief Get specific 0|1 integer indications mapping FDR inclusion assumptions. */
+    /** @brief Get selected variables as a binary vector. */
     const Eigen::VectorXi& getSelectedVar() const { return selector_->getSelectedVar(); }
 
-    /** @brief Get actual un-ordered variable keys included internally. */
+    /** @brief Get indices of selected variables. */
     const std::vector<std::size_t>& getSelectedIndices() const { return selector_->getSelectedIndices(); }
 
-    /** @brief Get total completely bound variables filtered inside prediction criteria. */
+    /** @brief Get number of selected variables. */
     std::size_t getNumSelected() const { return selector_->getNumSelected(); }
 
-    /** @brief Get execution limit bound configurations assigned initially. */
+    /** @brief Get the stopping time T_stop at which the T-loop stopped. */
     std::size_t getTStop() const { return selector_->getTStop(); }
 
-    /** @brief Returns final array statistics defining voting weights per execution bounds. */
+    /** @brief Get the voting grid. */
     const Eigen::VectorXd& getVotingGrid() const { return selector_->getVotingGrid(); }
 
-    /** @brief Numeric scalar utilized determining exact acceptance barriers. */
+    /** @brief Get voting threshold. */
     double getVotingThreshold() const { return selector_->getVotingThreshold(); }
 
-    /** @brief Secondary FDP Hat indicator metric arrays maps. */
+    /** @brief Get FDP hat matrix. */
     const Eigen::MatrixXd& getFDPHatMat() const { return selector_->getFDPHatMat(); }
 
-    /** @brief Predictor distributions mapping to Dummy component densities. */
+    /** @brief Get Phi matrix. */
     const Eigen::MatrixXd& getPhiMat() const { return selector_->getPhiMat(); }
 
-    /** @brief R Matrix tracking metrics of exact internal executions. */
+    /** @brief Get the numbers of selected variables (SelectionResult::R_mat). */
     const Eigen::MatrixXd& getRMat() const { return selector_->getRMat(); }
 
-    /** @brief Prime derivative probability arrays indicating exact inclusion metrics. */
+    /** @brief Get Phi prime vector. */
     const Eigen::VectorXd& getPhiPrime() const { return selector_->getPhiPrime(); }
 
-    /** @brief Fetch scaling ratio configured strictly to size variables internally. */
+    /** @brief Get dummy multiplier L. */
     std::size_t getDummyMultiplierL() const { return selector_->getDummyMultiplierL(); }
 };
 
@@ -263,9 +263,9 @@ inline void bind_trex_core(py::module& m_tsm) {
     py::enum_<LLoopStrategy>(m_tsm, "LLoopStrategy", "L-loop strategy controlling how dummy variables are constructed "
         "in each experiment.")
         .value("SKIPL", LLoopStrategy::SKIPL, "Stored, one-shot: fixed dummies = max_dummy_multiplier * p.")
-        .value("STANDARD", LLoopStrategy::STANDARD, "Stored; fresh dummies at each L-loop iteration (conservative).")
-        .value("HCONCAT", LLoopStrategy::HCONCAT, "Stored; horizontally expand dummy matrices across L (faster, same "
-            "result).")
+        .value("STANDARD", LLoopStrategy::STANDARD, "Stored; fresh dummies at each L-loop iteration (default).")
+        .value("HCONCAT", LLoopStrategy::HCONCAT, "Stored; the dummy matrices grow by p columns per L step (faster, "
+            "same FDR in simulations, not the same selection as STANDARD).")
         .value("PERMUTATION", LLoopStrategy::PERMUTATION, "Stored base dummy matrix + deterministic row permutations "
             "per experiment.")
         .value("PERMUTATION_SEEDED", LLoopStrategy::PERMUTATION_SEEDED, "Seed-derived base + row permutations per "
@@ -328,7 +328,7 @@ inline void bind_trex_core(py::module& m_tsm) {
             "two tolerances serve different purposes and differ on purpose.")
         .def_readwrite("exch_tie_alpha", &disp::SolverHyperparameters::exch_tie_alpha, "Exchangeable-tie band width "
             "for "
-            "greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under trex+DA: 0.25.")
+            "greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under T-Rex+DA: 0.25.")
         .def_readwrite("exch_tie_floor", &disp::SolverHyperparameters::exch_tie_floor, "Minimum |correlation| for "
             "exchangeable-tie candidates in (0, 1); ignored unless exch_tie_alpha > 0.")
         .def_readwrite("tenet_aug_use_lars", &disp::SolverHyperparameters::tenet_aug_use_lars, "TENET_AUG: False "
@@ -411,56 +411,80 @@ inline void bind_trex_core(py::module& m_tsm) {
             py::arg("dim") = 3,
             "Create Uniform distribution on the unit d-sphere.")
         .def_static("constrained_sparse_rademacher", &dg::Distribution::ConstrainedSparseRademacher,
-            py::arg("s"),
-            "Create Constrained Sparse Rademacher distribution.")
+            py::arg("s") = 0.1,
+            "Create Constrained Sparse Rademacher distribution: an entry is +1 or -1 with probability s / 2 each "
+            "and 0 otherwise, s in (0, 1] (default 0.1), and s = 1 gives the Rademacher distribution.")
         .def_static("logistic", &dg::Distribution::Logistic,
             py::arg("location") = 0.0, py::arg("scale") = std::sqrt(3.0) / std::numbers::pi,
             "Create Logistic distribution.")
         .def("get_type", &dg::Distribution::get_type, "Get the distribution type.")
-        .def_readwrite("uniform_a",                       &dg::Distribution::uniform_a)
-        .def_readwrite("student_t_df",                    &dg::Distribution::student_t_df)
-        .def_readwrite("laplace_location",                &dg::Distribution::laplace_location)
-        .def_readwrite("laplace_scale",                   &dg::Distribution::laplace_scale)
-        .def_readwrite("gumbel_location",                 &dg::Distribution::gumbel_location)
-        .def_readwrite("gumbel_scale",                    &dg::Distribution::gumbel_scale)
-        .def_readwrite("triangle_a",                      &dg::Distribution::triangle_a)
-        .def_readwrite("triangle_b",                      &dg::Distribution::triangle_b)
-        .def_readwrite("triangle_c",                      &dg::Distribution::triangle_c)
-        .def_readwrite("sphere_dim",                      &dg::Distribution::sphere_dim)
-        .def_readwrite("mammen_param_p1",                 &dg::Distribution::mammen_param_p1)
-        .def_readwrite("mammen_param_p2",                 &dg::Distribution::mammen_param_p2)
-        .def_readwrite("constrained_sparse_rademacher_s", &dg::Distribution::constrained_sparse_rademacher_s)
-        .def_readwrite("logistic_location",               &dg::Distribution::logistic_location)
-        .def_readwrite("logistic_scale",                  &dg::Distribution::logistic_scale);
+        .def_readwrite("uniform_a",                       &dg::Distribution::uniform_a,
+            "Half-range of the uniform distribution U(-a, a) (default sqrt(3)).")
+        .def_readwrite("student_t_df",                    &dg::Distribution::student_t_df,
+            "Degrees of freedom of Student's t-distribution (default 5).")
+        .def_readwrite("laplace_location",                &dg::Distribution::laplace_location,
+            "Location of the Laplace distribution (default 0).")
+        .def_readwrite("laplace_scale",                   &dg::Distribution::laplace_scale,
+            "Scale of the Laplace distribution (default 1 / sqrt(2)).")
+        .def_readwrite("gumbel_location",                 &dg::Distribution::gumbel_location,
+            "Location of the Gumbel distribution (default 0).")
+        .def_readwrite("gumbel_scale",                    &dg::Distribution::gumbel_scale,
+            "Scale of the Gumbel distribution (default 1).")
+        .def_readwrite("triangle_a",                      &dg::Distribution::triangle_a,
+            "Lower bound of the triangle distribution (default -sqrt(6)).")
+        .def_readwrite("triangle_b",                      &dg::Distribution::triangle_b,
+            "Mode of the triangle distribution (default 0).")
+        .def_readwrite("triangle_c",                      &dg::Distribution::triangle_c,
+            "Upper bound of the triangle distribution (default sqrt(6)).")
+        .def_readwrite("sphere_dim",                      &dg::Distribution::sphere_dim,
+            "Dimension of the sphere of the uniform sphere distribution (default 3).")
+        .def_readwrite("mammen_param_p1",                 &dg::Distribution::mammen_param_p1,
+            "Probability of the point -(sqrt(5) - 1) / 2 of the Mammen distribution.")
+        .def_readwrite("mammen_param_p2",                 &dg::Distribution::mammen_param_p2,
+            "Probability of the point (sqrt(5) + 1) / 2 of the Mammen distribution.")
+        .def_readwrite("constrained_sparse_rademacher_s", &dg::Distribution::constrained_sparse_rademacher_s,
+            "Sparsity parameter s of the constrained sparse Rademacher distribution in (0, 1] (default 0.1).")
+        .def_readwrite("logistic_location",               &dg::Distribution::logistic_location,
+            "Location of the logistic distribution (default 0).")
+        .def_readwrite("logistic_scale",                  &dg::Distribution::logistic_scale,
+            "Scale of the logistic distribution (default sqrt(3) / pi).");
 
     // Bind TRexControlParameter
     py::class_<TRexControlParameter>(m_tsm, "TRexControlParameter", "Control parameters for the core T-Rex selection "
         "algorithm.")
         .def(py::init<>())
-        .def_readwrite("K", &TRexControlParameter::K, "Number of random simulation experiments to run over variable "
-            "inclusions.")
+        .def_readwrite("K", &TRexControlParameter::K,
+            "Number of random experiments (default 20, at least 2).")
         .def_readwrite("max_dummy_multiplier", &TRexControlParameter::max_dummy_multiplier, "Cap of the dummy "
             "multiplier L: the L-loop adds dummies up to this multiple of p (default 10).")
         .def_readwrite("use_max_T_stop", &TRexControlParameter::use_max_T_stop, "If true (default), the T-loop ends at "
             "ceil(n / 2) at the latest. If false, it can run up to the number of dummies.")
-        .def_readwrite("opt_threshold", &TRexControlParameter::opt_threshold, "Voting threshold parameter (default "
-            "0.75).")
-        .def_readwrite("lloop_strategy", &TRexControlParameter::lloop_strategy, "L-loop strategy for constructing "
-            "dummy "
-            "variables.")
+        .def_readwrite("opt_threshold", &TRexControlParameter::opt_threshold,
+            "Reference voting level of the L-loop (default 0.75, in [0, 1]). The L-loop raises L until "
+            "the FDP estimate at the largest voting level that does not exceed opt_threshold is at or "
+            "below tFDR.")
+        .def_readwrite("lloop_strategy", &TRexControlParameter::lloop_strategy,
+            "L-loop strategy (default STANDARD). STANDARD draws fresh dummies at every L step, as the 1.x "
+            "versions do. HCONCAT keeps the dummies of the earlier steps and appends p columns per step, "
+            "which is faster. The two gave the same FDR in simulations and can select differently. See "
+            "LLoopStrategy for the others.")
         .def_readwrite("tloop_stagnation_stop", &TRexControlParameter::tloop_stagnation_stop,
-                       "T-loop early stopping on support-set stagnation. None (default) resolves "
-                       "by solver family: disabled for equiangular LARS-path solvers "
-                       "(TLARS/TLASSO/TENET/TENET_AUG, matching the R reference), enabled for "
-                       "greedy solvers (guards their noise trap). Set True/False to override.")
-        .def_readwrite("tloop_max_stagnant_steps", &TRexControlParameter::tloop_max_stagnant_steps, "Maximum "
-            "consecutive stagnant T-loop steps before early stopping.")
+                       "T-loop early stopping when the selection stagnates. None (default) resolves by solver "
+                       "family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, "
+                       "TIKNET and the coordinate-descent family), which terminate on their own, as in the 1.x "
+                       "versions and the T-Rex paper, and on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP, "
+                       "TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a noise trap. Set True or "
+                       "False to override.")
+        .def_readwrite("tloop_max_stagnant_steps", &TRexControlParameter::tloop_max_stagnant_steps,
+            "Number of T steps in a row without a growing selection that ends the T-loop under the "
+            "stagnation stop (default 5, at least 1). The selection is counted at the highest voting "
+            "level whose FDP estimate does not exceed tFDR.")
         .def_readwrite("parallel_rnd_experiments", &TRexControlParameter::parallel_rnd_experiments,
                        "Run the K random experiments in parallel (default False: in sequence). Inside a "
                        "parallel run every solver runs serially; the lean L-loop strategies (SEEDED, "
                        "PERMUTATION, PERMUTATION_SEEDED) always run their experiments in sequence.")
-        .def_readwrite("use_memory_mapping",  &TRexControlParameter::use_memory_mapping,  "Use out-of-core "
-            "memory-mapped dummy matrix.")
+        .def_readwrite("use_memory_mapping",  &TRexControlParameter::use_memory_mapping,
+            "Keep the dummy matrices in memory-mapped files instead of in memory (default False).")
         .def_readwrite("max_outer_threads",   &TRexControlParameter::max_outer_threads,
                        "Threads of the parallel K-loop (default 1; a whole number of at least 1), capped at "
                        "K. Ignored while parallel_rnd_experiments is False.")
@@ -468,8 +492,8 @@ inline void bind_trex_core(py::module& m_tsm) {
                        "Thread budget of the solvers' own passes over the design (default 1, serial; a whole "
                        "number of at least 1). Live when the experiments run in sequence; inside a parallel "
                        "run the solvers stay serial. A pass splits only above about a million entries.")
-        .def_readwrite("solver_type",         &TRexControlParameter::solver_type,         "Solver algorithm to use for "
-            "T-Rex.")
+        .def_readwrite("solver_type",         &TRexControlParameter::solver_type,
+            "Solver of the random experiments (default TLARS).")
         .def_readwrite("solver_params",       &TRexControlParameter::solver_params,       "Hyperparameters for the "
             "selected solver.")
         .def_readwrite("scaling_mode",        &TRexControlParameter::scaling_mode,        "Working-design convention: "
@@ -486,21 +510,31 @@ inline void bind_trex_core(py::module& m_tsm) {
         .def_readonly("selected_var", &TRexSelector::SelectionResult::selected_var, "Selection indicator vector "
             "(length "
             "p; 1 = selected, 0 = not selected).")
-        .def_readonly("v_thresh", &TRexSelector::SelectionResult::v_thresh, "Voting threshold v applied to control the "
-            "FDR.")
-        .def_readonly("r_mat", &TRexSelector::SelectionResult::R_mat, "R matrix of empirical tail probabilities (p x "
-            "T_stop).")
-        .def_readonly("T_stop", &TRexSelector::SelectionResult::T_stop, "T_stop: maximum number of LARS steps run.")
-        .def_readonly("num_dummies", &TRexSelector::SelectionResult::num_dummies, "Total number of dummy variables "
-            "used.")
-        .def_readonly("dummy_factor_L", &TRexSelector::SelectionResult::dummy_factor_L, "Dummy multiplier L used.")
-        .def_readonly("fdp_hat_mat", &TRexSelector::SelectionResult::FDP_hat_mat, "FDP hat matrix (p x |voting_grid|).")
-        .def_readonly("phi_mat", &TRexSelector::SelectionResult::Phi_mat, "Phi matrix: relative occurrence counts per "
-            "predictor.")
-        .def_readonly("phi_prime", &TRexSelector::SelectionResult::Phi_prime, "Smoothed selection probability vector "
-            "phi'.")
-        .def_readonly("voting_grid", &TRexSelector::SelectionResult::voting_grid, "Voting grid: per-candidate vote "
-            "totals across K experiments.");
+        .def_readonly("v_thresh", &TRexSelector::SelectionResult::v_thresh,
+            "Voting threshold applied to the relative occurrences to obtain the selection.")
+        .def_readonly("r_mat", &TRexSelector::SelectionResult::R_mat,
+            "Number of selected variables per stopping time (rows) and voting level (columns), (T_stop - "
+            "1) x len(voting_grid). The stopping time T_stop is not part of it. One row for T_stop = 1.")
+        .def_readonly("T_stop", &TRexSelector::SelectionResult::T_stop,
+            "Stopping time T_stop: the number of included dummies at which the T-loop stopped, so the "
+            "random experiments ran until T_stop dummies were included. For T_stop > 1 it is not the "
+            "stopping time of the selection: the selection is taken from the stopping times 1 to T_stop - "
+            "1, mostly from T_stop - 1 and sometimes from an earlier one (see select()).")
+        .def_readonly("num_dummies", &TRexSelector::SelectionResult::num_dummies,
+            "Total number of dummy variables used (L * p).")
+        .def_readonly("dummy_factor_L", &TRexSelector::SelectionResult::dummy_factor_L,
+            "Dummy multiplier L determined by the L-loop.")
+        .def_readonly("fdp_hat_mat", &TRexSelector::SelectionResult::FDP_hat_mat,
+            "Estimated FDP per stopping time (rows) and voting level (columns), T_stop x "
+            "len(voting_grid).")
+        .def_readonly("phi_mat", &TRexSelector::SelectionResult::Phi_mat,
+            "Relative occurrences of the variables over the K random experiments per stopping time "
+            "(rows), T_stop x p.")
+        .def_readonly("phi_prime", &TRexSelector::SelectionResult::Phi_prime,
+            "Calibrated relative occurrences that enter the FDP estimate (length p), at most 1 and "
+            "possibly negative.")
+        .def_readonly("voting_grid", &TRexSelector::SelectionResult::voting_grid,
+            "Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by 1 - eps.");
 
     // Bind PyTRexSelector
     py::class_<PyTRexSelector>(m_tsm, "TRexSelector",
@@ -517,7 +551,7 @@ inline void bind_trex_core(py::module& m_tsm) {
              py::arg("trex_control") = TRexControlParameter(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
-             "Construct the selector. X and y are accessed zero-copy via Eigen::Map.")
+             "Construct the selector. X is used without a copy, y is copied by the selector.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexControlParameter&,
             int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
@@ -535,9 +569,16 @@ inline void bind_trex_core(py::module& m_tsm) {
              "selector gives X back only when it is garbage-collected.")
         .def("select", &PyTRexSelector::select, py::call_guard<py::gil_scoped_release>(),
              "Run the T-Rex algorithm and return a SelectionResult. A selector runs once: select() gives X "
-             "back when it ends, so a second call raises RuntimeError instead of running on a design that is no "
-             "longer standardized. Construct a new selector to run again. A select() that ends with an error "
-             "gives X back at once (original scale) and retires the selector as well.")
+             "back when it ends, so a second call raises RuntimeError instead of running on a design that "
+             "is no longer standardized. Construct a new selector to run again. A select() that ends with "
+             "an error gives X back at once (original scale) and retires the selector as well.\n\nThe "
+             "T-loop raises the stopping time until the FDP estimate at the highest voting level exceeds "
+             "tFDR, or until its bound or the stagnation stop ends it, and T_stop is where it stopped. "
+             "The selection is the cell with the largest number of "
+             "selected variables among the stopping times 1 to T_stop - 1 (the stopping time 1 for T_stop "
+             "= 1) and the voting levels whose FDP estimate does not exceed tFDR. Among equal counts the "
+             "highest voting level wins, then the latest stopping time. The stopping time of the selection "
+             "is therefore below T_stop, mostly by one and sometimes by more.")
         .def("getTFDR", &PyTRexSelector::getTFDR, "Return the target FDR.")
         .def("getK", &PyTRexSelector::getK, "Return K: the number of random experiments.")
         .def("getMaxNumDummies", &PyTRexSelector::getMaxNumDummies, "Return the cap of the dummy multiplier "
@@ -545,21 +586,36 @@ inline void bind_trex_core(py::module& m_tsm) {
         .def("getMaxTStop", &PyTRexSelector::getMaxTStop, "Return whether use_max_T_stop is active.")
         .def("getStagnationCheck", &PyTRexSelector::getStagnationCheck, "Return whether T-loop stagnation stopping is "
             "active.")
-        .def("getXMeans", &PyTRexSelector::getXMeans, "Return the column means of X.")
-        .def("getXL2Norms", &PyTRexSelector::getXL2Norms, "Return the column-wise L2 norms of X after centering.")
-        .def("getYMean", &PyTRexSelector::getYMean, "Return the mean of y.")
+        .def("getXMeans", &PyTRexSelector::getXMeans,
+            "Return the column means of X that the selector subtracted (zeros under NONE).")
+        .def("getXL2Norms", &PyTRexSelector::getXL2Norms,
+            "Return the scale divisors of the columns of X: the L2 norms of the centered columns under "
+            "L2, the sample standard deviations under ZSCORE, ones under NONE.")
+        .def("getYMean", &PyTRexSelector::getYMean,
+            "Return the mean of y that the selector subtracted (0 under NONE).")
         .def("getSelectedVar", &PyTRexSelector::getSelectedVar, "Return the binary selection indicator vector (1 = "
             "selected).")
-        .def("getSelectedIndices", &PyTRexSelector::getSelectedIndices, "Return 0-based indices of selected "
-            "predictors.")
-        .def("getNumSelected", &PyTRexSelector::getNumSelected, "Return the number of selected predictors.")
-        .def("getTStop", &PyTRexSelector::getTStop, "Return T_stop: the LARS step count used.")
-        .def("getVotingGrid", &PyTRexSelector::getVotingGrid, "Return the voting grid.")
-        .def("getVotingThreshold", &PyTRexSelector::getVotingThreshold, "Return the voting threshold v.")
-        .def("getFDPHatMat", &PyTRexSelector::getFDPHatMat, "Return the FDP hat matrix.")
-        .def("getPhiMat", &PyTRexSelector::getPhiMat, "Return the Phi occurrence-count matrix.")
-        .def("getRMat", &PyTRexSelector::getRMat, "Return the R matrix of empirical tail probabilities.")
-        .def("getPhiPrime", &PyTRexSelector::getPhiPrime, "Return the smoothed selection probability vector phi'.")
+        .def("getSelectedIndices", &PyTRexSelector::getSelectedIndices,
+            "Return the 0-based indices of the selected variables.")
+        .def("getNumSelected", &PyTRexSelector::getNumSelected,
+            "Return the number of selected variables.")
+        .def("getTStop", &PyTRexSelector::getTStop,
+            "Return T_stop, the stopping time at which the T-loop stopped. The selection is taken from an "
+            "earlier one, see SelectionResult.T_stop.")
+        .def("getVotingGrid", &PyTRexSelector::getVotingGrid,
+            "Return the voting levels 0.5, 0.5 + 1/K, ... below 1, closed by 1 - eps.")
+        .def("getVotingThreshold", &PyTRexSelector::getVotingThreshold,
+            "Return the voting threshold of the selection.")
+        .def("getFDPHatMat", &PyTRexSelector::getFDPHatMat,
+            "Return the estimated FDP per stopping time (rows) and voting level (columns).")
+        .def("getPhiMat", &PyTRexSelector::getPhiMat,
+            "Return the relative occurrences of the variables per stopping time (rows).")
+        .def("getRMat", &PyTRexSelector::getRMat,
+            "Return the number of selected variables per stopping time (rows) and voting level (columns), "
+            "see SelectionResult.r_mat.")
+        .def("getPhiPrime", &PyTRexSelector::getPhiPrime,
+            "Return the calibrated relative occurrences that enter the FDP estimate, at most 1 and "
+            "possibly negative.")
         .def("getDummyMultiplierL", &PyTRexSelector::getDummyMultiplierL, "Return L: the dummy multiplier used.");
 }
 // =====================================================================================

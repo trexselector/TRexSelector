@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_da_control}
 \alias{trex_da_control}
-\title{TRex DA Control Parameters}
+\title{T-Rex+DA Control Parameters}
 \usage{
 trex_da_control(
   da_method = "BT",

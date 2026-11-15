@@ -87,10 +87,11 @@ test_that("non-finite entries and dead columns are rejected in every mode", {
     ctrl <- trex_control(K = 3, scaling_mode = mode)
     Xn <- X + 0
     Xn[3, 4] <- NA_real_
+    # the positions are those of R: row 3, column 4
     expect_error(TRexSelector$new(Xn, d$y, verbose = FALSE, control = ctrl),
-                 "X\\(2, 3\\) is not finite")
+                 "X[3, 4] is not finite", fixed = TRUE)
     expect_error(trex_normalize_design(Xn, d$y, scaling_mode = mode),
-                 "X\\(2, 3\\) is not finite")
+                 "X[3, 4] is not finite", fixed = TRUE)
     yi <- d$y + 0
     yi[2] <- Inf
     # The selector's parameter validation catches y first (its own message);
@@ -98,16 +99,16 @@ test_that("non-finite entries and dead columns are rejected in every mode", {
     expect_error(TRexSelector$new(X + 0, yi, verbose = FALSE, control = ctrl),
                  "NaN or Inf")
     expect_error(trex_normalize_design(X, yi, scaling_mode = mode),
-                 "y\\(1\\) is not finite")
+                 "y[2] is not finite", fixed = TRUE)
   }
 
   # Constant column: rejected under L2 / ZSCORE with the column named.
   Xc <- d$X + 0
   Xc[, 5] <- 3.5
   expect_error(TRexSelector$new(Xc, d$y, verbose = FALSE, control = trex_control(K = 3)),
-               "column 4 .*constant")
+               "column 5 .*constant")
   expect_error(trex_normalize_design(Xc, d$y, scaling_mode = "ZSCORE"),
-               "column 4 .*constant")
+               "column 5 .*constant")
 
   # Intercept-free dictionary: a unit-L2 constant (DC) atom is legitimate
   # under NONE; an all-zero column is not.
@@ -120,7 +121,7 @@ test_that("non-finite entries and dead columns are rejected in every mode", {
   Xz[, 5] <- 0
   expect_error(TRexSelector$new(Xz, d$y, verbose = FALSE,
                                 control = trex_control(K = 3, scaling_mode = "NONE")),
-               "column 4 .*NONE")
+               "column 5 .*NONE")
 })
 
 

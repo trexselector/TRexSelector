@@ -32,6 +32,41 @@ NULL
 
 
 # ---------------------------------------------------------------------------
+# Internal: the errors of the data normalizer in the positions of R.
+#
+# The C++ core counts rows and columns from 0 and says so in its messages.
+# R counts from 1, so the positions are raised by one and the scaling mode is
+# spelled as the argument of trex_control().
+# ---------------------------------------------------------------------------
+
+.raise_positions <- function(msg, pattern, template) {
+  parts <- regmatches(msg, regexec(pattern, msg, perl = TRUE))[[1]]
+  if (length(parts) == 0L) return(msg)
+  numbers <- as.list(as.numeric(parts[-1]) + 1)
+  sub(pattern, do.call(sprintf, c(list(template), numbers)), msg, perl = TRUE)
+}
+
+.one_based_message <- function(msg) {
+  if (!grepl("0-based", msg, fixed = TRUE)) return(msg)
+  msg <- .raise_positions(msg, "column ([0-9]+) \\(0-based\\)", "column %.0f")
+  msg <- .raise_positions(msg, "X\\(([0-9]+), ([0-9]+)\\)", "X[%.0f, %.0f]")
+  msg <- .raise_positions(msg, "impute column ([0-9]+) before", "impute column %.0f before")
+  msg <- .raise_positions(msg, "y\\(([0-9]+)\\)", "y[%.0f]")
+  msg <- sub("; 0-based ind(ex|ices)", "", msg)
+  gsub("ScalingMode::(L2|ZSCORE|NONE)", "scaling_mode = \"\\1\"", msg)
+}
+
+.r_positions <- function(expr) {
+  tryCatch(expr, error = function(e) {
+    msg <- .one_based_message(conditionMessage(e))
+    # any other error passes as it is
+    if (identical(msg, conditionMessage(e))) stop(e)
+    stop(msg, call. = FALSE)
+  })
+}
+
+
+# ---------------------------------------------------------------------------
 # Internal: deprecation of the coordinate-descent solver family.
 #
 # Every solver of the family maps to the homotopy solver of the same problem.
@@ -113,7 +148,7 @@ trex_normalize_design <- function(X, y, scaling_mode = c("L2", "ZSCORE", "NONE")
   scaling_mode <- match.arg(scaling_mode)
   X <- .as_double_matrix(X)
   y <- .as_double_vector(y)
-  rcpp_normalize_design(X, y, scaling_mode, eps, resolve_n_threads(n_threads))
+  .r_positions(rcpp_normalize_design(X, y, scaling_mode, eps, resolve_n_threads(n_threads)))
 }
 
 

@@ -30,13 +30,19 @@ TRexSelector <- R6::R6Class("TRexSelector",
   public = list(
     #' @description Create a new TRexSelector object.
     #' @param X Feature matrix in memory, or an \code{mmap_matrix}, the handle
-    #'   of a memory-mapped file. Both are bound without a copy. The selector
+    #'   of a memory-mapped file. A numeric matrix of type double and a
+    #'   memory-mapped file are bound without a copy. Any other matrix or a
+    #'   data frame is converted first, which is a copy. The selector
     #'   standardizes a memory-mapped design in place and restores it, which
     #'   needs \code{"readwrite"} mode. Under \code{scaling_mode = "NONE"} it
     #'   writes nothing and \code{"readonly"} mode suffices.
-    #' @param y Response vector.
-    #' @param tFDR Target FDR level (default: 0.1).
-    #' @param seed Random seed (default: -1).
+    #' @param y Response vector. The selector works on a copy of it.
+    #' @param tFDR Target FDR level in \code{[0, 1]} (default: 0.1).
+    #' @param seed Random seed (default: -1). A seed of 0 or more makes the run
+    #'   deterministic and reproducible: the same seed draws the same dummies.
+    #'   A negative seed draws them from the hardware entropy source, and the
+    #'   run is not reproducible bit by bit. A Monte Carlo study gives every
+    #'   trial a seed of its own, or uses -1.
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param control A control list from \code{\link{trex_control}()} (default:
     #'   \code{trex_control()}).
@@ -51,16 +57,16 @@ TRexSelector <- R6::R6Class("TRexSelector",
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_selector_mmap_create(
+        private$ptr <- .r_positions(trex_selector_mmap_create(
           get_ptr(X), y, tFDR, control, seed, verbose
-        )
+        ))
       } else {
         X <- .as_double_matrix(X)
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_selector_create(
+        private$ptr <- .r_positions(trex_selector_create(
           X, y, tFDR, control, seed, verbose
-        )
+        ))
       }
     },
 
@@ -84,6 +90,17 @@ TRexSelector <- R6::R6Class("TRexSelector",
     #'   the results of the run. A \code{select()} that ends with an error
     #'   gives \code{X} back at once (original scale) and retires the
     #'   selector as well.
+    #'
+    #'   The T-loop raises the stopping time until the FDP estimate at the
+    #'   highest voting level exceeds \code{tFDR}, or until its bound or the
+    #'   stagnation stop ends it, and \code{T_stop} is where it stopped. The
+    #'   selection is the cell with the largest number of
+    #'   selected variables among the stopping times 1 to \code{T_stop - 1}
+    #'   (the stopping time 1 for \code{T_stop = 1}) and the voting levels
+    #'   whose FDP estimate does not exceed \code{tFDR}. Among equal counts
+    #'   the highest voting level wins, then the latest stopping time. The
+    #'   stopping time of the selection is therefore below \code{T_stop},
+    #'   mostly by one and sometimes by more.
     #' @return invisible(self)
     select = function() {
       trex_selector_select(private$ptr)
@@ -122,7 +139,11 @@ TRexSelector <- R6::R6Class("TRexSelector",
     },
 
     #' @field T_stop Stopping time: the number of included dummies at which
-    #'   the T-loop stopped.
+    #'   the T-loop stopped, so the random experiments ran until \code{T_stop}
+    #'   dummies were included. For \code{T_stop > 1} it is not the stopping
+    #'   time of the selection: the selection is taken from the stopping times
+    #'   1 to \code{T_stop - 1}, mostly from \code{T_stop - 1} and sometimes
+    #'   from an earlier one (see \code{select()}).
     T_stop = function(value) {
       if (!missing(value)) stop("T_stop is read-only.")
       trex_selector_get_t_stop(private$ptr)
@@ -156,8 +177,10 @@ TRexSelector <- R6::R6Class("TRexSelector",
       trex_selector_get_phi_mat(private$ptr)
     },
 
-    #' @field r_mat Number of selected variables per T step (rows) and
-    #'   voting level (columns).
+    #' @field r_mat Number of selected variables per stopping time (rows) and
+    #'   voting level (columns). It has \code{T_stop - 1} rows, the stopping
+    #'   time \code{T_stop} is not part of it, and one row for
+    #'   \code{T_stop = 1}.
     r_mat = function(value) {
       if (!missing(value)) stop("r_mat is read-only")
       trex_selector_get_r_mat(private$ptr)
@@ -170,19 +193,24 @@ TRexSelector <- R6::R6Class("TRexSelector",
       trex_selector_get_phi_prime(private$ptr)
     },
 
-    #' @field x_means computed means of the predictor variables
+    #' @field x_means Column means of \code{X} that the selector subtracted
+    #'   (zeros under \code{scaling_mode = "NONE"}).
     x_means = function(value) {
       if (!missing(value)) stop("x_means is read-only")
       trex_selector_get_x_means(private$ptr)
     },
 
-    #' @field x_l2_norms computed L2 norms of the scaled predictors
+    #' @field x_l2_norms Scale divisors of the columns of \code{X}: the L2
+    #'   norms of the centered columns under \code{scaling_mode = "L2"}, the
+    #'   sample standard deviations under \code{"ZSCORE"}, ones under
+    #'   \code{"NONE"}.
     x_l2_norms = function(value) {
       if (!missing(value)) stop("x_l2_norms is read-only")
       trex_selector_get_x_l2_norms(private$ptr)
     },
 
-    #' @field y_mean computed mean of the response sequence
+    #' @field y_mean Mean of \code{y} that the selector subtracted (0 under
+    #'   \code{scaling_mode = "NONE"}).
     y_mean = function(value) {
       if (!missing(value)) stop("y_mean is read-only")
       trex_selector_get_y_mean(private$ptr)

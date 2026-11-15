@@ -123,14 +123,18 @@ class TRexSelector:
     X : numpy.ndarray of shape (n, p)
         Design matrix.
     y : numpy.ndarray of shape (n,)
-        Response vector.
+        Response vector. The selector works on a copy of it.
     tFDR : float, default 0.1
-        Target FDR level.
+        Target FDR level in [0, 1].
     trex_control : TRexControlParameter, optional
         Control parameters of the T-Rex selector. The defaults apply when it
         is omitted.
     seed : int, default -1
-        Random seed. A negative value gives a run that is not reproducible.
+        Random seed. A seed of 0 or more makes the run deterministic and
+        reproducible: the same seed draws the same dummies. A negative seed
+        draws them from the hardware entropy source, and the run is not
+        reproducible bit by bit. A Monte Carlo study gives every trial a seed
+        of its own, or uses -1.
     verbose : bool, default True
         Whether to print progress.
     """
@@ -161,10 +165,21 @@ class TRexSelector:
         ``select()`` that ends with an error gives ``X`` back at once (original
         scale) and retires the selector as well.
 
+        The T-loop raises the stopping time until the FDP estimate at the
+        highest voting level exceeds ``tFDR``, or until its bound or the
+        stagnation stop ends it, and ``T_stop`` is where it stopped. The selection
+        is the cell with the largest number of selected
+        variables among the stopping times 1 to ``T_stop - 1`` (the stopping
+        time 1 for ``T_stop = 1``) and the voting levels whose FDP estimate
+        does not exceed ``tFDR``. Among equal counts the highest voting level
+        wins, then the latest stopping time. The stopping time of the
+        selection is therefore below ``T_stop``, mostly by one and sometimes
+        by more.
+
         Returns
         -------
         SelectionResult
-            A data class containing the selected variables and extensive metadata.
+            The selected variables and the matrices of the calibration.
         """
         return self._selector.select()
 
@@ -182,10 +197,12 @@ class TRexSelector:
 
     @property
     def tFDR(self) -> float:
+        """Target FDR level."""
         return self._selector.getTFDR()
 
     @property
     def K(self) -> int:
+        """Number of random experiments."""
         return self._selector.getK()
 
     @property
@@ -195,58 +212,85 @@ class TRexSelector:
 
     @property
     def num_selected(self) -> int:
+        """Number of selected variables."""
         return self._selector.getNumSelected()
 
     @property
     def T_stop(self) -> int:
+        """Stopping time: the number of included dummies at which the T-loop stopped,
+        so the random experiments ran until ``T_stop`` dummies were included. For
+        ``T_stop > 1`` it is not the stopping time of the selection: the selection
+        is taken from the stopping times 1 to ``T_stop - 1``, mostly from
+        ``T_stop - 1`` and sometimes from an earlier one (see ``select()``)."""
         return self._selector.getTStop()
 
     @property
     def L(self) -> int:
+        """Calibrated dummy multiplier L (the selector uses L * p dummies)."""
         return self._selector.getDummyMultiplierL()
 
     @property
     def v_thresh(self) -> float:
+        """Voting threshold of the selection."""
         return self._selector.getVotingThreshold()
 
     @property
     def voting_grid(self) -> np.ndarray:
+        """Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by 1 - eps, that the
+        selection searches."""
         return self._selector.getVotingGrid()
 
     @property
     def fdp_hat_mat(self) -> np.ndarray:
+        """Estimated FDP per stopping time (rows) and voting level (columns),
+        ``T_stop`` rows."""
         return self._selector.getFDPHatMat()
 
     @property
     def phi_mat(self) -> np.ndarray:
+        """Relative occurrences of the variables over the K random experiments per
+        stopping time (rows), ``T_stop`` rows."""
         return self._selector.getPhiMat()
 
     @property
     def r_mat(self) -> np.ndarray:
+        """Number of selected variables per stopping time (rows) and voting level
+        (columns). It has ``T_stop - 1`` rows, the stopping time ``T_stop`` is not
+        part of it, and one row for ``T_stop = 1``."""
         return self._selector.getRMat()
 
     @property
     def phi_prime(self) -> np.ndarray:
+        """Calibrated relative occurrences that enter the FDP estimate (length p),
+        at most 1 and possibly negative."""
         return self._selector.getPhiPrime()
 
     @property
     def x_means(self) -> np.ndarray:
+        """Column means of ``X`` that the selector subtracted (zeros under
+        ``ScalingMode.NONE``)."""
         return self._selector.getXMeans()
 
     @property
     def x_l2_norms(self) -> np.ndarray:
+        """Scale divisors of the columns of ``X``: the L2 norms of the centered columns
+        under ``ScalingMode.L2``, the sample standard deviations under ``ZSCORE``,
+        ones under ``NONE``."""
         return self._selector.getXL2Norms()
 
     @property
     def y_mean(self) -> float:
+        """Mean of ``y`` that the selector subtracted (0 under ``ScalingMode.NONE``)."""
         return self._selector.getYMean()
 
     @property
     def selected_var(self) -> np.ndarray:
+        """Selection indicator (length p, 1 = selected)."""
         return self._selector.getSelectedVar()
 
     @property
-    def selected_indices(self) -> np.ndarray:
+    def selected_indices(self) -> list[int]:
+        """0-based indices of the selected variables."""
         return self._selector.getSelectedIndices()
 
 

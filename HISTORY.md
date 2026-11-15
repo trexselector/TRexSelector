@@ -14,6 +14,80 @@ its removal in the next minor releases, and the R package compiles in less time.
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1. The DESCRIPTION of the R package reads 2.0.1
 until the release is prepared.
 
+### 2026-11-15
+
+#### The core selector: the help on the three surfaces, the dummy distributions, the positions of R
+
+Step 3 of the documentation comparison for `TRexSelector`, its control and its result, the last of the
+selectors. Findings, probes and the four investigations: notes/handover_2026-11-15/doc_step3/
+(CORE_findings.md, 29 findings). Fabian, 2026-11-15: "Let us fix the problems with core according to
+CORE_findings.md".
+
+- The result fields. `R_mat` is the number of selected variables per stopping time and voting level and
+  has one row less than `FDP_hat_mat` and `Phi_mat`. C++ called it a "selection frequency matrix (T_stop
+  × v_len)" and Python "empirical tail probabilities (p x T_stop)". The Python texts of `T_stop`
+  ("maximum number of LARS steps run"), `fdp_hat_mat` ("p x |voting_grid|"), `phi_mat`, `phi_prime`
+  ("smoothed selection probability") and `voting_grid` ("vote totals") are replaced by the content of
+  the C++ texts.
+- `T_stop` against the selection. Fabian: "T_stop is the stopping time, alias the number of included
+  dummies. The T-solvers have run until T_stop dummies each", and "We must explicitly write down the
+  divergence of T_stop vs the final choice, otherwise that confuses a user". The paper's Algorithm 2
+  raises T while the estimate at the top voting level is at or below the target and then takes the
+  largest selection over T' in {1, ..., T - 1}. The 1.x versions and the library do the same, with the
+  tie rule "highest voting level, then latest stopping time". In a probe of 1,080 runs the selection
+  sat one step before `T_stop` in most runs, for the path solvers and for the greedy solvers under the
+  stagnation stop alike, and up to nine steps before it. The help of `T_stop` and of `select()` on the
+  three surfaces and guide page 03 say so. A field for the stopping time of the selection is left to
+  the naming pass of 2.1.0. Not changed: after an exit at T_max or by the stagnation stop the last step
+  is feasible and dropped all the same, as in the 1.x versions (the paper keeps T_max). It held a
+  larger selection in 1 of the 1,080 runs. Fabian: "we keep it, but we should set a comment about 1.x
+  version mirror". The comment stands at the dropped row in trex.cpp, and the text of `drop_last_row`
+  no longer calls the row "the step that violated the stopping criterion" in every case.
+- `x_l2_norms` (Fabian: proposal A). The vector holds the divisor the normalizer applied and needs to
+  restore X: the L2 norms under L2, the sample standard deviations under ZSCORE, ones under NONE. The
+  values stay, the three help texts say what they are, and the name goes to the naming pass.
+- The control. `opt_threshold` is the reference voting level of the L-loop ("Optimization threshold"
+  before). `tloop_max_stagnant_steps` counts T steps in a row without a growing selection. A value of
+  0 acted as 1 and is refused now (Fabian: "yes a"): the C++ constructor throws, `trex_control()` of R
+  stops, and Python raises the ValueError of the core. `use_memory_mapping` concerns the dummy
+  matrices. The solver lists of the stagnation default
+  are complete in C++ and Python (TIENET, TIENET_AUG, TIKNET and the coordinate-descent family were
+  missing). HCONCAT: "same FDR in simulations, not the same selection" where the enum said "same
+  result" (3 of 20 data sets differed in a probe). The text of `lloop_strategy` no longer calls fresh
+  dummies "essential for unbiased FDR calibration".
+- Seeds. A seed of 0 or more makes a run deterministic and reproducible, a negative seed draws from
+  the hardware entropy source, and a Monte Carlo study gives every trial a seed of its own or uses -1.
+  The note of `trex_control()` in R said that a fixed seed "can inflate the empirical FDR". A probe of
+  8 batches of 250 trials gave 0.0865, 0.0848 and 0.0841 for one fixed seed, a seed per trial and -1,
+  with the same spread between the batches, so the claim is gone.
+- Guide page 03, three surfaces. The stagnation stop is described through the selection (it said "the
+  FDP estimate has not improved"). Under NONE only an all-zero column is refused (it said "constant
+  columns are rejected in every mode"). The paragraph on the result fields explains `T_stop`, and the
+  figure text no longer calls the null variables at `T_stop` the false positives of the selection.
+- The dummy distributions. `ConstrainedSparseRademacher` has the default s = 0.1 in C++ and Python,
+  which only the R glue had (Fabian: "Default of 0.1 is ok for all three"). R gains `p1` and `p2` of
+  `"Mammen"`. The R glue takes both defaults from the core. The R help names every default, says that
+  `a` is also the lower bound of the triangle and `b` its mode. The SD family is not reachable from R
+  or Python: both hold the `ad` level only, and the sparse Rademacher distribution appears there as a
+  dummy distribution of the augmented dummies.
+- The positions of R (Fabian: "Yes, R counts from 1, we must fix that"). The errors of the data
+  normalizer said "column 4 (0-based)" for the fifth column. `.r_positions()` in R/utils.R raises the
+  row and column numbers by one, drops "0-based" and spells the scaling mode as the argument. It wraps
+  the constructors of the seven selectors, the run of the SPCA and the biobank selector, the two
+  power rules and `trex_normalize_design()`. Every other error passes as it is.
+- The Python root selector gains a text on each of its 16 attributes, and `selected_indices` is
+  annotated as the list it returns. The text of the core class no longer says that y is used without
+  a copy. The comments of the wrapper class say what the getters return.
+- "the R reference" is "the 1.x versions" in trex.hpp and trex.cpp. The class text lists the derived
+  selectors with their short forms and no longer counts the SPCA selector among them.
+- Tests. C++: the default of the sparse Rademacher constructor. R: the Mammen probabilities reach the
+  dummy draw, the default s, the positions of a constant column, of an all-zero column under NONE and
+  of an entry that is not finite, and an error without a position. The scaling test expects the
+  positions of R. Python: the default s. The three surfaces test that a stagnation window of 0 steps
+  is refused and that 1 runs.
+- C++ 751 of 751, R 2,218, Python 798. `R CMD check --as-cran` Status OK, Sphinx 0 warnings, Doxygen 0
+  warning lines.
+
 ### 2026-11-14
 
 #### The Tikhonov selector accepts TIKNET alone, on the three surfaces

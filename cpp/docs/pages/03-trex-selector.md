@@ -62,10 +62,12 @@ section on the design below). Indices are 0-based.
 `seed` seeds the dummy draws. With a fixed seed a run is reproducible on one platform. The dummies
 come from the C++ standard library's random engines, whose Normal distribution differs between
 standard library implementations, so a seeded run on macOS, Linux and Windows draws different
-dummies and can select differently in the borderline cases. For a Monte Carlo study over many trials
-pass `seed = -1` (the default): every trial then draws its own dummies from the hardware entropy
-source, while a fixed seed would give every trial the same per-experiment seeds and correlate the
-trials.
+dummies and can select differently in the borderline cases.
+
+A seed of 0 or more makes a run deterministic. A Monte Carlo study over many trials gives every
+trial a seed of its own, which keeps the study reproducible, or passes `seed = -1` (the default).
+With -1 every trial draws its dummies from the hardware entropy source, and the study is not
+reproducible bit by bit.
 
 ### The number of random experiments
 
@@ -78,8 +80,9 @@ trials.
 ### Early stopping of the T-loop
 
 The T-loop raises the stopping time \f$T\f$ one dummy at a time. `use_max_T_stop = true` (default)
-bounds it by \f$\lceil n / 2 \rceil\f$, and `tloop_stagnation_stop` stops the loop when the FDP
-estimate has not improved for `tloop_max_stagnant_steps` steps. The stagnation stop is a
+bounds it by \f$\lceil n / 2 \rceil\f$, and `tloop_stagnation_stop` stops the loop when the selection
+at the highest feasible voting level has not grown for `tloop_max_stagnant_steps` steps in a row. The
+stagnation stop is a
 `std::optional<bool>` that defaults to `std::nullopt`, which resolves to off for the path solvers
 (T-LARS, T-LASSO, the elastic nets) and to on for the greedy solvers.
 
@@ -91,8 +94,16 @@ estimate has not improved for `tloop_max_stagnant_steps` steps. The stagnation s
 `getFDPHatMat()` is the FDP estimate per stopping time (rows, up to `T_stop`) and voting level
 (columns), `getRMat()` the number of selected variables per stopping time and voting level, and
 `getPhiMat()` the relative occurrence of each variable over the \f$K\f$ experiments after each
-stopping time. The selection sits where the estimate is below the target and the count is largest.
-The rows are 0-based, so the row of the last stopping time is `T_stop - 1`.
+stopping time. The rows are 0-based, so the row of the last stopping time is `T_stop - 1`.
+
+`T_stop` is the stopping time at which the T-loop stopped, so the random experiments ran until
+`T_stop` dummies were included. It is not the stopping time of the selection. The loop stops when the
+estimate at the highest voting level exceeds the target, or earlier at its bound or by the stagnation
+stop, and the selection is the cell with the
+largest count among the stopping times before `T_stop` whose estimate does not exceed the target.
+Among equal counts the highest voting level wins, then the latest stopping time. The selection
+therefore sits one stopping time before `T_stop` in most runs and sometimes earlier, and `getRMat()`
+has one row less than the other two matrices.
 
 \snippet{trimleft} trex_selector.cpp matrices
 \output{trex_selector.matrices.txt}
@@ -102,9 +113,9 @@ The rows are 0-based, so the row of the last stopping time is `T_stop - 1`.
 
 \image html trex_selector_phi.png "Figure 3: Relative occurrences after the last stopping time. The true support stands out." width=80%
 
-Relative occurrences after the last stopping time. The true support has occurrence one. The null
-variables that reach the voting level are the false positives of the selection, and nearly all of
-the others stay far below it.
+Relative occurrences at `T_stop`, the last stopping time. The true support has occurrence one, and
+nearly all null variables stay far below the voting level. The selection itself is taken from an
+earlier stopping time, as described above.
 
 `getPhiPrime()` is the calibrated occurrence that enters the FDP estimate (at most 1, possibly
 negative), `getXMeans()`, `getXL2Norms()` and `getYMean()` are the centering and scaling constants the
@@ -184,8 +195,8 @@ design under `ScalingMode::L2`.
 \snippet{trimleft} trex_selector.cpp scaling
 \output{trex_selector.scaling.txt}
 
-Non-finite entries and constant columns are rejected in every mode with an exception that names the
-column.
+Non-finite entries and constant columns are rejected with an exception that names the column. Under
+`ScalingMode::NONE` a constant column runs and only an all-zero column is rejected.
 
 ## The design is used in place
 

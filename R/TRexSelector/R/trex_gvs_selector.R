@@ -134,16 +134,16 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_gvs_mmap_create(
+        private$ptr <- .r_positions(trex_gvs_mmap_create(
           get_ptr(X), y, tFDR, gvs_control, control, seed, verbose
-        )
+        ))
       } else {
         X <- .as_double_matrix(X)
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)
-        private$ptr <- trex_gvs_create(
+        private$ptr <- .r_positions(trex_gvs_create(
           X, y, tFDR, gvs_control, control, seed, verbose
-        )
+        ))
       }
     },
 
@@ -317,13 +317,13 @@ trex_gvs_lambda2_power_rule <- function(X, y,
   .check_gvs_groups_length(gvs_control, X)
   y <- .as_double_vector(y)
   if (inherits(X, "MemoryMappedMatrix")) {
-    return(trex_gvs_lambda2_power_rule_mmap_impl(
+    return(.r_positions(trex_gvs_lambda2_power_rule_mmap_impl(
       get_ptr(X), y, tFDR, gvs_control, control, as.integer(seed),
       as.numeric(grid), as.numeric(knee_tolerance), verbose
-    ))
+    )))
   }
   X <- .as_double_matrix(X)
-  trex_gvs_lambda2_power_rule_impl(X, y, tFDR, gvs_control, control,
+  .r_positions(trex_gvs_lambda2_power_rule_impl(X, y, tFDR, gvs_control, control,
                                    as.integer(seed), as.numeric(grid),
-                                   as.numeric(knee_tolerance), verbose)
+                                   as.numeric(knee_tolerance), verbose))
 }

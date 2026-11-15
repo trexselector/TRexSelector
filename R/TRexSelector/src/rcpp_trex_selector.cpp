@@ -242,10 +242,16 @@ TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
             int dim = dd.containsElementNamed("dim") ? (int)dd["dim"] : 3;
             params.dummy_distribution = Distribution::UniformSphere(dim);
         } else if (type_str == "Mammen") {
-            params.dummy_distribution = Distribution::Mammen();
+            // the two probabilities keep the defaults of the core unless given
+            const Distribution def = Distribution::Mammen();
+            double p1 = dd.containsElementNamed("p1") ? (double)dd["p1"] : def.mammen_param_p1;
+            double p2 = dd.containsElementNamed("p2") ? (double)dd["p2"] : def.mammen_param_p2;
+            params.dummy_distribution = Distribution::Mammen(p1, p2);
         } else if (type_str == "ConstrainedSparseRademacher") {
-            double s = dd.containsElementNamed("s") ? (double)dd["s"] : 0.1;
-            params.dummy_distribution = Distribution::ConstrainedSparseRademacher(s);
+            // the default of s is the one of the core
+            params.dummy_distribution = dd.containsElementNamed("s")
+                ? Distribution::ConstrainedSparseRademacher((double)dd["s"])
+                : Distribution::ConstrainedSparseRademacher();
         } else if (type_str == "Logistic") {
             double loc   = dd.containsElementNamed("location") ?
                             (double)dd["location"] : 0.0;

@@ -112,11 +112,11 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
         private$refs <- list(X = X, Y = Y)
         private$is_multi <- FALSE
         private$ptr <- if (is_mmap) {
-          trex_biobank_screening_1d_mmap_create(
-            X, Y, biobank_control_list, screen_control, control, seed, verbose)
+          .r_positions(trex_biobank_screening_1d_mmap_create(
+            X, Y, biobank_control_list, screen_control, control, seed, verbose))
         } else {
-          trex_biobank_screening_1d_create(
-            X, Y, biobank_control_list, screen_control, control, seed, verbose)
+          .r_positions(trex_biobank_screening_1d_create(
+            X, Y, biobank_control_list, screen_control, control, seed, verbose))
         }
       } else if (is.matrix(Y) || y_mmap) {
         n_y <- if (y_mmap) dim(Y)[1] else nrow(Y)
@@ -125,11 +125,11 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
         private$refs <- list(X = X, Y = Y)
         private$is_multi <- TRUE
         private$ptr <- if (is_mmap) {
-          trex_biobank_screening_2d_mmap_create(
-            X, Y, biobank_control_list, screen_control, control, seed, verbose)
+          .r_positions(trex_biobank_screening_2d_mmap_create(
+            X, Y, biobank_control_list, screen_control, control, seed, verbose))
         } else {
-          trex_biobank_screening_2d_create(
-            X, Y, biobank_control_list, screen_control, control, seed, verbose)
+          .r_positions(trex_biobank_screening_2d_create(
+            X, Y, biobank_control_list, screen_control, control, seed, verbose))
         }
       } else {
         stop("Response evaluation Y must be a numeric vector, a numeric matrix or an mmap_matrix.")
@@ -157,9 +157,9 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
     #'   \code{as.data.frame(r[c("phenotype_index", "estimated_FDR", "method_used", "used_fallback_trex")])))}.
     select = function() {
       if (private$is_multi) {
-        return(trex_biobank_screening_screen_phenotypes(private$ptr))
+        return(.r_positions(trex_biobank_screening_screen_phenotypes(private$ptr)))
       } else {
-        return(trex_biobank_screening_screen_phenotype(private$ptr))
+        return(.r_positions(trex_biobank_screening_screen_phenotype(private$ptr)))
       }
     }
   ),

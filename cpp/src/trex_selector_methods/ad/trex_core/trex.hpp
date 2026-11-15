@@ -55,11 +55,9 @@ namespace dummygen = trex::utils::datageneration::dummygen;
 // ===================================================================================
 
 /**
- * @brief Sentinel value for "auto-estimate this correlation coefficient from X".
+ * @brief Sentinel value for "estimate this correlation coefficient from X".
  *
- * @details Any value outside [−1, 1] works. We use −2.0 because it is safe under
- *          -ffast-math (unlike quiet_NaN, which breaks std::isnan under
- *          -ffinite-math-only).
+ * @details A value outside [−1, 1], which no correlation coefficient takes.
  */
 inline constexpr double AUTO_ESTIMATE_CORRELATION = -2.0;
 
@@ -68,9 +66,11 @@ inline constexpr double AUTO_ESTIMATE_CORRELATION = -2.0;
  *
  * @details Greedy solvers tend to run into a noise trap in the T-loop: they
  *          keep admitting variables until the maximum number of dummies is
- *          selected instead of terminating. Only the equiangular LARS-path
- *          solvers (TLARS and its derivatives TLASSO / TENET / TENET_AUG)
- *          are free of this behavior. Used to resolve the AUTO default of
+ *          selected instead of terminating. The path solvers are free of this
+ *          behavior: TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG,
+ *          TIKNET and the coordinate-descent family. Every other solver
+ *          counts as greedy: TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP,
+ *          TNCGMP, TOOLS and TAFS. Used to resolve the AUTO default of
  *          TRexControlParameter::tloop_stagnation_stop and for the
  *          corresponding validation warning.
  */
@@ -118,8 +118,8 @@ inline constexpr bool isGreedySolver(
  */
 enum class LLoopStrategy {
     SKIPL,                 // Stored, one-shot: fixed dummies = max_dummy_multiplier * p.
-    STANDARD,              // Stored, fresh dummies at each L-loop iteration (conservative).
-    HCONCAT,               // Stored, horizontally expand dummy matrices (faster, same result).
+    STANDARD,              // Stored, fresh dummies at each L-loop iteration (default).
+    HCONCAT,               // Stored, the matrices grow by p columns per L step (faster, same FDR).
     PERMUTATION,           // Stored base dummy matrix + deterministic row permutations per k.
     PERMUTATION_SEEDED,  // Seed-derived base + row permutations per k; nothing stored.
     SEEDED               // STANDARD's draws re-derived per k and L step; nothing stored.
@@ -135,7 +135,7 @@ struct TRexControlParameter {
     // Experiment Configuration
     // ====================================
 
-    /** @brief Number of random experiments (default: 20). */
+    /** @brief Number of random experiments (default: 20, at least 2). */
     std::size_t K = 20;
 
     /** @brief Maximum number of dummy variables as a multiple of p (default: 10). */
@@ -145,7 +145,9 @@ struct TRexControlParameter {
      *  the T-loop can run up to the number of dummies. */
     bool use_max_T_stop = true;
 
-    /** @brief Optimization threshold (default: 0.75). */
+    /** @brief Reference voting level of the L-loop (default: 0.75, in [0, 1]).
+     *  The L-loop raises L until the FDP estimate at the largest voting level
+     *  that does not exceed opt_threshold is at or below tFDR. */
     double opt_threshold = 0.75;
 
     // ===================================
@@ -161,13 +163,11 @@ struct TRexControlParameter {
 
     /** @brief Strategy for L-loop calibration (default: STANDARD).
      *
-     *  STANDARD redraws a fresh set of dummies at every L-loop iteration,
-     *  matching the CRAN R reference (random_experiments / add_dummies_GVS),
-     *  which regenerates dummies from scratch each time the dummy count
-     *  grows.  This keeps the K dummy realisations independent of one another
-     *  and of the previous iteration, which is essential for unbiased FDR
-     *  calibration.  HCONCAT (append-and-reuse) is faster but reuses earlier
-     *  draws across iterations, so it is no longer the default.
+     *  STANDARD draws a fresh set of dummies at every L-loop iteration, as
+     *  the 1.x versions do (random_experiments / add_dummies_GVS). HCONCAT
+     *  keeps the dummies of the earlier iterations and appends p columns per
+     *  iteration, which is faster. The two gave the same FDR in simulations
+     *  and can select differently. LLoopStrategy lists the other strategies.
      */
     LLoopStrategy lloop_strategy = LLoopStrategy::STANDARD;
 
@@ -175,20 +175,24 @@ struct TRexControlParameter {
     // T-Loop Early Stopping
     // ==================================
 
-    /** @brief T-loop early stopping when the support set stagnates.
+    /** @brief T-loop early stopping when the selection stagnates.
      *
      *  Tri-state: std::nullopt (default, "auto") resolves by solver family in
-     *  the TRexSelector constructor — DISABLED for the equiangular LARS-path
-     *  solvers (TLARS, TLASSO, TENET, TENET_AUG), which terminate properly on
-     *  their own (matching the R reference and the T-Rex paper, neither of
-     *  which has a stagnation stop), and ENABLED for greedy solvers, which
-     *  otherwise run into a noise trap and select until the maximum number of
-     *  dummies is reached. Set an explicit true/false to override.
+     *  the TRexSelector constructor. It is off for the path solvers (TLARS,
+     *  TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, TIKNET and the
+     *  coordinate-descent family), which terminate on their own, as in the
+     *  1.x versions and the T-Rex paper, neither of which has a stagnation
+     *  stop. It is on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP,
+     *  TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a
+     *  noise trap and select until the maximum number of dummies is reached.
+     *  Set an explicit true/false to override.
      */
     std::optional<bool> tloop_stagnation_stop = std::nullopt;
 
-    /** @brief Number of stagnant steps to trigger early T-loop stopping.
-     *  Recommendation: Pick from {3, 5, 7} (default: 5).
+    /** @brief Number of T steps in a row without a growing selection that
+     *  ends the T-loop under the stagnation stop (default: 5, at least 1).
+     *  The selection is counted at the highest voting level whose FDP
+     *  estimate does not exceed tFDR.
      */
     std::size_t tloop_max_stagnant_steps = 5;
 
@@ -235,7 +239,8 @@ struct TRexControlParameter {
     // Memory-Mapping
     // ===================================
 
-    /** @brief Enable memory-mapped D storage (default: false). */
+    /** @brief Keep the dummy matrices in memory-mapped files instead of in
+     *  memory (default: false). */
     bool use_memory_mapping = false;
 
     // ===================================
@@ -284,15 +289,18 @@ struct TRexControlParameter {
  * @details
  *  Base class implementing the T-Rex algorithm.
  *  Supports in-memory and memory-mapped data via Eigen::Map.
- *  Serves as base for derived variants
- *  - DA-TRex
- *  - Screen-TRex
- *  - GVS-TRex
- *  - Sparse-PCA-TRex
+ *  Base class of the selectors
+ *  - T-Rex+DA (TRexDASelector)
+ *  - T-Rex+GVS (TRexGVSSelector)
+ *  - T-Rex+Screening (ScreenTRexSelector)
+ *  - T-Rex+Tikhonov (TRexTikhonovSelector)
+ *
+ *  T-Rex+SPCA (TRexSPCA) and the biobank screening (BiobankScreenTRex) run
+ *  selectors of these classes.
  *
  *  Key design:
  *    - Does not own X (p >> n, too large to copy).
- *    - Normalizes X in-place, centers y.
+ *    - Normalizes X in-place and restores it, copies y and centers the copy.
  *    - Delegates dummy generation, solver dispatch, warm-start management,
  *      memory mapping, and experiment coordination to helper modules.
  *    - select() returns SelectionResult with all key outputs.
@@ -408,7 +416,7 @@ protected:
     /** @brief Indices of selected variables. */
     std::vector<std::size_t> selected_indices_;
 
-    /** @brief Stopping time. */
+    /** @brief Stopping time at which the T-loop stopped (SelectionResult::T_stop). */
     std::size_t T_stop_{0};
 
     /** @brief Number of dummy variables used. */
@@ -426,7 +434,7 @@ protected:
     /** @brief Relative occurrence matrix. */
     Eigen::MatrixXd Phi_mat_;
 
-    /** @brief Selection frequency matrix. */
+    /** @brief Numbers of selected variables (see SelectionResult::R_mat). */
     Eigen::MatrixXd R_mat_;
 
     /** @brief Adjusted relative occurrences (p x 1). */
@@ -441,7 +449,7 @@ protected:
      *  carries the *deflated* Phi rather than the raw experiment Phi. For the
      *  base (non-deflating) selector this equals `exp_results.Phi`; for
      *  dependency-aware variants it is the deflated calibration-level Phi,
-     *  mirroring R's `Phi_mat <- matrix(Phi, nrow = 1)` seed. */
+     *  as the seed row `Phi_mat <- matrix(Phi, nrow = 1)` of the 1.x versions. */
     Eigen::VectorXd lloop_last_Phi_;
 
     /** @brief Current dummy multiplier in L-loop. */
@@ -488,28 +496,39 @@ public:
         /** @brief Voting threshold applied to Phi to obtain the selection. */
         double v_thresh;
 
-        /** @brief Selection frequency matrix (T_stop × v_len). */
+        /** @brief Number of selected variables per stopping time (rows) and
+         *  voting level (columns), (T_stop - 1) × v_len. The stopping time
+         *  T_stop is not part of it. One row for T_stop = 1. */
         Eigen::MatrixXd R_mat;
 
-        /** @brief Calibrated stopping time T_stop. */
+        /** @brief Stopping time T_stop: the number of included dummies at
+         *  which the T-loop stopped, so the random experiments ran until
+         *  T_stop dummies were included. For T_stop > 1 it is not the
+         *  stopping time of the selection: the selection is taken from the
+         *  stopping times 1 to T_stop - 1, mostly from T_stop - 1 and
+         *  sometimes from an earlier one (see select()). */
         std::size_t T_stop;
 
-        /** @brief Total number of dummy variables used. */
+        /** @brief Total number of dummy variables used (L · p). */
         std::size_t num_dummies;
 
         /** @brief Dummy multiplier L determined by the L-loop. */
         std::size_t dummy_factor_L;
 
-        /** @brief Estimated FDP matrix (T_stop × v_len). */
+        /** @brief Estimated FDP per stopping time (rows) and voting level
+         *  (columns), T_stop × v_len. */
         Eigen::MatrixXd FDP_hat_mat;
 
-        /** @brief Relative occurrence matrix Phi_T (T_stop × p). */
+        /** @brief Relative occurrences of the variables over the K random
+         *  experiments per stopping time (rows), T_stop × p. */
         Eigen::MatrixXd Phi_mat;
 
-        /** @brief Adjusted relative occurrences Phi' (p × 1). */
+        /** @brief Calibrated relative occurrences Phi' that enter the FDP
+         *  estimate (p × 1), at most 1 and possibly negative. */
         Eigen::VectorXd Phi_prime;
 
-        /** @brief Voting grid V = [0.5, 0.5+1/K, ..., 1-eps]. */
+        /** @brief Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by
+         *  1 - eps. */
         Eigen::VectorXd voting_grid;
 
         virtual ~SelectionResult() = default;
@@ -525,10 +544,19 @@ public:
      *
      * @param X Design matrix (n x p) — Eigen::Map, not copied.
      * @param y Response vector (n x 1) — Eigen::Map, copied internally.
-     * @param tFDR Target False Discovery Rate (default: 0.1).
+     * @param tFDR Target False Discovery Rate in [0, 1] (default: 0.1).
      * @param trex_control Algorithmic control parameters.
-     * @param seed Random seed (< 0 for non-deterministic).
+     * @param seed Random seed (default: -1). A seed >= 0 makes the run
+     *        deterministic and reproducible: the same seed draws the same
+     *        dummies. A negative seed draws them from the hardware entropy
+     *        source, and the run is not reproducible bit by bit. A Monte Carlo
+     *        study gives every trial a seed of its own, or uses -1.
      * @param verbose Enable verbose output (default: true).
+     *
+     * @throws std::invalid_argument for an argument or a control value out of
+     *         range, a response of the wrong length, a non-finite entry of X
+     *         or y, or a dead column of X.
+     * @throws std::runtime_error if another live selector or solver holds X.
      */
     TRexSelector(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::VectorXd>& y,
@@ -564,6 +592,16 @@ public:
      *  a second call throws std::runtime_error instead of running on a design
      *  that is no longer standardized: construct a new selector to run
      *  again. The results of the run stay readable.
+     *
+     *  The T-loop raises the stopping time until the FDP estimate at the
+     *  highest voting level exceeds tFDR, or until its bound or the
+     *  stagnation stop ends it, and T_stop is where it stopped.
+     *  The selection is the cell with the largest number of selected
+     *  variables among the stopping times 1 to T_stop - 1 (the stopping time
+     *  1 for T_stop = 1) and the voting levels whose FDP estimate does not
+     *  exceed tFDR. Among equal counts the highest voting level wins, then
+     *  the latest stopping time. The stopping time of the selection is
+     *  therefore below T_stop, mostly by one and sometimes by more.
      *
      *  A select() that ends with an exception gives X back at once (original
      *  scale, claim released) and retires the selector as well.
@@ -618,13 +656,15 @@ public:
     // Public Getters — Normalization
     // ============================================================
 
-    /** @brief Get means of the design matrix columns. */
+    /** @brief Get means of the design matrix columns (zeros under ScalingMode::NONE). */
     const Eigen::VectorXd& getXMeans() const noexcept { return norm_params_.X_means; }
 
-    /** @brief Get L2 norms of the design matrix columns. */
+    /** @brief Get the scale divisors of the design matrix columns: the L2
+     *  norms of the centered columns under ScalingMode::L2, the sample
+     *  standard deviations under ZSCORE, ones under NONE. */
     const Eigen::VectorXd& getXL2Norms() const noexcept { return norm_params_.X_l2norms; }
 
-    /** @brief Get mean of the response vector. */
+    /** @brief Get mean of the response vector (0 under ScalingMode::NONE). */
     double getYMean() const noexcept { return norm_params_.y_mean; }
 
     // ============================================================
@@ -644,7 +684,8 @@ public:
     /** @brief Number of dummies used by the last select() (the L-loop's calibration). */
     std::size_t getNumDummies() const noexcept { return num_dummies_; }
 
-    /** @brief Get stopping time T_stop. */
+    /** @brief Get the stopping time T_stop at which the T-loop stopped. The
+     *  selection is taken from an earlier one (SelectionResult::T_stop). */
     std::size_t getTStop() const noexcept { return T_stop_; }
 
     /** @brief Get voting grid vector V = [0.5, 0.5+1/K, ..., 1-eps]. */
@@ -659,7 +700,7 @@ public:
     /** @brief Get Phi matrix. */
     const Eigen::MatrixXd& getPhiMat() const noexcept { return Phi_mat_; }
 
-    /** @brief Get selection frequency matrix R. */
+    /** @brief Get the numbers of selected variables (SelectionResult::R_mat). */
     const Eigen::MatrixXd& getRMat() const noexcept { return R_mat_; }
 
     /** @brief Get Phi prime vector. */
@@ -725,11 +766,13 @@ protected:
      * @param Phi_mat Matrix of relative occurrences.
      * @param voting_grid Voting grid vector.
      * @param T_stop Stopping time.
-     * @param drop_last_row Drop the last T-row when T_stop > 1 (default:
-     *        the R reference's convention for the main run, whose last row
-     *        is the step that violated the stopping criterion). A run over a
-     *        FIXED T budget, such as a lambda_2 pilot, passes false: none of
-     *        its rows is a boundary step.
+     * @param drop_last_row Drop the last T-row when T_stop > 1 (default, the
+     *        convention of the 1.x versions for the main run). After an exit
+     *        by the FDP rule that row is the step that broke the rule. After
+     *        an exit at T_max or by the stagnation stop it is a feasible step
+     *        and is dropped all the same, which mirrors the 1.x versions. A
+     *        run over a FIXED T budget, such as a lambda_2 pilot, passes
+     *        false: none of its rows is a boundary step.
      *
      * @return Selection result containing selected variables and related information.
      */
@@ -976,8 +1019,9 @@ protected:
     };
 
     /**
-     * @brief Unified L-loop calibration driver shared by the four looping
-     *        strategies (STANDARD, HCONCAT, PERMUTATION, SEEDED).
+     * @brief Unified L-loop calibration driver shared by the five looping
+     *        strategies (STANDARD, HCONCAT, PERMUTATION, SEEDED,
+     *        PERMUTATION_SEEDED).
      *
      * Implements the common while-loop skeleton:
      *   - guard `dummy_multiplier_LL_ <= max_dummy_multiplier &&
@@ -1036,7 +1080,7 @@ protected:
                                          er::ExperimentResults& exp_results);
 
     /**
-     * @brief Run L-loop calibration using the PERMUTATION_SEEDED strategy.
+     * @brief Run L-loop calibration using the SEEDED or the PERMUTATION_SEEDED strategy.
      *
      * @param FDP_hat Current FDP estimates (updated in-place).
      * @param exp_results Current experiment results (updated in-place).

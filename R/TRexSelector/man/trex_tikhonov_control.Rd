@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_tikhonov_control}
 \alias{trex_tikhonov_control}
-\title{TRex Tikhonov Control Parameters}
+\title{T-Rex+Tikhonov Control Parameters}
 \usage{
 trex_tikhonov_control(
   tikhonov_K = NULL,

@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_dummy_distribution}
 \alias{trex_dummy_distribution}
-\title{TRex Dummy Variable Distribution}
+\title{T-Rex Dummy Variable Distribution}
 \usage{
 trex_dummy_distribution(
   type = "Normal",
@@ -13,7 +13,9 @@ trex_dummy_distribution(
   b = NULL,
   c = NULL,
   dim = NULL,
-  s = NULL
+  s = NULL,
+  p1 = NULL,
+  p2 = NULL
 )
 }
 \arguments{
@@ -24,23 +26,31 @@ trex_dummy_distribution(
 \code{"Mammen"}, \code{"ConstrainedSparseRademacher"}, \code{"Logistic"}.
 Defaults to \code{"Normal"}.}
 
-\item{a}{Scale / upper-bound parameter (used by \code{"Uniform"}).}
+\item{a}{Half-range of \code{"Uniform"}, which draws from U(-a, a) (default:
+sqrt(3), unit variance), or lower bound of \code{"Triangle"} (default:
+-sqrt(6)).}
 
-\item{df}{Degrees of freedom (used by \code{"StudentT"}).}
+\item{df}{Degrees of freedom of \code{"StudentT"} (default: 5).}
 
-\item{location}{Location parameter (used by \code{"Laplace"},
-\code{"Gumbel"}, \code{"Logistic"}).}
+\item{location}{Location parameter of \code{"Laplace"}, \code{"Gumbel"}
+and \code{"Logistic"} (default: 0).}
 
-\item{scale}{Scale parameter (used by \code{"Laplace"},
-\code{"Gumbel"}, \code{"Logistic"}).}
+\item{scale}{Scale parameter of \code{"Laplace"} (default: 1/sqrt(2)),
+\code{"Gumbel"} (default: 1) and \code{"Logistic"} (default: sqrt(3)/pi).}
 
-\item{b}{Upper vertex of the triangle (used by \code{"Triangle"}).}
+\item{b}{Mode of \code{"Triangle"} (default: 0).}
 
-\item{c}{Right boundary of the triangle (used by \code{"Triangle"}).}
+\item{c}{Upper bound of \code{"Triangle"} (default: sqrt(6)).}
 
-\item{dim}{Dimension of the sphere (used by \code{"UniformSphere"}).}
+\item{dim}{Dimension of the sphere of \code{"UniformSphere"} (default: 3).}
 
-\item{s}{Sparsity parameter (used by \code{"ConstrainedSparseRademacher"}).}
+\item{s}{Sparsity parameter of \code{"ConstrainedSparseRademacher"} in
+(0, 1] (default: 0.1). An entry is +1 or -1 with probability s/2 each and
+0 otherwise, and s = 1 gives the Rademacher distribution.}
+
+\item{p1, p2}{Probabilities of the two points of \code{"Mammen"},
+-(sqrt(5) - 1)/2 and (sqrt(5) + 1)/2 (defaults: (sqrt(5) + 1)/(2 sqrt(5))
+and (sqrt(5) - 1)/(2 sqrt(5))).}
 }
 \value{
 A named list describing the dummy distribution, for use in

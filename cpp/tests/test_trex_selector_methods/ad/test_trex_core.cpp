@@ -371,6 +371,14 @@ TEST(TRexCoreTest, Exceptions_InvalidParameters) {
     trex_ctrl.K = 0;
     EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, trex_ctrl),
                  std::invalid_argument);
+
+    // The stagnation window is at least one step
+    TRexControlParameter zero_steps;
+    zero_steps.tloop_max_stagnant_steps = 0;
+    EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, zero_steps),
+                 std::invalid_argument);
+    zero_steps.tloop_max_stagnant_steps = 1;
+    EXPECT_NO_THROW(TRexSelector(X_map, y_map, 0.1, zero_steps));
 }
 
 

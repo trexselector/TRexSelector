@@ -356,9 +356,9 @@ class DummyDistribution:
     Uniform: typing.ClassVar[DummyDistribution.Type]  # value = <Type.Uniform: 1>
     UniformSphere: typing.ClassVar[DummyDistribution.Type]  # value = <Type.UniformSphere: 7>
     @staticmethod
-    def constrained_sparse_rademacher(s: typing.SupportsFloat | typing.SupportsIndex) -> DummyDistribution:
+    def constrained_sparse_rademacher(s: typing.SupportsFloat | typing.SupportsIndex = 0.1) -> DummyDistribution:
         """
-        Create Constrained Sparse Rademacher distribution.
+        Create Constrained Sparse Rademacher distribution: an entry is +1 or -1 with probability s / 2 each and 0 otherwise, s in (0, 1] (default 0.1), and s = 1 gives the Rademacher distribution.
         """
     @staticmethod
     def gumbel(location: typing.SupportsFloat | typing.SupportsIndex = 0.0, scale: typing.SupportsFloat | typing.SupportsIndex = 1.0) -> DummyDistribution:
@@ -420,91 +420,121 @@ class DummyDistribution:
         """
     @property
     def constrained_sparse_rademacher_s(self) -> float:
-        ...
+        """
+        Sparsity parameter s of the constrained sparse Rademacher distribution in (0, 1] (default 0.1).
+        """
     @constrained_sparse_rademacher_s.setter
     def constrained_sparse_rademacher_s(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def gumbel_location(self) -> float:
-        ...
+        """
+        Location of the Gumbel distribution (default 0).
+        """
     @gumbel_location.setter
     def gumbel_location(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def gumbel_scale(self) -> float:
-        ...
+        """
+        Scale of the Gumbel distribution (default 1).
+        """
     @gumbel_scale.setter
     def gumbel_scale(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def laplace_location(self) -> float:
-        ...
+        """
+        Location of the Laplace distribution (default 0).
+        """
     @laplace_location.setter
     def laplace_location(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def laplace_scale(self) -> float:
-        ...
+        """
+        Scale of the Laplace distribution (default 1 / sqrt(2)).
+        """
     @laplace_scale.setter
     def laplace_scale(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def logistic_location(self) -> float:
-        ...
+        """
+        Location of the logistic distribution (default 0).
+        """
     @logistic_location.setter
     def logistic_location(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def logistic_scale(self) -> float:
-        ...
+        """
+        Scale of the logistic distribution (default sqrt(3) / pi).
+        """
     @logistic_scale.setter
     def logistic_scale(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def mammen_param_p1(self) -> float:
-        ...
+        """
+        Probability of the point -(sqrt(5) - 1) / 2 of the Mammen distribution.
+        """
     @mammen_param_p1.setter
     def mammen_param_p1(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def mammen_param_p2(self) -> float:
-        ...
+        """
+        Probability of the point (sqrt(5) + 1) / 2 of the Mammen distribution.
+        """
     @mammen_param_p2.setter
     def mammen_param_p2(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def sphere_dim(self) -> int:
-        ...
+        """
+        Dimension of the sphere of the uniform sphere distribution (default 3).
+        """
     @sphere_dim.setter
     def sphere_dim(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     @property
     def student_t_df(self) -> float:
-        ...
+        """
+        Degrees of freedom of Student's t-distribution (default 5).
+        """
     @student_t_df.setter
     def student_t_df(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def triangle_a(self) -> float:
-        ...
+        """
+        Lower bound of the triangle distribution (default -sqrt(6)).
+        """
     @triangle_a.setter
     def triangle_a(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def triangle_b(self) -> float:
-        ...
+        """
+        Mode of the triangle distribution (default 0).
+        """
     @triangle_b.setter
     def triangle_b(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def triangle_c(self) -> float:
-        ...
+        """
+        Upper bound of the triangle distribution (default sqrt(6)).
+        """
     @triangle_c.setter
     def triangle_c(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def uniform_a(self) -> float:
-        ...
+        """
+        Half-range of the uniform distribution U(-a, a) (default sqrt(3)).
+        """
     @uniform_a.setter
     def uniform_a(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
@@ -652,9 +682,9 @@ class LLoopStrategy:
     
       SKIPL : Stored, one-shot: fixed dummies = max_dummy_multiplier * p.
     
-      STANDARD : Stored; fresh dummies at each L-loop iteration (conservative).
+      STANDARD : Stored; fresh dummies at each L-loop iteration (default).
     
-      HCONCAT : Stored; horizontally expand dummy matrices across L (faster, same result).
+      HCONCAT : Stored; the dummy matrices grow by p columns per L step (faster, same FDR in simulations, not the same selection as STANDARD).
     
       PERMUTATION : Stored base dummy matrix + deterministic row permutations per experiment.
     
@@ -1355,37 +1385,37 @@ class SelectionResult:
     @property
     def T_stop(self) -> int:
         """
-        T_stop: maximum number of LARS steps run.
+        Stopping time T_stop: the number of included dummies at which the T-loop stopped, so the random experiments ran until T_stop dummies were included. For T_stop > 1 it is not the stopping time of the selection: the selection is taken from the stopping times 1 to T_stop - 1, mostly from T_stop - 1 and sometimes from an earlier one (see select()).
         """
     @property
     def dummy_factor_L(self) -> int:
         """
-        Dummy multiplier L used.
+        Dummy multiplier L determined by the L-loop.
         """
     @property
     def fdp_hat_mat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        FDP hat matrix (p x |voting_grid|).
+        Estimated FDP per stopping time (rows) and voting level (columns), T_stop x len(voting_grid).
         """
     @property
     def num_dummies(self) -> int:
         """
-        Total number of dummy variables used.
+        Total number of dummy variables used (L * p).
         """
     @property
     def phi_mat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Phi matrix: relative occurrence counts per predictor.
+        Relative occurrences of the variables over the K random experiments per stopping time (rows), T_stop x p.
         """
     @property
     def phi_prime(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Smoothed selection probability vector phi'.
+        Calibrated relative occurrences that enter the FDP estimate (length p), at most 1 and possibly negative.
         """
     @property
     def r_mat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        R matrix of empirical tail probabilities (p x T_stop).
+        Number of selected variables per stopping time (rows) and voting level (columns), (T_stop - 1) x len(voting_grid). The stopping time T_stop is not part of it. One row for T_stop = 1.
         """
     @property
     def selected_var(self) -> typing.Annotated[numpy.typing.NDArray[numpy.int32], "[m, 1]"]:
@@ -1395,12 +1425,12 @@ class SelectionResult:
     @property
     def v_thresh(self) -> float:
         """
-        Voting threshold v applied to control the FDR.
+        Voting threshold applied to the relative occurrences to obtain the selection.
         """
     @property
     def voting_grid(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Voting grid: per-candidate vote totals across K experiments.
+        Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by 1 - eps.
         """
 class SolverHyperparameters:
     """
@@ -1459,7 +1489,7 @@ class SolverHyperparameters:
     @property
     def exch_tie_alpha(self) -> float:
         """
-        Exchangeable-tie band width for greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under trex+DA: 0.25.
+        Exchangeable-tie band width for greedy solvers (TOMP/TAFS) in pairwise ranking-noise sd units; 0 = off. Recommended under T-Rex+DA: 0.25.
         """
     @exch_tie_alpha.setter
     def exch_tie_alpha(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1692,7 +1722,7 @@ class TRexControlParameter:
     @property
     def K(self) -> int:
         """
-        Number of random simulation experiments to run over variable inclusions.
+        Number of random experiments (default 20, at least 2).
         """
     @K.setter
     def K(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1708,7 +1738,7 @@ class TRexControlParameter:
     @property
     def lloop_strategy(self) -> LLoopStrategy:
         """
-        L-loop strategy for constructing dummy variables.
+        L-loop strategy (default STANDARD). STANDARD draws fresh dummies at every L step, as the 1.x versions do. HCONCAT keeps the dummies of the earlier steps and appends p columns per step, which is faster. The two gave the same FDR in simulations and can select differently. See LLoopStrategy for the others.
         """
     @lloop_strategy.setter
     def lloop_strategy(self, arg0: LLoopStrategy) -> None:
@@ -1740,7 +1770,7 @@ class TRexControlParameter:
     @property
     def opt_threshold(self) -> float:
         """
-        Voting threshold parameter (default 0.75).
+        Reference voting level of the L-loop (default 0.75, in [0, 1]). The L-loop raises L until the FDP estimate at the largest voting level that does not exceed opt_threshold is at or below tFDR.
         """
     @opt_threshold.setter
     def opt_threshold(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
@@ -1772,7 +1802,7 @@ class TRexControlParameter:
     @property
     def solver_type(self) -> SolverTypeForTRex:
         """
-        Solver algorithm to use for T-Rex.
+        Solver of the random experiments (default TLARS).
         """
     @solver_type.setter
     def solver_type(self, arg0: SolverTypeForTRex) -> None:
@@ -1780,7 +1810,7 @@ class TRexControlParameter:
     @property
     def tloop_max_stagnant_steps(self) -> int:
         """
-        Maximum consecutive stagnant T-loop steps before early stopping.
+        Number of T steps in a row without a growing selection that ends the T-loop under the stagnation stop (default 5, at least 1). The selection is counted at the highest voting level whose FDP estimate does not exceed tFDR.
         """
     @tloop_max_stagnant_steps.setter
     def tloop_max_stagnant_steps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
@@ -1788,7 +1818,7 @@ class TRexControlParameter:
     @property
     def tloop_stagnation_stop(self) -> bool | None:
         """
-        T-loop early stopping on support-set stagnation. None (default) resolves by solver family: disabled for equiangular LARS-path solvers (TLARS/TLASSO/TENET/TENET_AUG, matching the R reference), enabled for greedy solvers (guards their noise trap). Set True/False to override.
+        T-loop early stopping when the selection stagnates. None (default) resolves by solver family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, TIKNET and the coordinate-descent family), which terminate on their own, as in the 1.x versions and the T-Rex paper, and on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a noise trap. Set True or False to override.
         """
     @tloop_stagnation_stop.setter
     def tloop_stagnation_stop(self, arg0: bool | None) -> None:
@@ -1804,7 +1834,7 @@ class TRexControlParameter:
     @property
     def use_memory_mapping(self) -> bool:
         """
-        Use out-of-core memory-mapped dummy matrix.
+        Keep the dummy matrices in memory-mapped files instead of in memory (default False).
         """
     @use_memory_mapping.setter
     def use_memory_mapping(self, arg0: bool) -> None:
@@ -2357,7 +2387,7 @@ class TRexSelector:
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the selector. X and y are accessed zero-copy via Eigen::Map.
+        Construct the selector. X is used without a copy, y is copied by the selector.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, trex_control: TRexControlParameter = ..., seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
@@ -2370,7 +2400,7 @@ class TRexSelector:
         """
     def getFDPHatMat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Return the FDP hat matrix.
+        Return the estimated FDP per stopping time (rows) and voting level (columns).
         """
     def getK(self) -> int:
         """
@@ -2390,23 +2420,23 @@ class TRexSelector:
         """
     def getNumSelected(self) -> int:
         """
-        Return the number of selected predictors.
+        Return the number of selected variables.
         """
     def getPhiMat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Return the Phi occurrence-count matrix.
+        Return the relative occurrences of the variables per stopping time (rows).
         """
     def getPhiPrime(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Return the smoothed selection probability vector phi'.
+        Return the calibrated relative occurrences that enter the FDP estimate, at most 1 and possibly negative.
         """
     def getRMat(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]"]:
         """
-        Return the R matrix of empirical tail probabilities.
+        Return the number of selected variables per stopping time (rows) and voting level (columns), see SelectionResult.r_mat.
         """
     def getSelectedIndices(self) -> list[int]:
         """
-        Return 0-based indices of selected predictors.
+        Return the 0-based indices of the selected variables.
         """
     def getSelectedVar(self) -> typing.Annotated[numpy.typing.NDArray[numpy.int32], "[m, 1]"]:
         """
@@ -2422,27 +2452,27 @@ class TRexSelector:
         """
     def getTStop(self) -> int:
         """
-        Return T_stop: the LARS step count used.
+        Return T_stop, the stopping time at which the T-loop stopped. The selection is taken from an earlier one, see SelectionResult.T_stop.
         """
     def getVotingGrid(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Return the voting grid.
+        Return the voting levels 0.5, 0.5 + 1/K, ... below 1, closed by 1 - eps.
         """
     def getVotingThreshold(self) -> float:
         """
-        Return the voting threshold v.
+        Return the voting threshold of the selection.
         """
     def getXL2Norms(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Return the column-wise L2 norms of X after centering.
+        Return the scale divisors of the columns of X: the L2 norms of the centered columns under L2, the sample standard deviations under ZSCORE, ones under NONE.
         """
     def getXMeans(self) -> typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]"]:
         """
-        Return the column means of X.
+        Return the column means of X that the selector subtracted (zeros under NONE).
         """
     def getYMean(self) -> float:
         """
-        Return the mean of y.
+        Return the mean of y that the selector subtracted (0 under NONE).
         """
     def restore(self) -> None:
         """
@@ -2451,6 +2481,8 @@ class TRexSelector:
     def select(self) -> SelectionResult:
         """
         Run the T-Rex algorithm and return a SelectionResult. A selector runs once: select() gives X back when it ends, so a second call raises RuntimeError instead of running on a design that is no longer standardized. Construct a new selector to run again. A select() that ends with an error gives X back at once (original scale) and retires the selector as well.
+        
+        The T-loop raises the stopping time until the FDP estimate at the highest voting level exceeds tFDR, or until its bound or the stagnation stop ends it, and T_stop is where it stopped. The selection is the cell with the largest number of selected variables among the stopping times 1 to T_stop - 1 (the stopping time 1 for T_stop = 1) and the voting levels whose FDP estimate does not exceed tFDR. Among equal counts the highest voting level wins, then the latest stopping time. The stopping time of the selection is therefore below T_stop, mostly by one and sometimes by more.
         """
 class TRexTikhonovControlParameter:
     """

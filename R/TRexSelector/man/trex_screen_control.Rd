@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_screen_control}
 \alias{trex_screen_control}
-\title{TRex Screen Control Parameters}
+\title{T-Rex+Screening Control Parameters}
 \usage{
 trex_screen_control(
   use_bootstrap_CI = FALSE,

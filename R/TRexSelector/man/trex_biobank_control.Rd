@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_biobank_control}
 \alias{trex_biobank_control}
-\title{TRex Biobank Control Parameters}
+\title{T-Rex Biobank Screening Control Parameters}
 \usage{
 trex_biobank_control(
   lower_bound_FDR = 0.05,

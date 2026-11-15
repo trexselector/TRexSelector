@@ -210,14 +210,14 @@ TRexSPCASelector <- R6::R6Class("TRexSPCASelector",
     select = function() {
       selector <- if (inherits(private$X_ref, "mmap_matrix")) trex_spca_select_mmap
                   else trex_spca_select
-      private$result_ <- selector(
+      private$result_ <- .r_positions(selector(
         private$X_ref,
         private$M_,
         private$tFDR_,
         private$ctrl,
         private$seed_,
         private$verbose_
-      )
+      ))
       invisible(self)
     }
   ),

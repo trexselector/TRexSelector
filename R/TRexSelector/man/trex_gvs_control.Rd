@@ -2,7 +2,7 @@
 % Please edit documentation in R/control_parameters.R
 \name{trex_gvs_control}
 \alias{trex_gvs_control}
-\title{TRex GVS Control Parameters}
+\title{T-Rex+GVS Control Parameters}
 \usage{
 trex_gvs_control(
   gvs_type = "EN",
