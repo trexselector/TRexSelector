@@ -1,4 +1,4 @@
-// Example program of the guide page "T-Rex GVS: grouped variable selection". The regions
+// Example program of the guide page "T-Rex+GVS: grouped variable selection". The regions
 // between the //! [name] markers appear in the page, with the output they print next to them.
 #include "doc_output.hpp"
 

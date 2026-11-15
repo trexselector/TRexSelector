@@ -1,4 +1,4 @@
-# Screening: Screen-T-Rex and the biobank screening {#screening}
+# Screening: T-Rex+Screening and the biobank screening {#screening}
 
 [TOC]
 
@@ -6,7 +6,7 @@
 
 A genomics biobank holds hundreds of thousands of variables and hundreds of phenotypes. Running the
 full T-Rex calibration on every phenotype is costly, and for most phenotypes the answer is that
-nothing is selected. Screen-T-Rex \cite machkour2023screen is a single-pass version of the random
+nothing is selected. T-Rex+Screening \cite machkour2023screen is a single-pass version of the random
 experiments without the L-loop and the T-loop: \f$K\f$ experiments with \f$p\f$ dummies each, stopped
 at the first dummy, and a false discovery rate (FDR) estimate read off the vote. The estimate is one
 over the number of selected variables, and it is 1 when nothing is selected. The screening reports
@@ -14,7 +14,7 @@ this estimated FDR instead of controlling a target, so it is a fast first pass. 
 wraps it in a decision rule per phenotype: when the estimated FDR of the screening falls into an acceptance
 window, the screening result is kept, otherwise the full T-Rex selector runs as a fallback.
 
-## Screen-T-Rex
+## T-Rex+Screening
 
 The screening selector takes no target FDR. The headers and names of this page:
 
@@ -109,7 +109,7 @@ a laptop \cite scheidt2023bigtrex.
 ## Examples
 
 The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
-repository holds runnable demos and Monte Carlo studies of Screen-T-Rex and the biobank screening,
+repository holds runnable demos and Monte Carlo studies of T-Rex+Screening and the biobank screening,
 in memory and memory-mapped, with their results and a README per demo, in
 [R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_screening),
 [Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_screening)

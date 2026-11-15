@@ -122,11 +122,11 @@ time, and `getVotingGrid()` the voting levels. The T-Rex selector page walks thr
 | --- | --- | --- |
 | Independent or modestly dependent variables | TRexSelector | T-Rex selector |
 | Strongly dependent variables (autoregressive, equi-correlated, clustered) | TRexDASelector | T-Rex+DA |
-| Groups of correlated variables that should enter together | TRexGVSSelector | T-Rex GVS |
-| Very large \f$p\f$, a fast first pass before the full selector | ScreenTRexSelector | Screen-T-Rex |
-| Many phenotypes against one genotype matrix | BiobankScreenTRex | Screen-T-Rex |
-| Sparse principal components | TRexSPCA | T-Rex SPCA |
-| A structured penalty (smoothness, graph Laplacian, groups) | TRexTikhonovSelector | T-Rex Tikhonov |
+| Groups of correlated variables that should enter together | TRexGVSSelector | T-Rex+GVS |
+| Very large \f$p\f$, a fast first pass before the full selector | ScreenTRexSelector | T-Rex+Screening |
+| Many phenotypes against one genotype matrix | BiobankScreenTRex | T-Rex+Screening |
+| Sparse principal components | TRexSPCA | T-Rex+SPCA |
+| A structured penalty (smoothness, graph Laplacian, groups) | TRexTikhonovSelector | T-Rex+Tikhonov |
 
 The solver inside the random experiments is set in `TRexControlParameter::solver_type`. T-LARS
 (terminating least angle regression) is the default and the solver of the T-Rex paper. T-LASSO adds
@@ -141,6 +141,6 @@ the families, and every solver can be run on its own.
 
 The citation metadata of the repository is in its `CITATION.cff`. The methods are published in
 \cite machkour2025trex (T-Rex), \cite machkour2025datrex (T-Rex+DA), \cite machkour2022gvs and
-\cite machkour2023ien (T-Rex GVS), \cite machkour2023screen (Screen-T-Rex), \cite machkour2024spca
-(T-Rex SPCA), \cite scheidt2023bigtrex (memory mapping) and \cite scheidt2026greedy (the terminating
+\cite machkour2023ien (T-Rex+GVS), \cite machkour2023screen (T-Rex+Screening), \cite machkour2024spca
+(T-Rex+SPCA), \cite scheidt2023bigtrex (memory mapping) and \cite scheidt2026greedy (the terminating
 greedy pursuits).

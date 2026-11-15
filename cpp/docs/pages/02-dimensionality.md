@@ -74,7 +74,7 @@ rests on \cite machkour2025datrex.
 In genomics a design has hundreds of thousands or millions of variables and up to a hundred thousand
 observations, and the method is the same while the computation is not. Each random experiment
 enlarges the design by \f$L \cdot p\f$ dummy columns, \f$K\f$ experiments run, and the design itself
-may not fit in memory. Screen-T-Rex runs the random experiments once as a fast first pass
+may not fit in memory. T-Rex+Screening runs the random experiments once as a fast first pass
 \cite machkour2023screen, memory-mapped designs keep the data on disk \cite scheidt2023bigtrex, the
 seeded dummy strategies store no dummy matrices, the greedy solvers are cheaper per step
 \cite scheidt2026greedy, and the thread budgets of the library put the cores to work.

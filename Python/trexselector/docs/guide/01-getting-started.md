@@ -138,11 +138,11 @@ print(np.round(sel.fdp_hat_mat[sel.T_stop - 1], 3))
 | --- | --- | --- |
 | Independent or modestly dependent variables | `TRexSelector` | T-Rex selector |
 | Strongly dependent variables (autoregressive, equi-correlated, clustered) | `TRexDASelector` | T-Rex+DA |
-| Groups of correlated variables that should enter together | `TRexGVSSelector` | T-Rex GVS |
-| Very large $p$, a fast first pass before the full selector | `TRexScreeningSelector` | Screen-T-Rex |
-| Many phenotypes against one genotype matrix | `TRexBiobankScreeningSelector` | Screen-T-Rex |
-| Sparse principal components | `TRexSPCASelector` | T-Rex SPCA |
-| A structured penalty (smoothness, graph Laplacian, groups) | `TRexTikhonovSelector` | T-Rex Tikhonov |
+| Groups of correlated variables that should enter together | `TRexGVSSelector` | T-Rex+GVS |
+| Very large $p$, a fast first pass before the full selector | `TRexScreeningSelector` | T-Rex+Screening |
+| Many phenotypes against one genotype matrix | `TRexBiobankScreeningSelector` | T-Rex+Screening |
+| Sparse principal components | `TRexSPCASelector` | T-Rex+SPCA |
+| A structured penalty (smoothness, graph Laplacian, groups) | `TRexTikhonovSelector` | T-Rex+Tikhonov |
 
 The solver inside the random experiments is set in `TRexControlParameter.solver_type`. T-LARS
 (terminating least angle regression) is the default and the solver of the T-Rex paper. T-LASSO adds
@@ -163,6 +163,6 @@ sel2.selected_indices
 
 The citation metadata of the repository is in its `CITATION.cff`. The methods are published in
 {cite}`machkour2025trex` (T-Rex), {cite}`machkour2025datrex` (T-Rex+DA),
-{cite}`machkour2022gvs,machkour2023ien` (T-Rex GVS), {cite}`machkour2023screen` (Screen-T-Rex),
-{cite}`machkour2024spca` (T-Rex SPCA), {cite}`scheidt2023bigtrex` (memory mapping) and
+{cite}`machkour2022gvs,machkour2023ien` (T-Rex+GVS), {cite}`machkour2023screen` (T-Rex+Screening),
+{cite}`machkour2024spca` (T-Rex+SPCA), {cite}`scheidt2023bigtrex` (memory mapping) and
 {cite}`scheidt2026greedy` (the terminating greedy pursuits).

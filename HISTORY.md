@@ -16,6 +16,15 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### The guides and the READMEs use the short forms
+
+T-Rex+GVS, T-Rex+Screening, T-Rex+SPCA and T-Rex+Tikhonov replace "T-Rex GVS", "Screen-T-Rex", "T-Rex
+SPCA" and "T-Rex Tikhonov" in 95 lines of 28 files: the titles, tables and running text of the guide
+pages 01, 02 and 05 to 08 on the three surfaces, the landing pages, the READMEs of R, Python and C++,
+the two navigation files and three C++ guide examples. The search index of the R vignettes is rebuilt
+(the heading "T-Rex+Screening" has the anchor `t-rexscreening`), and the README of the R package is
+knit again. The heading "The elastic net policy" of page 05 stays with the parked page review.
+
 #### The old method names leave the comments, the help texts and the progress messages
 
 Fabian, 2026-11-14: the short forms are T-Rex+DA, T-Rex+GVS and T-Rex+Screening, and the names

@@ -174,8 +174,8 @@ thread budgets.
 |----|----|----|
 | `TRexSelector` | FDR-controlled variable selection, the T-Rex selector | `trex_control()` |
 | `TRexDASelector` | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `trex_da_control()` |
-| `TRexGVSSelector` | group variable selection (GVS), T-Rex GVS | `trex_gvs_control()` |
-| `TRexScreeningSelector` | fast FDR-controlled screening of many variables, Screen-T-Rex | `trex_screen_control()` |
+| `TRexGVSSelector` | group variable selection (GVS), T-Rex+GVS | `trex_gvs_control()` |
+| `TRexScreeningSelector` | fast FDR-controlled screening of many variables, T-Rex+Screening | `trex_screen_control()` |
 | `TRexBiobankScreeningSelector` | phenotype screening of genomic biobank designs | `trex_biobank_control()` |
 | `TRexSPCASelector` | sparse principal component analysis (SPCA) under FDR control | `trex_spca_control()` |
 | `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix | `trex_tikhonov_control()` |
@@ -272,10 +272,10 @@ of the repository.
 2.  Data dimensionality and FDR control
 3.  The T-Rex selector
 4.  T-Rex+DA: dependent variables
-5.  T-Rex GVS: grouped variable selection
-6.  Screening: Screen-T-Rex and the biobank screening
-7.  T-Rex SPCA: sparse principal components under FDR control
-8.  T-Rex Tikhonov: a general penalty matrix
+5.  T-Rex+GVS: grouped variable selection
+6.  Screening: T-Rex+Screening and the biobank screening
+7.  T-Rex+SPCA: sparse principal components under FDR control
+8.  T-Rex+Tikhonov: a general penalty matrix
 9.  The T-solvers
 10. The ML methods
 11. Memory mapping: disk-backed designs

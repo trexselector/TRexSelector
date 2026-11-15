@@ -108,8 +108,8 @@ the T-solver choice, the dummy settings and the thread budgets, and returns a re
 | ------------------------------ | ---------------------------------------------------------------- | ------------------------------ |
 | `TRexSelector`                 | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
 | `TRexDASelector`               | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `TRexDAControlParameter`       |
-| `TRexGVSSelector`              | group variable selection (GVS), T-Rex GVS                        | `TRexGVSControlParameter`      |
-| `TRexScreeningSelector`        | FDR-controlled screening of many variables, Screen-T-Rex         | `ScreenTRexControlParameter`   |
+| `TRexGVSSelector`              | group variable selection (GVS), T-Rex+GVS                        | `TRexGVSControlParameter`      |
+| `TRexScreeningSelector`        | FDR-controlled screening of many variables, T-Rex+Screening      | `ScreenTRexControlParameter`   |
 | `TRexBiobankScreeningSelector` | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |
 | `TRexSPCASelector`             | sparse principal component analysis (SPCA) under FDR control     | `TRexSPCAControlParameter`     |
 | `TRexTikhonovSelector`         | selection with a general Tikhonov penalty matrix                 | `TRexTikhonovControlParameter` |

@@ -1,5 +1,5 @@
 ---
-title: "T-Rex Tikhonov: a general penalty matrix"
+title: "T-Rex+Tikhonov: a general penalty matrix"
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -10,7 +10,7 @@ bibliography: references.bib
 csl: ieee.csl
 link-citations: true
 vignette: >
-  %\VignetteIndexEntry{T-Rex Tikhonov: a general penalty matrix}
+  %\VignetteIndexEntry{T-Rex+Tikhonov: a general penalty matrix}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

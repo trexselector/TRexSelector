@@ -5,7 +5,7 @@ kernelspec:
   display_name: Python 3
 ---
 
-# T-Rex Tikhonov: a general penalty matrix
+# T-Rex+Tikhonov: a general penalty matrix
 
 ```{code-cell} python
 :tags: [remove-cell]

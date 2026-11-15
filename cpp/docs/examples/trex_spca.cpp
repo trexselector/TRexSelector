@@ -1,4 +1,4 @@
-// Example program of the guide page "T-Rex SPCA". The regions between the
+// Example program of the guide page "T-Rex+SPCA". The regions between the
 // //! [name] markers appear in the page, with the output they print next to them.
 #include "doc_output.hpp"
 

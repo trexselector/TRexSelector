@@ -34,10 +34,10 @@ Getting started <guide/01-getting-started>
 Dimensionality and FDR <guide/02-dimensionality>
 The T-Rex selector <guide/03-trex-selector>
 T-Rex+DA <guide/04-trex-da>
-T-Rex GVS <guide/05-trex-gvs>
-Screen-T-Rex <guide/06-screening>
-T-Rex SPCA <guide/07-trex-spca>
-T-Rex Tikhonov <guide/08-trex-tikhonov>
+T-Rex+GVS <guide/05-trex-gvs>
+T-Rex+Screening <guide/06-screening>
+T-Rex+SPCA <guide/07-trex-spca>
+T-Rex+Tikhonov <guide/08-trex-tikhonov>
 The T-solvers <guide/09-tsolvers>
 The ML methods <guide/10-ml-methods>
 Memory mapping <guide/11-memory-mapping>

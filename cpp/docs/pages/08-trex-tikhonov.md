@@ -1,4 +1,4 @@
-# T-Rex Tikhonov: a general penalty matrix {#trex_tikhonov}
+# T-Rex+Tikhonov: a general penalty matrix {#trex_tikhonov}
 
 [TOC]
 

@@ -1,4 +1,4 @@
-# T-Rex SPCA: sparse principal components under FDR control {#trex_spca}
+# T-Rex+SPCA: sparse principal components under FDR control {#trex_spca}
 
 [TOC]
 
@@ -6,7 +6,7 @@
 
 Principal component analysis (PCA) finds the directions of largest variance, and every variable
 contributes to every loading vector. Sparse PCA asks for loadings with few non-zero entries, so that
-a component can be read as a small set of variables. The T-Rex sparse PCA (T-Rex SPCA)
+a component can be read as a small set of variables. The T-Rex sparse PCA (T-Rex+SPCA)
 \cite machkour2024spca decides which variables enter a loading vector with the T-Rex selector. For
 each of the \f$M\f$ components, ordinary PCA gives the component as a response, a T-Rex+GVS run with
 the elastic net selects the variables for it at the target false discovery rate (FDR), and a sparse
@@ -72,7 +72,7 @@ TRexSPCAControlParameter sets the inner machinery.
 - `gvs_ctrl.trex_ctrl.K` and `gvs_ctrl.trex_ctrl.max_dummy_multiplier`: the random experiments and
   the dummy cap of the inner selector.
 
-T-Rex SPCA is defined on the elastic net, and `gvs_ctrl.gvs_type = GVSType::IEN` is rejected.
+T-Rex+SPCA is defined on the elastic net, and `gvs_ctrl.gvs_type = GVSType::IEN` is rejected.
 
 \snippet{trimleft} trex_spca.cpp thresholded
 \output{trex_spca.thresholded.txt}
@@ -90,7 +90,7 @@ restored. The centering happens under every scaling mode, so a file opened in
 ## Examples
 
 The [TRexSelector_Examples](https://github.com/trexselector/TRexSelector_Examples/tree/main)
-repository holds runnable demos and Monte Carlo studies of T-Rex SPCA, with their results and a
+repository holds runnable demos and Monte Carlo studies of T-Rex+SPCA, with their results and a
 README per demo, in
 [R](https://github.com/trexselector/TRexSelector_Examples/tree/main/R/trex_selector_methods/ad/trex_spca),
 [Python](https://github.com/trexselector/TRexSelector_Examples/tree/main/Python/trex_selector_methods/ad/trex_spca)
