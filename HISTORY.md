@@ -1,20 +1,32 @@
 # TRexSelector changelog
 
-## TRexSelector C++ 1.0.1 / R 2.0.2 / Python 1.0.1 (in preparation)
+## TRexSelector C++ 1.0.1 / R 2.0.2 / Python 1.0.1
 
-The fix release after R 2.0.1, not published yet. It collects the work since the sources of R 2.0.1
+The fix release after R 2.0.1. It collects the work since the sources of R 2.0.1
 went to CRAN, and it changes results in several places. The dependency-aware selector takes its
 penalty from the last step for all methods, and its AR1 window follows the magnitude of the
-coefficient. The Tikhonov selector runs on the homotopy solver TIKNET by default. The biobank
+coefficient. The Tikhonov selector runs on the homotopy solver TIKNET alone. The biobank
 screening gives every phenotype its own seed, and the screening selector reports an FDR estimate of 1
 for an empty selection. A coordinate-descent solve that has not converged is an error. Beside the
 corrections the screening selector gains a nearest-neighbor variant, a read-only memory-mapped design
 serves where nothing is written into it, the coordinate-descent solver family is deprecated ahead of
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
-1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1. The DESCRIPTION of the R package reads 2.0.1
-until the release is prepared.
+1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
 ### 2026-11-15
+
+#### The release files carry R 2.0.2
+
+- DESCRIPTION and configure.ac carry version 2.0.2. `configure` is regenerated with Autoconf 2.73 and
+  `inst/CITATION` with `tools/references/make_inst_citation.py`, and only their version lines change.
+  The C++ SDK and the Python package carried 1.0.1 already.
+- `date-released` of CITATION.cff names 2026-11-17, the day planned for the release (Fabian,
+  2026-11-15). The header of this section loses "(in preparation)". The release dates follow at the
+  close, as for R 2.0.1.
+- cran-comments.md follows after the platform checks, because it reports them.
+- The feature release is planned for the end of November as 2.1.0 (Fabian, 2026-11-15): the removal of
+  the coordinate-descent family and the naming pass change the interface, and the deprecation texts of
+  this release name that version.
 
 #### NEWS.md of 2.0.2 read as a whole: one wrong entry and the missing corrections
 

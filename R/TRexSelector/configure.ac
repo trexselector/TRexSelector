@@ -1,4 +1,4 @@
-AC_INIT([TRexSelector], [2.0.1])
+AC_INIT([TRexSelector], [2.0.2])
 
 # Find the R compiler and flags
 : ${R_HOME=`R RHOME`}
