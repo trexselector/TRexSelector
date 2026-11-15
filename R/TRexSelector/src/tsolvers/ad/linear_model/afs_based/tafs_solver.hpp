@@ -44,7 +44,7 @@ namespace trex::tsolvers::ad::linear_model::afs_based {
  *  References:
  *  -----------
  *   I. Zhang and R. Tibshirani, "Adaptive Forward Stepwise: A Method for High Sparsity Regression," J. Mach.
- *     Learn. Res., vol. 27, pp. 1-24, 2026.
+ *     Learn. Res., vol. 27, no. 35, pp. 1-24, 2026.
  *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
  *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
  */

@@ -26,7 +26,7 @@ T. Hastie, J. Taylor, R. Tibshirani, and G. Walther, "Forward Stagewise Regressi
 Electron. J. Stat., vol. 1, pp. 1-29, 2007, doi: 10.1214/07-EJS004.
 
 R. J. Tibshirani, "A General Framework for Fast Stagewise Algorithms," J. Mach. Learn. Res., vol. 16,
-pp. 2543-2588, 2015.
+no. 78, pp. 2543-2588, 2015.
 
 J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
 High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,

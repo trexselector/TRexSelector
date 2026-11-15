@@ -204,6 +204,9 @@
   L-loop strategy is forced to `"STANDARD"`.
 * The vignette "The T-Rex selector" describes the stagnation stop as it works (the selection no longer
   grows) and says that `scaling_mode = "NONE"` rejects all-zero columns only.
+* The references in the help of `TSTAGEWISE_Solver` and `TAFS_Solver` carry the numbers of the two
+  articles in their volumes of the Journal of Machine Learning Research. The reference in the help of
+  `TNCGMP_Solver` names the Proceedings of Machine Learning Research as its series and carries its pages.
 
 ## New
 

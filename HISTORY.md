@@ -16,6 +16,23 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### Three bibliography entries completed and their reference lines rendered anew
+
+The fields were read from the pages of the papers on 2026-11-12 and waited for the staged work of that
+week (old item 19c of the plan). The ORCID iDs of the authors, the other half of that plan step, move to
+the 2.1.0 release (Fabian, 2026-11-15).
+
+- `tibshirani2015stagewise` gains `number = {78}` and `zhang2026afs` `number = {35}`, the numbers of the
+  articles in their volumes of the Journal of Machine Learning Research. `locatello2017mpfw` gains
+  `pages = {860--868}`, and its series reads "Proc. Mach. Learn. Res." in place of "JMLR: W&CP", the
+  name the series carried before.
+- The reference lines of the three solvers that cite the entries are rendered anew with
+  `tools/references/render_references.py`: TSTAGEWISE, TNCGMP and TAFS in the C++ headers, in the R help
+  (`R/tsolvers.R`, three Rd pages) and in the Python docstrings with three stubs. The three guide pages
+  09 read the bibliography and follow without a change.
+- The copy of the bibliography for the R vignettes and the vendored sources of the R package are
+  synchronized. NEWS.md of the R package names the change.
+
 #### The memory tests measure the live heap and no longer fail under load
 
 MLMemory.RidgeCVLowMemory failed once (0.5007 against a budget of 0.5 times the design) in a parallel test

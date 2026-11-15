@@ -885,7 +885,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  the Monotone Lasso,\" Electron. J. Stat., vol. 1, pp. 1-29, 2007,\n"
         "  doi: 10.1214/07-EJS004.\n"
         "R. J. Tibshirani, \"A General Framework for Fast Stagewise Algorithms,\" J. Mach. Learn.\n"
-        "  Res., vol. 16, pp. 2543-2588, 2015.\n"
+        "  Res., vol. 16, no. 78, pp. 2543-2588, 2015.\n"
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
@@ -1110,7 +1110,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "----------\n"
         "F. Locatello, R. Khanna, M. Tschannen, and M. Jaggi, \"A Unified Optimization View on\n"
         "  Generalized Matching Pursuit and Frank-Wolfe,\" in Proc. 20th Int. Conf. Artif. Intell.\n"
-        "  Statist. (AISTATS), JMLR: W&CP vol. 54, 2017.\n"
+        "  Statist. (AISTATS), Proc. Mach. Learn. Res. vol. 54, 2017, pp. 860-868.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
@@ -1127,7 +1127,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "References\n"
         "----------\n"
         "I. Zhang and R. Tibshirani, \"Adaptive Forward Stepwise: A Method for High Sparsity\n"
-        "  Regression,\" J. Mach. Learn. Res., vol. 27, pp. 1-24, 2026.\n"
+        "  Regression,\" J. Mach. Learn. Res., vol. 27, no. 35, pp. 1-24, 2026.\n"
         "F. Scheidt and M. Muma, \"Terminating Greedy Pursuits for High-Dimensional False\n"
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",

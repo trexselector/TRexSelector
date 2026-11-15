@@ -930,7 +930,7 @@ TIENETAug_Solver <- R6::R6Class(
 #'   Electron. J. Stat., vol. 1, pp. 1-29, 2007, doi: 10.1214/07-EJS004.
 #'
 #' R. J. Tibshirani, "A General Framework for Fast Stagewise Algorithms," J. Mach. Learn. Res., vol. 16,
-#'   pp. 2543-2588, 2015.
+#'   no. 78, pp. 2543-2588, 2015.
 #'
 #' J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
 #'   High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
@@ -1238,8 +1238,8 @@ TOOLS_Solver <- R6::R6Class(
 #'
 #' @references
 #' F. Locatello, R. Khanna, M. Tschannen, and M. Jaggi, "A Unified Optimization View on Generalized Matching
-#'   Pursuit and Frank-Wolfe," in Proc. 20th Int. Conf. Artif. Intell. Statist. (AISTATS), JMLR: W&CP vol. 54,
-#'   2017.
+#'   Pursuit and Frank-Wolfe," in Proc. 20th Int. Conf. Artif. Intell. Statist. (AISTATS), Proc. Mach. Learn.
+#'   Res. vol. 54, 2017, pp. 860-868.
 #'
 #' F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control," in
 #'   Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
@@ -1292,7 +1292,7 @@ TNCGMP_Solver <- R6::R6Class(
 #'
 #' @references
 #' I. Zhang and R. Tibshirani, "Adaptive Forward Stepwise: A Method for High Sparsity Regression," J. Mach.
-#'   Learn. Res., vol. 27, pp. 1-24, 2026.
+#'   Learn. Res., vol. 27, no. 35, pp. 1-24, 2026.
 #'
 #' F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control," in
 #'   Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
