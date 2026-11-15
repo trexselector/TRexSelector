@@ -544,7 +544,9 @@ trex_gvs_control <- function(gvs_type = "EN",
 #'
 #' @param use_bootstrap_CI Whether the confidence-based screening (bootstrap) makes the
 #'   selection (default: FALSE). The FDR estimate stays one over the number of selected
-#'   variables.
+#'   variables. With a dependency-aware variant it mostly selects nothing: the filter lowers
+#'   the ordinary count that the confidence level has to reach, and in simulations no level
+#'   reached it in 90 % to 100 % of the runs.
 #' @param R_boot Number of bootstrap resamples, at least 2 (default: 1000).
 #' @param ci_grid_step Step of the grid over the confidence level, in \code{(0, 1]}
 #'   (default: 0.001).
@@ -556,7 +558,8 @@ trex_gvs_control <- function(gvs_type = "EN",
 #'   "TREX_DA_BLOCK_EQUI", for block equi-correlated variables, makes the same comparison
 #'   inside contiguous blocks. "TREX_DA_NN" compares a variable with the neighbors inside the
 #'   AR(1) window whose sample correlation reaches \code{rho_thr_DA}, and a variable without
-#'   such a neighbor keeps its relative occurrence.
+#'   such a neighbor keeps its relative occurrence. With a threshold at or above the
+#'   correlation of the data no neighbor is left, and the variant selects as "TREX".
 #' @param cor_coef Correlation coefficient of the dependency-aware variants. -2.0 triggers
 #'   auto-estimation (default: -2.0). The variants use the magnitude of a supplied coefficient.
 #'   Any other value outside \code{[-1, 1]} gives a warning and is replaced by the estimate.
@@ -565,7 +568,11 @@ trex_gvs_control <- function(gvs_type = "EN",
 #'   \code{ceiling(log(rho_thr_DA) / log(abs(cor_coef)))} columns to each side, up to the
 #'   first lag whose correlation \code{abs(cor_coef)^lag} has fallen to the threshold, range
 #'   \code{[0, 1)}. "TREX_DA_NN": the same window, of which the variables stay whose sample
-#'   correlation with the variable reaches the threshold, range \code{[0, 1)}.
+#'   correlation with the variable reaches the threshold, range \code{[0, 1)}. A threshold at
+#'   or above the correlation of the data leaves no neighbor, the variant then selects as
+#'   "TREX" and the filter protects no longer, so the threshold stays below the correlation
+#'   that the filter is meant to guard against. At the default the variant selected as
+#'   "TREX_DA_AR1" in simulations.
 #'   "TREX_DA_EQUI" and "TREX_DA_BLOCK_EQUI": the filter is skipped when
 #'   \code{abs(cor_coef)} does not exceed the threshold, range \code{[0, 1]}.
 #' @param n_blocks Number of blocks of "TREX_DA_BLOCK_EQUI", between 1 and the number of

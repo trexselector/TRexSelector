@@ -56,8 +56,8 @@ print("estimated FDR:", res.estimated_FDR)
 
 `beta_mat` holds the coefficients of the original variables at the stop, averaged over the
 experiments, and `dummy_betas` the non-zero coefficients of the dummies collected during the
-screening, the material the estimate is read off. The L-loop strategy is forced to `STANDARD` here,
-fresh dummies per experiment.
+screening, the material the estimate is read off. The dummies are fresh per experiment under the
+default L-loop strategy `STANDARD`.
 
 ```{code-cell} python
 print("beta_mat:   ", res.beta_mat.shape)
@@ -69,9 +69,11 @@ print("dummy_betas:", res.dummy_betas.shape)
 `use_bootstrap_CI = True` in the `ScreenTRexControlParameter` selects by the coefficients instead of
 the vote. The non-zero dummy coefficients of the experiments are resampled `R_boot` times, at least
 twice, for a confidence interval of their mean, and a variable is selected when its averaged
-coefficient lies outside that interval. `confidence_level` is the smallest level at which the selection
-is no larger than the ordinary one, searched on a grid of step `ci_grid_step` in $(0, 1]$. The
-estimated FDR is again one over the number of selected variables.
+coefficient lies outside that interval. `confidence_level` is the smallest level at which the
+selection is no larger than the ordinary one, searched on a grid of step `ci_grid_step` in $(0, 1]$.
+The estimated FDR is again one over the number of selected variables. The confidence-based screening
+is meant for the plain screening. With a dependency-aware variant it mostly selects nothing, because
+the filter lowers the ordinary count that the confidence level has to reach.
 
 ```{code-cell} python
 boot_ctrl = tsn.ScreenTRexControlParameter()
@@ -94,7 +96,10 @@ the same independent dummies, and the variants lower the relative occurrence of 
 resembles its correlated neighbours. `TREX_DA_AR1` compares a variable with the neighbours inside a
 window, which holds the lags whose correlation `abs(cor_coef)**lag` reaches `rho_thr_DA`. `TREX_DA_NN`
 keeps the neighbours of that window whose sample correlation reaches `rho_thr_DA`, and a variable
-without such a neighbour keeps its relative occurrence. `TREX_DA_EQUI` compares a variable with all
+without such a neighbour keeps its relative occurrence. With a threshold at or above the correlation
+of the data no neighbour is left, and `TREX_DA_NN` selects as `TREX`, so the threshold stays below
+the correlation that the filter is meant to guard against. At the default the variant selected as
+`TREX_DA_AR1` in simulations. `TREX_DA_EQUI` compares a variable with all
 other variables and `TREX_DA_BLOCK_EQUI` with the variables of its block out of `n_blocks`, and both
 are skipped when `abs(cor_coef)` does not exceed `rho_thr_DA`. Setting `cor_coef` to `-2`, the default,
 estimates the coefficient from the data, and `estimated_correlation` reports the coefficient that was
@@ -109,6 +114,17 @@ ar = tsn.TRexScreeningSelector(X, y, screen_control=ar_ctrl, trex_control=ctrl,
 ar_res = ar.select()
 print("estimated correlation:", round(ar_res.estimated_correlation, 3))
 ```
+
+### A response without signal
+
+The screening stops at the first dummy, so about one null variable is expected to enter before it.
+On a response of pure noise it selected at least one variable in a quarter to a half of the runs in
+simulations, with fewer than one selected variable on average. A small selection is therefore no
+evidence of a signal. The estimated FDR rests on that expected number of false discoveries and is no
+bound on the FDP of a run. With two or more variables selected on noise it is 0.5 or less, while
+every one of them is false. The biobank screening below accepts a screening result only when the
+estimate lies in its window and runs the T-Rex selector otherwise, which selected nothing on noise
+in about 99 % of the runs.
 
 ## The biobank screening
 

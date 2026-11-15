@@ -60,7 +60,9 @@ enum class ScreenTRexMethod {
     /** @brief Screening with the dependency-aware filter of the nearest
      *  neighbors: a variable is compared with the neighbors inside the AR(1)
      *  window whose sample correlation reaches rho_thr_DA, and a variable
-     *  without such a neighbor keeps its relative occurrence. */
+     *  without such a neighbor keeps its relative occurrence. With a
+     *  threshold at or above the correlation of the data no neighbor is
+     *  left, and the variant selects as TREX. */
     TREX_DA_NN
 };
 
@@ -69,7 +71,10 @@ enum class ScreenTRexMethod {
 struct ScreenTRexControlParameter {
     /** @brief Whether the confidence-based screening (bootstrap) makes the
      *  selection (default: false). The FDR estimate stays one over the number
-     *  of selected variables. */
+     *  of selected variables. With a dependency-aware variant it mostly
+     *  selects nothing: the filter lowers the ordinary count that the
+     *  confidence level has to reach, and in simulations no level reached it
+     *  in 90 % to 100 % of the runs. */
     bool use_bootstrap_CI = false;
 
     /** @brief Number of bootstrap resamples, at least 2 (default: 1000). */
@@ -87,7 +92,12 @@ struct ScreenTRexControlParameter {
      *  the first lag whose correlation |cor_coef|^lag has fallen to the
      *  threshold, range [0, 1).
      *  TREX_DA_NN: the same window, of which the variables stay whose sample
-     *  correlation with the variable reaches the threshold, range [0, 1).
+     *  correlation with the variable reaches the threshold, range [0, 1). A
+     *  threshold at or above the correlation of the data leaves no neighbor,
+     *  the variant then selects as TREX and the filter protects no longer,
+     *  so the threshold stays below the correlation that the filter is meant
+     *  to guard against. At the default the variant selected as TREX_DA_AR1
+     *  in simulations.
      *  TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when
      *  |cor_coef| does not exceed the threshold, range [0, 1].
      */
@@ -127,7 +137,9 @@ struct ScreenTRexControlParameter {
  */
 struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
     /** @brief Estimated FDR = 1 / max(1, R) with R selected variables, so
-     *  an empty selection reports 1. */
+     *  an empty selection reports 1. It rests on the expected number of
+     *  false discoveries, about one, and is no bound on the FDP of a run
+     *  (see "A response without signal" in the class text). */
     double estimated_FDR = 0.0;
 
     /** @brief Whether the confidence-based screening (bootstrap) made the
@@ -176,6 +188,20 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
  *  getPhiPrime() equals the relative occurrences, and getFDPHatMat() is a
  *  1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR
  *  estimate of the run is estimated_FDR of the result.
+ *
+ *  A response without signal:
+ *  --------------------------
+ *  The screening stops at the first dummy, so about one null variable is
+ *  expected to enter before it. On a response of pure noise it selected at
+ *  least one variable in a quarter to a half of the runs in simulations, with
+ *  fewer than one selected variable on average. A small selection is
+ *  therefore no evidence of a signal. The estimate, one over the number of
+ *  selected variables, rests on that expected number of false discoveries and
+ *  is no bound on the FDP of a run: with two or more variables selected on
+ *  noise it is 0.5 or less, while every one of them is false. The biobank
+ *  screening accepts a screening result only when the estimate lies in its
+ *  window and runs the T-Rex selector otherwise, which selected nothing on
+ *  noise in about 99 % of the runs.
  *
  *  Supported dummy strategies: STANDARD, SEEDED, PERMUTATION, and
  *  PERMUTATION_SEEDED (single pass at L = p, T = 1 — the L-loop growth

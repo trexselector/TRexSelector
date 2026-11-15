@@ -116,7 +116,8 @@ inline void bind_trex_screen(py::module& m) {
         .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "Screening with the dependency-aware filter of the "
             "nearest neighbors: a variable is compared with the neighbors inside the AR(1) window whose sample "
             "correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative "
-            "occurrence.")
+            "occurrence. With a threshold at or above the correlation of the data no neighbor is left, and the "
+            "variant selects as TREX.")
         .export_values();
 
     py::class_<ScreenTRexControlParameter>(m, "ScreenTRexControlParameter", "Control parameters for "
@@ -124,7 +125,9 @@ inline void bind_trex_screen(py::module& m) {
         .def(py::init<>())
         .def_readwrite("use_bootstrap_CI", &ScreenTRexControlParameter::use_bootstrap_CI, "Whether the "
             "confidence-based screening (bootstrap) makes the selection (default False). The FDR estimate stays one "
-            "over the number of selected variables.")
+            "over the number of selected variables. With a dependency-aware variant it mostly selects nothing: the "
+            "filter lowers the ordinary count that the confidence level has to reach, and in simulations no level "
+            "reached it in 90 % to 100 % of the runs.")
         .def_readwrite("R_boot", &ScreenTRexControlParameter::R_boot, "Number of bootstrap resamples, at least 2 "
             "(default 1000).")
         .def_readwrite("ci_grid_step", &ScreenTRexControlParameter::ci_grid_step, "Step of the grid over the "
@@ -136,6 +139,9 @@ inline void bind_trex_screen(py::module& m) {
             "ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation "
             "abs(cor_coef)**lag has fallen to the threshold, range [0, 1). TREX_DA_NN: the same window, of which "
             "the variables stay whose sample correlation with the variable reaches the threshold, range [0, 1). "
+            "A threshold at or above the correlation of the data leaves no neighbor, the variant then selects as "
+            "TREX and the filter protects no longer, so the threshold stays below the correlation that the filter "
+            "is meant to guard against. At the default the variant selected as TREX_DA_AR1 in simulations. "
             "TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when abs(cor_coef) does not exceed the "
             "threshold, range [0, 1].")
         .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Correlation coefficient of the "
@@ -152,7 +158,9 @@ inline void bind_trex_screen(py::module& m) {
         ""
         "extended with screening-specific fields.")
         .def_readonly("estimated_FDR", &ScreenTRexSelectionResult::estimated_FDR, "Estimated false discovery rate, "
-            "one over the number of selected variables. An empty selection reports 1.")
+            "one over the number of selected variables. An empty selection reports 1. It rests on the expected "
+            "number of false discoveries, about one, and is no bound on the FDP of a run (see the notes of "
+            "TRexScreeningSelector).")
         .def_readonly("used_bootstrap", &ScreenTRexSelectionResult::used_bootstrap, "Whether the confidence-based "
             "screening (bootstrap) made the selection.")
         .def_readonly("confidence_level", &ScreenTRexSelectionResult::confidence_level, "Confidence level that the "
@@ -178,6 +186,16 @@ inline void bind_trex_screen(py::module& m) {
         "of selected variables, phi_prime equals the relative occurrences, and fdp_hat_mat is a\n"
         "1 x 1 matrix with 0, because no FDP is estimated per voting level. The FDR estimate of the\n"
         "run is estimated_FDR of the result.\n"
+        "\n"
+        "A response without signal. The screening stops at the first dummy, so about one null\n"
+        "variable is expected to enter before it. On a response of pure noise it selected at least\n"
+        "one variable in a quarter to a half of the runs in simulations, with fewer than one\n"
+        "selected variable on average. A small selection is therefore no evidence of a signal. The\n"
+        "estimate, one over the number of selected variables, rests on that expected number of\n"
+        "false discoveries and is no bound on the FDP of a run: with two or more variables selected\n"
+        "on noise it is 0.5 or less, while every one of them is false. TRexBiobankScreeningSelector\n"
+        "accepts a screening result only when the estimate lies in its window and runs the T-Rex\n"
+        "selector otherwise, which selected nothing on noise in about 99 % of the runs.\n"
         "\n"
         "L-loop strategies. The screening takes the strategies STANDARD (default), SEEDED,\n"
         "PERMUTATION and PERMUTATION_SEEDED. SEEDED gives the results of STANDARD and keeps one\n"

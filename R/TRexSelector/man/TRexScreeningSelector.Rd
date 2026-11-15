@@ -17,6 +17,19 @@ selected variables, \code{phi_prime} equals the relative occurrences, and \code{
 \code{estimated_FDR}.
 }
 
+\section{A response without signal}{
+
+The screening stops at the first dummy, so about one null variable is expected to enter before it.
+On a response of pure noise it selected at least one variable in a quarter to a half of the runs in
+simulations, with fewer than one selected variable on average. A small selection is therefore no
+evidence of a signal. The estimate, one over the number of selected variables, rests on that
+expected number of false discoveries and is no bound on the FDP of a run: with two or more
+variables selected on noise it is 0.5 or less, while every one of them is false.
+\code{\link{TRexBiobankScreeningSelector}} accepts a screening result only when the estimate lies
+in its window and runs the T-Rex selector otherwise, which selected nothing on noise in about 99 \%
+of the runs.
+}
+
 \section{L-loop strategies}{
 
 The screening takes the strategies \code{"STANDARD"} (default), \code{"SEEDED"},
@@ -85,7 +98,8 @@ Other T-Rex selectors and controls:
   \if{html}{\out{<div class="r6-active-bindings">}}
   \describe{
     \item{\code{estimated_FDR}}{The estimated FDR, one over the number of selected variables. An
-empty selection reports 1.}
+empty selection reports 1. It rests on the expected number of false discoveries, about
+one, and is no bound on the FDP of a run (see the section "A response without signal").}
 
     \item{\code{used_bootstrap}}{Whether the confidence-based screening (bootstrap) made the
 selection.}

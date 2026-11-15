@@ -195,11 +195,25 @@
 * The help of `trex_dummy_distribution()` names the defaults, among them `s = 0.1` of
   `"ConstrainedSparseRademacher"`, and says that `a` is also the lower bound of `"Triangle"` and `b` its
   mode.
+* The help of `TRexScreeningSelector` gains the section "A response without signal". On a response of
+  pure noise the screening selected at least one variable in a quarter to a half of the runs in
+  simulations, so a small selection is no evidence of a signal, and `estimated_FDR` rests on the
+  expected number of false discoveries, about one, and is no bound on the FDP of a run. The help of
+  `trex_screen_control()` says that `use_bootstrap_CI = TRUE` mostly selects nothing together with a
+  dependency-aware variant. The vignette on the screening says the same and no longer claims that the
+  L-loop strategy is forced to `"STANDARD"`.
 * The vignette "The T-Rex selector" describes the stagnation stop as it works (the selection no longer
   grows) and says that `scaling_mode = "NONE"` rejects all-zero columns only.
 
 ## New
 
+* `trex_screen_control()` takes `trex_method = "TREX_DA_NN"`, a nearest-neighbour variant of the
+  screening, as C++ and Python do. A variable is compared with the neighbours inside the AR(1) window
+  whose sample correlation reaches `rho_thr_DA`, and a variable without such a neighbour keeps its
+  relative occurrence. In simulations (1,000 runs per setting) the variant selected as `"TREX_DA_AR1"`
+  at the default threshold and gained power at larger thresholds, at the price of more false
+  discoveries. With a threshold at or above the correlation of the data no neighbour is left, and the
+  variant selects as `"TREX"`.
 * `trex_dummy_distribution()` gains `p1` and `p2`, the two probabilities of `"Mammen"`, as in C++ and
   Python. Without them the golden-ratio probabilities apply, as before.
 * `trex_da_control()` gains `bt_selection_mode` and `trex_gvs_control()` gains `group_labels`. Both

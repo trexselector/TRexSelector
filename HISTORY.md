@@ -16,6 +16,43 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### The screening: what two simulations showed, in the documentation
+
+Fabian, 2026-11-15, after the two Monte Carlo runs of the day (notes/handover_2026-11-15/da_nn_sim/ and
+global_null_sim/, 1,000 replicates each, with an ANALYSIS.md per study): `TREX_DA_NN` stays in the fix
+release (decision D5), the notes go into the documentation, and the bootstrap finding is documented ("the
+screening was never published in combination with DA awareness, having some results can be insightful
+for more and future work").
+
+- `TREX_DA_NN` against `TREX_DA_AR1` and the plain screening, 34 settings, 375,000 runs. At the default
+  threshold 0.02 the paired difference is -0.002 to +0.004 in FDR and 0 to +0.022 in TPR, and 95 % of
+  the runs end with the same result. Both keep the expected number of false discoveries below the
+  bound of the screening paper, p0 / (p + 1), in 22 of 27 dependent settings and fail in the same five
+  (blocks at a correlation of 0.8, 30 actives of 300). The plain screening keeps it in 1 of the 27.
+  With larger thresholds the variant buys power with false discoveries. The rule "no penalty for an
+  empty group" is right on independent columns and removes the protection only when the threshold
+  reaches the correlation of the data. The help of `rho_thr_DA` and of the variant says so.
+- The bootstrap rule with a dependency-aware variant ended with an empty selection in 90 % to 100 % of
+  the runs, for AR1 as for NN, where the plain screening is empty in 48 % to 73 %. The filter lowers the
+  ordinary count that the confidence level has to reach. The help of `use_bootstrap_CI` says so. The
+  rule is not changed.
+- The equi-correlated regime, recorded: an FDR of 0.80 for the plain screening, AR1 and NN, and
+  `TREX_DA_EQUI` selects nothing.
+- The global null, 22 settings, 154,000 runs. The T-Rex selector is empty in 98.9 % of the runs, and
+  the share of non-empty selections is below the target in all 66 cells (means 0.0001, 0.006 and 0.027
+  at the targets 0.05, 0.1 and 0.2). The screening selects something in 24 % to 50 % of the runs with
+  0.27 to 0.71 variables on average, which keeps the bound of the proof of Theorem 1. The statement
+  "FDR <= 1 / R" holds in the mean and not run by run: with two or more selected variables (13 % of the
+  null runs of the plain screening) the estimate is 0.5 or less and the FDP is 1. The window of the
+  biobank screening covers the case (3 of 22,000 null runs fall into it). The class text gains the
+  section "A response without signal" on the three surfaces, and the help of `estimated_FDR` points
+  to it.
+- Guide page 06 on the three surfaces carries the three notes in the sections on the bootstrap, on the
+  dependent variables and in a new section. Its sentence "The L-loop strategy is forced to STANDARD
+  here" was wrong since eea219a and is replaced.
+- NEWS of the R package announces `trex_method = "TREX_DA_NN"`, which had no entry.
+- Texts only. C++ 751 of 751, R 2,218, Python 798.
+
 #### The guides and the READMEs use the short forms
 
 T-Rex+GVS, T-Rex+Screening, T-Rex+SPCA and T-Rex+Tikhonov replace "T-Rex GVS", "Screen-T-Rex", "T-Rex
