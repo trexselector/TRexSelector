@@ -6,26 +6,32 @@
  *        (the allocation guard).
  *
  * @details Eigen allocates through malloc, not operator new, so a global
- *          operator-new counter cannot see it; the measure is the process
- *          peak resident set (getrusage ru_maxrss: bytes on macOS, kilobytes
- *          on Linux). getrusage is POSIX, so on Windows this file holds one
- *          skipped test. Each test takes the peak before a call and
- *          after it on a design of 32 MB; the growth is the working memory
- *          the call needed on top of what was already resident. A full
- *          copy of X raises it by at least one X. The budgets below are the
- *          CURRENT state of each core, tightened as copies are removed; a
- *          regression that adds a copy of X fails here.
+ *          operator-new counter cannot see it. The measure is the number of
+ *          bytes that are live on the heap, read from the allocator
+ *          (malloc_zone_statistics on macOS, mallinfo2 of glibc 2.33 or later
+ *          on Linux). On every other platform this file holds one skipped
+ *          test. A second thread reads the value without a pause while a
+ *          call runs on a design of 32 MB, and the growth of its peak over
+ *          the level before the call is the working memory of the call.
  *
- *          The measurement is a process-wide peak, so each test must run in
- *          its own process: ctest does (gtest_discover_tests invokes the
- *          binary per test); a manual run needs --gtest_filter=MLMemory.<name>,
- *          otherwise the first test's peak hides the later ones. Set
- *          TREX_ML_MEMORY_VERBOSE=1 to print the measured growth per call.
+ *          The peak depends on what the call allocates and not on how the
+ *          allocator reuses freed blocks, so it is the same in every run.
+ *          The sampler can miss a peak that is shorter than its sampling gap
+ *          and can never report more than the peak. A busy machine therefore
+ *          lowers the value at most and cannot make a test fail.
  *
- *          Measured on the copying cores before the in-place rewrites
- *          (macOS, Accelerate BLAS, Eigen 5.0), wide 500 x 8000: ridge CV
- *          4.55 x X, elastic net 1.09 x X, elastic net CV 2.17 x X, SVD
- *          0.35 x X, ridge 0.33 x X, PCA 0.35 x X, scaler 0.03 x X.
+ *          A full copy of X raises the value by one X. The budgets below are
+ *          the CURRENT state of each core, tightened as copies are removed,
+ *          and each lies below the measured peak plus one X, so a regression
+ *          that adds a copy of X fails here. Set TREX_ML_MEMORY_VERBOSE=1 to
+ *          print the measured growth per call.
+ *
+ *          Measured peaks in units of X, wide 500 x 8000, macOS with Eigen
+ *          5.0 and Ubuntu with Eigen 3.4: ridge CV 2.84 and 4.41, elastic net
+ *          1.09 and 1.09, elastic net CV 1.34 and 1.09, SVD 0.33 and 0.22,
+ *          ridge 0.27 and 0.08, PCA 0.34 and 0.22, scaler 0.006 and 0.004,
+ *          low-memory ridge CV 0.18 and 0.19, low-memory elastic net 0.093
+ *          and 0.091, low-memory elastic net CV 0.094 and 0.091.
  */
 // ==================================================================================
 
@@ -33,14 +39,23 @@
 #include <gtest/gtest.h>
 
 // std includes
+#include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <random>
 #include <string>
+#include <thread>
 
-// system includes (getrusage is POSIX)
-#if !defined(_WIN32)
-#include <sys/resource.h>
+// heap statistics of the platform
+#if defined(__APPLE__)
+#include <malloc/malloc.h>
+#define TREX_TEST_HEAP_STATISTICS 1
+#elif defined(__GLIBC__) && defined(__GLIBC_PREREQ)
+#if __GLIBC_PREREQ(2, 33)
+#include <malloc.h>
+#define TREX_TEST_HEAP_STATISTICS 1
+#endif
 #endif
 
 // Eigen includes
@@ -66,25 +81,26 @@ using trex::ml_methods::ridge::RidgeSolver;
 using trex::ml_methods::scaler_methods::LpNormScaler;
 using trex::ml_methods::svd::SVDSolver;
 
-#if defined(_WIN32)
+#if !defined(TREX_TEST_HEAP_STATISTICS)
 
-/** @brief The peak measure is POSIX; the budgets are measured on macOS and Linux. */
-TEST(MLMemory, SkippedOnWindows) {
-    GTEST_SKIP() << "peak resident set via getrusage: POSIX only";
+/** @brief The measure needs the heap statistics of macOS or of glibc 2.33 or later. */
+TEST(MLMemory, SkippedWithoutHeapStatistics) {
+    GTEST_SKIP() << "live heap bytes: malloc_zone_statistics (macOS) or mallinfo2 (glibc 2.33 or later) only";
 }
 
 #else
 
 namespace {
 
-/** @brief Peak resident set size of the process, in bytes. */
-double peak_rss_bytes() {
-    struct rusage ru {};
-    getrusage(RUSAGE_SELF, &ru);
+/** @brief Bytes that are allocated on the heap at this moment. */
+double live_heap_bytes() {
 #if defined(__APPLE__)
-    return static_cast<double>(ru.ru_maxrss);
+    malloc_statistics_t st {};
+    malloc_zone_statistics(nullptr, &st);
+    return static_cast<double>(st.size_in_use);
 #else
-    return static_cast<double>(ru.ru_maxrss) * 1024.0;
+    const struct mallinfo2 mi = mallinfo2();
+    return static_cast<double>(mi.uordblks) + static_cast<double>(mi.hblkhd);
 #endif
 }
 
@@ -107,18 +123,37 @@ struct Design {
                bytes(static_cast<double>(kN) * static_cast<double>(kP) * 8.0) {}
 };
 
-/** @brief Runs f, returns the peak growth in units of X, prints if asked. */
+/**
+ * @brief Runs f and returns the peak of the live heap bytes over the call,
+ *        above the level before it, in units of X. Prints it if asked.
+ *
+ * @details A second thread reads the live heap bytes without a pause while f
+ *          runs. It reports the peak or less, never more.
+ */
 template <class F>
 double growth_in_X(const Design& d, const char* what, F&& f) {
-    // Touch every element so X itself is resident before the baseline.
-    volatile double sink = d.X.sum(); (void)sink;
-    const double before = peak_rss_bytes();
-    f();
-    const double after = peak_rss_bytes();
-    const double units = (after - before) / d.bytes;
+    const double before = live_heap_bytes();
+    double peak = before;
+    std::atomic<bool> stop{false};
+    std::thread sampler([&] {
+        while (!stop.load(std::memory_order_relaxed)) {
+            peak = std::max(peak, live_heap_bytes());
+            std::this_thread::yield();
+        }
+    });
+    try {
+        f();
+    } catch (...) {
+        stop.store(true);
+        sampler.join();
+        throw;
+    }
+    stop.store(true);
+    sampler.join();
+    const double units = (peak - before) / d.bytes;
     if (const char* v = std::getenv("TREX_ML_MEMORY_VERBOSE"); v != nullptr && *v == '1') {
         std::cout << "[  MEMORY  ] " << what << ": peak growth " << units << " x X ("
-                  << (after - before) / 1e6 << " MB)\n";
+                  << (peak - before) / 1e6 << " MB)\n";
     }
     return units;
 }
@@ -138,8 +173,8 @@ TEST(MLMemory, RidgeCV) {
     });
     // The Jacobi SVD keeps one internal copy of the fold under Eigen 5.0 (the
     // QR preconditioner) and two under Eigen 3.4 (plus its scaled copy):
-    // measured 3.64 X on macOS / Eigen 5.0 and 4.50 X on Ubuntu / Eigen 3.4.
-    const double budget = EIGEN_VERSION_AT_LEAST(5, 0, 0) ? 4.0 : 5.0;
+    // measured 2.84 X on macOS / Eigen 5.0 and 4.41 X on Ubuntu / Eigen 3.4.
+    const double budget = EIGEN_VERSION_AT_LEAST(5, 0, 0) ? 3.3 : 4.9;
     EXPECT_LT(g, budget) << "ridge CV allocated more than its budget of " << budget << " x X";
 }
 
@@ -161,7 +196,7 @@ TEST(MLMemory, RidgeCVLowMemory) {
         cv.fit(d.X, d.y, 5, 20, 1000.0, 1u);
     });
     // O(n^2) kernels plus the eigen solver's workspaces and the column-block
-    // buffers: about 11 MB here (0.35 X of a 32 MB design), independent of p.
+    // buffers: about 6 MB here (0.18 X of a 32 MB design), independent of p.
     EXPECT_LT(g, 0.5) << "low-memory ridge CV allocated more than its budget of 0.5 x X";
 }
 
@@ -182,10 +217,9 @@ TEST(MLMemory, ElasticNetCVLowMemory) {
         enet_cv_ccd cv(/*low_memory=*/true);
         cv.fit(d.X, d.y, 0.5, 5, 20, -1.0, 2u, true, true, 1000, 1e-5);
     });
-    // One fit needs about 0.1 X (the p x K paths, 0.095 X in ElasticNetPathLowMemory).
-    // The six fits of a 5-fold CV run one after another, and whether the allocator
-    // reuses the freed paths varies between runs: measured 0.12-0.23 X on macOS /
-    // Eigen 5.0 for identical input. A copy of X would add 1.0 X.
+    // One fit needs about 0.1 X (the p x K paths, 0.093 X in ElasticNetPathLowMemory).
+    // The six fits of a 5-fold CV run one after another and hold the paths of one
+    // fit at a time: 0.094 X.
     EXPECT_LT(g, 0.3) << "low-memory elastic net CV allocated more than its budget of 0.3 x X";
 }
 
@@ -244,6 +278,6 @@ TEST(MLMemory, Scaler) {
     EXPECT_LT(g, 0.1) << "scaler allocated more than its budget of 0.1 x X";
 }
 
-#endif  // !_WIN32
+#endif  // TREX_TEST_HEAP_STATISTICS
 
 } // namespace trex::test::ml_methods::memory

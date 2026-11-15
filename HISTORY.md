@@ -16,6 +16,39 @@ until the release is prepared.
 
 ### 2026-11-15
 
+#### The memory tests measure the live heap and no longer fail under load
+
+MLMemory.RidgeCVLowMemory failed once (0.5007 against a budget of 0.5 times the design) in a parallel test
+run beside two builds. Fabian: "failing tests are not accepted. We try it again, otherwise we must refine
+the test. No commit before we have not found a solution." Evidence with all series:
+notes/handover_2026-11-15/memory_test/.
+
+- The cause. The tests read the peak resident set of the process over one call. On macOS that is no
+  constant of the call: a cross-validation runs its fits one after another, and how the allocator
+  reuses the freed blocks of one fit for the next differs between runs and with the load. The
+  low-memory ridge CV gave 0.20 to 0.54 for identical input. Reproduced in 2 of 20 repetitions of
+  `ctest -j 12` and in 3 and 6 of 60 runs with twelve copies at once, never idle. One BLAS thread gives
+  the same spread. Under the same load RidgeCV reached 3.95 of 4.0 and ElasticNetCVLowMemory 0.287 of
+  0.3. On Ubuntu 24.04 with Eigen 3.4 the value is stable (RidgeCV 4.57 to 4.61).
+- The first attempt, wider budgets for the three cross-validation tests, held in every stressed run and
+  was dropped: the macOS value has no ceiling, and one fold block that is not reused looks like a copy
+  of the design.
+- The cure. The tests measure the bytes that are live on the heap, from `malloc_zone_statistics` on
+  macOS and `mallinfo2` on glibc 2.33 or later, sampled by a second thread without a pause while the
+  call runs. The peak depends on what the call allocates. The sampler can miss a short peak and never
+  reports more than the peak, so load lowers the value at most. On every other platform the file holds
+  one skipped test, as before on Windows. The tests no longer need a process of their own.
+- Measured peaks, macOS with Eigen 5.0 and Ubuntu with Eigen 3.4: ridge CV 2.84 and 4.41, elastic net
+  1.09 and 1.09, elastic net CV 1.34 and 1.09, SVD 0.33 and 0.22, ridge 0.27 and 0.08, PCA 0.34 and
+  0.22, scaler 0.006 and 0.004, low-memory ridge CV 0.18 and 0.19, low-memory elastic net 0.093 and
+  0.091, low-memory elastic net CV 0.094 and 0.091. Idle, 15 runs per test: one value per test, except
+  the elastic net CV on macOS, whose peak is very short (1.29 to 1.34).
+- The budgets stay as they were. Only ridge CV changes, 4.0 to 3.3 under Eigen 5 and 5.0 to 4.9 under
+  Eigen 3.4, half a design above the peaks, because the old ones would let a copy of the design pass
+  under the new measure. A copy held over the call raises every test by exactly 1.0 and fails all ten.
+- After: twelve copies at once, 456 runs on macOS and 456 on Ubuntu, no failed run and no value above
+  the idle value. 20 repetitions of `ctest -j 12` without a failure. C++ 751 of 751.
+
 #### The screening: what two simulations showed, in the documentation
 
 Fabian, 2026-11-15, after the two Monte Carlo runs of the day (notes/handover_2026-11-15/da_nn_sim/ and
