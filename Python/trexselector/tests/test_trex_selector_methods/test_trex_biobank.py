@@ -186,31 +186,38 @@ def test_fallback_result_reports_the_target(signal_data):
 def test_phenotypes_use_independent_seeds():
     """Phenotype i runs with seed + i, and a single-phenotype run with that seed reproduces it."""
     rng = np.random.default_rng(31)
-    n, p, copies = 80, 40, 12
+    n, p, seed = 80, 40, 11
     X = np.asfortranarray(rng.standard_normal((n, p)))
     y_noise = rng.standard_normal(n)
-
-    # Twelve copies of one noise response make the dummy draw visible: the screening of such
-    # a response selects something in about half of the draws
-    Y = np.asfortranarray(np.tile(y_noise[:, None], (1, copies)))
     ctrl = BiobankScreenTRexControl()
     ctrl.trex_screen_ctrl.R_boot = 100
     ctrl.trex_screen_ctrl.trex_ctrl.K = 10
-
-    multi = TRexBiobankScreeningSelector(X.copy(order="F"), Y, bio_ctrl=ctrl, seed=11, verbose=False).select()
-    assert len(multi) == copies
-
     fields = ("selected_indices", "selected_indices_screen_ordinary", "selected_indices_screen_bootstrap",
               "estimated_FDR_screen_ordinary", "estimated_FDR_screen_bootstrap", "method_used")
-    for i, res in enumerate(multi):
-        single = TRexBiobankScreeningSelector(X.copy(order="F"), y_noise.copy(), bio_ctrl=ctrl, seed=11 + i,
-                                              verbose=False).select()
-        for field in fields:
-            assert getattr(res, field) == getattr(single, field), (i, field)
 
-    # With one shared dummy draw the twelve copies would give twelve identical results
-    first = multi[0].selected_indices_screen_ordinary
-    assert any(res.selected_indices_screen_ordinary != first for res in multi)
+    def single(run_seed):
+        res = TRexBiobankScreeningSelector(X.copy(order="F"), y_noise.copy(), bio_ctrl=ctrl, seed=run_seed,
+                                           verbose=False).select()
+        return tuple(getattr(res, field) for field in fields)
+
+    # The dummy draw has to show in the result. The screening of this noise response has few
+    # outcomes, and most seeds give the same one, so no fixed number of seeds is sure to show a
+    # second one. The single-phenotype runs go on until a seed changes the result.
+    limit = 1000
+    singles = [single(seed)]
+    while len(singles) < limit and singles[-1] == singles[0]:
+        singles.append(single(seed + len(singles)))
+    copies = len(singles)
+    assert singles[-1] != singles[0], "1,000 seeds in a row gave one result"
+
+    # Copies of the response: phenotype i runs with seed + i, and the single-phenotype run with
+    # that seed reproduces it. With one shared dummy draw the last copy would equal the first.
+    Y = np.asfortranarray(np.tile(y_noise[:, None], (1, copies)))
+    multi = TRexBiobankScreeningSelector(X.copy(order="F"), Y, bio_ctrl=ctrl, seed=seed, verbose=False).select()
+    assert len(multi) == copies
+    for i, res in enumerate(multi):
+        for field, expected in zip(fields, singles[i]):
+            assert getattr(res, field) == expected, (i, field)
 
 
 def _biobank_design():

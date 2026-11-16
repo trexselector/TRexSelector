@@ -49,6 +49,9 @@
 #include "deprecation.hpp"
 #include "design_views.hpp"
 
+// std includes
+#include <utility>
+
 // =====================================================================================
 
 namespace py = pybind11;
@@ -402,6 +405,19 @@ inline Eigen::Ref<Eigen::MatrixXd> solver_design_ref(
     return reader_design_map(M, options.writesDesign(), name, kSolverDesignRule);
 }
 
+/** @brief X and D of a solver, checked in this order. Two calls inside one
+ *  argument list run in an unspecified order, and the message of a refused
+ *  array names the one that was checked first. */
+inline std::pair<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>> solver_design_refs(
+    const DesignArray& X,
+    const DesignArray& D,
+    const trex::tsolvers::ad::SolverOptions& options
+) {
+    Eigen::Ref<Eigen::MatrixXd> X_ref = solver_design_ref(X, options, "X");
+    Eigen::Ref<Eigen::MatrixXd> D_ref = solver_design_ref(D, options, "D");
+    return {X_ref, D_ref};
+}
+
 
 /**
  * @brief Attach the method set shared by every T-Solver to an existing class binding.
@@ -542,8 +558,8 @@ py::class_<PySolverWrapper<Solver>> bind_standard_tsolver(py::module& m, const s
              init_doc.c_str());
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
                         const SolverOptions& options) {
-                 return std::make_unique<PySolverWrapper<Solver>>(
-                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, options);
+                 auto [X_ref, D_ref] = solver_design_refs(X, D, options);
+                 return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"),
              py::arg("options") = SolverOptions{},
@@ -577,9 +593,8 @@ py::class_<PySolverWrapper<Solver>> bind_groups_tsolver(py::module& m, const std
              init_doc.c_str());
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
                         const Eigen::VectorXi& groups, const SolverOptions& options) {
-                 return std::make_unique<PySolverWrapper<Solver>>(
-                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, groups,
-                     options);
+                 auto [X_ref, D_ref] = solver_design_refs(X, D, options);
+                 return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, groups, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
              py::arg("options") = SolverOptions{},
@@ -620,8 +635,8 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
                         const Eigen::MatrixXd& tikhonov_K, const SolverOptions& options) {
                  const Eigen::SparseMatrix<double> K = tikhonov_K.sparseView();
-                 return std::make_unique<PySolverWrapper<Solver>>(
-                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, K, options);
+                 auto [X_ref, D_ref] = solver_design_refs(X, D, options);
+                 return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, K, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("tikhonov_K"),
              py::arg("options") = SolverOptions{},
@@ -965,9 +980,8 @@ inline void bind_tsolvers_module(py::module& m) {
     cls_tienet_aug.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
                                    const Eigen::VectorXi& groups,
                                    const trex::tsolvers::ad::SolverOptions& options) {
-                 return std::make_unique<PySolverWrapper<TIENETAug_Solver>>(
-                     solver_design_ref(X, options, "X"), solver_design_ref(D, options, "D"), y, groups,
-                     options);
+                 auto [X_ref, D_ref] = solver_design_refs(X, D, options);
+                 return std::make_unique<PySolverWrapper<TIENETAug_Solver>>(X_ref, D_ref, y, groups, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
              py::arg("options") = trex::tsolvers::ad::SolverOptions{},

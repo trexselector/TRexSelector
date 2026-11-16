@@ -14,6 +14,48 @@ serves where nothing is written into it, the coordinate-descent solver family is
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
+### 2026-11-16
+
+#### The platform round before the release: three tests that held on macOS alone
+
+The round ran the tree on macOS and in containers: Ubuntu 24.04 on arm64 with the three CI jobs,
+`R CMD check --as-cran` under R-devel on x86-64, the manylinux wheels of CPython 3.10 to 3.14, the
+objects of the R package under clang 14 with libc++ 14 and under MinGW-w64, and the C++ tests on Ubuntu
+x86-64. The commits since 2026-11-10 had run on macOS only. Three tests failed on Linux, each for a
+cause that macOS hides. Tool and evidence: notes/handover_2026-11-16/ (platform/, seed_test/FINDINGS.md).
+
+- A test that hoped for a second outcome among twelve dummy draws. The R test of the per-phenotype
+  seed of the biobank screening ran twelve copies of one noise response and expected that the
+  screening result differs for at least one of the twelve seeds. On its data the screening gives the
+  same selection for 92 % to 93 % of the seeds (500 seeds, macOS and Ubuntu), so twelve seeds agree
+  with a probability of 0.36 to 0.43. On macOS one of the twelve differs, and with the dummies of
+  libstdc++ none does, on Ubuntu and under R-devel. The Python and the C++ test made the same
+  assumption and passed by their draws.
+- The three tests now run single phenotypes until a seed changes the result, at most 1,000 of them,
+  and then run that many copies of the response. Every copy has to reproduce its single run, which a
+  shared dummy draw cannot do for the last one. The C++ test builds its data from the raw output of
+  `std::mt19937`, which is the same on every platform, where it drew them with
+  `std::normal_distribution`. Over 500 seeds the six compared fields take 11 values on the data of
+  the Python test and 14 on those of the C++ test, with largest shares of 0.33 and 0.25.
+- The same pattern in the screening test of the four strategies in R and Python: it expected other
+  relative occurrences from `PERMUTATION` than from `STANDARD` at one seed, and the two are equal for
+  84 of 500 seeds on the R data and for 61 of 500 on the Python data. The tests take the first seed at
+  which the two differ, at most 200.
+- Bit identity asked across a restore. The R test of a memory-mapped D compared the coefficients of a
+  run on a file that an earlier solver had preprocessed and restored with the run in memory, bit by
+  bit. `restore()` is exact up to rounding: about 75 of the 480 entries of the file differed from the
+  original by up to 3.3e-16, on arm64 and on x86-64, and the coefficients then differ in their last
+  bits. The test held on arm64 by the bits of its data and failed under R-devel on x86-64. The run
+  takes a fresh file of D, for which the identity holds on both.
+- An unspecified order of evaluation in the Python solver bindings. The constructors that take X and D
+  as they are checked the two arrays inside one argument list. Clang and GCC on arm64 checked X first
+  and GCC on x86-64 checked D first, so for two arrays that are not writable the message named X on
+  macOS and D in the manylinux wheels, where the test of the message failed. `solver_design_refs()`
+  checks X and then D in two statements, and the four constructors use it.
+- Clean in the round: the 37 objects of the R package compile under clang 14 with libc++ 14 and under
+  MinGW-w64 without a warning in the package's sources, the merged binding unit has 3,166 COFF
+  sections of the 32,767 the format allows, and every compile line under R-devel carries `-fopenmp`.
+
 ### 2026-11-15
 
 #### The exchangeable-tie band is on by default under T-Rex+DA and acts in every greedy solver

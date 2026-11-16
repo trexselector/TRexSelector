@@ -305,35 +305,42 @@ test_that("TRexBiobankScreeningSelector gives every phenotype its own seed", {
   set.seed(42)
   n <- 80
   p <- 40
-  copies <- 12
+  seed <- 11
   X <- matrix(rnorm(n * p), n, p)
   y_noise <- rnorm(n)
-
-  # Twelve copies of one noise response make the dummy draw visible: the screening of such
-  # a response selects something in about half of the draws
-  Y <- matrix(y_noise, n, copies)
   screen_control <- trex_screen_control(R_boot = 100)
-  multi <- TRexBiobankScreeningSelector$new(X + 0, Y, seed = 11, verbose = FALSE,
+  fields <- c("selected_indices", "selected_indices_screen_ordinary",
+              "selected_indices_screen_bootstrap", "estimated_FDR_screen_ordinary",
+              "estimated_FDR_screen_bootstrap", "method_used")
+  single <- function(run_seed) {
+    TRexBiobankScreeningSelector$new(X + 0, y_noise, seed = run_seed, verbose = FALSE,
+                                     screen_control = screen_control,
+                                     control = trex_control(K = 10))$select()[fields]
+  }
+
+  # The dummy draw has to show in the result. The screening of this noise response has few
+  # outcomes, and most seeds give the same one, so no fixed number of seeds is sure to show a
+  # second one. The single-phenotype runs go on until a seed changes the result.
+  limit <- 1000
+  singles <- list(single(seed))
+  while (length(singles) < limit && identical(singles[[length(singles)]], singles[[1]])) {
+    singles[[length(singles) + 1]] <- single(seed + length(singles))
+  }
+  copies <- length(singles)
+  expect_false(identical(singles[[copies]], singles[[1]]), info = "1,000 seeds in a row gave one result")
+
+  # Copies of the response: phenotype k runs with seed + k - 1, and the single-phenotype run
+  # with that seed reproduces it. With one shared dummy draw the last copy would equal the first.
+  Y <- matrix(y_noise, n, copies)
+  multi <- TRexBiobankScreeningSelector$new(X + 0, Y, seed = seed, verbose = FALSE,
                                             screen_control = screen_control,
                                             control = trex_control(K = 10))$select()
   expect_length(multi, copies)
-
-  # Phenotype k runs with seed + k - 1, and a single-phenotype run with that seed reproduces it
   for (k in seq_len(copies)) {
-    single <- TRexBiobankScreeningSelector$new(X + 0, y_noise, seed = 11 + k - 1, verbose = FALSE,
-                                               screen_control = screen_control,
-                                               control = trex_control(K = 10))$select()
-    for (field in c("selected_indices", "selected_indices_screen_ordinary",
-                    "selected_indices_screen_bootstrap", "estimated_FDR_screen_ordinary",
-                    "estimated_FDR_screen_bootstrap", "method_used")) {
-      expect_equal(multi[[k]][[field]], single[[field]], label = paste("phenotype", k, field))
+    for (field in fields) {
+      expect_equal(multi[[k]][[field]], singles[[k]][[field]], label = paste("phenotype", k, field))
     }
   }
-
-  # With one shared dummy draw the twelve copies would give twelve identical results
-  first <- multi[[1]]$selected_indices_screen_ordinary
-  differing <- sum(!vapply(multi, function(r) identical(r$selected_indices_screen_ordinary, first), logical(1)))
-  expect_gt(differing, 0)
 })
 
 

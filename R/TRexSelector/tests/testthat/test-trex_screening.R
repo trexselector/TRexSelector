@@ -400,24 +400,30 @@ test_that("TRexScreeningSelector takes the four strategies of the core and refus
   p <- 60
   X <- matrix(rnorm(n * p), n, p)
   y <- as.numeric(X[, 1:5] %*% rep(3, 5) + rnorm(n))
-  run <- function(strategy) {
-    sel <- TRexScreeningSelector$new(X, y, seed = 3, verbose = FALSE,
+  run <- function(strategy, seed) {
+    sel <- TRexScreeningSelector$new(X, y, seed = seed, verbose = FALSE,
                                      control = trex_control(K = 10, lloop_strategy = strategy))
     sel$select()
     sel$phi_mat
   }
 
   # The strategy of the control reaches the selector: the permutation runs differ from
-  # the default run, and each strategy equals its seeded twin
-  standard <- run("STANDARD")
-  permutation <- run("PERMUTATION")
-  expect_identical(run("SEEDED"), standard)
-  expect_identical(run("PERMUTATION_SEEDED"), permutation)
-  expect_false(identical(permutation, standard))
+  # the default run, and each strategy equals its seeded twin. The relative occurrences
+  # of the two draws coincide for some seeds, so the test takes the first seed at which
+  # they differ.
+  seed <- 3
+  while (seed < 203 && identical(run("PERMUTATION", seed), run("STANDARD", seed))) {
+    seed <- seed + 1
+  }
+  standard <- run("STANDARD", seed)
+  permutation <- run("PERMUTATION", seed)
+  expect_false(identical(permutation, standard), info = "200 seeds in a row gave equal occurrences")
+  expect_identical(run("SEEDED", seed), standard)
+  expect_identical(run("PERMUTATION_SEEDED", seed), permutation)
 
   # The screening is one pass at L = p, so the growth strategies are refused
   for (strategy in c("HCONCAT", "SKIPL")) {
-    expect_error(run(strategy), "only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED", fixed = TRUE)
+    expect_error(run(strategy, seed), "only the STANDARD, SEEDED, PERMUTATION, and PERMUTATION_SEEDED", fixed = TRUE)
   }
 })
 

@@ -202,12 +202,16 @@ test_that("a memory-mapped D is preprocessed in the file and restored there", {
   expect_equal(as.matrix(mx), X0, tolerance = 1e-12)
   expect_equal(as.matrix(md), D0, tolerance = 1e-12)
 
-  # Either of the two may be the memory-mapped one
-  only_d <- TLARS_Solver$new(X + 0, md, y, options = writer)
+  # Either of the two may be the memory-mapped one. The run takes a fresh file of D: the file
+  # above was restored up to rounding, so a run on it equals the run in memory up to rounding only
+  fd2 <- tempfile(fileext = ".bin")
+  on.exit(unlink(fd2), add = TRUE)
+  md2 <- mem_matrix_from(D, fd2)
+  only_d <- TLARS_Solver$new(X + 0, md2, y, options = writer)
   only_d$execute_step(T_stop = 3)
   expect_identical(only_d$get_beta(), ref$get_beta())
   only_d$restore()
-  expect_equal(as.matrix(md), D0, tolerance = 1e-12)
+  expect_equal(as.matrix(md2), D0, tolerance = 1e-12)
 
   expect_error(TLARS_Solver$new(X, "D", y), "Input D must be a numeric matrix or mmap_matrix")
 })
