@@ -19,8 +19,9 @@
   positive value sets its width. Up to 2.0.1 the default was 0. Without the band the selector exceeded
   a target FDR of 0.2 with every greedy solver at a correlation of 0.9 between neighbouring variables,
   with an FDR of 0.21 to 0.27 in a Monte Carlo study on AR(1) designs (1,000 runs per setting), against
-  0.13 to 0.17 with the band. Selections of `TRexDASelector` with a greedy solver can differ from
-  2.0.1, and `exch_tie_alpha = 0` gives the run of 2.0.1.
+  0.13 to 0.17 with the band. The study shows the control up to a correlation of 0.9. At 0.95 the
+  target no longer held, for the path solver `"TLARS"` as well. Selections of `TRexDASelector` with a
+  greedy solver can differ from 2.0.1, and `exch_tie_alpha = 0` gives the run of 2.0.1.
 * The exchangeable-tie band acts in every greedy solver. `"TGP"`, `"TACGP"`, `"TMP"` and `"TNCGMP"`
   ignored `exch_tie_alpha` up to 2.0.1, in a selector and as the stand-alone classes `TGP_Solver`,
   `TACGP_Solver`, `TMP_Solver` and `TNCGMP_Solver`. The help of the option names the seven solvers.

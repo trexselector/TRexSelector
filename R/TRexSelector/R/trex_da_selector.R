@@ -63,7 +63,10 @@
 #' Evidence: a Monte Carlo study on AR(1) designs (1,000 runs per setting, target FDR 0.2, method
 #' \code{"AR1"}, November 2026). At a correlation of 0.9 each of the seven greedy solvers had an
 #' FDR of 0.21 to 0.27 without the band and of 0.13 to 0.17 with it, at a true positive rate lower
-#' by 0.07 to 0.13. At correlations up to 0.8 the target held without the band as well.
+#' by 0.07 to 0.13. At correlations up to 0.8 the target held without the band as well. The study
+#' shows the control up to a correlation of 0.9. At 0.95 the target no longer held (500 runs per
+#' setting), with an FDR of up to 0.23 for the path solver \code{"TLARS"} and of up to 0.30 for
+#' \code{"TOMP"} with the band.
 #'
 #' @importFrom R6 R6Class
 #'

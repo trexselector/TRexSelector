@@ -16,6 +16,26 @@ its removal in the next minor releases, and the R package compiles in less time.
 
 ### 2026-11-16
 
+#### The documentation of the band states where its evidence ends
+
+Fabian, 2026-11-15: "can we adaptively estimate the tie-breaking level rather setting it fixed, or have
+we already done that?" A sensitivity study of the level came first. Evidence:
+notes/handover_2026-11-15/tie_band_sim/ANALYSIS.md (the third run and the reference at 0.95).
+
+- The level and the floor of the band, T-OMP on the designs of the study of 2026-11-15 and on new ones
+  at a correlation of 0.95 (36,000 selector runs, 500 per cell, target 0.2). Up to 0.9 the fixed level
+  of 0.25 is confirmed. It is the smallest tested level that holds the target with a margin at 0.9 (FDR
+  0.135 to 0.144, against 0.180 to 0.208 at a level of 0.1), the response to the level is smooth, and
+  the floor does not matter between 0.5 and 0.7.
+- At a correlation of 0.95 the target no longer holds. T-OMP with the band has an FDR of 0.297 at a
+  support gap of 100 and of 0.244 in the random support, against 0.414 and 0.467 without the band. The
+  path solver T-LARS on the same data sets has 0.234 and 0.152, where it had 0.07 to 0.09 at 0.9. So
+  the limit belongs to the selector with the method AR1 first, and the level of the band adds 0.06 to
+  0.09 to it. A level of 0.5 brings T-OMP to about the values of T-LARS.
+- The class documentation of the dependency-aware selector on the three surfaces, guide page 04 and
+  NEWS.md say that the study shows the control up to a correlation of 0.9, and they name the FDR at
+  0.95 for T-LARS and for T-OMP with the band. No code changes.
+
 #### The platform round before the release: three tests that held on macOS alone
 
 The round ran the tree on macOS and in containers: Ubuntu 24.04 on arm64 with the three CI jobs,

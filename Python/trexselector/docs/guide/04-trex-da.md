@@ -205,6 +205,10 @@ seven greedy solvers had an FDR of 0.21 to 0.27 without the band and of 0.13 to 
 true positive rate lower by 0.07 to 0.13. At correlations up to 0.8 the target held without the band
 as well, and the band cost 0.03 to 0.05 of the true positive rate there.
 
+The study shows the control up to a correlation of 0.9. At 0.95 the target no longer held (500 runs
+per setting), with an FDR of up to 0.23 for the path solver TLARS and of up to 0.30 for TOMP with the
+band.
+
 ```{code-cell} python
 greedy_ctrl = tsn.TRexControlParameter()
 greedy_ctrl.solver_type = tsn.SolverTypeForTRex.TOMP
