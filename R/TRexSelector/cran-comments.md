@@ -1,50 +1,56 @@
-# TRexSelector 2.0.1
+# TRexSelector 2.0.2
 
 ## Summary of the update
 
-A patch release of 2.0.0, which is on CRAN since 2026-11-06. CRAN's daily checks of 2.0.0 report
-"Installation failed" on r-release-macos-x86_64, r-oldrel-macos-arm64 and r-oldrel-macos-x86_64. Those
-builders compile with Apple clang 14.0.3, whose standard library accepts `-std=gnu++20` but has no
-ranges algorithms, and the compiled backend used `std::ranges::find` and `std::ranges::sort` at three
-places. The three calls are `std::find` and `std::sort` now, with identical results.
+A patch release of 2.0.1, which is on CRAN since 2026-11-12. It follows after a short interval because
+it corrects results that 2.0.1 gets wrong:
 
-The same check logs showed that the Linux builds compiled without OpenMP: on R 4.6 and R-devel,
-`R CMD config SHLIB_OPENMP_CXXFLAGS` answers "no information for variable" although Makeconf defines
-it, and the configure script relied on that query. It reads Makeconf directly now and writes
-`$(SHLIB_OPENMP_CXXFLAGS)` into Makevars, the form Writing R Extensions asks for, as Makevars.win
-already did. The compiler warnings in the package's own sources that the check logs showed (an unused
-variable in the sequential build, three signed-unsigned comparisons in the R bindings) are gone. The
-README is reorganised, with an overview of the classes, and its installation section points to CRAN
-first, as the getting-started vignette does. An overview vignette introduces the package and lists the
-pages, a new vignette on data dimensionality and FDR control follows the getting-started one, four
-pages carry figures, and the vignettes share a stylesheet and a navigation header with a search box.
-The Title field reads "T-Rex Selector: High-Dimensional Variable Selection and FDR Control" (the
-ampersand is written out), and the package entry of `citation("TRexSelector")` names Team T-Rex as
-its author. Nothing else changes in the package's code or interface. The package has no reverse
-dependencies on CRAN.
+* `TRexDASelector` with the methods `"AR1"` and `"EQUI"` recomputed its penalty at every step of the
+  path. The deflated occurrences were then not monotone, and the estimate of the false discovery
+  proportion was too small. The two methods take the penalty of the last step now, as the other
+  methods of the selector always did.
+* `TRexDASelector` with a greedy solver exceeded a target FDR of 0.2 on strongly correlated designs
+  (0.21 to 0.27 at a correlation of 0.9 in a Monte Carlo study). It runs these solvers with the
+  exchangeable-tie band now, which was an option that the user had to set, and holds the target there
+  (0.13 to 0.17).
+* `TRexTikhonovSelector` ran by default on a coordinate-descent solver that can stop at its sweep
+  budget before it has converged. On the example of the vignette its default run selected 33 variables
+  with a false discovery proportion of 0.70 at a target of 0.1. The selector runs on the homotopy
+  solver of the same problem now.
+* A second `select()` on the same selector object ran on the design at its original scale and returned
+  a wrong selection without an error. It is an error now.
+* `TRexBiobankScreeningSelector` drew one set of dummies for all phenotypes of a seeded run, and
+  `TRexScreeningSelector` reported an FDR estimate of 0 for an empty selection.
+* A coordinate-descent solve that had not converged gave one warning, and the selection was built on
+  the iterate it had. It is an error now.
+
+Beside the corrections the coordinate-descent solver family is deprecated ahead of its removal in
+2.1.0, the screening selector gains a nearest-neighbour variant, a read-only memory-mapped design is
+accepted wherever nothing is written into it, and the help pages and vignettes are corrected where
+they disagreed with the code. The Rcpp bindings compile as one unit, so the package builds 37 objects
+where 2.0.1 built 48 and installs in less time. NEWS.md lists every change. The package has no
+reverse dependencies on CRAN.
 
 ## Test environments
 
 * macOS 27.2 (Apple silicon), R 4.6.1: `R CMD check --as-cran`, also with the CPU-to-elapsed
   thresholds CRAN applies (`_R_CHECK_*_TIMING_CPU_TO_ELAPSED_THRESHOLD_` at 2.5).
-* clang 14 with libc++ 14 (Ubuntu 24.04 container), the closest available match to the failing CRAN
-  builders: the compiled backend builds without a warning, while the 2.0.0 sources fail there on the
-  same `std::ranges` call.
-* R-devel in a rocker/r-devel container (Debian, x86_64): `R CMD check --as-cran`.
-* win-builder, R-release (R 4.6.2) and R-devel (2026-11-07 r90850), on the submitted sources:
-  `R CMD check --as-cran`, the vignettes built there as well.
+* R-devel (2026-11-08 r90859, GCC 16.2) in a rocker/r-devel container (Debian, x86_64):
+  `R CMD check --as-cran`.
+* Ubuntu 24.04 (arm64), R 4.3.3, GCC 13.3: install, the testthat suite and `R CMD check`.
+* clang 14 with libc++ 14 (Ubuntu 24.04 container), the closest available match to CRAN's macOS
+  builders for R-release on x86_64 and for R-oldrel: the 37 sources of the package compile without a
+  warning.
+* win-builder, R-release (R 4.6.2) and R-devel (2026-11-16 r90914, GCC 14.3): `R CMD check --as-cran`,
+  the vignettes built there as well.
 * The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` with the vignettes
   built and re-built on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on
   Ubuntu, and Windows with the daily R-devel snapshot.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes on macOS. win-builder (R-release and R-devel) reports the
-incoming-feasibility NOTE alone, "Days since last update: 4", which this patch release of the
-installation failure explains. On win-builder that NOTE also listed the README's link to the GNU
-General Public License as a possibly invalid URL, with "Timeout was reached" as the message: a
-connection failure of that machine towards www.gnu.org at the time. The page is reachable and the
-link stays.
+0 errors | 0 warnings | 0 notes on macOS. win-builder reports the incoming-feasibility NOTE alone on
+R-release and on R-devel, "Days since last update: 6", which the corrected results above explain.
 
 Two NOTEs in the R-devel container, both from the container itself:
 
@@ -55,24 +61,26 @@ Two NOTEs in the R-devel container, both from the container itself:
 
 Two NOTEs on Ubuntu:
 
-* checking installed package size ... NOTE: installed size is 8.3 MB, sub-directories of 1 MB or more:
-  libs 5.7 MB. The compiled backend (the Eigen template instantiations of the solvers) accounts for
-  it; the shared object is stripped on Linux (src/Makevars.in).
+* checking installed package size ... NOTE: installed size is 7.8 MB, sub-directories of 1 MB or more:
+  libs 5.1 MB, R 2.0 MB. The compiled backend (the Eigen template instantiations of the solvers)
+  accounts for the first. The shared object is stripped on Linux (src/Makevars.in).
 * checking DESCRIPTION meta-information ... NOTE: 'LinkingTo' for 'BH' is unused as it has no
-  'include' directory. An artifact of Ubuntu's r-cran-bh binary, which ships no headers; the CRAN BH
+  'include' directory. An artifact of Ubuntu's r-cran-bh binary, which ships no headers. The CRAN BH
   package has them, and the sources include the Boost headers through it.
 
-Compilation emits `-Wunused-but-set-variable` warnings from RcppEigen's Eigen headers (SparseLU,
-"variable 'count' set but not used" and similar). They originate in the upstream headers, not in the
-package's code.
+Compilation emits warnings from RcppEigen's Eigen headers and none from the package's own sources:
+`-Wunused-but-set-variable` under clang (SparseLU, "variable 'count' set but not used" and similar)
+and `-Wignored-attributes` under GCC ("ignoring attributes on template argument"). They originate in
+the upstream headers.
 
 ## System requirements and OpenMP
 
 A C++20 compiler (GCC 10, Clang 12, Apple Clang 14 or newer, Rtools on Windows) and R 4.3 or newer.
 OpenMP is optional: `configure` uses R's `SHLIB_OPENMP_CXXFLAGS` where R provides them (Linux,
-Windows); on macOS without them it looks for an `omp.h` (Homebrew libomp or the mac.r-project.org
-OpenMP package) and links R's bundled libomp, and without one it compiles sequentially. The
-examples run in under 0.3 s each, and the vignettes limit themselves to two threads.
+Windows). On macOS without them it looks for an `omp.h` (Homebrew libomp or the mac.r-project.org
+OpenMP package) and links R's bundled libomp, and without one it compiles sequentially. Under R-devel
+every compile line of the install log carries `-fopenmp`. The examples run in under 0.3 s each, and
+the vignettes limit themselves to two threads.
 
 ## Downstream dependencies
 
