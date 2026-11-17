@@ -18,6 +18,7 @@ except PackageNotFoundError:  # Running from a source tree without install
 from . import ml_methods
 from . import tsolvers
 from . import utils
+from ._deprecation import warn_deprecated as _warn_deprecated
 
 # Import the compiled C++ extension inside the nested modules. The root
 # re-exports the augmented-dummy (ad) selectors as the everyday spelling;
@@ -55,6 +56,10 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
     region boundary and terminates the process instead of raising. Used by
     the plain/DA/screening/biobank wrappers; the GVS wrapper deliberately
     bypasses it (the IEN family is exactly its vocabulary).
+
+    A solver type of the deprecated coordinate-descent family raises its
+    FutureWarning before the refusal, as the types that a selector can run
+    do in the bindings.
     """
     st = trex_control.solver_type
     if st == SolverTypeForTRex.TIENET:
@@ -66,6 +71,7 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
             'solver_type = TIENET_AUG is a GVS-only solver; use '
             'TRexGVSSelector with gvs_type = IEN.')
     if st == SolverTypeForTRex.TCDIENET:
+        _warn_deprecated("SolverTypeForTRex.TCDIENET", "SolverTypeForTRex.TIENET")
         raise ValueError(
             'solver_type = TCDIENET needs a group assignment; use '
             'TRexGVSSelector with gvs_type = IEN.')
@@ -74,6 +80,7 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
             'solver_type = TIKNET needs a Tikhonov penalty matrix; use '
             'TRexTikhonovSelector.')
     if st == SolverTypeForTRex.TCDTIKNET:
+        _warn_deprecated("SolverTypeForTRex.TCDTIKNET", "SolverTypeForTRex.TIKNET")
         raise ValueError(
             'solver_type = TCDTIKNET is no longer accepted by a selector; use '
             'TRexTikhonovSelector, whose solver is TIKNET.')

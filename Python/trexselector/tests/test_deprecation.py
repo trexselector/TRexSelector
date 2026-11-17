@@ -3,7 +3,8 @@ Deprecation of the coordinate-descent solver family.
 
 A solver class of the family warns when it is constructed, and a selector warns
 when a solver type of the family reaches it: one FutureWarning per construction,
-attributed to the caller, and none from select().
+attributed to the caller, and none from select(). A selector that cannot run the
+type warns first and refuses then.
 """
 import warnings
 
@@ -137,6 +138,42 @@ def test_selector_warns_once_for_a_cd_solver_type(data, make):
     for ctrl in (_control("TENET"), _control()):
         _, record = _deprecations(lambda: make(X.copy(order="F"), y, ctrl))
         assert record == []
+
+
+# The root selectors check the solver type before the compiled class is constructed
+ROOT_SELECTORS = BASE_SELECTORS[:4]
+
+REFUSED_TYPES = [
+    ("TCDIENET", "TIENET", "TCDIENET needs a group assignment"),
+    ("TCDTIKNET", "TIKNET", "TCDTIKNET is no longer accepted by a selector"),
+]
+
+
+@pytest.mark.parametrize("make", [s[1] for s in ROOT_SELECTORS], ids=[s[0] for s in ROOT_SELECTORS])
+@pytest.mark.parametrize("old, new, refusal", REFUSED_TYPES, ids=[t[0] for t in REFUSED_TYPES])
+def test_selector_warns_and_then_refuses_a_cd_solver_type_it_cannot_run(data, make, old, new, refusal):
+    X, _, y = data
+    X0 = X.copy()
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError, match=refusal):
+            make(X, y, _control(old))
+    _assert_one([w for w in record if issubclass(w.category, FutureWarning)],
+                f"SolverTypeForTRex.{old}", f"SolverTypeForTRex.{new}")
+
+    # The refusal comes before anything is written into the design
+    np.testing.assert_array_equal(X, X0)
+
+
+@pytest.mark.parametrize("make", [s[1] for s in ROOT_SELECTORS], ids=[s[0] for s in ROOT_SELECTORS])
+@pytest.mark.parametrize("solver, refusal", [("TIENET", "GVS-only solver"), ("TIKNET", "Tikhonov penalty matrix")])
+def test_selector_refuses_a_homotopy_solver_type_it_cannot_run_without_a_warning(data, make, solver, refusal):
+    X, _, y = data
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        with pytest.raises(ValueError, match=refusal):
+            make(X, y, _control(solver))
+    assert [w for w in record if issubclass(w.category, FutureWarning)] == []
 
 
 def test_select_raises_no_further_warning(data):

@@ -14,6 +14,29 @@ serves where nothing is written into it, the coordinate-descent solver family is
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
+### 2026-11-17
+
+#### The Python selectors warn before they refuse a deprecated solver type
+
+Fabian, 2026-11-17: "Let Python also warn and then refuse." An audit of the deprecations before the push
+compared the notices of R and Python per selector and per solver name of the coordinate-descent family.
+Evidence: notes/handover_2026-11-17/deprecation_audit/ (AUDIT.md and the two parity matrices).
+
+- The two surfaces differed in eight cells. For `TCDIENET` and `TCDTIKNET` the plain, the
+  dependency-aware, the screening and the biobank selector of R raise the deprecation warning and then
+  the error. Those of Python raised the error alone, because the root wrappers check the solver type
+  before the compiled class is constructed, and the warning is raised there.
+- `_validate_core_solver_type()` raises the `FutureWarning` of the family before the `ValueError` for
+  the two types. The warning names the homotopy solver of the same problem and points at the line of
+  the caller, as it does for a type that a selector runs. A refused type that is not deprecated
+  (`TIENET`, `TIENET_AUG`, `TIKNET`) raises the error alone, as in R. The two matrices are equal now.
+- R and C++ do not change, so the tarball of R 2.0.2 stays as it was checked. The documentation needs
+  no change either. It says on the three surfaces that a selector that receives a name of the family
+  raises the warning, which now holds for Python as well.
+- Tests: eight cases for the warning before the refusal with the design untouched, and eight for the
+  refusal without a warning. The first eight fail on the build without the change. Verified on a
+  fresh wheel on macOS and on the manylinux wheels of CPython 3.10 to 3.14, 824 tests each.
+
 ### 2026-11-16
 
 #### The documentation of the band states where its evidence ends
