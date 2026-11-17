@@ -266,6 +266,10 @@ class TENET_Solver:
         """
         Retrieves the calculated model intercept for a specific step.
         """
+    def getLambda(self) -> list[float]:
+        """
+        Get the regularization parameter sequence: an initial entry followed by the decreasing L1 penalty per step, so its length is the number of steps plus one.
+        """
     def getMemoryBytes(self) -> int:
         """
         Heap bytes the solver holds: its copy of y, the residual, correlations, Cholesky factor, coefficient path, diagnostics and reserved capacity. X and D are borrowed and not counted, nor are the temporaries inside a step, so the peak of a step is higher.
@@ -1143,6 +1147,10 @@ class TLASSO_Solver:
         """
         Retrieves the calculated model intercept for a specific step.
         """
+    def getLambda(self) -> list[float]:
+        """
+        Get the regularization parameter sequence (max correlation per step).
+        """
     def getMemoryBytes(self) -> int:
         """
         Heap bytes the solver holds: its copy of y, the residual, correlations, Cholesky factor, coefficient path, diagnostics and reserved capacity. X and D are borrowed and not counted, nor are the temporaries inside a step, so the peak of a step is higher.
@@ -1314,6 +1322,10 @@ class TSTAGEWISE_Solver:
         """
         Retrieves the calculated model intercept for a specific step.
         """
+    def getLambda(self) -> list[float]:
+        """
+        Get the regularization parameter sequence (max correlation per step).
+        """
     def getMemoryBytes(self) -> int:
         """
         Heap bytes the solver holds: its copy of y, the residual, correlations, Cholesky factor, coefficient path, diagnostics and reserved capacity. X and D are borrowed and not counted, nor are the temporaries inside a step, so the peak of a step is higher.
@@ -1475,6 +1487,10 @@ class TSTEPWISE_Solver:
     def getIntercept(self, step: typing.SupportsInt | typing.SupportsIndex = -1) -> float:
         """
         Retrieves the calculated model intercept for a specific step.
+        """
+    def getLambda(self) -> list[float]:
+        """
+        Get the regularization parameter sequence (max correlation per step).
         """
     def getMemoryBytes(self) -> int:
         """

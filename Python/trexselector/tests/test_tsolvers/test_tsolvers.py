@@ -291,6 +291,29 @@ def test_tlars_get_lambda(solver_data):
     assert all(v >= 0 for v in lam)
 
 
+# Every solver of the family that records a lambda path returns it, as in R and C++
+LAMBDA_PATH_SOLVERS = [
+    ("TLARS_Solver", lambda X, D, y: TLARS_Solver(X, D, y), 0),
+    ("TLASSO_Solver", lambda X, D, y: TLASSO_Solver(X, D, y), 0),
+    ("TSTEPWISE_Solver", lambda X, D, y: TSTEPWISE_Solver(X, D, y), 0),
+    ("TSTAGEWISE_Solver", lambda X, D, y: TSTAGEWISE_Solver(X, D, y), 0),
+    # T-ENET records an initial entry before the first step
+    ("TENET_Solver", lambda X, D, y: TENET_Solver(X, D, y, SolverOptions(lambda2=0.5)), 1),
+]
+
+
+@pytest.mark.parametrize("make, extra", [(s[1], s[2]) for s in LAMBDA_PATH_SOLVERS],
+                         ids=[s[0] for s in LAMBDA_PATH_SOLVERS])
+def test_lars_family_get_lambda(solver_data, make, extra):
+    X, D, y, n, p = solver_data
+    solver = make(X, D, y)
+    solver.executeStep(T_stop=3, early_stop=True)
+    lam = solver.getLambda()
+    assert isinstance(lam, list)
+    assert len(lam) == solver.getNumSteps() + extra
+    assert all(np.isfinite(v) and v >= 0 for v in lam)
+
+
 def test_tlars_get_kahan_refresh_interval(solver_data):
     X, D, y, n, p = solver_data
     solver = TLARS_Solver(X, D, y)

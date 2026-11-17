@@ -37,6 +37,27 @@ Evidence: notes/handover_2026-11-17/deprecation_audit/ (AUDIT.md and the two par
   refusal without a warning. The first eight fail on the build without the change. Verified on a
   fresh wheel on macOS and on the manylinux wheels of CPython 3.10 to 3.14, 824 tests each.
 
+#### `getLambda()` on four more Python solver classes, found by a double check of the interfaces
+
+Fabian, 2026-11-17: "Please also make another double check of the namespaces and user APIs across the
+three packages." The public names of the three surfaces were dumped by a run (the exports of R, the
+public names of Python, C++ from the Doxygen XML of the headers) and compared with each other and with the
+inventory of 2026-11-14. Tools and report: notes/handover_2026-11-17/api_parity/PARITY.md.
+
+- What agrees: seven selectors, eight controls with the same parameters (116 fields in C++ and Python,
+  the R parameters after three known renames), 216 compared defaults, 19 enumerations with the same
+  members, and 20 solver classes with the same names and constructor arguments.
+- The gap: `TLASSO_Solver`, `TENET_Solver`, `TSTEPWISE_Solver` and `TSTAGEWISE_Solver` return their
+  lambda path in R (`get_lambda()`) and in C++ (`getLambda()`, inherited from `TLARS_Solver`), and the
+  Python classes had no such method. Python had it on `TLARS_Solver`, `TIENET_Solver` and
+  `TIKNET_Solver`. The four bindings gain `getLambda()`. The text of the T-ENET method carries the note
+  of the C++ documentation: an initial entry and then one value per step.
+- Test: the five classes of the family return one finite, non-negative value per step, and T-ENET one
+  more. The relation held on 200 random data sets per class. One stub follows.
+- Two further findings concern R and are in the plan: `trex_da_control()` refuses the method name
+  "PRIOR_GROUPS", which Python and C++ take beside prior groups, and `mem_matrix()` takes every string
+  but "readonly" as "readwrite".
+
 ### 2026-11-16
 
 #### The documentation of the band states where its evidence ends

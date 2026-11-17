@@ -255,7 +255,7 @@ public:
     // Solver-Specific Getters (only valid for the corresponding solver type)
     // =================================================================================
 
-    /** @brief Get regularization parameter sequence (TLARS-specific). */
+    /** @brief Get regularization parameter sequence (the solvers with a lambda path). */
     const std::vector<double>& getLambda() const { return solver_->getLambda(); }
 
     /** @brief Get the current Kahan summation refresh interval (TLARS-specific). */
@@ -874,6 +874,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
+        .def("getLambda", &PySolverWrapper<TLASSO_Solver>::getLambda,
+             "Get the regularization parameter sequence (max correlation per step).")
         .def("getNumRemovals", &PySolverWrapper<TLASSO_Solver>::getNumRemovals,
              "Get the total number of variable removals during solution path.")
         .def("getCyclingRatio", &PySolverWrapper<TLASSO_Solver>::getCyclingRatio,
@@ -888,7 +890,9 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Statist., vol. 32, no. 2, pp. 407-499, 2004.\n"
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
-        "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n");
+        "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
+        .def("getLambda", &PySolverWrapper<TSTEPWISE_Solver>::getLambda,
+             "Get the regularization parameter sequence (max correlation per step).");
 
     bind_standard_tsolver<TSTAGEWISE_Solver>(m_lars, "TSTAGEWISE_Solver",
         "Terminating incremental forward stagewise (T-Stagewise) solver via the LARS-stagewise path.\n"
@@ -905,6 +909,8 @@ inline void bind_tsolvers_module(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
+        .def("getLambda", &PySolverWrapper<TSTAGEWISE_Solver>::getLambda,
+             "Get the regularization parameter sequence (max correlation per step).")
         .def("getNumRemovals", &PySolverWrapper<TSTAGEWISE_Solver>::getNumRemovals,
              "Get the total number of coefficient removals.")
         .def("getCyclingRatio", &PySolverWrapper<TSTAGEWISE_Solver>::getCyclingRatio,
@@ -923,6 +929,9 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
         "Reads options.lambda2, the secondary L2 penalty (default 0: the lasso path).")
+        .def("getLambda", &PySolverWrapper<TENET_Solver>::getLambda,
+             "Get the regularization parameter sequence: an initial entry followed by the decreasing L1 "
+             "penalty per step, so its length is the number of steps plus one.")
         .def("getAlpha", &PySolverWrapper<TENET_Solver>::getAlpha,
              "Get the Elastic Net mixing parameter alpha implied by lambda2.")
         .def("getNumRemovals", &PySolverWrapper<TENET_Solver>::getNumRemovals,
