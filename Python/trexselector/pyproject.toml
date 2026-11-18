@@ -49,7 +49,7 @@ dev = ["pytest"]
 [tool.scikit-build]
 wheel.packages = ["src/trexselector"]
 wheel.exclude = ["**/__pycache__", "**/*.pyc"]
-sdist.exclude = ["build", "dist", "wheelhouse", "**/__pycache__", "**/*.pyc", "*.whl", "**/.DS_Store"]
+sdist.exclude = ["build", "dist", "wheelhouse", "**/__pycache__", "**/*.pyc", "*.whl", "**/.DS_Store", "**/.clangd"]
 cmake.source-dir = "."
 cmake.build-type = "Release"
 

@@ -14,6 +14,27 @@ serves where nothing is written into it, the coordinate-descent solver family is
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
+### 2026-11-18
+
+#### The clangd flags of one machine leave the repository and the source archive
+
+A check of the source archive of the Python package before the upload to PyPI listed its files and
+searched them for absolute paths. Evidence: notes/handover_2026-11-18/pypi_release/.
+
+- The finding. `Python/trexselector/.clangd` and `R/TRexSelector/.clangd` were tracked. They give clangd
+  the include paths of one developer machine, among them three lines with its home folder, which the
+  rule on personal content keeps out of every commit. Both files are in the repository since its first
+  commit. The Python one went into the source archive, because the archive holds every tracked file of
+  the package folder. The R one never reached CRAN, because `.Rbuildignore` names it.
+- The two files are no longer tracked and stand in `.gitignore`, beside the settings of the editor that
+  were ignored before. A checkout keeps its own copies. `.clangd` at the root and `cpp/.clangd` stay,
+  because they hold no path.
+- `sdist.exclude` of pyproject.toml names `.clangd`, so an archive built in a checkout that has the
+  file leaves it out as well. The archive of 1.0.1 has 305 files where it had 306. The wheels never
+  held the file.
+- Fabian, 2026-11-18: "Fix before the release". The history of the repository and the archive of Python
+  1.0.0 keep the lines.
+
 ### 2026-11-17
 
 #### The Python selectors warn before they refuse a deprecated solver type

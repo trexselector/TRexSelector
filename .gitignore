@@ -87,6 +87,9 @@ R/TRexSelector/src/Makevars
 ################################
 .vscode/settings.json
 .vscode/c_cpp_properties.json
+# clangd flags with the include paths of one machine
+Python/trexselector/.clangd
+R/TRexSelector/.clangd
 *.code-workspace
 .history
 
