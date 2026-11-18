@@ -2,32 +2,38 @@
 
 ## Summary of the update
 
-A patch release of 2.0.1, which is on CRAN since 2026-11-12. It follows after a short interval because
-it corrects results that 2.0.1 gets wrong:
+A patch release of 2.0.1, which is on CRAN since 2026-11-12.
+List of corrections:
 
 * `TRexDASelector` with the methods `"AR1"` and `"EQUI"` recomputed its penalty at every step of the
   path. The deflated occurrences were then not monotone, and the estimate of the false discovery
   proportion was too small. The two methods take the penalty of the last step now, as the other
   methods of the selector always did.
+
 * `TRexDASelector` with a greedy solver exceeded a target FDR of 0.2 on strongly correlated designs
   (0.21 to 0.27 at a correlation of 0.9 in a Monte Carlo study). It runs these solvers with the
   exchangeable-tie band now, which was an option that the user had to set, and holds the target there
   (0.13 to 0.17).
+
 * `TRexTikhonovSelector` ran by default on a coordinate-descent solver that can stop at its sweep
   budget before it has converged. On the example of the vignette its default run selected 33 variables
   with a false discovery proportion of 0.70 at a target of 0.1. The selector runs on the homotopy
   solver of the same problem now.
+
 * A second `select()` on the same selector object ran on the design at its original scale and returned
   a wrong selection without an error. It is an error now.
+
 * `TRexBiobankScreeningSelector` drew one set of dummies for all phenotypes of a seeded run, and
   `TRexScreeningSelector` reported an FDR estimate of 0 for an empty selection.
+
 * A coordinate-descent solve that had not converged gave one warning, and the selection was built on
   the iterate it had. It is an error now.
 
 Beside the corrections the coordinate-descent solver family is deprecated ahead of its removal in
 2.1.0, the screening selector gains a nearest-neighbour variant, a read-only memory-mapped design is
 accepted wherever nothing is written into it, and the help pages and vignettes are corrected where
-they disagreed with the code. The Rcpp bindings compile as one unit, so the package builds 37 objects
+they disagreed with the code.
+The Rcpp bindings compile as one unit, so the package builds 37 objects
 where 2.0.1 built 48 and installs in less time. NEWS.md lists every change. The package has no
 reverse dependencies on CRAN.
 
