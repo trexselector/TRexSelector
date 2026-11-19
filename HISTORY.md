@@ -1,5 +1,25 @@
 # TRexSelector changelog
 
+## TRexSelector C++ 1.0.2 / R 2.0.3 / Python 1.0.2 (in preparation)
+
+The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. It changes neither results nor the
+interface. Versions: C++ SDK 1.0.2, R TRexSelector 2.0.3, Python trexselector 1.0.2.
+
+### 2026-11-19
+
+#### The push of a tag starts no workflow
+
+- The finding at the release `v1.0.1`. Publishing the release created the tag, and GitHub counts a new tag
+  as a push. The push triggers of the four workflows named path filters alone, and GitHub does not
+  evaluate path filters for the push of a tag. So C++ Tests, R Package, the line ruler and a second Python
+  Wheels run started on the tag, beside the run of the release that publishes.
+- The push trigger of each workflow names `branches: ['**']` now. A workflow that names branches and no
+  tags does not run for a tag, and with both filters a push must be one of a branch and match the paths.
+  Pushes of branches, pull requests, manual runs and the release trigger of Python Wheels are unchanged.
+- Verified: the four files parse, and GitHub's page on the workflow syntax states the rules used. The
+  proof for pushes of branches is the run of this commit on `dev_beyond`, where every workflow starts
+  because its own file changed. The proof for tags comes with the next release.
+
 ## TRexSelector C++ 1.0.1 / R 2.0.2 / Python 1.0.1
 
 The fix release after R 2.0.1. It collects the work since the sources of R 2.0.1

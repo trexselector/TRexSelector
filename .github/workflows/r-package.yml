@@ -2,6 +2,8 @@ name: R Package
 
 on:
   push:
+    # Branches alone: the push of a tag starts no run (path filters do not apply to tags).
+    branches: ['**']
     paths:
       - 'R/**'
       - 'cpp/src/**'

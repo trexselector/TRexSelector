@@ -3,10 +3,11 @@ name: Line ruler
 # The project's line ruler: every tracked text line stays within 120 characters.
 # tools/check_line_length.py lists the exemptions, prints every hit as
 # path:line: length and exits 1 when it finds one. No path filter: the ruler
-# holds in every folder, so every push and pull request runs it, and it can be
-# started by hand from the Actions tab.
+# holds in every folder, so every push of a branch and every pull request runs
+# it. The push of a tag starts no run. A run can be started by hand as well.
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 

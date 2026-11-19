@@ -2,6 +2,9 @@ name: Python Wheels
 
 on:
   push:
+    # Branches alone: the push of a tag starts no run (path filters do not apply to tags).
+    # A release starts the workflow through its own trigger below.
+    branches: ['**']
     paths:
       - 'Python/**'
       - 'cpp/**'
