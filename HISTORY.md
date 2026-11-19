@@ -12,7 +12,8 @@ for an empty selection. A coordinate-descent solve that has not converged is an 
 corrections the screening selector gains a nearest-neighbor variant, a read-only memory-mapped design
 serves where nothing is written into it, the coordinate-descent solver family is deprecated ahead of
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
-1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
+1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1. Released: TRexSelector 2.0.2 on CRAN on
+2026-11-18, the GitHub release v1.0.1 and trexselector 1.0.1 on PyPI on 2026-11-19.
 
 ### 2026-11-19
 
@@ -25,6 +26,23 @@ its removal in the next minor releases, and the R package compiles in less time.
   there into a fresh environment on a machine outside the runner, and the 829 Python tests passed against
   it. Evidence: notes/handover_2026-11-18/pypi_release/.
 - The release dates in the header of this section follow at the close, as for 1.0.0.
+
+#### The release of C++ 1.0.1 and Python 1.0.1
+
+- The GitHub release `v1.0.1` was published on main. Its run of the workflow Python Wheels built the
+  wheels and the source archive from the tag and uploaded trexselector 1.0.1 to PyPI after the approval
+  of the deployment. The record on PyPI shows 19 files, 18 wheels and the source archive. The header of
+  this section names the release dates.
+- The wheel for CPython 3.12 on macOS arm64 was fetched from PyPI into a fresh environment, and the 829
+  Python tests passed against it.
+- Publishing the release creates the tag, and GitHub counts that as a push. Path filters are not
+  evaluated for the push of a tag, so every workflow ran on the tag beside the run of the release.
+- The second Python Wheels run, the one of the tag push, failed once on Windows. The wheel of CPython
+  3.12 was compiled, and the removal of the temporary build folder of scikit-build-core ended with
+  `PermissionError: [WinError 32]`, the folder being used by another process. The runner then terminated
+  one orphan process, `vctip`, a helper of the Microsoft compiler. The log names no test and no compiler
+  line. The re-run of the job passed, and the release run never showed the error. A build folder
+  outside the temporary one is the open cure. Evidence: notes/handover_2026-11-18/pypi_release/.
 
 ### 2026-11-18
 
