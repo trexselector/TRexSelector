@@ -9,11 +9,9 @@
 // ===================================================================================
 
 // std includes
-#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
-#include <exception>
 #include <iomanip>
 #include <memory>
 #include <random>
@@ -47,6 +45,7 @@
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_dummies.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_cluster_hac.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_data_normalizer.hpp>
+#include <trex_selector_methods/ad/trex_utils/trex_region_error.hpp>
 
 // Solver dispatch
 #include <trex_selector_methods/ad/trex_utils/trex_solver_dispatch.hpp>
@@ -76,6 +75,7 @@ namespace dn   = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace lars = trex::tsolvers::ad::linear_model::lars_based;
 namespace ccd  = trex::tsolvers::ad::linear_model::cd_based;
 namespace mm   = trex::trex_selector_methods::ad::utils::memmap_manager;
+namespace rerr = trex::trex_selector_methods::ad::utils::region_error;
 
 // Static helper: prepare the nested base control parameters before they are
 // frozen into the base class.
@@ -879,17 +879,16 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
 
     // An exception may not leave an OpenMP structured block — even an
     // INACTIVE region (if(false), single thread): the runtime calls
-    // std::terminate, killing the host process. Capture the first error,
-    // drain the remaining iterations, and rethrow after the region (same
-    // discipline as the base ExperimentRunner).
-    std::exception_ptr first_error = nullptr;
-    std::atomic<bool> has_error{false};
+    // std::terminate, killing the host process. Record the first error,
+    // drain the remaining iterations, and throw it again after the region
+    // (same discipline as the base ExperimentRunner).
+    rerr::RegionError first_error;
 
     #pragma omp parallel if(do_parallel) num_threads(outer_threads)
     {
         #pragma omp for schedule(dynamic)
         for (std::size_t k = 0; k < K; ++k) {
-            if (has_error.load(std::memory_order_relaxed)) { continue; }
+            if (first_error.raised()) { continue; }
             try {
 
             tsolvers::ad::SparseBetaPath beta_path;
@@ -1056,18 +1055,12 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                 memmap_mgr_->releaseResidency(k);
             }
             } catch (...) {
-                #pragma omp critical(trex_gvs_error)
-                {
-                    if (!first_error) {
-                        first_error = std::current_exception();
-                        has_error.store(true, std::memory_order_relaxed);
-                    }
-                }
+                first_error.capture();
             }
         }
     }
 
-    if (first_error) { std::rethrow_exception(first_error); }
+    first_error.rethrow();
 
     // Aggregate per-K contributions.
     Eigen::MatrixXd phi_T_acc = Eigen::MatrixXd::Zero(p_idx, T_idx);

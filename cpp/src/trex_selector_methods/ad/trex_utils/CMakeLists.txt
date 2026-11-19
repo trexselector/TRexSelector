@@ -21,6 +21,7 @@ target_sources(trex_selector_methods PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/trex_data_normalizer.hpp
         ${CMAKE_CURRENT_LIST_DIR}/trex_dummy_generator.hpp
         ${CMAKE_CURRENT_LIST_DIR}/trex_experiment_runner.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/trex_region_error.hpp
         ${CMAKE_CURRENT_LIST_DIR}/trex_temp_dir_manager.hpp
         ${CMAKE_CURRENT_LIST_DIR}/trex_memmap_manager.hpp
         ${CMAKE_CURRENT_LIST_DIR}/trex_solver_dispatch.hpp

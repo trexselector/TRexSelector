@@ -78,6 +78,8 @@ add_trex_test(test_tsolvers_buffer_guard test_tsolvers/ad/test_tsolvers_buffer_g
 add_trex_test(test_tsolvers_memory test_tsolvers/ad/test_tsolvers_memory.cpp)
 add_trex_test(test_tsolvers_memory_peak test_tsolvers/ad/test_tsolvers_memory_peak.cpp)
 add_trex_test(test_trex_restore test_trex_selector_methods/ad/test_trex_restore.cpp)
+# An error leaves an OpenMP region as kind and text, without std::exception_ptr.
+add_trex_test(test_trex_region_error test_trex_selector_methods/ad/test_trex_region_error.cpp)
 add_trex_test(test_sd_tsolvers test_tsolvers/sd/test_sd_tsolvers.cpp)
 
 # 5. Add tests for TRex Selector Methods

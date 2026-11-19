@@ -1,3 +1,15 @@
+# TRexSelector 2.0.3
+
+## Fixed
+
+* `TRexSelector`, `TRexDASelector`, `TRexGVSSelector`, `TRexTikhonovSelector`, `TRexScreeningSelector`,
+  `TRexBiobankScreeningSelector` and `TRexSPCASelector` lost the class and the message of an error that was
+  raised inside their random experiments, on systems where the package is built with the C++ library libc++
+  while the R process also holds the GNU C++ library. R reported "c++ exception (unknown reason)". This is
+  the configuration of CRAN's check flavor r-devel-linux-x86_64-fedora-clang, where the error of an
+  unconverged coordinate descent of `TRexGVSSelector` arrived without its message. The error keeps its
+  class and its message now. The defect was present since 2.0.0. Selections do not change.
+
 # TRexSelector 2.0.2
 
 ## Changed

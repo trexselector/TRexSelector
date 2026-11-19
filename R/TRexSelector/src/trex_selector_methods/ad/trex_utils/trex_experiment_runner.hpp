@@ -32,8 +32,6 @@
 
 // std includes
 #include <algorithm>
-#include <atomic>
-#include <exception>
 #include <cstddef>
 #include <memory>
 #include <string>
@@ -51,6 +49,7 @@
 #include <trex_selector_methods/ad/trex_utils/trex_warm_start_manager.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_memmap_manager.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_dummy_generator.hpp>
+#include <trex_selector_methods/ad/trex_utils/trex_region_error.hpp>
 
 // ===================================================================================
 
@@ -378,33 +377,26 @@ private:
         // An exception may not leave an OpenMP structured block — even an
         // INACTIVE region (if(false), single thread): the runtime calls
         // std::terminate, killing the host process (observed from R).
-        // Capture the first error, drain the remaining iterations, and
-        // rethrow after the region.
-        std::exception_ptr first_error = nullptr;
-        std::atomic<bool> has_error{false};
+        // Record the first error, drain the remaining iterations, and
+        // throw it again after the region.
+        region_error::RegionError first_error;
 
         #pragma omp parallel if(do_parallel) num_threads(outer_threads)
         {
             #pragma omp for schedule(dynamic)
             for (std::size_t k = 0; k < cfg.K; ++k) {
-                if (has_error.load(std::memory_order_relaxed)) { continue; }
+                if (first_error.raised()) { continue; }
                 try {
                     summaries[k] = summarizePath(
                         runSingleExperiment(k, dummy_gen_.getStored(k), cfg),
                         cfg);
                 } catch (...) {
-                    #pragma omp critical(trex_runner_error)
-                    {
-                        if (!first_error) {
-                            first_error = std::current_exception();
-                            has_error.store(true, std::memory_order_relaxed);
-                        }
-                    }
+                    first_error.capture();
                 }
             }
         }
 
-        if (first_error) { std::rethrow_exception(first_error); }
+        first_error.rethrow();
         return summaries;
     }
 
@@ -578,16 +570,15 @@ private:
                                   cfg.K));
         [[maybe_unused]] const bool do_parallel = !shared && (outer_threads > 1);
 
-        // Same OpenMP exception discipline as runStandard: capture, drain,
-        // rethrow after the region (an escaping exception terminates).
-        std::exception_ptr first_error = nullptr;
-        std::atomic<bool> has_error{false};
+        // Same OpenMP exception discipline as runStandard: record, drain,
+        // throw again after the region (an escaping exception terminates).
+        region_error::RegionError first_error;
 
         #pragma omp parallel if(do_parallel) num_threads(outer_threads)
         {
             #pragma omp for schedule(dynamic)
             for (std::size_t k = 0; k < cfg.K; ++k) {
-                if (has_error.load(std::memory_order_relaxed)) { continue; }
+                if (first_error.raised()) { continue; }
                 try {
                 // Get memory-mapped D region for experiment k
                 auto D_map = memmap_mgr_->getDMap(k, cfg.num_dummies);
@@ -609,18 +600,12 @@ private:
                 // T-steps refault the data from disk.
                 memmap_mgr_->releaseResidency(k);
                 } catch (...) {
-                    #pragma omp critical(trex_runner_error)
-                    {
-                        if (!first_error) {
-                            first_error = std::current_exception();
-                            has_error.store(true, std::memory_order_relaxed);
-                        }
-                    }
+                    first_error.capture();
                 }
             }
         }
 
-        if (first_error) { std::rethrow_exception(first_error); }
+        first_error.rethrow();
         return summaries;
     }
 

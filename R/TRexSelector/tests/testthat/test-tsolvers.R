@@ -634,19 +634,20 @@ test_that("n_threads is the solver's own budget: default 1, at least 1, the path
     s$execute_step(4, TRUE)
     list(threads = s$get_num_threads(), actions = s$get_actions(), beta = s$get_beta())
   }
+  # two threads and no more: the check machines of CRAN allow two
   one <- run(1)
-  four <- run(4)
+  two <- run(2)
   expect_identical(one$threads, 1L)
-  expect_identical(four$threads, 4L)
-  expect_identical(four$actions, one$actions)
-  expect_identical(four$beta, one$beta)
+  expect_identical(two$threads, 2L)
+  expect_identical(two$actions, one$actions)
+  expect_identical(two$beta, one$beta)
 
   expect_error(TLARS_Solver$new(X + 0, D + 0, y, options = tsolver_options(n_threads = 0)),
                "n_threads")
-  s <- TLARS_Solver$new(X + 0, D + 0, y, options = tsolver_options(n_threads = 3))
-  expect_identical(s$get_num_threads(), 3L)
-  s$set_num_threads(2)
+  s <- TLARS_Solver$new(X + 0, D + 0, y, options = tsolver_options(n_threads = 2))
   expect_identical(s$get_num_threads(), 2L)
+  s$set_num_threads(1)
+  expect_identical(s$get_num_threads(), 1L)
   expect_error(s$set_num_threads(-1), "n_threads")
   expect_error(s$set_num_threads(0), "n_threads")
 })

@@ -2,8 +2,10 @@
 
 ## TRexSelector C++ 1.0.2 / R 2.0.3 / Python 1.0.2 (in preparation)
 
-The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. It changes neither results nor the
-interface. Versions: C++ SDK 1.0.2, R TRexSelector 2.0.3, Python trexselector 1.0.2.
+The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. An error raised inside the random
+experiments lost its class and its text on one check platform of CRAN, and it keeps both now. The release
+changes neither results nor the interface. Versions: C++ SDK 1.0.2, R TRexSelector 2.0.3, Python
+trexselector 1.0.2.
 
 ### 2026-11-19
 
@@ -19,6 +21,42 @@ interface. Versions: C++ SDK 1.0.2, R TRexSelector 2.0.3, Python trexselector 1.
 - Verified: the four files parse, and GitHub's page on the workflow syntax states the rules used. The
   proof for pushes of branches is the run of this commit on `dev_beyond`, where every workflow starts
   because its own file changed. The proof for tags comes with the next release.
+
+#### An error from inside the random experiments keeps its class and its text
+
+- The finding. CRAN's check flavor r-devel-linux-x86_64-fedora-clang reported an ERROR for R 2.0.2 on the
+  day after its publication, one failed test of 2,229: `test-trex_gvs.R:769`, "an unconverged coordinate
+  descent is an error and the design comes back". `select()` threw, but R received "c++ exception (unknown
+  reason)" where the message of the solver was expected. The other flavors that had run 2.0.2 were OK.
+- The cause. That machine builds the package with clang and libc++, and its R process also holds GNU's C++
+  library through system libraries. A plain throw and catch works across the two runtimes. An exception
+  carried by `std::exception_ptr` does not. Thrown again by `std::rethrow_exception`, it matches
+  `catch (...)` alone, so the glue of Rcpp sees neither its class nor its text. The library carried the
+  first error of the parallel loop of the random experiments out of the OpenMP region this way, at three
+  places: the loop of the GVS selector and two paths of the experiment runner.
+- The age of the defect. The three places are unchanged since 2.0.0. The defect showed with 2.0.2, because
+  an unconverged coordinate descent became an error there (555b300) and its test was the first to raise an
+  error inside the loop (c3e1ff5). The tests of 2.0.1 expected errors of `select()` only where they are
+  raised before the loop.
+- The fix. `RegionError` (`trex_utils/trex_region_error.hpp`) records the kind and the text of the first
+  error inside the region and throws a fresh exception of the same standard class after it. Ten standard
+  classes keep their identity, and an exception of another class arrives as `std::runtime_error` with its
+  text. The three places use it, and `std::exception_ptr`, `std::current_exception` and
+  `std::rethrow_exception` are gone from the library. Results and interfaces do not change.
+- New C++ test `test_trex_region_error` with eight cases: every standard class keeps kind and text across
+  an OpenMP region, the first error wins, and another class becomes `std::runtime_error`.
+- The R tests ask for two threads at most. One test ran a solver step with four threads and constructed a
+  solver with three, which CRAN's machines cut to two with a warning of the OpenMP runtime. Both use two.
+- A stand-in for that machine. An Ubuntu container builds the package with clang 18 and libc++ and with
+  the flags of CRAN's Fedora machines, with Rcpp built the same way, and its R process holds GNU's library
+  as well. Before the fix it reproduced CRAN's message for the failing call, and R aborted in the next
+  test. With the fix the call carries its message, and the 2,229 R tests and the examples of the 69 help
+  pages pass under a thread limit of two. The same tool builds the package with clang and GNU's library
+  (2,220 tests) and without OpenMP (2,229 tests), fails on a warning of the package's own sources and on a
+  thread request above two, and scans the sources for `std::exception_ptr`. It is a step of the platform
+  round from this day on. Tool and evidence: notes/cran_machines/.
+- Fabian, 2026-11-19: "So we may first go to 2.0.3". The patch carries C++ 1.0.2 and Python 1.0.2 as
+  well, one release of the three from one tree.
 
 ## TRexSelector C++ 1.0.1 / R 2.0.2 / Python 1.0.1
 
