@@ -14,6 +14,18 @@ serves where nothing is written into it, the coordinate-descent solver family is
 its removal in the next minor releases, and the R package compiles in less time. Versions: C++ SDK
 1.0.1, R TRexSelector 2.0.2, Python trexselector 1.0.1.
 
+### 2026-11-19
+
+#### The citation file names the release day of C++ 1.0.1 and Python 1.0.1
+
+- `date-released` of CITATION.cff names 2026-11-19, the day of the GitHub release `v1.0.1`. It named
+  2026-11-17, the day planned on 2026-11-15. Fabian, 2026-11-18: "Day of the GitHub release".
+- The dry run went through before it. The workflow Python Wheels ran with the target `testpypi` and
+  uploaded trexselector 1.0.1 to TestPyPI. The wheel for CPython 3.12 on macOS arm64 was fetched from
+  there into a fresh environment on a machine outside the runner, and the 829 Python tests passed against
+  it. Evidence: notes/handover_2026-11-18/pypi_release/.
+- The release dates in the header of this section follow at the close, as for 1.0.0.
+
 ### 2026-11-18
 
 #### The clangd flags of one machine leave the repository and the source archive
