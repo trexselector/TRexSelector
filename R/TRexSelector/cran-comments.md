@@ -1,41 +1,21 @@
-# TRexSelector 2.0.2
+# TRexSelector 2.0.3
 
 ## Summary of the update
 
-A patch release of 2.0.1, which is on CRAN since 2026-11-12.
-List of corrections:
+A patch release of 2.0.2, which is on CRAN since 2026-11-18. It fixes the ERROR that the check flavor
+r-devel-linux-x86_64-fedora-clang reports for 2.0.2.
 
-* `TRexDASelector` with the methods `"AR1"` and `"EQUI"` recomputed its penalty at every step of the
-  path. The deflated occurrences were then not monotone, and the estimate of the false discovery
-  proportion was too small. The two methods take the penalty of the last step now, as the other
-  methods of the selector always did.
+* The selectors lost the class and the message of an error that was raised inside their random
+  experiments, on systems where the package is built with libc++ while the R process also holds the GNU
+  C++ library. R then reported "c++ exception (unknown reason)", which failed the test
+  `test-trex_gvs.R:769` on that flavor. The library carried such an error out of its OpenMP region by
+  `std::exception_ptr`. It records the class and the message now and throws a fresh exception after the
+  region. The defect was present since 2.0.0. Results do not change.
 
-* `TRexDASelector` with a greedy solver exceeded a target FDR of 0.2 on strongly correlated designs
-  (0.21 to 0.27 at a correlation of 0.9 in a Monte Carlo study). It runs these solvers with the
-  exchangeable-tie band now, which was an option that the user had to set, and holds the target there
-  (0.13 to 0.17).
+* The tests ask for two threads at most. One test of 2.0.2 ran a solver step with four threads, which
+  the same flavor reported as "OMP: Warning #96: Cannot form a team with 4 threads, using 2 instead".
 
-* `TRexTikhonovSelector` ran by default on a coordinate-descent solver that can stop at its sweep
-  budget before it has converged. On the example of the vignette its default run selected 33 variables
-  with a false discovery proportion of 0.70 at a target of 0.1. The selector runs on the homotopy
-  solver of the same problem now.
-
-* A second `select()` on the same selector object ran on the design at its original scale and returned
-  a wrong selection without an error. It is an error now.
-
-* `TRexBiobankScreeningSelector` drew one set of dummies for all phenotypes of a seeded run, and
-  `TRexScreeningSelector` reported an FDR estimate of 0 for an empty selection.
-
-* A coordinate-descent solve that had not converged gave one warning, and the selection was built on
-  the iterate it had. It is an error now.
-
-Beside the corrections the coordinate-descent solver family is deprecated ahead of its removal in
-2.1.0, the screening selector gains a nearest-neighbour variant, a read-only memory-mapped design is
-accepted wherever nothing is written into it, and the help pages and vignettes are corrected where
-they disagreed with the code.
-The Rcpp bindings compile as one unit, so the package builds 37 objects
-where 2.0.1 built 48 and installs in less time. NEWS.md lists every change. The package has no
-reverse dependencies on CRAN.
+NEWS.md lists the change. The package has no reverse dependencies on CRAN.
 
 ## Test environments
 
@@ -43,20 +23,25 @@ reverse dependencies on CRAN.
   thresholds CRAN applies (`_R_CHECK_*_TIMING_CPU_TO_ELAPSED_THRESHOLD_` at 2.5).
 * R-devel (2026-11-08 r90859, GCC 16.2) in a rocker/r-devel container (Debian, x86_64):
   `R CMD check --as-cran`.
+* clang 18 with libc++ 18 in an Ubuntu 24.04 container (arm64), R 4.3.3, with the flags of the
+  fedora-clang flavor (`-O3 -Wall -pedantic -frtti -Wp,-D_FORTIFY_SOURCE=3`), Rcpp built the same way and
+  an R process that also holds the GNU C++ library. This is the configuration of the reported ERROR.
+  With 2.0.2 the container reproduces the message of the flavor. With 2.0.3 the failing call carries its
+  message, and the testthat suite and the examples pass under `OMP_THREAD_LIMIT=2` without a request for
+  more threads.
+* The same container with clang and the GNU C++ library, and with the sequential build without OpenMP:
+  the testthat suite and the examples pass.
 * Ubuntu 24.04 (arm64), R 4.3.3, GCC 13.3: install, the testthat suite and `R CMD check`.
 * clang 14 with libc++ 14 (Ubuntu 24.04 container), the closest available match to CRAN's macOS
   builders for R-release on x86_64 and for R-oldrel: the 37 sources of the package compile without a
   warning.
-* win-builder, R-release (R 4.6.2) and R-devel (2026-11-16 r90914, GCC 14.3): `R CMD check --as-cran`,
-  the vignettes built there as well.
 * The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` with the vignettes
   built and re-built on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on
   Ubuntu, and Windows with the daily R-devel snapshot.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes on macOS. win-builder reports the incoming-feasibility NOTE alone on
-R-release and on R-devel, "Days since last update: 6", which the corrected results above explain.
+0 errors | 0 warnings | 0 notes on macOS.
 
 Two NOTEs in the R-devel container, both from the container itself:
 
@@ -68,16 +53,19 @@ Two NOTEs in the R-devel container, both from the container itself:
 Two NOTEs on Ubuntu:
 
 * checking installed package size ... NOTE: installed size is 7.8 MB, sub-directories of 1 MB or more:
-  libs 5.1 MB, R 2.0 MB. The compiled backend (the Eigen template instantiations of the solvers)
+  libs 5.1 MB, R 2.1 MB. The compiled backend (the Eigen template instantiations of the solvers)
   accounts for the first. The shared object is stripped on Linux (src/Makevars.in).
 * checking DESCRIPTION meta-information ... NOTE: 'LinkingTo' for 'BH' is unused as it has no
   'include' directory. An artifact of Ubuntu's r-cran-bh binary, which ships no headers. The CRAN BH
   package has them, and the sources include the Boost headers through it.
 
-Compilation emits warnings from RcppEigen's Eigen headers and none from the package's own sources:
-`-Wunused-but-set-variable` under clang (SparseLU, "variable 'count' set but not used" and similar)
-and `-Wignored-attributes` under GCC ("ignoring attributes on template argument"). They originate in
-the upstream headers.
+Compilation emits warnings from RcppEigen's Eigen headers and from the Boost headers of BH, and none
+from the package's own sources, also under `-Wall -pedantic` with clang 18: `-Wunused-but-set-variable`
+under clang (SparseLU, "variable 'count' set but not used" and similar) and `-Wignored-attributes`
+under GCC ("ignoring attributes on template argument"). They originate in the upstream headers.
+
+The incoming check will report the days since the last update, because 2.0.2 is from 2026-11-18. This
+update answers the ERROR on the check page of 2.0.2.
 
 ## System requirements and OpenMP
 
