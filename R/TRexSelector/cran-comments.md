@@ -35,13 +35,30 @@ NEWS.md lists the change. The package has no reverse dependencies on CRAN.
 * clang 14 with libc++ 14 (Ubuntu 24.04 container), the closest available match to CRAN's macOS
   builders for R-release on x86_64 and for R-oldrel: the 37 sources of the package compile without a
   warning.
+* win-builder, R-release (R 4.6.2) and R-devel (2026-11-17 r90926, GCC 14.3): `R CMD check --as-cran`,
+  the vignettes built there as well.
+* The 20 containers that the R-hub project provides for CRAN's Linux flavors and additional checks
+  (x86_64, R-devel 2026-11-18 r90935 or R 4.6.2), each with the check settings of its image and
+  `OMP_THREAD_LIMIT=2`:
+  * `clang23` (clang 23 with libc++ and the flags of the fedora-clang flavor): `R CMD check` shows the
+    reported ERROR for 2.0.2, word for word, and Status OK for 2.0.3.
+  * `ubuntu-clang`, `ubuntu-gcc16`, `ubuntu-next` and `ubuntu-release` (the counterparts of debian-clang,
+    debian-gcc, r-patched-linux and r-release-linux), `debian-clang`, `gcc16`, `atlas`, `blis`, `mkl`,
+    `nold`, `lto`, `donttest` and `nosuggests`: no ERROR and no WARNING.
+  * `clang-asan`, `clang-ubsan` and `gcc-asan`: Status OK, and no sanitizer report in any output.
+  * `valgrind`: Status OK, no invalid access and no use of an uninitialised value. The one record,
+    368 bytes "possibly lost" below `pthread_create` in libgomp, is the thread-local storage of the
+    OpenMP worker thread. A ten-line OpenMP program without code of the package shows it there as well.
+  * `rchk`: no report for a source file of the package. The reported lines are in Rcpp's headers.
+  * `vnu`: the HTML of the help pages validates (errors 0, warnings 0).
 * The package's GitHub Actions jobs: install, the testthat suite and `R CMD check` with the vignettes
   built and re-built on Ubuntu, macOS and Windows (R release), the sequential build without OpenMP on
   Ubuntu, and Windows with the daily R-devel snapshot.
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes on macOS.
+0 errors | 0 warnings | 0 notes on macOS. win-builder reports the incoming-feasibility NOTE alone on
+R-release and on R-devel, "Days since last update: 2".
 
 Two NOTEs in the R-devel container, both from the container itself:
 
@@ -49,6 +66,10 @@ Two NOTEs in the R-devel container, both from the container itself:
   `-Werror=format-security` and `-Wformat`. They come from the Makeconf of Debian's R-devel build,
   not from the package's configure or Makevars.
 * checking HTML version of manual ... NOTE: math rendering skipped, as V8 is unavailable there.
+
+The R-hub containers report one NOTE at most, from the container itself: the math rendering NOTE above
+in `ubuntu-clang`, `ubuntu-gcc16`, `ubuntu-next`, `ubuntu-release` and `lto`, and in `debian-clang` the
+non-portable flag `-Wp,-D_FORTIFY_SOURCE=3` of the container's Makevars.
 
 Two NOTEs on Ubuntu:
 
@@ -64,8 +85,8 @@ from the package's own sources, also under `-Wall -pedantic` with clang 18: `-Wu
 under clang (SparseLU, "variable 'count' set but not used" and similar) and `-Wignored-attributes`
 under GCC ("ignoring attributes on template argument"). They originate in the upstream headers.
 
-The incoming check will report the days since the last update, because 2.0.2 is from 2026-11-18. This
-update answers the ERROR on the check page of 2.0.2.
+The days since the last update are few because 2.0.2 is from 2026-11-18. This update answers the mail of
+the CRAN Team, which asks for a correction of the ERROR on the check page of 2.0.2 before 2026-12-11.
 
 ## System requirements and OpenMP
 
