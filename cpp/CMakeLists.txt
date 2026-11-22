@@ -42,7 +42,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 # Project Definition
 # ============================================================================
 project(TRexSelector
-    VERSION 1.0.2
+    VERSION 1.0.3
     DESCRIPTION "C++ Implementation of the T-Rex Selector"
     LANGUAGES CXX
 )

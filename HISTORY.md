@@ -1,11 +1,30 @@
 # TRexSelector changelog
 
-## TRexSelector C++ 1.0.2 / R 2.0.3 / Python 1.0.2 (in preparation)
+## TRexSelector C++ 1.0.3 / R 2.0.3 / Python 1.0.3 (in preparation)
 
 The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. An error raised inside the random
 experiments lost its class and its text on one check platform of CRAN, and it keeps both now. The release
-changes neither results nor the interface. Versions: C++ SDK 1.0.2, R TRexSelector 2.0.3, Python
-trexselector 1.0.2.
+changes neither results nor the interface. Versions: C++ SDK 1.0.3, R TRexSelector 2.0.3, Python
+trexselector 1.0.3. The C++ SDK and the Python package have no version 1.0.2, so the three packages agree
+in their minor and patch numbers.
+
+### 2026-11-22
+
+#### The C++ SDK and the Python package take the version 1.0.3
+
+- The finding. R TRexSelector 2.0.3 is on CRAN since 2026-11-20. The C++ SDK and the Python package carried
+  1.0.2 in the tree since 2026-11-19, and that version was never published. The patch numbers of the
+  packages differ since R 2.0.1, which was a release of the R package alone.
+- The version of the C++ SDK and of the Python package is 1.0.3 in `cpp/CMakeLists.txt`,
+  `Python/trexselector/pyproject.toml` and `CITATION.cff`. No version 1.0.2 exists. R 2.0.3 pairs with C++
+  1.0.3 and Python 1.0.3, so the minor and the patch number of the three packages agree.
+- The R package does not change. No file of it names the version of the C++ SDK.
+- Fabian, 2026-11-22: "My goal is that x.0.3 is clean on Cpp and Python as well."
+- Verified: the platform round on the working tree, every step with exit 0. macOS: 763 C++ tests, 2,229 R
+  tests, 829 Python tests, `R CMD check --as-cran` with Status OK, Sphinx and Doxygen without a warning.
+  The five manylinux wheels are trexselector 1.0.3, and each passes the 829 Python tests. Ubuntu arm64: 763
+  C++ tests, 2,220 R tests, 829 Python tests. Ubuntu x86-64: 763 C++ tests. The source archive of the
+  Python package is `trexselector-1.0.3.tar.gz` with 305 files, all of them tracked.
 
 ### 2026-11-19
 
