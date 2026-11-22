@@ -14,7 +14,7 @@ abstract: >-
 authors:
   - name: "Team T-Rex"
 version: 1.0.3
-date-released: 2026-11-19
+date-released: 2026-11-22
 repository-code: "https://github.com/trexselector/TRexSelector"
 url: "https://trexselector.com"
 license: GPL-3.0-or-later

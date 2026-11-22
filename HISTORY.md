@@ -1,6 +1,6 @@
 # TRexSelector changelog
 
-## TRexSelector C++ 1.0.3 / R 2.0.3 / Python 1.0.3 (in preparation)
+## TRexSelector C++ 1.0.3 / R 2.0.3 / Python 1.0.3
 
 The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. An error raised inside the random
 experiments lost its class and its text on one check platform of CRAN, and it keeps both now. The release
@@ -33,6 +33,16 @@ in their minor and patch numbers.
   references. The wording is Fabian's.
 - The root README.md is the front page of the repository and takes part in no build. The C++ SDK, the R
   package and the Python package carry README files of their own, and they do not change.
+
+#### The citation file names the release day of C++ 1.0.3 and Python 1.0.3
+
+- `date-released` of CITATION.cff names 2026-11-22, the day of the GitHub release `v1.0.3`. It named
+  2026-11-19, the release day of 1.0.1. The header of this section loses "(in preparation)".
+- The dry run went through before it. The workflow Python Wheels ran on main with the target `testpypi`
+  and uploaded trexselector 1.0.3 to TestPyPI. The wheel for CPython 3.12 on macOS arm64 was fetched from
+  there into a fresh environment on a machine outside the runner, and the 829 Python tests passed against
+  it.
+- The release dates in the header of this section follow at the close, as for 1.0.1.
 
 ### 2026-11-19
 
