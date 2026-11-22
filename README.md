@@ -70,8 +70,10 @@ documentation:
 
 ## Citing
 
-The file [CITATION.cff](CITATION.cff) carries the citation metadata of the repository, and the R
- package answers `citation("TRexSelector")`.
+To cite this work and the literature it is built upon, please look up the file
+ [CITATION.cff](CITATION.cff).
+It carries the citation metadata of the repository, and the R package answers
+ `citation("TRexSelector")`.
 Every paper the class documentation credits is listed in [references.bib](references.bib), the
  master file from which the reference blocks of the C++, R and Python documentation are rendered
  with the scripts in [tools/references/](tools/references).

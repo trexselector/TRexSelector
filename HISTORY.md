@@ -26,6 +26,14 @@ in their minor and patch numbers.
   C++ tests, 2,220 R tests, 829 Python tests. Ubuntu x86-64: 763 C++ tests. The source archive of the
   Python package is `trexselector-1.0.3.tar.gz` with 305 files, all of them tracked.
 
+#### The README of the repository names the citation file first
+
+- The section "Citing" of the root README.md opens with a sentence that sends the reader to CITATION.cff
+  for citing the software and the literature it is built upon. The file names the software and twelve
+  references. The wording is Fabian's.
+- The root README.md is the front page of the repository and takes part in no build. The C++ SDK, the R
+  package and the Python package carry README files of their own, and they do not change.
+
 ### 2026-11-19
 
 #### The push of a tag starts no workflow
