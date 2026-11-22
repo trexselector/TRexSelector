@@ -6,7 +6,8 @@ The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. An error raised ins
 experiments lost its class and its text on one check platform of CRAN, and it keeps both now. The release
 changes neither results nor the interface. Versions: C++ SDK 1.0.3, R TRexSelector 2.0.3, Python
 trexselector 1.0.3. The C++ SDK and the Python package have no version 1.0.2, so the three packages agree
-in their minor and patch numbers.
+in their minor and patch numbers. Released: TRexSelector 2.0.3 on CRAN on 2026-11-20, the GitHub release
+v1.0.3 and trexselector 1.0.3 on PyPI on 2026-11-22.
 
 ### 2026-11-22
 
@@ -43,6 +44,17 @@ in their minor and patch numbers.
   there into a fresh environment on a machine outside the runner, and the 829 Python tests passed against
   it.
 - The release dates in the header of this section follow at the close, as for 1.0.1.
+
+#### The release of C++ 1.0.3 and Python 1.0.3
+
+- The GitHub release `v1.0.3` was published on main. Its run of the workflow Python Wheels built the
+  wheels and the source archive from the tag and uploaded trexselector 1.0.3 to PyPI after the approval
+  of the deployment. The record on PyPI shows 19 files, 18 wheels and the source archive. The header of
+  this section names the release dates.
+- The wheel for CPython 3.12 on macOS arm64 was fetched from PyPI into a fresh environment, and the 829
+  Python tests passed against it.
+- The tag started no workflow beside the run of the release. That is the proof for tags which the entry
+  of 2026-11-19 on the push trigger `branches: ['**']` left to this release.
 
 ### 2026-11-19
 
