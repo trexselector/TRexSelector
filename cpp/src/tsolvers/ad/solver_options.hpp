@@ -46,22 +46,6 @@ enum class NCGMPVariant : int {
     FullyCorrective = 1   ///< Orthogonal Matching Pursuit (least squares over the active set)
 };
 
-/**
- * @brief Structured penalty of the group CCD solver (TCDIENET).
- *
- *  - MEAN      : K = blockdiag(1_m 1_m^T / p_m) — the canonical IEN group-sum
- *                penalty.
- *  - CENTERING : K = blockdiag(I_{p_m} - 1_m 1_m^T / p_m) — within-group
- *                centering (complete-graph Laplacian per group). Null space:
- *                group-constant directions; singleton groups unpenalized.
- *                Mathematically identical to the TCDTIKNET FOLDED path with
- *                K_GC, at O(1) instead of O(p_m) per coordinate update.
- *
- * @deprecated Will be removed with the coordinate descent family in the next
- *  minor release.
- */
-enum class GroupPenaltyVariant { MEAN, CENTERING };
-
 // ===================================================================================
 
 /**
@@ -143,10 +127,9 @@ struct SolverOptions {
     // --- Family hyperparameters --------------------------------------------
 
     /** @brief L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0.
-     *  Read by TENET, TENETAug, TIENET, TIENETAug, TIKNET, TCDENET,
-     *  TCDIENET, TCDTIKNET. Default 0.1, as inside the selectors. With 0
-     *  there is no quadratic penalty and the elastic nets reduce to their
-     *  lasso. */
+     *  Read by TENET, TENETAug, TIENET, TIENETAug and TIKNET. Default 0.1,
+     *  as inside the selectors. With 0 there is no quadratic penalty and the
+     *  elastic nets reduce to their lasso. */
     double lambda2 = 0.1;
 
     /** @brief Shrinkage step of TAFS in (0, 1]. Default 0.3, as inside the
@@ -161,66 +144,11 @@ struct SolverOptions {
      *  LASSO inner path (false). */
     bool tenet_aug_use_lars = false;
 
-    /** @brief TIKNET and TCDTIKNET: the caller has checked the Tikhonov
-     *  matrix (finite entries, symmetric, positive semi-definite), and the
-     *  solver skips its own check. For a caller that builds many solvers on
-     *  one matrix, as the T-Rex selector does. Default false. */
+    /** @brief TIKNET: the caller has checked the Tikhonov matrix (finite
+     *  entries, symmetric, positive semi-definite), and the solver skips its
+     *  own check. For a caller that builds many solvers on one matrix, as
+     *  the T-Rex selector does. Default false. */
     bool tikhonov_validated = false;
-
-    /** @brief Ridge weight of the dummy block: TCDENET (kappa * I on the
-     *  dummies) and TCDTIKNET under INDEPENDENT_RIDGE coupling (ignored when
-     *  fold_dummies is true). Default 1.0.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    double kappa_dummy = 1.0;
-
-    /** @brief TCDTIKNET dummy coupling: false (default) INDEPENDENT_RIDGE —
-     *  the dummies get a decoupled kappa_dummy * I ridge; true FOLDED —
-     *  dummy copy t joins variable (t - p) mod p in the K-coupling (GVS
-     *  layered convention; requires D.cols() to be a multiple of X.cols()).
-     *  TIKNET implements FOLDED exclusively and ignores this.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    bool fold_dummies = false;
-
-    /** @brief TCDIENET structured penalty. Default MEAN.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    GroupPenaltyVariant group_penalty = GroupPenaltyVariant::MEAN;
-
-    // --- CD family knobs (TCDLASSO, TCDENET, TCDIENET, TCDTIKNET) ---------
-    // Deprecated with the family: the six knobs will be removed in the next minor release.
-
-    /** @brief Relative lambda tolerance of the crossing search, in (0, 1).
-     *  Default 1e-3.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    double cd_lambda_rel_tol = 1e-3;
-
-    /** @brief Certification-sweep tolerance (recorded steps), > 0.
-     *  Default 1e-10.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    double cd_tol_certify = 1e-10;
-
-    /** @brief Probe-sweep tolerance (jump / bisection solves), > 0.
-     *  Default 1e-8.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    double cd_tol_probe = 1e-8;
-
-    /** @brief Ever-active Gram slots cached before the solver falls back to
-     *  naive residual sweeps. Default 400.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    std::size_t cd_gram_cap = 400;
-
-    /** @brief Stall guard: maximum coordinate sweeps per fixed-lambda solve.
-     *  Default 2000. A solve that stops at the budget far from a solution
-     *  (KKT violation above 0.001 lambda1) throws instead of continuing on
-     *  an unconverged path.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    std::size_t cd_max_sweeps = 2000;
-
-    /** @brief Crossing localization: true (default) CERTIFIED — duality-gap
-     *  and coordinate-status certificates, closed-form continuation, records
-     *  at the knot; false LEGACY — KKT-guided jumps plus probe bisection
-     *  with the support-nesting stop.
-     *  @deprecated Will be removed with the coordinate descent family. */
-    bool cd_certified_localization = true;
 };
 
 // ===================================================================================

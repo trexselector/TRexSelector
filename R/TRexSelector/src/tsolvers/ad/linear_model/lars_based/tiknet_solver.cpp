@@ -52,7 +52,7 @@ TIKNET_Solver::TIKNET_Solver(
     const std::size_t L = num_dummies_;
     const auto p_idx = static_cast<Eigen::Index>(p);
 
-    // ---- Validate the penalty matrix (mirrors TCDTIKNET sparse mode) ------
+    // ---- Validate the penalty matrix --------------------------------------
     if (tikhonov_matrix.rows() != p_idx || tikhonov_matrix.cols() != p_idx) {
         throw std::invalid_argument(concatMsg(
             "TIKNET_Solver: Tikhonov matrix is ", tikhonov_matrix.rows(),

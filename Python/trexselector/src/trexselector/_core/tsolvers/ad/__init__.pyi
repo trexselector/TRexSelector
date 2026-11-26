@@ -4,57 +4,9 @@ Augmented-dummy (AD) T-solvers: the classical family running on [X, D]
 from __future__ import annotations
 import typing
 from . import afs_based
-from . import cd_based
 from . import lars_based
 from . import omp_based
-__all__: list[str] = ['CENTERING', 'GroupPenaltyVariant', 'L2', 'MEAN', 'ScalingMode', 'SolverOptions', 'ZSCORE', 'afs_based', 'cd_based', 'lars_based', 'omp_based']
-class GroupPenaltyVariant:
-    """
-    Structured penalty of the group CCD solver (TCDIENET). Deprecated: removed with the coordinate-descent family in the next minor release.
-    
-    Members:
-    
-      MEAN : K = blockdiag(1 1^T / p_m): the canonical IEN group-sum penalty.
-    
-      CENTERING : K = blockdiag(I - 1 1^T / p_m): within-group centering.
-    """
-    CENTERING: typing.ClassVar[GroupPenaltyVariant]  # value = <GroupPenaltyVariant.CENTERING: 1>
-    MEAN: typing.ClassVar[GroupPenaltyVariant]  # value = <GroupPenaltyVariant.MEAN: 0>
-    __members__: typing.ClassVar[dict[str, GroupPenaltyVariant]]  # value = {'MEAN': <GroupPenaltyVariant.MEAN: 0>, 'CENTERING': <GroupPenaltyVariant.CENTERING: 1>}
-    @typing.overload
-    def __eq__(self, other: GroupPenaltyVariant) -> bool:
-        ...
-    @typing.overload
-    def __eq__(self, other: typing.Any) -> bool:
-        ...
-    def __getstate__(self) -> int:
-        ...
-    def __hash__(self) -> int:
-        ...
-    def __index__(self) -> int:
-        ...
-    def __init__(self, value: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __int__(self) -> int:
-        ...
-    @typing.overload
-    def __ne__(self, other: GroupPenaltyVariant) -> bool:
-        ...
-    @typing.overload
-    def __ne__(self, other: typing.Any) -> bool:
-        ...
-    def __repr__(self) -> str:
-        ...
-    def __setstate__(self, state: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    def __str__(self) -> str:
-        ...
-    @property
-    def name(self) -> str:
-        ...
-    @property
-    def value(self) -> int:
-        ...
+__all__: list[str] = ['L2', 'ScalingMode', 'SolverOptions', 'ZSCORE', 'afs_based', 'lars_based', 'omp_based']
 class ScalingMode:
     """
     Column scaling convention applied by the solver after centering.
@@ -119,54 +71,6 @@ class SolverOptions:
     def __repr__(self) -> str:
         ...
     @property
-    def cd_certified_localization(self) -> bool:
-        """
-        CD family: True (default) CERTIFIED crossing localization, False LEGACY. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_certified_localization.setter
-    def cd_certified_localization(self, arg0: bool) -> None:
-        ...
-    @property
-    def cd_gram_cap(self) -> int:
-        """
-        CD family: ever-active Gram slots cached before falling back to naive sweeps. Default 400. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_gram_cap.setter
-    def cd_gram_cap(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_lambda_rel_tol(self) -> float:
-        """
-        CD family: relative lambda tolerance of the crossing search, in (0, 1). Default 1e-3. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_lambda_rel_tol.setter
-    def cd_lambda_rel_tol(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_max_sweeps(self) -> int:
-        """
-        CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000. A solve that stops at the budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_max_sweeps.setter
-    def cd_max_sweeps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_tol_certify(self) -> float:
-        """
-        CD family: certification-sweep tolerance. Default 1e-10. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_tol_certify.setter
-    def cd_tol_certify(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_tol_probe(self) -> float:
-        """
-        CD family: probe-sweep tolerance. Default 1e-8. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_tol_probe.setter
-    def cd_tol_probe(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
     def exch_tie_alpha(self) -> float:
         """
         Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS); 0 (default) = off. The path solvers ignore it.
@@ -183,36 +87,12 @@ class SolverOptions:
     def exch_tie_floor(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
-    def fold_dummies(self) -> bool:
-        """
-        TCDTIKNET dummy coupling: False (default) INDEPENDENT_RIDGE, True FOLDED. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @fold_dummies.setter
-    def fold_dummies(self, arg0: bool) -> None:
-        ...
-    @property
-    def group_penalty(self) -> GroupPenaltyVariant:
-        """
-        TCDIENET structured penalty (GroupPenaltyVariant). Default MEAN. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @group_penalty.setter
-    def group_penalty(self, arg0: GroupPenaltyVariant) -> None:
-        ...
-    @property
     def intercept(self) -> bool:
         """
         Center X and D in place (a writer, as for normalize) and the solver's internal copy of y (an intercept is fitted). False when the caller pre-centered. Default True.
         """
     @intercept.setter
     def intercept(self, arg0: bool) -> None:
-        ...
-    @property
-    def kappa_dummy(self) -> float:
-        """
-        Ridge weight of the dummy block (TCDENET; TCDTIKNET under INDEPENDENT_RIDGE). Default 1.0. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @kappa_dummy.setter
-    def kappa_dummy(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
         ...
     @property
     def lambda2(self) -> float:
@@ -289,7 +169,7 @@ class SolverOptions:
     @property
     def tikhonov_validated(self) -> bool:
         """
-        TIKNET and TCDTIKNET: True says that the Tikhonov matrix was checked by the caller (finite entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller that builds many solvers on one matrix, as the T-Rex selector does. Default False.
+        TIKNET: True says that the Tikhonov matrix was checked by the caller (finite entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller that builds many solvers on one matrix, as the T-Rex selector does. Default False.
         """
     @tikhonov_validated.setter
     def tikhonov_validated(self, arg0: bool) -> None:
@@ -311,7 +191,5 @@ class SolverOptions:
     @verbose.setter
     def verbose(self, arg0: bool) -> None:
         ...
-CENTERING: GroupPenaltyVariant  # value = <GroupPenaltyVariant.CENTERING: 1>
 L2: ScalingMode  # value = <ScalingMode.L2: 0>
-MEAN: GroupPenaltyVariant  # value = <GroupPenaltyVariant.MEAN: 0>
 ZSCORE: ScalingMode  # value = <ScalingMode.ZSCORE: 1>

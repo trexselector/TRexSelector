@@ -6,11 +6,10 @@
  *
  * @brief Unit tests for the native sparse-K Tikhonov solver (TIKNET):
  * degenerate anchors (lambda2 = 0 collapses, group-mean K == native
- * TIENET, K = I == singleton-group TIENET), crossing-support equivalence
- * against the CCD GROUP_CENTERING reference,
+ * TIENET, K = I == singleton-group TIENET),
  * save/load/continue round trips, drop-recovery semantics (parity, re-entry,
  * knot monotonicity, mid-recovery checkpoints), rank-bound continuation,
- * and penalty-matrix content validation across the sparse-K trio.
+ * and penalty-matrix content validation.
  */
 // ========================================================================================
 
@@ -23,7 +22,6 @@
 #include <filesystem>
 #include <limits>
 #include <random>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -32,8 +30,6 @@
 #include <Eigen/Sparse>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
@@ -47,43 +43,13 @@
 // Embed into test namespace
 namespace trex::test::tsolvers::ad::linear_model {
 
-using namespace trex::tsolvers::ad::linear_model::cd_based;
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::utils::datageneration::datagen;
-using trex::tsolvers::ad::SparseBetaPath;
 
 // ========================================================================================
 
 namespace {
-
-/** @brief Real-variable support at the FIRST recorded step with exactly t
- *  active dummies, for t = 1..T (the quantity the T-Rex phi calibration
- *  consumes). result[t-1] is empty when no recorded step hits count t. */
-std::vector<std::set<std::size_t>> supportsAtDummyCounts(
-    const SparseBetaPath& path, std::size_t p, std::size_t T,
-    double eps = 1e-12) {
-
-    std::vector<std::set<std::size_t>> result(T);
-    std::vector<bool> found(T, false);
-
-    for (const auto& st : path.steps) {
-        std::size_t dummies = 0;
-        for (std::size_t e = 0; e < st.idx.size(); ++e) {
-            if (st.idx[e] >= p && std::abs(st.val[e]) > eps) { ++dummies; }
-        }
-        if (dummies >= 1 && dummies <= T && !found[dummies - 1]) {
-            found[dummies - 1] = true;
-            for (std::size_t e = 0; e < st.idx.size(); ++e) {
-                if (st.idx[e] < p && std::abs(st.val[e]) > eps) {
-                    result[dummies - 1].insert(st.idx[e]);
-                }
-            }
-        }
-    }
-    return result;
-}
-
 
 /** @brief Group-mean IEN matrix W = sum_m 1_m 1_m^T / p_m for contiguous
  *  groups of size gsize (entries 1/gsize within each group block). */
@@ -395,8 +361,7 @@ TEST_F(TSolverTikTest, TiknetGroupMeanKMatchesTienet) {
 
 /** @brief K = I equals TIENET with all-singleton groups: each variable is
  *  ridged jointly with its own dummy copies through the folded sum (NOT
- *  the decoupled TENET ridge — the same collapse/coupling trade-off as on
- *  the CCD side). */
+ *  the decoupled TENET ridge). */
 TEST_F(TSolverTikTest, TiknetIdentityKMatchesTienetSingletonGroups) {
     const double lambda2 = 0.5;
 
@@ -412,42 +377,6 @@ TEST_F(TSolverTikTest, TiknetIdentityKMatchesTienetSingletonGroups) {
 
     EXPECT_EQ(tik.getActions(), ien.getActions());
     EXPECT_TRUE(tik.getBeta(-1).isApprox(ien.getBeta(-1), 1e-9));
-}
-
-
-// ========================================================================================
-// TIKNET vs the CCD reference: crossing-support equivalence
-// ========================================================================================
-
-/** @brief T-TIKNET with K_GC and the CCD GROUP_CENTERING mode solve the
- *  same penalized-lasso path family from opposite algorithmic sides
- *  (piecewise-linear homotopy vs exact fixed-lambda1 minimizers); the real
- *  supports at each dummy-count crossing (what T-Rex consumes) must
- *  coincide. */
-TEST_F(TSolverTikTest, TiknetKgcCrossingSupportsMatchCcdGroupCentering) {
-    const std::size_t T = 5;
-    const std::size_t p = static_cast<std::size_t>(X.cols());
-    const double lambda2 = 2.0;
-
-    Mapped mt(X, D, y);
-    TIKNET_Solver tik(mt.Xm, mt.Dm, mt.ym, groupCenteringK(X.cols(), 5),
-        trex::tsolvers::ad::SolverOptions{.lambda2 = lambda2});
-    tik.executeStep(T, true);
-
-    Mapped mc(X, D, y);
-    TCDIENET_Solver ccd(mc.Xm, mc.Dm, mc.ym, groups, trex::tsolvers::ad::SolverOptions{.lambda2 = lambda2,
-        .group_penalty = GroupPenaltyVariant::CENTERING});
-    ccd.setLambdaRelTol(1e-6);
-    ccd.executeStep(T, true);
-
-    const auto sup_tik = supportsAtDummyCounts(tik.getBetaPathSparse(), p, T);
-    const auto sup_ccd = supportsAtDummyCounts(ccd.getBetaPathSparse(), p, T);
-
-    for (std::size_t t = 1; t <= T; ++t) {
-        EXPECT_EQ(sup_tik[t - 1], sup_ccd[t - 1])
-            << "TIKNET vs CCD GROUP_CENTERING real support diverged at "
-               "dummy count t = " << t;
-    }
 }
 
 
@@ -802,7 +731,7 @@ TEST_F(TSolverTikTest, TiknetIdentityKMatchesTienetSingletonGroupsAtRankBound) {
 
 
 // ========================================================================================
-// Penalty-matrix content validation (shared sparse-K trio helper)
+// Penalty-matrix content validation
 // ========================================================================================
 
 /** @brief TIKNET rejects non-finite, asymmetric, and non-PSD K at
@@ -898,40 +827,6 @@ TEST_F(TSolverTikTest, TiknetAcceptsValidTikhonovK) {
     }
 }
 
-
-/** @brief TCDTIKNET shares the trio validation contract. */
-TEST_F(TSolverTikTest, TcdtiknetRejectsInvalidTikhonovK) {
-    const Eigen::Index p = X.cols();
-    {
-        Eigen::SparseMatrix<double> K = identityK(p);
-        K.coeffRef(3, 7) = std::numeric_limits<double>::quiet_NaN();
-        K.coeffRef(7, 3) = std::numeric_limits<double>::quiet_NaN();
-        Mapped m(X, D, y);
-        EXPECT_THROW(
-            TCDTIKNET_Solver(m.Xm, m.Dm, m.ym, K, trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0}),
-            std::invalid_argument);
-    }
-    {
-        Eigen::SparseMatrix<double> K = identityK(p);
-        K.coeffRef(0, 1) = 0.5;
-        Mapped m(X, D, y);
-        EXPECT_THROW(
-            TCDTIKNET_Solver(m.Xm, m.Dm, m.ym, K, trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0}),
-            std::invalid_argument);
-    }
-    {
-        Eigen::SparseMatrix<double> K = -1.0 * identityK(p);
-        Mapped m(X, D, y);
-        EXPECT_THROW(
-            TCDTIKNET_Solver(m.Xm, m.Dm, m.ym, K, trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0}),
-            std::invalid_argument);
-    }
-    {
-        Mapped m(X, D, y);
-        EXPECT_NO_THROW(TCDTIKNET_Solver(m.Xm, m.Dm, m.ym, groupCenteringK(p, 5),
-            trex::tsolvers::ad::SolverOptions{.lambda2 = 1.0}));
-    }
-}
 
 // ========================================================================================
 } /* End of namespace trex::test::tsolvers::ad::linear_model */

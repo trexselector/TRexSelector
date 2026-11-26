@@ -149,7 +149,7 @@ struct ExperimentRunnerConfig {
      *  keeps its regions serial inside a parallel K-loop. */
     int max_inner_threads = 1;
 
-    // --- General-Tikhonov penalty (TCDTIKNET / TIKNET dispatch) ---
+    // --- General-Tikhonov penalty (TIKNET dispatch) ---
     /** @brief Non-owning pointer to the Tikhonov matrix K (nullptr = none).
      *  Set by TRexTikhonovSelector::buildRunnerConfig(); forwarded verbatim
      *  into SolverConfig::tikhonov_K. Must outlive the run() call. */
@@ -158,19 +158,6 @@ struct ExperimentRunnerConfig {
     /** @brief tikhonov_K was checked by the selector; forwarded verbatim
      *  into SolverConfig::tikhonov_K_validated. */
     bool tikhonov_K_validated = false;
-
-    /** @brief Dummy-coupling mode for the sparse-K TCDTIKNET dispatch;
-     *  forwarded verbatim into SolverConfig::tikhonov_fold_dummies. */
-    bool tikhonov_fold_dummies = false;
-
-    /** @brief GROUP_CENTERING fast path (O(1) hooks); forwarded verbatim
-     *  into SolverConfig::tikhonov_group_centering. */
-    bool tikhonov_group_centering = false;
-
-    /** @brief Non-owning pointer to the 0-based contiguous group ids
-     *  (length p) for the GROUP_CENTERING fast path; forwarded verbatim
-     *  into SolverConfig::tikhonov_groups. Must outlive the run() call. */
-    const Eigen::VectorXi* tikhonov_groups = nullptr;
 
     // --- Diagnostics ---
     bool verbose = false;
@@ -697,10 +684,7 @@ private:
             // parallel K-loop the solver's regions stay serial anyway.
             .n_threads = cfg.max_inner_threads,
             .tikhonov_K = cfg.tikhonov_K,
-            .tikhonov_K_validated = cfg.tikhonov_K_validated,
-            .tikhonov_fold_dummies = cfg.tikhonov_fold_dummies,
-            .tikhonov_group_centering = cfg.tikhonov_group_centering,
-            .tikhonov_groups = cfg.tikhonov_groups
+            .tikhonov_K_validated = cfg.tikhonov_K_validated
         };
 
         std::unique_ptr<trex::tsolvers::ad::TSolver_Base> retained;

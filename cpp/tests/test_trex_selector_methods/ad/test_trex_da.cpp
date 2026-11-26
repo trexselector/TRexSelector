@@ -72,7 +72,6 @@ void run_trex_da_test(Eigen::Index n,
     trex_ctrl.K = K;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
-    trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     TRexDAControlParameter da_ctrl;
     da_ctrl.method = method;
@@ -256,21 +255,6 @@ TEST(TRexDATest, Method_BT_SelectionModeField) {
 /** @brief Test TRexDASelector with AR1 method and SKIPL L loop strategy */
 TEST(TRexDATest, Method_AR1_SKIPL) {
     run_trex_da_test(150, 300, DAMethod::AR1, 3, LLoopStrategy::SKIPL);
-}
-
-
-/** @brief DA with the CCD lasso solver (TCDLASSO): the deflation loop drives
- *  the shared dispatch, so the CD path solver must run end-to-end. */
-TEST(TRexDATest, Param_Solvers_TCDLASSO) {
-    run_trex_da_test(150, 300, DAMethod::AR1, 3, LLoopStrategy::HCONCAT,
-                     disp::SolverTypeForTRex::TCDLASSO);
-}
-
-
-/** @brief DA with the CCD elastic-net solver (TCDENET). */
-TEST(TRexDATest, Param_Solvers_TCDENET) {
-    run_trex_da_test(150, 300, DAMethod::AR1, 3, LLoopStrategy::HCONCAT,
-                     disp::SolverTypeForTRex::TCDENET);
 }
 
 

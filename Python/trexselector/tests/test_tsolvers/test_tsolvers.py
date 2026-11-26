@@ -23,8 +23,6 @@ from trexselector.tsolvers.ad.omp_based import (
 from trexselector.tsolvers.ad.afs_based import TAFS_Solver
 from trexselector.tsolvers.ad import SolverOptions
 from trexselector.tsolvers.ad.lars_based import TIENET_Solver, TIENETAug_Solver, TIKNET_Solver
-from trexselector.tsolvers.ad.cd_based import (
-    TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver)
 
 
 def _groups_for(p):
@@ -84,25 +82,12 @@ def make_tncgmp(X, D, y):
 def make_tafs(X, D, y):
     return TAFS_Solver(X, D, y, SolverOptions(rho_afs=1.0))
 
-# Native IEN, the sparse-K solvers, the CD family.
+# Native IEN and the sparse-K solver.
 def make_tienet(X, D, y):
     return TIENET_Solver(X, D, y, _groups_for(X.shape[1]), SolverOptions(lambda2=0.5))
 
 def make_tiknet(X, D, y):
     return TIKNET_Solver(X, D, y, _group_mean_k(X.shape[1]), SolverOptions(lambda2=0.5))
-
-def make_tcdlasso(X, D, y):
-    return TCDLASSO_Solver(X, D, y)
-
-def make_tcdenet(X, D, y):
-    return TCDENET_Solver(X, D, y, SolverOptions(lambda2=0.5))
-
-def make_tcdienet(X, D, y):
-    return TCDIENET_Solver(X, D, y, _groups_for(X.shape[1]), SolverOptions(lambda2=0.5))
-
-def make_tcdtiknet(X, D, y):
-    return TCDTIKNET_Solver(X, D, y, _group_mean_k(X.shape[1]),
-                            SolverOptions(lambda2=0.5, fold_dummies=True))
 
 
 STANDARD_SOLVER_FACTORIES = [
@@ -120,10 +105,6 @@ STANDARD_SOLVER_FACTORIES = [
     make_tafs,
     make_tienet,
     make_tiknet,
-    make_tcdlasso,
-    make_tcdenet,
-    make_tcdienet,
-    make_tcdtiknet,
 ]
 
 
@@ -490,51 +471,27 @@ def test_tenet_aug_diagnostics_reflect_inner_solver(solver_data):
 # Family getters
 # ---------------------------------------------------------------------------
 
-def test_tienet_and_tcdienet_group_getters(solver_data):
+def test_tienet_group_getters(solver_data):
     X, D, y, n, p = solver_data
     groups = _groups_for(p)
-    for cls in (TIENET_Solver, TCDIENET_Solver):
-        s = cls(X, D, y, groups, SolverOptions(lambda2=0.5))
-        s.executeStep(3)
-        assert s.getLambda2() == pytest.approx(0.5)
-        assert (np.asarray(s.getGroups()) == groups).all()
-        assert s.getNumGroups() == len(np.unique(groups))
-        assert s.getNumSteps() > 0
-        del s   # a writer holds X and D until it is gone (in-place contract)
-
-
-def test_cd_family_certified_getters(solver_data):
-    X, D, y, n, p = solver_data
-    s = TCDENET_Solver(X, D, y, SolverOptions(lambda2=0.5))
+    s = TIENET_Solver(X, D, y, groups, SolverOptions(lambda2=0.5))
     s.executeStep(3)
-    assert s.isCertifiedLocalization() is True
-    assert isinstance(s.isCertifiedDegraded(), bool)
     assert s.getLambda2() == pytest.approx(0.5)
-    assert len(s.getLambda()) == s.getNumSteps()   # one lambda_1 per recorded step
-    assert all(g >= 0.0 for g in s.getRecordGaps())
-    assert all(v >= 0.0 for v in s.getRecordKktViolations())
-    assert s.getKktViolation() >= 0.0
-    del s   # release the writer's claim on X and D before the next writer
-
-    legacy = TCDLASSO_Solver(X, D, y, SolverOptions(cd_certified_localization=False))
-    assert legacy.isCertifiedLocalization() is False
-    assert legacy.getLambda2() == 0.0
+    assert (np.asarray(s.getGroups()) == groups).all()
+    assert s.getNumGroups() == len(np.unique(groups))
+    assert s.getNumSteps() > 0
+    del s   # a writer holds X and D until it is gone (in-place contract)
 
 
-def test_tikhonov_solvers_take_a_dense_k(solver_data):
+def test_tiknet_takes_a_dense_k(solver_data):
     X, D, y, n, p = solver_data
     K = _group_mean_k(p)
-    for cls in (TIKNET_Solver, TCDTIKNET_Solver):
-        s = cls(X, D, y, K, SolverOptions(lambda2=0.5, fold_dummies=True))
-        s.executeStep(3)
-        assert s.getLambda2() == pytest.approx(0.5)
-        if cls is not TCDTIKNET_Solver:   # the CD solver keeps K internal
-            assert np.allclose(s.getTikhonovK(), K)
-        assert s.getNumSteps() > 0
-        del s   # a writer holds X and D until it is gone (in-place contract)
-    tik = TCDTIKNET_Solver(X, D, y, K, SolverOptions(lambda2=0.5, fold_dummies=True))
-    assert tik.isFoldedDummyCoupling() is True
-    del tik
+    s = TIKNET_Solver(X, D, y, K, SolverOptions(lambda2=0.5))
+    s.executeStep(3)
+    assert s.getLambda2() == pytest.approx(0.5)
+    assert np.allclose(s.getTikhonovK(), K)
+    assert s.getNumSteps() > 0
+    del s   # a writer holds X and D until it is gone (in-place contract)
     with pytest.raises(ValueError):
         TIKNET_Solver(X, D, y, -np.eye(p), SolverOptions(lambda2=0.5))
 
@@ -637,10 +594,6 @@ def test_every_solver_class_reads_readonly_views(readonly_solver_data):
         TOOLS_Solver(X_view, D_view, yc, reader),
         TNCGMP_Solver(X_view, D_view, yc, reader),
         TAFS_Solver(X_view, D_view, yc, reader),
-        TCDLASSO_Solver(X_view, D_view, yc, reader),
-        TCDENET_Solver(X_view, D_view, yc, ridge),
-        TCDIENET_Solver(X_view, D_view, yc, groups, ridge),
-        TCDTIKNET_Solver(X_view, D_view, yc, K, ridge),
     ]
     for solver in solvers:
         solver.executeStep(2, True)

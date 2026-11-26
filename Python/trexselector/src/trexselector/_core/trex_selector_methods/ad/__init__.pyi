@@ -7,7 +7,7 @@ import numpy
 import numpy.typing
 import scipy.sparse
 import typing
-__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyClusters', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TCDENET', 'TCDIENET', 'TCDLASSO', 'TCDTIKNET', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'default_lambda2_grid', 'gamma_to_k', 'gvs_lambda2_power_rule', 'normalize_design', 'tikhonov_lambda2_power_rule']
+__all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyClusters', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'default_lambda2_grid', 'gamma_to_k', 'gvs_lambda2_power_rule', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
     """
     Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.
@@ -547,13 +547,10 @@ class ENSolverType:
       TENET : Gram-based Elastic Net (ridge absorbed via Cholesky update).
     
       TENET_AUG : Augmented-LASSO Elastic Net (row-augmented system).
-    
-      TCDENET : Coordinate-descent Elastic Net (exact fixed-lambda1 minimizers per dummy crossing). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.
     """
-    TCDENET: typing.ClassVar[ENSolverType]  # value = <ENSolverType.TCDENET: 2>
     TENET: typing.ClassVar[ENSolverType]  # value = <ENSolverType.TENET: 0>
     TENET_AUG: typing.ClassVar[ENSolverType]  # value = <ENSolverType.TENET_AUG: 1>
-    __members__: typing.ClassVar[dict[str, ENSolverType]]  # value = {'TENET': <ENSolverType.TENET: 0>, 'TENET_AUG': <ENSolverType.TENET_AUG: 1>, 'TCDENET': <ENSolverType.TCDENET: 2>}
+    __members__: typing.ClassVar[dict[str, ENSolverType]]  # value = {'TENET': <ENSolverType.TENET: 0>, 'TENET_AUG': <ENSolverType.TENET_AUG: 1>}
     @typing.overload
     def __eq__(self, other: ENSolverType) -> bool:
         ...
@@ -635,7 +632,7 @@ class GVSType:
     
       EN : Elastic net. en_solver chooses the solver.
     
-      IEN : Informed elastic net, with the groups in the penalty (solver via trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TIENET.
+      IEN : Informed elastic net, with the groups in the penalty (solver via trex_control.solver_type: TIENET default, TIENET_AUG).
     """
     EN: typing.ClassVar[GVSType]  # value = <GVSType.EN: 0>
     IEN: typing.ClassVar[GVSType]  # value = <GVSType.IEN: 1>
@@ -1439,54 +1436,6 @@ class SolverHyperparameters:
     def __init__(self) -> None:
         ...
     @property
-    def cd_certified_localization(self) -> bool:
-        """
-        CCD family: True (default) = certified crossing localization (duality-gap and coordinate-status certificates, closed-form continuation, records at the knot); False = LEGACY probe bisection with the support-nesting stop. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_certified_localization.setter
-    def cd_certified_localization(self, arg0: bool) -> None:
-        ...
-    @property
-    def cd_gram_cap(self) -> int:
-        """
-        CCD family: column cap for the cached Gram matrix (0 keeps the solver default). Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_gram_cap.setter
-    def cd_gram_cap(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_lambda_rel_tol(self) -> float:
-        """
-        CCD family: relative lambda step tolerance of the crossing search (<= 0 keeps the solver default). Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_lambda_rel_tol.setter
-    def cd_lambda_rel_tol(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_max_sweeps(self) -> int:
-        """
-        CCD family: maximum coordinate sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an unconverged path. Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_max_sweeps.setter
-    def cd_max_sweeps(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_tol_certify(self) -> float:
-        """
-        CCD family: KKT certification tolerance; applied only when set together with cd_tol_probe (both > 0). Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_tol_certify.setter
-    def cd_tol_certify(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
-    def cd_tol_probe(self) -> float:
-        """
-        CCD family: probing tolerance; applied only when set together with cd_tol_certify (both > 0). Deprecated: removed with the coordinate-descent family in the next minor release.
-        """
-    @cd_tol_probe.setter
-    def cd_tol_probe(self, arg0: typing.SupportsFloat | typing.SupportsIndex) -> None:
-        ...
-    @property
     def exch_tie_alpha(self) -> float:
         """
         Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS) in pairwise ranking-noise sd units. -1 (default): the selector decides. TRexDASelector runs with 0.25, every other selector without the band. 0 = off, also under T-Rex+DA. The path solvers ignore the option.
@@ -1574,41 +1523,29 @@ class SolverTypeForTRex:
     
       TENET_AUG : Terminating Elastic Net via augmented LASSO; accepted wherever TENET runs (LASSO inner path standard, LARS via tenet_aug_use_lars).
     
-      TCDLASSO : Terminating coordinate-descent LASSO (exact penalized-lasso minimizers per crossing; certified crossing localization by default). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TLASSO.
-    
-      TCDENET : Terminating coordinate-descent Elastic Net. Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.
-    
       TIENET : Terminating Informed Elastic Net, native pathwise (GVS-only, gvs_type=IEN; IEN default).
     
       TIENET_AUG : Terminating Informed Elastic Net via augmented LASSO (GVS-only, gvs_type=IEN).
     
-      TCDIENET : Terminating coordinate-descent Informed Elastic Net (GVS-only, gvs_type=IEN). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIENET.
-    
-      TCDTIKNET : Terminating coordinate-descent Tikhonov Net (sparse-K; needs a penalty matrix, TRexTikhonovSelector only). Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIKNET.
-    
       TIKNET : Terminating Tikhonov Net, native pathwise (sparse-K, FOLDED; TRexTikhonovSelector only).
     """
-    TACGP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TACGP: 15>
-    TAFS: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TAFS: 19>
-    TCDENET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TCDENET: 10>
-    TCDIENET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TCDIENET: 11>
-    TCDLASSO: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TCDLASSO: 9>
-    TCDTIKNET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TCDTIKNET: 12>
+    TACGP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TACGP: 11>
+    TAFS: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TAFS: 15>
     TENET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TENET: 2>
     TENET_AUG: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TENET_AUG: 3>
-    TGP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TGP: 14>
+    TGP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TGP: 10>
     TIENET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TIENET: 4>
     TIENET_AUG: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TIENET_AUG: 5>
     TIKNET: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TIKNET: 6>
     TLARS: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TLARS: 0>
     TLASSO: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TLASSO: 1>
-    TMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TMP: 16>
-    TNCGMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TNCGMP: 17>
-    TOMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TOMP: 13>
-    TOOLS: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TOOLS: 18>
+    TMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TMP: 12>
+    TNCGMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TNCGMP: 13>
+    TOMP: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TOMP: 9>
+    TOOLS: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TOOLS: 14>
     TSTAGEWISE: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TSTAGEWISE: 8>
     TSTEPWISE: typing.ClassVar[SolverTypeForTRex]  # value = <SolverTypeForTRex.TSTEPWISE: 7>
-    __members__: typing.ClassVar[dict[str, SolverTypeForTRex]]  # value = {'TLARS': <SolverTypeForTRex.TLARS: 0>, 'TLASSO': <SolverTypeForTRex.TLASSO: 1>, 'TENET': <SolverTypeForTRex.TENET: 2>, 'TSTEPWISE': <SolverTypeForTRex.TSTEPWISE: 7>, 'TSTAGEWISE': <SolverTypeForTRex.TSTAGEWISE: 8>, 'TOMP': <SolverTypeForTRex.TOMP: 13>, 'TGP': <SolverTypeForTRex.TGP: 14>, 'TACGP': <SolverTypeForTRex.TACGP: 15>, 'TMP': <SolverTypeForTRex.TMP: 16>, 'TNCGMP': <SolverTypeForTRex.TNCGMP: 17>, 'TOOLS': <SolverTypeForTRex.TOOLS: 18>, 'TAFS': <SolverTypeForTRex.TAFS: 19>, 'TENET_AUG': <SolverTypeForTRex.TENET_AUG: 3>, 'TCDLASSO': <SolverTypeForTRex.TCDLASSO: 9>, 'TCDENET': <SolverTypeForTRex.TCDENET: 10>, 'TIENET': <SolverTypeForTRex.TIENET: 4>, 'TIENET_AUG': <SolverTypeForTRex.TIENET_AUG: 5>, 'TCDIENET': <SolverTypeForTRex.TCDIENET: 11>, 'TCDTIKNET': <SolverTypeForTRex.TCDTIKNET: 12>, 'TIKNET': <SolverTypeForTRex.TIKNET: 6>}
+    __members__: typing.ClassVar[dict[str, SolverTypeForTRex]]  # value = {'TLARS': <SolverTypeForTRex.TLARS: 0>, 'TLASSO': <SolverTypeForTRex.TLASSO: 1>, 'TENET': <SolverTypeForTRex.TENET: 2>, 'TSTEPWISE': <SolverTypeForTRex.TSTEPWISE: 7>, 'TSTAGEWISE': <SolverTypeForTRex.TSTAGEWISE: 8>, 'TOMP': <SolverTypeForTRex.TOMP: 9>, 'TGP': <SolverTypeForTRex.TGP: 10>, 'TACGP': <SolverTypeForTRex.TACGP: 11>, 'TMP': <SolverTypeForTRex.TMP: 12>, 'TNCGMP': <SolverTypeForTRex.TNCGMP: 13>, 'TOOLS': <SolverTypeForTRex.TOOLS: 14>, 'TAFS': <SolverTypeForTRex.TAFS: 15>, 'TENET_AUG': <SolverTypeForTRex.TENET_AUG: 3>, 'TIENET': <SolverTypeForTRex.TIENET: 4>, 'TIENET_AUG': <SolverTypeForTRex.TIENET_AUG: 5>, 'TIKNET': <SolverTypeForTRex.TIKNET: 6>}
     @typing.overload
     def __eq__(self, other: SolverTypeForTRex) -> bool:
         ...
@@ -1818,7 +1755,7 @@ class TRexControlParameter:
     @property
     def tloop_stagnation_stop(self) -> bool | None:
         """
-        T-loop early stopping when the selection stagnates. None (default) resolves by solver family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, TIKNET and the coordinate-descent family), which terminate on their own, as in the 1.x versions and the T-Rex paper, and on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a noise trap. Set True or False to override.
+        T-loop early stopping when the selection stagnates. None (default) resolves by solver family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG and TIKNET), which terminate on their own, as in the 1.x versions and the T-Rex paper, and on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a noise trap. Set True or False to override.
         """
     @tloop_stagnation_stop.setter
     def tloop_stagnation_stop(self, arg0: bool | None) -> None:
@@ -2078,7 +2015,7 @@ class TRexGVSControlParameter:
     @property
     def en_solver(self) -> ENSolverType:
         """
-        EN solver variant when gvs_type == EN: TENET (default), TENET_AUG, or TCDENET (deprecated, removed in the next minor release).
+        EN solver variant when gvs_type == EN: TENET (default) or TENET_AUG.
         """
     @en_solver.setter
     def en_solver(self, arg0: ENSolverType) -> None:
@@ -2209,7 +2146,7 @@ class TRexSPCAControlParameter:
     @property
     def en_solver(self) -> ENSolverType:
         """
-        Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG). TENET_AUG is the elastic net as a LASSO on row-augmented data, the form of the paper. TENET is the elastic net on the Gram matrix. TCDENET (coordinate descent) is deprecated and will be removed in the next minor release: the selector raises FutureWarning for it. Use TENET. The three solve the same elastic net problem.
+        Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG). TENET_AUG is the elastic net as a LASSO on row-augmented data, the form of the paper. TENET is the elastic net on the Gram matrix. The two solve the same elastic net problem.
         """
     @en_solver.setter
     def en_solver(self, arg0: ENSolverType) -> None:
@@ -2579,14 +2516,6 @@ class TRexTikhonovControlParameter:
     def cv_seed(self, arg0: typing.SupportsInt | typing.SupportsIndex) -> None:
         ...
     @property
-    def fold_dummy_coupling(self) -> bool:
-        """
-        FOLDED dummy coupling: in the penalty every dummy takes the place of the variable it was drawn for (default True), so dummies and null variables stay exchangeable for every K. False, a ridge block of the dummies decoupled from K, raises ValueError: it existed with the solver TCDTIKNET only, which the selector no longer accepts. Deprecated: the field is removed with the coordinate-descent family in the next minor release.
-        """
-    @fold_dummy_coupling.setter
-    def fold_dummy_coupling(self, arg0: bool) -> None:
-        ...
-    @property
     def hc_linkage(self) -> ...:
         """
         Linkage of the hierarchical clustering (ml_methods.clustering.LinkageMethod, default Single). Supported: Single, Complete, Average, WPGMA. Ward is rejected, because its update is valid for squared Euclidean distances only and the correlation distance 1 - abs(cor) is not Euclidean. Ignored when prior_groups is set or cluster_dummies is False.
@@ -2721,8 +2650,7 @@ class TRexTikhonovSelector(TRexSelector):
     matrix or a graph Laplacian makes neighbouring coefficients smooth.
     
     The solver. TIKNET, the homotopy solver, is the one solver of the selector and the default of the
-    nested base control. Every other solver is refused, also TCDTIKNET, the deprecated
-    coordinate-descent solver, which the selector accepted up to 1.0.0.
+    nested base control. Every other solver is refused.
     
     The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector
     (cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the
@@ -2779,7 +2707,7 @@ class TRexTikhonovSelector(TRexSelector):
     @typing.overload
     def __init__(self, X: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, n]", "flags.writeable", "flags.f_contiguous"], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
         """
-        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the base control nested in tik_control applies, whose solver is TIKNET. A trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, TLARS and the deprecated TCDTIKNET included, raises ValueError.
+        Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without trex_control the base control nested in tik_control applies, whose solver is TIKNET. A trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, TLARS included, raises ValueError.
         """
     @typing.overload
     def __init__(self, X: numpy.typing.NDArray[numpy.float64], y: typing.Annotated[numpy.typing.NDArray[numpy.float64], "[m, 1]", "flags.writeable"], tFDR: typing.SupportsFloat | typing.SupportsIndex = 0.1, tik_control: TRexTikhonovControlParameter = ..., trex_control: trexselector._core.trex_selector_methods.ad.TRexControlParameter | None = None, seed: typing.SupportsInt | typing.SupportsIndex = -1, verbose: bool = True) -> None:
@@ -2965,24 +2893,20 @@ SEEDED: LLoopStrategy  # value = <LLoopStrategy.SEEDED: 5>
 SKIPL: LLoopStrategy  # value = <LLoopStrategy.SKIPL: 0>
 SPARSE_GENERAL: TikPenaltyStructure  # value = <TikPenaltyStructure.SPARSE_GENERAL: 0>
 STANDARD: LLoopStrategy  # value = <LLoopStrategy.STANDARD: 1>
-TACGP: SolverTypeForTRex  # value = <SolverTypeForTRex.TACGP: 15>
-TAFS: SolverTypeForTRex  # value = <SolverTypeForTRex.TAFS: 19>
-TCDENET: ENSolverType  # value = <ENSolverType.TCDENET: 2>
-TCDIENET: SolverTypeForTRex  # value = <SolverTypeForTRex.TCDIENET: 11>
-TCDLASSO: SolverTypeForTRex  # value = <SolverTypeForTRex.TCDLASSO: 9>
-TCDTIKNET: SolverTypeForTRex  # value = <SolverTypeForTRex.TCDTIKNET: 12>
+TACGP: SolverTypeForTRex  # value = <SolverTypeForTRex.TACGP: 11>
+TAFS: SolverTypeForTRex  # value = <SolverTypeForTRex.TAFS: 15>
 TENET: ENSolverType  # value = <ENSolverType.TENET: 0>
 TENET_AUG: ENSolverType  # value = <ENSolverType.TENET_AUG: 1>
-TGP: SolverTypeForTRex  # value = <SolverTypeForTRex.TGP: 14>
+TGP: SolverTypeForTRex  # value = <SolverTypeForTRex.TGP: 10>
 TIENET: SolverTypeForTRex  # value = <SolverTypeForTRex.TIENET: 4>
 TIENET_AUG: SolverTypeForTRex  # value = <SolverTypeForTRex.TIENET_AUG: 5>
 TIKNET: SolverTypeForTRex  # value = <SolverTypeForTRex.TIKNET: 6>
 TLARS: SolverTypeForTRex  # value = <SolverTypeForTRex.TLARS: 0>
 TLASSO: SolverTypeForTRex  # value = <SolverTypeForTRex.TLASSO: 1>
-TMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TMP: 16>
-TNCGMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TNCGMP: 17>
-TOMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TOMP: 13>
-TOOLS: SolverTypeForTRex  # value = <SolverTypeForTRex.TOOLS: 18>
+TMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TMP: 12>
+TNCGMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TNCGMP: 13>
+TOMP: SolverTypeForTRex  # value = <SolverTypeForTRex.TOMP: 9>
+TOOLS: SolverTypeForTRex  # value = <SolverTypeForTRex.TOOLS: 14>
 TREX: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX: 0>
 TREX_DA_AR1: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_AR1: 1>
 TREX_DA_BLOCK_EQUI: ScreenTRexMethod  # value = <ScreenTRexMethod.TREX_DA_BLOCK_EQUI: 3>

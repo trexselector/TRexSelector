@@ -479,31 +479,6 @@ TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
 }
 
 
-/** @brief Screening with the CD solvers (TCDLASSO / TCDENET): T is fixed at 1
- *  and no warm start engages, so this exercises the plain fresh-construction
- *  dispatch of the CD family under the screening loop. */
-TEST_F(TRexScreeningTest, Execution_CdFamilyDoesNotThrow) {
-    for (auto solver : {disp::SolverTypeForTRex::TCDLASSO,
-                        disp::SolverTypeForTRex::TCDENET}) {
-        ScreenTRexControlParameter screen_params;
-        screen_params.trex_method = ScreenTRexMethod::TREX;
-        screen_params.use_bootstrap_CI = false;
-        screen_params.trex_ctrl.K = 5;
-        screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
-        screen_params.trex_ctrl.solver_type = solver;
-        // the CD solvers converge on every draw of the dummies
-        screen_params.trex_ctrl.solver_params.cd_max_sweeps = 200000;
-
-        EXPECT_NO_THROW({
-            ScreenTRexSelector selector(X_map, y_map, screen_params);
-            auto result = selector.select();
-            EXPECT_EQ(result.T_stop, 1);
-            EXPECT_EQ(result.num_dummies, 20);
-        });
-    }
-}
-
-
 /** @brief Test of Boostrap CI Screening */
 TEST_F(TRexScreeningTest, Execution_BootstrapScreenTRexDoesNotThrow) {
     ScreenTRexControlParameter screen_params;

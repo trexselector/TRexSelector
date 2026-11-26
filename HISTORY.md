@@ -1,5 +1,75 @@
 # TRexSelector changelog
 
+## TRexSelector C++ 1.1.0 / R 2.1.0 / Python 1.1.0 (in preparation)
+
+The feature release after C++ 1.0.3, R 2.0.3 and Python 1.0.3, not published yet. The coordinate-descent
+solver family is excluded from the three packages, as their deprecation texts announced. The version
+files read C++ 1.0.3, R 2.0.3 and Python 1.0.3 until the release is prepared.
+
+### 2026-11-26
+
+#### The coordinate-descent solver family is excluded from the packages
+
+- Fabian, 2026-11-26: "We don't remove the TCD family, we exclude them from the project and transfer the
+  code and ideas about it" to a research topic of its own. "The aim is to cleanly take them out of the
+  established software C++ library and the Python and R packages." The family is deprecated since C++
+  1.0.1, R 2.0.2 and Python 1.0.1. Its sources, tests and studies lie in a research folder outside the
+  repository, and the tag `v1.0.3` is the last state that builds and runs it.
+- C++. The four classes under `tsolvers/ad/linear_model/cd_based` and the umbrella header `cd_based.hpp`
+  left, with the enumerators TCDLASSO, TCDENET, TCDIENET and TCDTIKNET of `SolverTypeForTRex` and
+  `ENSolverType::TCDENET`. The options that only the family read left with them: the six `cd_*` fields,
+  `kappa_dummy`, `fold_dummies` and `group_penalty` with the enumeration `GroupPenaltyVariant` in
+  `SolverOptions`, the six `cd_*` fields of `SolverHyperparameters`, and `fold_dummy_coupling` of
+  `TRexTikhonovControlParameter`.
+- R. The classes `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver`, `TCDTIKNET_Solver` and
+  `TCDSolver_Base` left, with the four solver names of `trex_control(solver = )`,
+  `trex_gvs_control(en_solver = "TCDENET")`, the six `cd_*` arguments of `trex_control()` and
+  `tsolver_options()`, `kappa_dummy`, `fold_dummies` and `group_penalty` of `tsolver_options()`, and
+  `fold_dummy_coupling` of `trex_tikhonov_control()`.
+- Python. The subpackage `trexselector.tsolvers.ad.cd_based` with its four classes left, with the
+  enumerators, `GroupPenaltyVariant` and the same fields of `SolverOptions`, `SolverHyperparameters` and
+  `TRexTikhonovControlParameter`.
+- No stub, alias or message of the family stays. A call that names a member of the family or one of its
+  options meets the ordinary error for an unknown name on the three surfaces.
+- The four enumerators sat in the middle of `SolverTypeForTRex`. The integer values of TOMP, TGP, TACGP,
+  TMP, TNCGMP, TOOLS and TAFS are 9 to 15 now, where they were 13 to 19. No archive of the library stores
+  the enumeration, and R names the solvers by strings.
+- What went with the family in the selectors. The Tikhonov selector carried code that only TCDTIKNET
+  reached: the route of the dispatch through the group vector (`tikhonov_group_centering` and
+  `tikhonov_groups` of the runner and solver configuration), the flag of the decoupled dummy block
+  (`tikhonov_fold_dummies`) and the two refusals of its constructor that named the family. The dispatch
+  now constructs TIKNET with its penalty matrix and every other solver from the options alone. Its
+  branch for the group vector of TIENET and TIENETAug left with `tikhonov_groups`. No caller reached
+  that branch, because the dispatch refuses the two solvers and the T-Rex+GVS selector constructs its
+  solvers itself.
+- The deprecation mechanism stays for later use and has no caller now: `.warn_deprecated()` in R, and
+  `trexselector._deprecation.warn_deprecated()` with `deprecation.hpp` in Python. Its text no longer
+  names a release or the homotopy solvers. It reads "<old> is deprecated. Use <new>.", and each surface
+  tests it on its own. The R test binds the internal function with `TRexSelector:::`, because the
+  workflow runs the tests against the attached package, which shows exported names alone.
+- Tests. The tests of the family left with it. Four equivalence tests of the Tikhonov selector compared
+  it with the T-Rex+GVS selector running TCDIENET. They run the reference with TIENET now and hold. The
+  memory-mapped run of the T-Rex+GVS selector is compared on TIENET as well.
+- The trigger of an error inside the random experiments. The convergence error of the family was the
+  one error that a test could raise from inside the experiments. The C++ tests take the refusal of
+  TIENET by the dispatch of the plain selector in its place. R and Python refuse that solver at
+  construction, so their tests take an option that the solver checks and the selector does not: TAFS
+  with `rho_afs = 0`. The loop of the T-Rex+GVS selector has no such trigger left at the selector level,
+  and the unit tests of `RegionError` cover its mechanism.
+- Documentation. The READMEs of the three packages count sixteen T-solvers in three families. The help
+  of the controls, of the solver options and of the selectors no longer names the family, and the map
+  of the class references lost its four entries. The news file of the R package lists what left and
+  what replaces it. The C++ help of `tikhonov_K` no longer advises a unit diagonal "so the real columns
+  carry the same ridge as the dummies". The advice belonged to the decoupled dummy block, and with the
+  folded coupling a dummy carries the ridge of its variable for every diagonal.
+- Selections with the remaining solvers do not change.
+- Verified: the platform round on the working tree, every step with exit 0. macOS: 699 C++ tests, 2,105 R
+  tests, 725 Python tests, `R CMD check --as-cran` with Status OK, Sphinx and Doxygen without a warning.
+  The five manylinux wheels each pass the 725 Python tests. Ubuntu arm64: 699 C++ tests, 2,096 R tests,
+  725 Python tests. Ubuntu x86-64: 699 C++ tests. Under clang with libc++ the R package passes its 2,105
+  tests, and an error raised inside the random experiments arrives in R with its text. Before the
+  exclusion the counts on macOS were 763, 2,229 and 829.
+
 ## TRexSelector C++ 1.0.3 / R 2.0.3 / Python 1.0.3
 
 The patch release after C++ 1.0.1, R 2.0.2 and Python 1.0.1. An error raised inside the random

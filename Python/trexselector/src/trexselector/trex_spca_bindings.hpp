@@ -60,8 +60,6 @@ public:
         int seed,
         bool verbose
     ) {
-        warn_if_cd_en_solver(ctrl.en_solver);
-
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(), X.rows(), X.cols());
         selector_ = std::make_unique<TRexSPCA>(*X_map_, M, tFDR, ctrl, seed, verbose);
     }
@@ -164,9 +162,7 @@ inline void bind_trex_spca(py::module& m) {
         .def_readwrite("en_solver",             &TRexSPCAControlParameter::en_solver,
                        "Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG). TENET_AUG is the "
                        "elastic net as a LASSO on row-augmented data, the form of the paper. TENET is "
-                       "the elastic net on the Gram matrix. TCDENET (coordinate descent) is deprecated "
-                       "and will be removed in the next minor release: the selector raises "
-                       "FutureWarning for it. Use TENET. The three solve the same elastic net problem.");
+                       "the elastic net on the Gram matrix. The two solve the same elastic net problem.");
 
 
     // =========================================================================

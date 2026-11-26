@@ -383,37 +383,27 @@ class TestSolverHyperparameters:
 
 
 # ---------------------------------------------------------------------------
-# CCD family + construction gates (bindings-parity additions)
+# The augmented elastic net + construction gates (bindings-parity additions)
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("solver", ["TCDLASSO", "TCDENET", "TENET_AUG"])
-def test_ccd_and_aug_solvers_run(signal_data, solver):
+def test_aug_solver_runs(signal_data):
     X, y, n, p = signal_data
     ctrl = trexselector.TRexControlParameter()
     ctrl.K = 3
-    ctrl.solver_type = getattr(trexselector.SolverTypeForTRex, solver)
-    # A budget that converges on every draw of the dummies, and a fixed seed: at the default budget a
-    # coordinate-descent run on this design ends with the convergence error for about 3 seeds in 100.
-    ctrl.solver_params.cd_max_sweeps = 200000
+    ctrl.solver_type = trexselector.SolverTypeForTRex.TENET_AUG
     sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=42, verbose=False)
     res = sel.select()
     assert res is not None
 
 
-def test_cd_knobs_and_tenet_aug_use_lars_bound():
+def test_tenet_aug_use_lars_bound():
     hp = trexselector.SolverHyperparameters()
-    assert hp.cd_lambda_rel_tol > 0
-    assert hp.cd_tol_certify < 0 and hp.cd_tol_probe < 0
-    assert hp.cd_gram_cap == 0 and hp.cd_max_sweeps == 0
     assert hp.tenet_aug_use_lars is False
     hp.tenet_aug_use_lars = True
     assert hp.tenet_aug_use_lars is True
-    assert hp.cd_certified_localization is True
-    hp.cd_certified_localization = False
-    assert hp.cd_certified_localization is False
 
 
-@pytest.mark.parametrize("solver", ["TIENET", "TIENET_AUG", "TCDIENET"])
+@pytest.mark.parametrize("solver", ["TIENET", "TIENET_AUG"])
 def test_ien_family_gated_at_construction(signal_data, solver):
     X, y, n, p = signal_data
     ctrl = trexselector.TRexControlParameter()
@@ -423,28 +413,13 @@ def test_ien_family_gated_at_construction(signal_data, solver):
         trexselector.TRexSelector(X, y, trex_control=ctrl, verbose=False)
 
 
-@pytest.mark.parametrize("solver", ["TCDTIKNET", "TIKNET"])
-def test_tikhonov_family_gated_at_construction(signal_data, solver):
+def test_tikhonov_solver_gated_at_construction(signal_data):
     X, y, n, p = signal_data
     ctrl = trexselector.TRexControlParameter()
     ctrl.K = 3
-    ctrl.solver_type = getattr(trexselector.SolverTypeForTRex, solver)
+    ctrl.solver_type = trexselector.SolverTypeForTRex.TIKNET
     with pytest.raises(ValueError, match="Tikhonov"):
         trexselector.TRexSelector(X, y, trex_control=ctrl, verbose=False)
-
-
-@pytest.mark.parametrize("certified", [True, False])
-def test_cd_localization_modes_run(signal_data, certified):
-    X, y, n, p = signal_data
-    ctrl = trexselector.TRexControlParameter()
-    ctrl.K = 3
-    ctrl.solver_type = trexselector.SolverTypeForTRex.TCDLASSO
-    ctrl.solver_params.cd_certified_localization = certified
-    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
-    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=42, verbose=False)
-    res = sel.select()
-    assert res is not None
-    assert res.selected_var.shape[0] == p
 
 
 # ---------------------------------------------------------------------------
@@ -685,3 +660,29 @@ def test_num_dummies_is_exposed(fast_control):
     sel = trexselector.TRexSelector(X, y, trex_control=fast_control, verbose=False)
     sel.select()
     assert sel.num_dummies >= p
+
+
+def test_an_error_inside_the_experiments_raises_and_gives_the_design_back():
+    """The trigger is an option that the solver checks and the selector does not: TAFS refuses a
+    shrinkage step of 0 when it is constructed inside the random experiments.
+
+    select() ends with the error of the solver, the design is given back at once and the selector is
+    retired.
+    """
+    rng = np.random.default_rng(2718)
+    n, p = 60, 20
+    X = np.asfortranarray(rng.standard_normal((n, p)))
+    y = X[:, :3].sum(axis=1) + rng.standard_normal(n)
+    X0 = X.copy(order="F")
+
+    ctrl = trexselector.TRexControlParameter()
+    ctrl.K = 5
+    ctrl.solver_type = trexselector.SolverTypeForTRex.TAFS
+    ctrl.solver_params.rho_afs = 0.0
+    sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=4, verbose=False)
+    assert not np.allclose(X, X0)                     # standardized in place
+    with pytest.raises(ValueError, match=r"TAFS_Solver: rho must be in the range \(0, 1\]"):
+        sel.select()
+    np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
+    with pytest.raises(RuntimeError, match="can no longer run"):
+        sel.select()                                  # retired

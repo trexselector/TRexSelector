@@ -17,15 +17,12 @@
 #include <gtest/gtest.h>
 
 // std includes
-#include <cmath>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 // project includes
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
-#include <trex_selector_methods/ad/trex_gvs/trex_gvs.hpp>
 #include <trex_selector_methods/ad/trex_screening/trex_screening.hpp>
 #include <tsolvers/ad/solver_utils/buffer_registry.hpp>
 #include <utils/datageneration/utils_datagen.hpp>
@@ -41,9 +38,6 @@ namespace datagen = trex::utils::datageneration::datagen;
 namespace bufreg = trex::tsolvers::ad::solver_utils::buffer_registry;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
-using trex::trex_selector_methods::ad::trex_gvs::GVSType;
-using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter;
-using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
 using trex::trex_selector_methods::ad::trex_screening::ScreenTRexSelector;
 using trex::trex_selector_methods::ad::trex_screening::ScreenTRexControlParameter;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
@@ -201,45 +195,29 @@ TEST(TRexRestore, ScreeningSelectorRunsOnce) {
 
 
 /** @brief A select() that ends with an error gives X back at once and
- *         retires the selector. The error is an unconverged solve: the
- *         coordinate-descent solver of the informed elastic net at a ridge
- *         weight beyond its sweep budget (one group per variable). */
+ *         retires the selector. The error arises inside the random
+ *         experiments: TIENET, a solver of the T-Rex+GVS selector, is
+ *         refused there at dispatch time. */
 TEST(TRexRestore, SelectEndingWithAnErrorGivesXBack) {
-    const Eigen::Index n = 120, p = 60;
-    // Box-Muller on the raw engine output: the same data on every platform.
-    std::mt19937 rng(2718);
-    auto N01 = [&rng]() {
-        const double u1 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
-        const double u2 = (static_cast<double>(rng()) + 1.0) / 4294967297.0;
-        return std::sqrt(-2.0 * std::log(u1)) * std::cos(6.283185307179586 * u2);
-    };
-    Eigen::MatrixXd X(n, p);
-    for (Eigen::Index j = 0; j < p; ++j) {
-        for (Eigen::Index i = 0; i < n; ++i) { X(i, j) = N01(); }
-    }
-    Eigen::VectorXd y(n);
-    for (Eigen::Index i = 0; i < n; ++i) { y(i) = X.row(i).segment(20, 10).sum() + N01(); }
-    const Eigen::MatrixXd X_before = X;
+    Data d;
+    const Eigen::MatrixXd X0 = d.X;
+    Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
+    Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p);
-    Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
-    TRexGVSControlParameter ctrl;
-    ctrl.gvs_type = GVSType::IEN;
-    ctrl.lambda_2 = 3000.0;
-    ctrl.prior_groups.resize(static_cast<std::size_t>(p));
-    for (Eigen::Index j = 0; j < p; ++j) { ctrl.prior_groups[static_cast<std::size_t>(j)] = j; }
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDIENET;
-    ctrl.trex_ctrl.K = 10;
-    TRexGVSSelector sel(Xm, ym, /*tFDR=*/0.1, ctrl, /*seed=*/4, /*verbose=*/false);
-    EXPECT_GT((X - X_before).cwiseAbs().maxCoeff(), 1e-3);   // standardized in place
+    TRexControlParameter ctrl = smallControl();
+    ctrl.solver_type = SolverTypeForTRex::TIENET;
+    TRexSelector sel(Xm, ym, /*tFDR=*/0.2, ctrl, /*seed=*/3, /*verbose=*/false);
+    EXPECT_FALSE(d.X.isApprox(X0, 1e-12));                   // normalized in place
 
     try {
         sel.select();
-        FAIL() << "select() returned from an unconverged path";
-    } catch (const std::runtime_error& e) {
-        EXPECT_NE(std::string(e.what()).find("sweep budget"), std::string::npos) << e.what();
+        FAIL() << "select() returned although the solver was refused";
+    } catch (const std::invalid_argument& e) {
+        EXPECT_NE(std::string(e.what()).find("TIENET is a GVS-only solver"), std::string::npos)
+            << e.what();
     }
-    EXPECT_LT((X - X_before).cwiseAbs().maxCoeff(), 1e-10);  // given back
+    EXPECT_TRUE(d.X.isApprox(X0, 1e-12));                    // given back
+    EXPECT_FALSE(bufreg::isClaimed(d.X.data()));
     EXPECT_THROW(sel.select(), std::runtime_error);          // retired
 }
 

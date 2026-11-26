@@ -77,26 +77,10 @@ NULL
 #' @param tenet_aug_use_lars Logical; TENETAug and TIENETAug run the
 #'   augmented system with a pure-LARS inner path that never drops variables
 #'   (default \code{FALSE}: LASSO inner path).
-#' @param tikhonov_validated Logical; TIKNET and TCDTIKNET. \code{TRUE} says that the
+#' @param tikhonov_validated Logical; TIKNET. \code{TRUE} says that the
 #'   Tikhonov matrix was checked by the caller (finite entries, symmetric, positive
 #'   semi-definite), and the solver skips its own check. For a caller that builds many
 #'   solvers on one matrix, as the T-Rex selector does. Default \code{FALSE}.
-#' @param kappa_dummy Ridge weight of the dummy block of TCDENET, and of
-#'   TCDTIKNET with \code{fold_dummies = FALSE}. Default 1. Deprecated: it
-#'   will be removed with the coordinate-descent family in TRexSelector 2.1.0.
-#' @param fold_dummies Logical; TCDTIKNET dummy coupling. Default
-#'   \code{FALSE}. Deprecated: it will be removed with the coordinate-descent
-#'   family in TRexSelector 2.1.0.
-#' @param group_penalty TCDIENET structured penalty, \code{"MEAN"} (default)
-#'   or \code{"CENTERING"}. Deprecated: it will be removed with the
-#'   coordinate-descent family in TRexSelector 2.1.0.
-#' @param cd_lambda_rel_tol,cd_tol_certify,cd_tol_probe,cd_gram_cap,cd_max_sweeps,cd_certified_localization
-#'   Knobs of the coordinate-descent solver family; the defaults are the
-#'   solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
-#'   that stops at the sweep budget \code{cd_max_sweeps} far from a solution
-#'   (KKT violation above 0.001 lambda_1) raises an error instead of
-#'   continuing on an unconverged path. Deprecated: the six knobs will be
-#'   removed with the coordinate-descent family in TRexSelector 2.1.0.
 #'
 #' @return A named list suitable for the \code{options} argument of every
 #'   T-solver constructor.
@@ -121,44 +105,25 @@ tsolver_options <- function(normalize = TRUE,
                             rho_afs = 0.3,
                             ncgmp_variant = c("line_search", "fully_corrective"),
                             tenet_aug_use_lars = FALSE,
-                            tikhonov_validated = FALSE,
-                            kappa_dummy = 1,
-                            fold_dummies = FALSE,
-                            group_penalty = c("MEAN", "CENTERING"),
-                            cd_lambda_rel_tol = 1e-3,
-                            cd_tol_certify = 1e-10,
-                            cd_tol_probe = 1e-8,
-                            cd_gram_cap = 400,
-                            cd_max_sweeps = 2000,
-                            cd_certified_localization = TRUE) {
+                            tikhonov_validated = FALSE) {
   scaling_mode  <- match.arg(scaling_mode)
   ncgmp_variant <- match.arg(ncgmp_variant)
-  group_penalty <- match.arg(group_penalty)
   list(
-    normalize                 = as.logical(normalize),
-    intercept                 = as.logical(intercept),
-    precentered               = as.logical(precentered),
-    scaling_mode              = scaling_mode,
-    verbose                   = as.logical(verbose),
-    tol                       = as.numeric(tol),
-    tie_seed                  = as.numeric(tie_seed),
-    n_threads                 = as.integer(n_threads),
-    exch_tie_alpha            = as.numeric(exch_tie_alpha),
-    exch_tie_floor            = as.numeric(exch_tie_floor),
-    lambda2                   = as.numeric(lambda2),
-    rho_afs                   = as.numeric(rho_afs),
-    ncgmp_variant             = ncgmp_variant,
-    tenet_aug_use_lars        = as.logical(tenet_aug_use_lars),
-    tikhonov_validated        = as.logical(tikhonov_validated),
-    kappa_dummy               = as.numeric(kappa_dummy),
-    fold_dummies              = as.logical(fold_dummies),
-    group_penalty             = group_penalty,
-    cd_lambda_rel_tol         = as.numeric(cd_lambda_rel_tol),
-    cd_tol_certify            = as.numeric(cd_tol_certify),
-    cd_tol_probe              = as.numeric(cd_tol_probe),
-    cd_gram_cap               = as.numeric(cd_gram_cap),
-    cd_max_sweeps             = as.numeric(cd_max_sweeps),
-    cd_certified_localization = as.logical(cd_certified_localization)
+    normalize          = as.logical(normalize),
+    intercept          = as.logical(intercept),
+    precentered        = as.logical(precentered),
+    scaling_mode       = scaling_mode,
+    verbose            = as.logical(verbose),
+    tol                = as.numeric(tol),
+    tie_seed           = as.numeric(tie_seed),
+    n_threads          = as.integer(n_threads),
+    exch_tie_alpha     = as.numeric(exch_tie_alpha),
+    exch_tie_floor     = as.numeric(exch_tie_floor),
+    lambda2            = as.numeric(lambda2),
+    rho_afs            = as.numeric(rho_afs),
+    ncgmp_variant      = ncgmp_variant,
+    tenet_aug_use_lars = as.logical(tenet_aug_use_lars),
+    tikhonov_validated = as.logical(tikhonov_validated)
   )
 }
 
@@ -1332,7 +1297,7 @@ TAFS_Solver <- R6::R6Class(
 
 
 # ==============================================================================
-# Native T-IENET, the sparse-K solvers and the CD family. All take
+# Native T-IENET and the sparse-K solver. Both take
 # $new(X, D, y, [groups | tikhonov_K,] options).
 # ==============================================================================
 
@@ -1499,61 +1464,7 @@ TIKNET_Solver <- R6::R6Class(
 )
 
 
-#' CD-family base class (deprecated)
-#'
-#' @description
-#' \strong{Deprecated.} The coordinate-descent family will be removed in
-#' TRexSelector 2.1.0, and this class goes with it.
-#'
-#' Shared getters of the coordinate-descent solver family
-#' (\code{TCDLASSO_Solver}, \code{TCDENET_Solver}, \code{TCDIENET_Solver},
-#' \code{TCDTIKNET_Solver}): the recorded lambda_1 path, the quadratic penalty
-#' weight, and the certified-localization diagnostics. Not intended for direct
-#' instantiation.
-#'
-#' @keywords internal
-TCDSolver_Base <- R6::R6Class(
-  "TCDSolver_Base",
-  inherit = TSolver_Base,
-  public = list(
-    #' @description Get lambda_1 at every recorded step.
-    #' @return Numeric vector, one per step.
-    get_lambda = function() tsolver_cd_get_lambda(self$ptr),
-
-    #' @description Get the quadratic penalty weight lambda2 (0 for T-CDLASSO).
-    #' @return Scalar numeric lambda2.
-    get_lambda2 = function() tsolver_cd_get_lambda2(self$ptr),
-
-    #' @description Is the certified crossing localization active?
-    #' @return Logical.
-    is_certified_localization = function() tsolver_cd_is_certified_localization(self$ptr),
-
-    #' @description Did certification become unavailable along the path
-    #'   (A0-w boundary), so the solver fell back to LEGACY localization?
-    #' @return Logical.
-    is_certified_degraded = function() tsolver_cd_is_certified_degraded(self$ptr),
-
-    #' @description Get the duality gap at every recorded step.
-    #' @return Numeric vector, one per step.
-    get_record_gaps = function() tsolver_cd_get_record_gaps(self$ptr),
-
-    #' @description Get the KKT violation at every recorded step.
-    #' @return Numeric vector, one per step.
-    get_record_kkt_violations = function() tsolver_cd_get_record_kkt_violations(self$ptr),
-
-    #' @description KKT violation of the current state (a certificate of the
-    #'   coordinate-descent minimizer).
-    #' @param lambda1 The lambda_1 to certify at; negative (default) uses the
-    #'   solver's current one.
-    #' @return Numeric scalar.
-    get_kkt_violation = function(lambda1 = -1) {
-      tsolver_cd_get_kkt_violation(self$ptr, as.numeric(lambda1))
-    }
-  )
-)
-
-
-#' Coerce a Tikhonov matrix argument for the sparse-K solvers.
+#' Coerce a Tikhonov matrix argument for the sparse-K solver.
 #'
 #' A dense matrix passes through (the C++ side converts it with sparseView());
 #' a Matrix object becomes a \code{dgCMatrix} (symmetric \code{dsCMatrix}
@@ -1566,298 +1477,3 @@ TCDSolver_Base <- R6::R6Class(
   }
   K
 }
-
-
-#' T-CDLASSO Solver (deprecated)
-#'
-#' @description
-#' \strong{Deprecated.} The coordinate-descent family will be removed in
-#' TRexSelector 2.1.0, and constructing this class raises a deprecation
-#' warning. Use \code{\link{TLASSO_Solver}}, the homotopy solver of the
-#' same problem.
-#'
-#' Terminating coordinate-descent LASSO: exact penalized-lasso minimizers at
-#' every dummy crossing, localized with certificates (duality gap and
-#' coordinate statuses; \code{cd_certified_localization = FALSE} in the
-#' options selects the LEGACY probe bisection). The base of the CD family
-#' (\code{TCDENET_Solver}, \code{TCDIENET_Solver}, \code{TCDTIKNET_Solver}
-#' inherit its getters). Inherits all common methods from
-#' \code{\link{TSolver_Base}}.
-#'
-#' @references
-#' R. Tibshirani, "Regression Shrinkage and Selection via the Lasso," J. R. Stat. Soc. Ser. B Stat. Methodol.,
-#'   vol. 58, no. 1, pp. 267-288, 1996.
-#'
-#' J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, "Pathwise Coordinate Optimization," Ann. Appl.
-#'   Stat., vol. 1, no. 2, pp. 302-332, 2007, doi: 10.1214/07-AOAS131.
-#'
-#' J. Friedman, T. Hastie, and R. Tibshirani, "Regularization Paths for Generalized Linear Models via
-#'   Coordinate Descent," J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010, doi: 10.18637/jss.v033.i01.
-#'
-#' W. J. Fu, "Penalized Regression: The Bridge Versus the Lasso," J. Comput. Graph. Statist., vol. 7,
-#'   pp. 397-416, 1998.
-#'
-#' J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
-#'   High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
-#'   Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
-#'
-#' @examples
-#' set.seed(1)
-#' n <- 20; p <- 5
-#' X <- matrix(rnorm(n * p), n, p)
-#' D <- matrix(rnorm(n * p), n, p)
-#' y <- X[, 1] * 2 + rnorm(n)
-#' solver <- TCDLASSO_Solver$new(X, D, y)
-#' solver$execute_step(T_stop = 3)
-#' solver$get_beta()
-#' solver$is_certified_localization()
-#'
-#' @family T-solvers
-#' @export
-TCDLASSO_Solver <- R6::R6Class(
-  "TCDLASSO_Solver",
-  inherit = TCDSolver_Base,
-  public = list(
-    #' @description Create a new \code{TCDLASSO_Solver}.
-    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param y Numeric response vector.
-    #' @param options Solver options from \code{\link{tsolver_options}}; this
-    #'   solver reads the \code{cd_*} knobs.
-    initialize = function(X, D, y, options = tsolver_options()) {
-      .warn_cd_solver_class("TCDLASSO")
-      super$initialize(X, D, y)
-      self$ptr <- tsolver_tcdlasso_create(self$X, self$D, self$y, options)
-    }
-  )
-)
-
-
-#' T-CDENET Solver (deprecated)
-#'
-#' @description
-#' \strong{Deprecated.} The coordinate-descent family will be removed in
-#' TRexSelector 2.1.0, and constructing this class raises a deprecation
-#' warning. Use \code{\link{TENET_Solver}}, the homotopy solver of the
-#' same problem.
-#'
-#' Terminating coordinate-descent Elastic Net (diagonal ridge \code{lambda2},
-#' the dummies get \code{kappa_dummy * lambda2}). The solver used internally
-#' by \code{TRexGVSSelector} for \code{en_solver = "TCDENET"}. Inherits the
-#' CD getters from \code{\link{TCDSolver_Base}} and all common methods from
-#' \code{\link{TSolver_Base}}.
-#'
-#' @references
-#' H. Zou and T. Hastie, "Regularization and Variable Selection via the Elastic Net," J. R. Stat. Soc. Ser. B
-#'   Stat. Methodol., vol. 67, no. 2, pp. 301-320, 2005.
-#'
-#' J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, "Pathwise Coordinate Optimization," Ann. Appl.
-#'   Stat., vol. 1, no. 2, pp. 302-332, 2007, doi: 10.1214/07-AOAS131.
-#'
-#' J. Friedman, T. Hastie, and R. Tibshirani, "Regularization Paths for Generalized Linear Models via
-#'   Coordinate Descent," J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010, doi: 10.18637/jss.v033.i01.
-#'
-#' J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
-#'   High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
-#'   Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
-#'
-#' @examples
-#' set.seed(1)
-#' n <- 20; p <- 5
-#' X <- matrix(rnorm(n * p), n, p)
-#' D <- matrix(rnorm(n * p), n, p)
-#' y <- X[, 1] * 2 + rnorm(n)
-#' solver <- TCDENET_Solver$new(X, D, y, options = tsolver_options(lambda2 = 0.1))
-#' solver$execute_step(T_stop = 3)
-#' solver$get_beta()
-#'
-#' @family T-solvers
-#' @export
-TCDENET_Solver <- R6::R6Class(
-  "TCDENET_Solver",
-  inherit = TCDSolver_Base,
-  public = list(
-    #' @description Create a new \code{TCDENET_Solver}.
-    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param y Numeric response vector.
-    #' @param options Solver options from \code{\link{tsolver_options}}; this
-    #'   solver reads \code{lambda2}, \code{kappa_dummy} and the \code{cd_*}
-    #'   knobs.
-    initialize = function(X, D, y, options = tsolver_options()) {
-      .warn_cd_solver_class("TCDENET")
-      super$initialize(X, D, y)
-      self$ptr <- tsolver_tcdenet_create(self$X, self$D, self$y, options)
-    }
-  )
-)
-
-
-#' T-CDIENET Solver (deprecated)
-#'
-#' @description
-#' \strong{Deprecated.} The coordinate-descent family will be removed in
-#' TRexSelector 2.1.0, and constructing this class raises a deprecation
-#' warning. Use \code{\link{TIENET_Solver}}, the homotopy solver of the
-#' same problem.
-#'
-#' Terminating coordinate-descent Informed Elastic Net: exact fixed-lambda1
-#' IEN minimizers per dummy crossing with O(1) group-penalty hooks
-#' (\code{group_penalty = "MEAN"}, the canonical group-sum penalty, or
-#' \code{"CENTERING"}). The solver used internally by \code{TRexGVSSelector}
-#' for \code{solver = "TCDIENET"}. Not finally developed: its sweeps grow
-#' with \code{lambda2} and on saturating designs, and a solve that does not
-#' converge within \code{cd_max_sweeps} raises an error. The homotopy solver
-#' \code{\link{TIENET_Solver}} has no such limit. Inherits the CD getters from
-#' \code{\link{TCDSolver_Base}} and all common methods from
-#' \code{\link{TSolver_Base}}.
-#'
-#' @references
-#' J. Machkour, M. Muma, and D. P. Palomar, "The Informed Elastic Net for Fast Grouped Variable Selection and
-#'   FDR Control in Genomics Research," in Proc. IEEE 9th Int. Workshop Comput. Adv. Multi-Sensor Adapt.
-#'   Process. (CAMSAP), 2023, pp. 466-470.
-#'
-#' H. Zou and T. Hastie, "Regularization and Variable Selection via the Elastic Net," J. R. Stat. Soc. Ser. B
-#'   Stat. Methodol., vol. 67, no. 2, pp. 301-320, 2005.
-#'
-#' J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, "Pathwise Coordinate Optimization," Ann. Appl.
-#'   Stat., vol. 1, no. 2, pp. 302-332, 2007, doi: 10.1214/07-AOAS131.
-#'
-#' J. Friedman, T. Hastie, and R. Tibshirani, "Regularization Paths for Generalized Linear Models via
-#'   Coordinate Descent," J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010, doi: 10.18637/jss.v033.i01.
-#'
-#' J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
-#'   High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
-#'   Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
-#'
-#' @examples
-#' set.seed(1)
-#' n <- 20; p <- 4
-#' X <- matrix(rnorm(n * p), n, p)
-#' D <- matrix(rnorm(n * p), n, p)
-#' y <- X[, 1] * 2 + rnorm(n)
-#' solver <- TCDIENET_Solver$new(X, D, y, groups = c(1, 1, 2, 2),
-#'                               options = tsolver_options(lambda2 = 0.1))
-#' solver$execute_step(T_stop = 3)
-#' solver$get_beta()
-#'
-#' @family T-solvers
-#' @export
-TCDIENET_Solver <- R6::R6Class(
-  "TCDIENET_Solver",
-  inherit = TCDSolver_Base,
-  public = list(
-    #' @description Create a new \code{TCDIENET_Solver}.
-    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
-    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
-    #'   columns: one group-aligned layer per p).
-    #' @param y Numeric response vector.
-    #' @param groups Integer vector of 1-based group ids, one per predictor
-    #'   column of \code{X} (contiguous ids starting at 1).
-    #' @param options Solver options from \code{\link{tsolver_options}}; this
-    #'   solver reads \code{lambda2}, \code{group_penalty} and the
-    #'   \code{cd_*} knobs.
-    initialize = function(X, D, y, groups, options = tsolver_options()) {
-      .warn_cd_solver_class("TCDIENET")
-      super$initialize(X, D, y)
-      groups <- as.integer(groups)
-      self$ptr <- tsolver_tcdienet_create(self$X, self$D, self$y, groups, options)
-    },
-
-    #' @description Get the group ids (1-based, one per predictor).
-    #' @return Integer vector of group ids.
-    get_groups = function() tsolver_tcdienet_get_groups(self$ptr),
-
-    #' @description Get the number of disjoint groups.
-    #' @return Integer count of groups.
-    get_num_groups = function() tsolver_tcdienet_get_num_groups(self$ptr)
-  )
-)
-
-
-#' T-CDTIKNET Solver (deprecated)
-#'
-#' @description
-#' \strong{Deprecated.} The coordinate-descent family will be removed in
-#' TRexSelector 2.1.0, and constructing this class raises a deprecation
-#' warning. Use \code{\link{TIKNET_Solver}}, the homotopy solver of the
-#' same problem.
-#'
-#' Terminating coordinate-descent Tikhonov Net: exact fixed-lambda1
-#' minimizers per dummy crossing under the general quadratic penalty
-#' \code{lambda2 * t(beta) K beta} with a sparse PSD \code{K}. Dummy coupling
-#' per \code{fold_dummies} in the options (\code{FALSE}: independent
-#' \code{kappa_dummy} ridge; \code{TRUE}: FOLDED layered convention).
-#' \code{TRexTikhonovSelector} no longer runs it. Not finally developed: under
-#' the FOLDED coupling its sweeps grow with \code{lambda2}, and on saturating designs as
-#' well, and a solve that does not converge within \code{cd_max_sweeps}
-#' raises an error. The homotopy solver \code{\link{TIKNET_Solver}} has no
-#' such limit. Inherits the CD getters from
-#' \code{\link{TCDSolver_Base}} and all common methods from
-#' \code{\link{TSolver_Base}}.
-#'
-#' @references
-#' A. N. Tikhonov, "Solution of Incorrectly Formulated Problems and the Regularization Method," Soviet Math.
-#'   Dokl., vol. 4, pp. 1035-1038, 1963 (English translation of Dokl. Akad. Nauk SSSR 151 (1963), no. 3,
-#'   501-504).
-#'
-#' Y. Park, L. Reichel, G. Rodriguez, and X. Yu, "Parameter Determination for Tikhonov Regularization Problems
-#'   in General Form," J. Comput. Appl. Math., vol. 343, pp. 12-25, 2018, doi: 10.1016/j.cam.2018.04.049.
-#'
-#' J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, "Pathwise Coordinate Optimization," Ann. Appl.
-#'   Stat., vol. 1, no. 2, pp. 302-332, 2007, doi: 10.1214/07-AOAS131.
-#'
-#' J. Friedman, T. Hastie, and R. Tibshirani, "Regularization Paths for Generalized Linear Models via
-#'   Coordinate Descent," J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010, doi: 10.18637/jss.v033.i01.
-#'
-#' J. Machkour, M. Muma, and D. P. Palomar, "The Terminating-Random Experiments Selector: Fast
-#'   High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
-#'   Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
-#'
-#' @examples
-#' set.seed(1)
-#' n <- 20; p <- 4
-#' X <- matrix(rnorm(n * p), n, p)
-#' D <- matrix(rnorm(n * p), n, p)
-#' y <- X[, 1] * 2 + rnorm(n)
-#' solver <- TCDTIKNET_Solver$new(X, D, y, tikhonov_K = diag(p),
-#'                                options = tsolver_options(lambda2 = 0.1))
-#' solver$execute_step(T_stop = 3)
-#' solver$get_beta()
-#'
-#' @family T-solvers
-#' @export
-TCDTIKNET_Solver <- R6::R6Class(
-  "TCDTIKNET_Solver",
-  inherit = TCDSolver_Base,
-  public = list(
-    #' @description Create a new \code{TCDTIKNET_Solver}.
-    #' @param X Numeric matrix of predictors in memory, or \code{mmap_matrix}
-    #'   (the handle of a memory-mapped file).
-    #' @param D Numeric matrix of dummies in memory, or \code{mmap_matrix}, the
-    #'   handle of a memory-mapped file (a multiple of \code{ncol(X)}
-    #'   columns when \code{fold_dummies = TRUE}).
-    #' @param y Numeric response vector.
-    #' @param tikhonov_K p x p PSD Tikhonov matrix: a
-    #'   \code{Matrix::dgCMatrix} or a dense matrix.
-    #' @param options Solver options from \code{\link{tsolver_options}}; this
-    #'   solver reads \code{lambda2}, \code{kappa_dummy}, \code{fold_dummies}
-    #'   and the \code{cd_*} knobs.
-    initialize = function(X, D, y, tikhonov_K, options = tsolver_options()) {
-      .warn_cd_solver_class("TCDTIKNET")
-      super$initialize(X, D, y)
-      tikhonov_K <- .as_tikhonov_k(tikhonov_K)
-      self$ptr <- tsolver_tcdtiknet_create(self$X, self$D, self$y, tikhonov_K, options)
-    },
-
-    #' @description Is the FOLDED dummy coupling active?
-    #' @return Logical.
-    is_folded_dummy_coupling = function() tsolver_tcdtiknet_is_folded(self$ptr)
-  )
-)

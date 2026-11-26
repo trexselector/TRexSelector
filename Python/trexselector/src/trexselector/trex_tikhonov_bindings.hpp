@@ -358,12 +358,6 @@ inline void bind_trex_tikhonov(py::module& m) {
             "(default): the pilot draws its dummies from a seed stream of its own, so the dummies of the main run "
             "do not depend on the pick. True: the pilot uses the first dummy block of the main strategy (not with "
             "the PERMUTATION strategies).")
-        .def_readwrite("fold_dummy_coupling", &tik::TRexTikhonovControlParameter::fold_dummy_coupling, "FOLDED dummy "
-            "coupling: in the penalty every dummy takes the place of the variable it was drawn for (default True), "
-            "so dummies and null variables stay exchangeable for every K. False, a ridge block of the dummies "
-            "decoupled from K, raises ValueError: it existed with the solver TCDTIKNET only, which the selector no "
-            "longer accepts. Deprecated: the field is removed with the coordinate-descent family in the next "
-            "minor release.")
         .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Draw the dummies per "
             "cluster of correlated variables, as in TRexGVSSelector (default True). False gives i.i.d. dummies, "
             "for validation runs only: with an informed K they deform the exchangeability of dummies and null "
@@ -485,8 +479,7 @@ inline void bind_trex_tikhonov(py::module& m) {
         "matrix or a graph Laplacian makes neighbouring coefficients smooth.\n"
         "\n"
         "The solver. TIKNET, the homotopy solver, is the one solver of the selector and the default of the\n"
-        "nested base control. Every other solver is refused, also TCDTIKNET, the deprecated\n"
-        "coordinate-descent solver, which the selector accepted up to 1.0.0.\n"
+        "nested base control. Every other solver is refused.\n"
         "\n"
         "The dummies. By default they are drawn per cluster of correlated variables, as in TRexGVSSelector\n"
         "(cluster_dummies): the clusters are prior_groups, or come from a hierarchical clustering of the\n"
@@ -550,7 +543,7 @@ inline void bind_trex_tikhonov(py::module& m) {
              "Construct the Tikhonov selector. X and y are accessed zero-copy via Eigen::Map. Without "
              "trex_control the base control nested in tik_control applies, whose solver is TIKNET. A "
              "trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, "
-             "TLARS and the deprecated TCDTIKNET included, raises ValueError.")
+             "TLARS included, raises ValueError.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double,
                       const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
                       int, bool>(),

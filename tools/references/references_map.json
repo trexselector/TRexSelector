@@ -27,15 +27,6 @@
     "tikhonov1963regularization", "park2018tikhonov", "hoerl2000ridge", "miche2011tropelm", "efron2004lars",
     "machkour2025trex"
   ],
-  "TCDLASSO": ["tibshirani1996lasso", "friedman2007pathwise", "friedman2010glmnet", "fu1998bridge", "machkour2025trex"],
-  "TCDENET": ["zou2005elasticnet", "friedman2007pathwise", "friedman2010glmnet", "machkour2025trex"],
-  "TCDIENET": [
-    "machkour2023ien", "zou2005elasticnet", "friedman2007pathwise", "friedman2010glmnet", "machkour2025trex"
-  ],
-  "TCDTIKNET": [
-    "tikhonov1963regularization", "park2018tikhonov", "friedman2007pathwise", "friedman2010glmnet",
-    "machkour2025trex"
-  ],
   "TOMP": ["pati1993omp", "tropp2004greed", "blumensath2007ompols", "scheidt2026greedy"],
   "TMP": ["mallat1993mp", "scheidt2026greedy"],
   "TOOLS": ["chen1989ols", "blumensath2007ompols", "scheidt2026greedy"],

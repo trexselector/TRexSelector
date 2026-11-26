@@ -32,9 +32,8 @@ TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control) {
         std::string solver = control["en_solver"];
         if (solver == "TENET") params.en_solver = ENSolverType::TENET;
         else if (solver == "TENET_AUG") params.en_solver = ENSolverType::TENET_AUG;
-        else if (solver == "TCDENET") params.en_solver = ENSolverType::TCDENET;
         else Rcpp::stop("Unknown ENSolverType: '" + solver +
-                        "'. Use 'TENET', 'TENET_AUG', or 'TCDENET'.");
+                        "'. Use 'TENET' or 'TENET_AUG'.");
     }
 
     if (control.containsElementNamed("tenet_aug_use_lars")) {

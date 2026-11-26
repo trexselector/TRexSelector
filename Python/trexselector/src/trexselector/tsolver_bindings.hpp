@@ -40,10 +40,6 @@
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
 // CD-based solvers
-#include <tsolvers/ad/linear_model/cd_based/tcdlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 
 // binding helpers
 #include "deprecation.hpp"
@@ -97,9 +93,6 @@ public:
                     Eigen::Ref<Eigen::VectorXd> y,
                     Args&&... args)
     {
-        // A class of the deprecated coordinate-descent family warns first.
-        warn_if_cd_solver_class<Solver>();
-
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                X.rows(),
                                                                X.cols());
@@ -282,33 +275,9 @@ public:
     /** @brief Get the number of disjoint groups (TIENETAug-specific). */
     std::size_t getNumGroups() const { return solver_->getNumGroups(); }
 
-    /** @brief TCDIENET: 0-based group id per original variable (the first p
-     *  entries of the unified group map; dummy layers copy their variable). */
-    Eigen::VectorXi getGroupOf() const {
-        const std::vector<int>& g = solver_->getGroupOf();
-        const auto p = static_cast<Eigen::Index>(solver_->getDummyStartIndex());
-        Eigen::VectorXi out(p);
-        for (Eigen::Index j = 0; j < p; ++j) out(j) = g[static_cast<std::size_t>(j)];
-        return out;
-    }
-
-    // ---- CD family ----------------------------------------------------------
-    /** @brief CD family: certified crossing localization active? */
-    bool isCertifiedLocalization() const { return solver_->isCertifiedLocalization(); }
-    /** @brief CD family: did certification fall back to LEGACY along the path? */
-    bool isCertifiedDegraded() const { return solver_->isCertifiedDegraded(); }
-    /** @brief CD family: duality gap at every recorded step. */
-    const std::vector<double>& getRecordGaps() const { return solver_->getRecordGaps(); }
-    /** @brief CD family: KKT violation at every recorded step. */
-    const std::vector<double>& getRecordKktViolations() const { return solver_->getRecordKktViolations(); }
-    /** @brief CD family: KKT violation of the current state (lambda1 < 0: the last recorded). */
-    double getKktViolation(double lambda1) { return solver_->getKktViolation(lambda1); }
-
-    // ---- sparse-K solvers ---------------------------------------------------
+    // ---- sparse-K solver ----------------------------------------------------
     /** @brief The Tikhonov matrix K as a dense p x p array. */
     Eigen::MatrixXd getTikhonovK() const { return Eigen::MatrixXd(solver_->getTikhonovK()); }
-    /** @brief TCDTIKNET: FOLDED dummy coupling active? */
-    bool isFoldedDummyCoupling() const { return solver_->isFoldedDummyCoupling(); }
 
     // =================================================================================
     // Structural Bindings (State reconnects and Cereal Serialization)
@@ -572,7 +541,7 @@ py::class_<PySolverWrapper<Solver>> bind_standard_tsolver(py::module& m, const s
 
 /**
  * @brief Registration for a solver whose constructor also takes the group
- *        vector (X, D, y, groups, options): TIENET, TIENETAug, TCDIENET.
+ *        vector (X, D, y, groups, options): TIENET and TIENETAug.
  *        `class_doc` is the class docstring, as in bind_standard_tsolver().
  */
 template<typename Solver>
@@ -607,8 +576,8 @@ py::class_<PySolverWrapper<Solver>> bind_groups_tsolver(py::module& m, const std
 
 /**
  * @brief Registration for a solver whose constructor also takes the sparse
- *        Tikhonov matrix (X, D, y, tikhonov_K, options): TIKNET and
- *        TCDTIKNET. K is passed as a dense p x p array and converted with
+ *        Tikhonov matrix (X, D, y, tikhonov_K, options): TIKNET.
+ *        K is passed as a dense p x p array and converted with
  *        sparseView() (no SciPy dependency). `class_doc` is the class
  *        docstring, as in bind_standard_tsolver().
  */
@@ -647,32 +616,6 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
 }
 
 
-/** @brief Attach the CD-family getters (certified localization, records). */
-template<typename Solver>
-py::class_<PySolverWrapper<Solver>>& add_cd_tsolver_methods(py::class_<PySolverWrapper<Solver>>& cls) {
-    cls.def("getLambda", &PySolverWrapper<Solver>::getLambda,
-            "lambda_1 at every recorded step.")
-       .def("getLambda2", &PySolverWrapper<Solver>::getLambda2,
-            "Quadratic penalty weight lambda_2 (0 for TCDLASSO).")
-       .def("getNumRemovals", &PySolverWrapper<Solver>::getNumRemovals,
-            "Get the total number of variable removals along the path.")
-       .def("getCyclingRatio", &PySolverWrapper<Solver>::getCyclingRatio,
-            "Get the cycling ratio (removals / additions).")
-       .def("isCertifiedLocalization", &PySolverWrapper<Solver>::isCertifiedLocalization,
-            "True if the solver localizes crossings with certificates (options.cd_certified_localization).")
-       .def("isCertifiedDegraded", &PySolverWrapper<Solver>::isCertifiedDegraded,
-            "True once certification became unavailable along the path (A0-w boundary) and the solver fell back to "
-                "LEGACY.")
-       .def("getRecordGaps", &PySolverWrapper<Solver>::getRecordGaps,
-            "Duality gap at every recorded step.")
-       .def("getRecordKktViolations", &PySolverWrapper<Solver>::getRecordKktViolations,
-            "KKT violation at every recorded step.")
-       .def("getKktViolation", &PySolverWrapper<Solver>::getKktViolation, py::arg("lambda1") = -1.0,
-            "KKT violation of the current state at lambda1 (< 0: the last recorded lambda).");
-    return cls;
-}
-
-
 /**
  * @brief Bind trex::tsolvers::ad::SolverOptions with a keyword constructor
  *        (`SolverOptions(lambda2=0.5, normalize=False)`) and read/write fields.
@@ -680,7 +623,6 @@ py::class_<PySolverWrapper<Solver>>& add_cd_tsolver_methods(py::class_<PySolverW
 inline void bind_solver_options(py::module& m) {
     using trex::tsolvers::ad::SolverOptions;
     using trex::tsolvers::ad::NCGMPVariant;
-    using trex::tsolvers::ad::GroupPenaltyVariant;
     using ScalingMode = trex::tsolvers::ad::ScalingMode;
 
     py::class_<SolverOptions> cls(m, "SolverOptions",
@@ -743,38 +685,9 @@ inline void bind_solver_options(py::module& m) {
             "TENETAug / TIENETAug: pure-LARS inner path that never drops variables (True) instead of the LASSO inner "
                 "path (False, default).")
        .def_readwrite("tikhonov_validated", &SolverOptions::tikhonov_validated,
-            "TIKNET and TCDTIKNET: True says that the Tikhonov matrix was checked by the caller (finite "
+            "TIKNET: True says that the Tikhonov matrix was checked by the caller (finite "
             "entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller "
             "that builds many solvers on one matrix, as the T-Rex selector does. Default False.")
-       .def_readwrite("kappa_dummy", &SolverOptions::kappa_dummy,
-            "Ridge weight of the dummy block (TCDENET; TCDTIKNET under INDEPENDENT_RIDGE). Default 1.0. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("fold_dummies", &SolverOptions::fold_dummies,
-            "TCDTIKNET dummy coupling: False (default) INDEPENDENT_RIDGE, True FOLDED. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("group_penalty", &SolverOptions::group_penalty,
-            "TCDIENET structured penalty (GroupPenaltyVariant). Default MEAN. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_lambda_rel_tol", &SolverOptions::cd_lambda_rel_tol,
-            "CD family: relative lambda tolerance of the crossing search, in (0, 1). Default 1e-3. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_tol_certify", &SolverOptions::cd_tol_certify,
-            "CD family: certification-sweep tolerance. Default 1e-10. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_tol_probe", &SolverOptions::cd_tol_probe,
-            "CD family: probe-sweep tolerance. Default 1e-8. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_gram_cap", &SolverOptions::cd_gram_cap,
-            "CD family: ever-active Gram slots cached before falling back to naive sweeps. Default 400. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_max_sweeps", &SolverOptions::cd_max_sweeps,
-            "CD family: maximum coordinate sweeps per fixed-lambda solve. Default 2000. A solve that stops at "
-            "the budget far from a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of "
-            "continuing on an unconverged path. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-       .def_readwrite("cd_certified_localization", &SolverOptions::cd_certified_localization,
-            "CD family: True (default) CERTIFIED crossing localization, False LEGACY. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
        .def("__repr__", [](const SolverOptions& o) {
             return "SolverOptions(normalize=" + std::string(o.normalize ? "True" : "False") +
                    ", intercept=" + (o.intercept ? "True" : "False") +
@@ -810,7 +723,6 @@ inline void bind_tsolvers_module(py::module& m) {
     py::module m_lars = m.def_submodule("lars_based", "LARS-based T-Solvers");
     py::module m_omp  = m.def_submodule("omp_based",  "OMP-based T-Solvers");
     py::module m_afs  = m.def_submodule("afs_based",  "AFS-based T-Solvers");
-    py::module m_cd   = m.def_submodule("cd_based",   "Coordinate-descent T-Solvers");
 
     /**
      * @brief Variants defining the internal optimization mode utilized by the TNCGMP solver.
@@ -822,15 +734,6 @@ inline void bind_tsolvers_module(py::module& m) {
         .value("FullyCorrective",
               trex::tsolvers::ad::NCGMPVariant::FullyCorrective,
               "Computes fully corrective projections for all active set members at each step.")
-        .export_values();
-
-    py::enum_<trex::tsolvers::ad::GroupPenaltyVariant>(m, "GroupPenaltyVariant",
-        "Structured penalty of the group CCD solver (TCDIENET). "
-        "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .value("MEAN", trex::tsolvers::ad::GroupPenaltyVariant::MEAN,
-               "K = blockdiag(1 1^T / p_m): the canonical IEN group-sum penalty.")
-        .value("CENTERING", trex::tsolvers::ad::GroupPenaltyVariant::CENTERING,
-               "K = blockdiag(I - 1 1^T / p_m): within-group centering.")
         .export_values();
 
     // Every input except X, D, y.
@@ -1162,131 +1065,6 @@ inline void bind_tsolvers_module(py::module& m) {
         "  pp. 2511-2515.\n",
         "Reads options.rho_afs, the shrinkage step in (0, 1] (1: forward stepwise), and the"
         " exchangeable-tie fields.");
-
-    // -------------------------------------------------------------------------
-    // CD-based sub-module
-    // -------------------------------------------------------------------------
-    using namespace trex::tsolvers::ad::linear_model::cd_based;
-
-    {
-        auto cls = bind_standard_tsolver<TCDLASSO_Solver>(m_cd, "TCDLASSO_Solver",
-            "Terminating cyclic coordinate descent LASSO (T-CDLASSO) solver.\n"
-            "\n"
-            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
-            "and constructing this class raises FutureWarning. Use TLASSO_Solver, the homotopy\n"
-            "solver of the same problem.\n"
-            "\n"
-            "References\n"
-            "----------\n"
-            "R. Tibshirani, \"Regression Shrinkage and Selection via the Lasso,\" J. R. Stat. Soc. Ser.\n"
-            "  B Stat. Methodol., vol. 58, no. 1, pp. 267-288, 1996.\n"
-            "J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, \"Pathwise Coordinate\n"
-            "  Optimization,\" Ann. Appl. Stat., vol. 1, no. 2, pp. 302-332, 2007,\n"
-            "  doi: 10.1214/07-AOAS131.\n"
-            "J. Friedman, T. Hastie, and R. Tibshirani, \"Regularization Paths for Generalized Linear\n"
-            "  Models via Coordinate Descent,\" J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010,\n"
-            "  doi: 10.18637/jss.v033.i01.\n"
-            "W. J. Fu, \"Penalized Regression: The Bridge Versus the Lasso,\" J. Comput. Graph.\n"
-            "  Statist., vol. 7, pp. 397-416, 1998.\n"
-            "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
-            "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
-            "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
-            "Exact penalized-lasso minimizers per dummy crossing; reads the options.cd_* knobs.");
-        add_cd_tsolver_methods<TCDLASSO_Solver>(cls);
-    }
-    {
-        auto cls = bind_standard_tsolver<TCDENET_Solver>(m_cd, "TCDENET_Solver",
-            "Terminating cyclic coordinate descent elastic net (T-CDENET) solver.\n"
-            "\n"
-            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
-            "and constructing this class raises FutureWarning. Use TENET_Solver, the homotopy\n"
-            "solver of the same problem.\n"
-            "\n"
-            "References\n"
-            "----------\n"
-            "H. Zou and T. Hastie, \"Regularization and Variable Selection via the Elastic Net,\" J. R.\n"
-            "  Stat. Soc. Ser. B Stat. Methodol., vol. 67, no. 2, pp. 301-320, 2005.\n"
-            "J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, \"Pathwise Coordinate\n"
-            "  Optimization,\" Ann. Appl. Stat., vol. 1, no. 2, pp. 302-332, 2007,\n"
-            "  doi: 10.1214/07-AOAS131.\n"
-            "J. Friedman, T. Hastie, and R. Tibshirani, \"Regularization Paths for Generalized Linear\n"
-            "  Models via Coordinate Descent,\" J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010,\n"
-            "  doi: 10.18637/jss.v033.i01.\n"
-            "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
-            "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
-            "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
-            "Reads options.lambda2 (diagonal ridge), options.kappa_dummy and the cd_* knobs.");
-        add_cd_tsolver_methods<TCDENET_Solver>(cls);
-    }
-    {
-        auto cls = bind_groups_tsolver<TCDIENET_Solver>(m_cd, "TCDIENET_Solver",
-            "Terminating cyclic coordinate descent informed elastic net (T-CDIENET) solver.\n"
-            "\n"
-            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
-            "and constructing this class raises FutureWarning. Use TIENET_Solver, the homotopy\n"
-            "solver of the same problem.\n"
-            "\n"
-            "Not finally developed: its sweeps grow with lambda2 and on saturating designs, and a\n"
-            "solve that does not converge within cd_max_sweeps raises RuntimeError. The homotopy\n"
-            "solver TIENET_Solver has no such limit.\n"
-            "\n"
-            "References\n"
-            "----------\n"
-            "J. Machkour, M. Muma, and D. P. Palomar, \"The Informed Elastic Net for Fast Grouped\n"
-            "  Variable Selection and FDR Control in Genomics Research,\" in Proc. IEEE 9th Int.\n"
-            "  Workshop Comput. Adv. Multi-Sensor Adapt. Process. (CAMSAP), 2023, pp. 466-470.\n"
-            "H. Zou and T. Hastie, \"Regularization and Variable Selection via the Elastic Net,\" J. R.\n"
-            "  Stat. Soc. Ser. B Stat. Methodol., vol. 67, no. 2, pp. 301-320, 2005.\n"
-            "J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, \"Pathwise Coordinate\n"
-            "  Optimization,\" Ann. Appl. Stat., vol. 1, no. 2, pp. 302-332, 2007,\n"
-            "  doi: 10.1214/07-AOAS131.\n"
-            "J. Friedman, T. Hastie, and R. Tibshirani, \"Regularization Paths for Generalized Linear\n"
-            "  Models via Coordinate Descent,\" J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010,\n"
-            "  doi: 10.18637/jss.v033.i01.\n"
-            "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
-            "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
-            "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
-            "Reads options.lambda2, options.group_penalty (MEAN or CENTERING) and the cd_* knobs.");
-        add_cd_tsolver_methods<TCDIENET_Solver>(cls);
-        cls.def("getGroups", &PySolverWrapper<TCDIENET_Solver>::getGroupOf,
-                "Get the 0-based group id per original variable (length p).")
-           .def("getNumGroups", &PySolverWrapper<TCDIENET_Solver>::getNumGroups,
-                "Get the number of disjoint groups.");
-    }
-    {
-        auto cls = bind_tikhonov_tsolver<TCDTIKNET_Solver>(m_cd, "TCDTIKNET_Solver",
-            "Terminating cyclic coordinate descent Tikhonov net (T-CDTIKNET) solver.\n"
-            "\n"
-            "Deprecated: the coordinate-descent family will be removed in the next minor release,\n"
-            "and constructing this class raises FutureWarning. Use TIKNET_Solver, the homotopy\n"
-            "solver of the same problem.\n"
-            "\n"
-            "Not finally developed: under the folded dummy coupling its sweeps grow with lambda2,\n"
-            "and on saturating designs as well, and a solve that does not converge within\n"
-            "cd_max_sweeps raises RuntimeError. The homotopy solver TIKNET_Solver has no such limit.\n"
-            "\n"
-            "References\n"
-            "----------\n"
-            "A. N. Tikhonov, \"Solution of Incorrectly Formulated Problems and the Regularization\n"
-            "  Method,\" Soviet Math. Dokl., vol. 4, pp. 1035-1038, 1963 (English translation of Dokl.\n"
-            "  Akad. Nauk SSSR 151 (1963), no. 3, 501-504).\n"
-            "Y. Park, L. Reichel, G. Rodriguez, and X. Yu, \"Parameter Determination for Tikhonov\n"
-            "  Regularization Problems in General Form,\" J. Comput. Appl. Math., vol. 343, pp. 12-25,\n"
-            "  2018, doi: 10.1016/j.cam.2018.04.049.\n"
-            "J. Friedman, T. Hastie, H. Höfling, and R. Tibshirani, \"Pathwise Coordinate\n"
-            "  Optimization,\" Ann. Appl. Stat., vol. 1, no. 2, pp. 302-332, 2007,\n"
-            "  doi: 10.1214/07-AOAS131.\n"
-            "J. Friedman, T. Hastie, and R. Tibshirani, \"Regularization Paths for Generalized Linear\n"
-            "  Models via Coordinate Descent,\" J. Stat. Softw., vol. 33, no. 1, pp. 1-22, 2010,\n"
-            "  doi: 10.18637/jss.v033.i01.\n"
-            "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
-            "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
-            "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
-            "Reads options.lambda2, options.kappa_dummy, options.fold_dummies and the cd_* knobs.");
-        add_cd_tsolver_methods<TCDTIKNET_Solver>(cls);
-        cls.def("isFoldedDummyCoupling", &PySolverWrapper<TCDTIKNET_Solver>::isFoldedDummyCoupling,
-                "True under the FOLDED dummy coupling (options.fold_dummies).");
-    }
 }
 // =====================================================================================
 #endif /* End of TREX_PYTHON_TSOLVER_BINDINGS_HPP */

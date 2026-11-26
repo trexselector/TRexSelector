@@ -67,39 +67,19 @@ NULL
 
 
 # ---------------------------------------------------------------------------
-# Internal: deprecation of the coordinate-descent solver family.
+# Internal: the deprecation warning of the package.
 #
-# Every solver of the family maps to the homotopy solver of the same problem.
-# The warning has the class "deprecatedWarning", as .Deprecated() raises it.
+# The warning has the class "deprecatedWarning", as .Deprecated() raises it,
+# and carries the old name and its replacement.
 # ---------------------------------------------------------------------------
-
-.cd_replacement <- c(TCDLASSO = "TLASSO", TCDENET = "TENET",
-                     TCDIENET = "TIENET", TCDTIKNET = "TIKNET")
 
 .warn_deprecated <- function(old, new) {
   warning(warningCondition(
-    paste0(old, " is deprecated and will be removed in TRexSelector 2.1.0. ",
-           "Use ", new, ", the homotopy solver of the same problem."),
+    paste0(old, " is deprecated. Use ", new, "."),
     old = old, new = new, package = "TRexSelector",
     class = "deprecatedWarning", call = NULL
   ))
   invisible(NULL)
-}
-
-# A solver name that reaches a selector. `argument` names the control field.
-.warn_cd_solver_name <- function(solver, argument = "solver") {
-  if (is.character(solver) && length(solver) == 1L &&
-      solver %in% names(.cd_replacement)) {
-    .warn_deprecated(paste0(argument, " = \"", solver, "\""),
-                     paste0("\"", .cd_replacement[[solver]], "\""))
-  }
-  invisible(NULL)
-}
-
-# A solver class of the family that is constructed.
-.warn_cd_solver_class <- function(solver) {
-  .warn_deprecated(paste0(solver, "_Solver"),
-                   paste0(.cd_replacement[[solver]], "_Solver"))
 }
 
 

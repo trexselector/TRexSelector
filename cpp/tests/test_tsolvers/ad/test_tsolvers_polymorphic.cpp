@@ -40,11 +40,6 @@
 #include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
 
-// CCD-based solvers
-#include <tsolvers/ad/linear_model/cd_based/tcdlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-
 // AFS-based solver
 #include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
 
@@ -58,7 +53,6 @@ namespace trex::test::tsolvers::ad::linear_model {
 
 // namespaces
 using namespace trex::tsolvers::ad::linear_model::lars_based;
-using namespace trex::tsolvers::ad::linear_model::cd_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
 using namespace trex::utils::datageneration::datagen;
@@ -66,11 +60,10 @@ namespace fs = std::filesystem;
 
 // ========================================================================================
 
-// Type List for the 18 solvers
+// Type List for the 15 solvers
 typedef ::testing::Types<
     TLARS_Solver, TLASSO_Solver, TENET_Solver, TENETAug_Solver, TIENET_Solver,
     TIENETAug_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver,
-    TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver,
     TOMP_Solver, TMP_Solver, TGP_Solver, TACGP_Solver, TNCGMP_Solver,
     TOOLS_Solver, TAFS_Solver
 > AllSolvers;
@@ -85,12 +78,10 @@ std::unique_ptr<T> create_solver(Eigen::Map<Eigen::MatrixXd>& X,
     trex::tsolvers::ad::SolverOptions opts;
     opts.lambda2 = 0.5;
     if constexpr (std::is_same_v<T, TENET_Solver> ||
-                  std::is_same_v<T, TENETAug_Solver> ||
-                  std::is_same_v<T, TCDENET_Solver>) {
+                  std::is_same_v<T, TENETAug_Solver>) {
         return std::make_unique<T>(X, D, y, opts);
     } else if constexpr (std::is_same_v<T, TIENET_Solver> ||
-                         std::is_same_v<T, TIENETAug_Solver> ||
-                         std::is_same_v<T, TCDIENET_Solver>) {
+                         std::is_same_v<T, TIENETAug_Solver>) {
         // Singleton groups (each variable its own group) exercise the full
         // group machinery; per Corollary 1 of the IEN paper this is the
         // EN-like special case.
@@ -109,15 +100,7 @@ std::unique_ptr<T> create_solver(Eigen::Map<Eigen::MatrixXd>& X,
 template <typename T>
 constexpr bool lifts_row_bound =
     std::is_same_v<T, TENET_Solver> || std::is_same_v<T, TENETAug_Solver> ||
-    std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver> ||
-    std::is_same_v<T, TCDENET_Solver> || std::is_same_v<T, TCDIENET_Solver>;
-
-/** @brief The coordinate-descent solvers with a quadratic penalty. Deep in a
- *  saturated path their solves do not converge within a practical sweep
- *  budget, and the solver then throws instead of continuing. */
-template <typename T>
-constexpr bool cd_ridge_family =
-    std::is_same_v<T, TCDENET_Solver> || std::is_same_v<T, TCDIENET_Solver>;
+    std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>;
 
 // Factory with explicit preprocessing options (lambda2 = 0.5 as above)
 template <typename T>
@@ -127,8 +110,7 @@ std::unique_ptr<T> create_solver_with(Eigen::Map<Eigen::MatrixXd>& X,
                                       trex::tsolvers::ad::SolverOptions opts) {
     opts.lambda2 = 0.5;
     if constexpr (std::is_same_v<T, TIENET_Solver> ||
-                  std::is_same_v<T, TIENETAug_Solver> ||
-                  std::is_same_v<T, TCDIENET_Solver>) {
+                  std::is_same_v<T, TIENETAug_Solver>) {
         Eigen::VectorXi groups = Eigen::VectorXi::LinSpaced(
             X.cols(), 0, static_cast<int>(X.cols()) - 1);
         return std::make_unique<T>(X, D, y, groups, opts);
@@ -301,12 +283,8 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     trex::tsolvers::ad::SolverOptions base;
     base.normalize = false;
     base.tie_seed = 7;
-    // The run takes every dummy and so goes into saturation, where TCDLASSO
-    // needs more sweeps than its default budget to converge. The CD solvers
-    // of the ridge family stop after a third of the dummies, see the trait.
-    base.cd_max_sweeps = 200000;
-    const std::size_t T_stop = cd_ridge_family<TypeParam> ? static_cast<std::size_t>(L / 3)
-                                                          : static_cast<std::size_t>(L);
+    // The run takes every dummy and so goes into saturation.
+    const std::size_t T_stop = static_cast<std::size_t>(L);
 
     // intercept = true: the solver centers its (separate) buffers itself
     Eigen::MatrixXd Xa = X0, Da = D0;

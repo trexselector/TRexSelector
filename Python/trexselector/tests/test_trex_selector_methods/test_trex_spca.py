@@ -271,10 +271,9 @@ def test_spca_nested_solver_fields_have_no_effect(spca_fixture):
     X, _, _ = spca_fixture
     plain = make_ctrl(lambda_2=1.0)
     nested = make_ctrl(lambda_2=1.0)
-    nested.gvs_ctrl.en_solver = ENSolverType.TCDENET
+    nested.gvs_ctrl.en_solver = ENSolverType.TENET_AUG
+    # A nested solver type outside the elastic-net family would end a T-Rex+GVS run with an error.
     nested.gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex.TLASSO
-    # One sweep would end a coordinate-descent run with an error.
-    nested.gvs_ctrl.trex_ctrl.solver_params.cd_max_sweeps = 1
 
     a = TRexSPCASelector(X, plain, seed=1).select(M, TFDR)
     with warnings.catch_warnings():
@@ -282,15 +281,6 @@ def test_spca_nested_solver_fields_have_no_effect(spca_fixture):
         b = TRexSPCASelector(X, nested, seed=1).select(M, TFDR)
     assert a.active_sets == b.active_sets
     assert np.array_equal(a.V, b.V)
-
-
-def test_spca_outer_tcdenet_is_deprecated(spca_fixture):
-    X, _, _ = spca_fixture
-    ctrl = make_ctrl(lambda_2=1.0)
-    ctrl.en_solver = ENSolverType.TCDENET
-    ctrl.gvs_ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000
-    with pytest.warns(FutureWarning, match="TCDENET"):
-        TRexSPCASelector(X, ctrl, seed=1).select(M, TFDR)
 
 
 @pytest.mark.parametrize("rule", ["CV_1SE_IEN_CCD", "CV_MIN_IEN_CCD", "CV_1SE_TIK_SVD", "CV_MIN_TIK_SVD"])

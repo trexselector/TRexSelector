@@ -31,8 +31,7 @@ smooth.
 \code{"TIKNET"}, the homotopy solver, is the one solver of the selector. It
 is the solver of the base control that applies when \code{control} is left
 out, and a control that is passed has to name it. Every other solver is
-refused, also \code{"TCDTIKNET"}, the deprecated coordinate-descent solver,
-which the selector accepted up to TRexSelector 2.0.1.
+refused.
 }
 
 \section{The dummies}{
@@ -44,9 +43,8 @@ correlations (\code{corr_max}, \code{hc_linkage}). The field
 \code{dummy_clusters} reports them. With an informed K, i.i.d. dummies would
 be less competitive than correlated null variables, which deforms the
 exchangeability the FDR calibration relies on. In the penalty every dummy
-takes the place of the variable it was drawn for (folded coupling,
-\code{fold_dummy_coupling}), so dummies and null variables stay exchangeable
-for every K.
+takes the place of the variable it was drawn for (folded coupling), so
+dummies and null variables stay exchangeable for every K.
 }
 
 \section{L-loop strategies}{
@@ -306,9 +304,7 @@ class applies: the defaults of \code{trex_control()} with the solver
 passed is taken as it is, so its \code{solver} must be
 \code{"TIKNET"}: \code{trex_control(solver = "TIKNET", ...)}. Every
 other solver is an error, also \code{"TLARS"}, the default of
-\code{trex_control()}, and \code{"TCDTIKNET"}, the deprecated
-coordinate-descent solver, which the selector accepted up to
-TRexSelector 2.0.1.}
+\code{trex_control()}.}
     }
     \if{html}{\out{</div>}}
   }

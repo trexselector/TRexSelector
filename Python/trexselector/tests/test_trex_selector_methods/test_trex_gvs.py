@@ -318,7 +318,7 @@ def test_gvs_linkage_methods(signal_data, linkage):
 
 
 # ---------------------------------------------------------------------------
-# CCD family + IEN-geometry lambda_2 tuners (bindings-parity additions)
+# IEN-geometry lambda_2 tuners (bindings-parity additions)
 # ---------------------------------------------------------------------------
 
 def test_lambda2_method_ien_entries_exist():
@@ -358,34 +358,6 @@ def test_gvs_non_finite_cv_dfmax_ratio_raises(signal_data, bad):
     gvs_ctrl.cv_dfmax_ratio = bad
     with pytest.raises(ValueError, match="cv_dfmax_ratio must be finite"):
         trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl, trex_control=_base(TIENET), verbose=False)
-
-
-def test_gvs_en_tcdenet_runs(signal_data):
-    X, y, n, p = signal_data
-    ctrl = _base()
-    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
-    gvs_ctrl = trexselector.TRexGVSControlParameter()
-    gvs_ctrl.en_solver = trexselector.ENSolverType.TCDENET
-    gvs_ctrl.lambda_2 = 1.0
-    sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl,
-                                            trex_control=ctrl, seed=42, verbose=False)
-    res = sel.select()
-    assert res is not None
-
-
-def test_gvs_ien_solver_choice_tcdienet(signal_data):
-    X, y, n, p = signal_data
-    ctrl = trexselector.TRexControlParameter()
-    ctrl.K = 3
-    ctrl.solver_type = trexselector.SolverTypeForTRex.TCDIENET
-    ctrl.solver_params.cd_max_sweeps = 200000   # converges on every draw of the dummies
-    gvs_ctrl = trexselector.TRexGVSControlParameter()
-    gvs_ctrl.gvs_type = trexselector.GVSType.IEN
-    gvs_ctrl.lambda_2 = 1.0
-    sel = trexselector.TRexGVSSelector(X, y, gvs_control=gvs_ctrl,
-                                            trex_control=ctrl, seed=42, verbose=False)
-    res = sel.select()
-    assert res is not None
 
 
 def test_gvs_ien_tuner_grids_and_diagnostics(signal_data):
@@ -475,33 +447,3 @@ def test_gvs_refuses_the_permutation_strategies(signal_data, strategy):
     with pytest.raises(ValueError, match="PERMUTATION and PERMUTATION_SEEDED"):
         sel = trexselector.TRexGVSSelector(X, y, trex_control=ctrl, verbose=False)
         sel.select()
-
-
-def test_unconverged_coordinate_descent_raises_and_gives_the_design_back():
-    """TCDIENET at a lambda_2 beyond its sweep budget, one group per variable.
-
-    select() ends with an error instead of a selection from an unconverged path, the design is
-    given back at once and the selector is retired.
-    """
-    rng = np.random.default_rng(2718)
-    n, p = 120, 60
-    X = np.asfortranarray(rng.standard_normal((n, p)))
-    y = X[:, 20:30].sum(axis=1) + rng.standard_normal(n)
-    X0 = X.copy(order="F")
-
-    gvs_ctrl = trexselector.TRexGVSControlParameter()
-    gvs_ctrl.gvs_type = trexselector.GVSType.IEN
-    gvs_ctrl.prior_groups = list(range(p))
-    gvs_ctrl.lambda_2 = 3000.0
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", FutureWarning)      # the solver is deprecated
-        sel = trexselector.TRexGVSSelector(X, y, tFDR=0.1, gvs_control=gvs_ctrl,
-                                           trex_control=_base(trexselector.SolverTypeForTRex.TCDIENET, K=10),
-                                           seed=4, verbose=False)
-    assert not np.allclose(X, X0)                     # standardized in place
-    with pytest.raises(RuntimeError, match="sweep budget.*before it converged.*cd_max_sweeps"):
-        sel.select()
-    np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
-    with pytest.raises(RuntimeError, match="can no longer run"):
-        sel.select()                                  # retired
-

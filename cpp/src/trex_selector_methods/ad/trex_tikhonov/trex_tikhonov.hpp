@@ -235,9 +235,7 @@ struct TRexTikhonovControlParameter {
      *  construction. The constructor checks its content once (finite
      *  entries, symmetry, positive semi-definiteness), and the solvers of
      *  the selector take it as checked. Build from a regularization operator
-     *  Gamma (m x p) via `TRexTikhonovSelector::gammaToK()`. Prefer
-     *  diag(K) = 1 so the real columns carry the same ridge as the dummies
-     *  (kappa_dummy = 1).
+     *  Gamma (m x p) via `TRexTikhonovSelector::gammaToK()`.
      *  OPTIONAL for GROUP_CENTERING: when empty, the selector builds
      *  K_GC = blockdiag(I - J/p_m) from `prior_groups` internally (the
      *  solver and the CV tuners consume it). A supplied matrix is compared
@@ -343,25 +341,14 @@ struct TRexTikhonovControlParameter {
      *  PERMUTATION family is refused). */
     bool pilot_shared_dummies = false;
 
-    /** @brief Dummy-coupling mode of the sparse-K penalty. true (default,
-     *  FOLDED): dummy copy t joins its originating variable (t - p) mod p in
-     *  the K-coupling, the exact generalization of GVS's layered group
-     *  convention, so dummies and null variables stay exchangeable for
-     *  every K. false (a decoupled unit-ridge dummy block) is refused: it
-     *  existed with the solver TCDTIKNET only, which the selector no longer
-     *  accepts.
-     *  @deprecated The field will be removed with the coordinate descent
-     *  family in the next minor release. */
-    bool fold_dummy_coupling = true;
-
     /** @brief Cluster-aware dummy generation, as in TRexGVSSelector.
      *  Default: true. When true, dummies are drawn as per-cluster colored
      *  MVN layers on the clustering below via the DummyGenerator cluster
      *  mode — all strategies and memory mapping supported; only the
      *  PERMUTATION variants throw. Set to false ONLY for validation /
-     *  equivalence runs against the canonical i.i.d. dummy path (e.g. the
-     *  K = I ≡ TCDENET anchor test): with an informed K, i.i.d. dummies
-     *  deform the dummy/null exchangeability the FDR calibration relies on. */
+     *  equivalence runs against the canonical i.i.d. dummy path: with an
+     *  informed K, i.i.d. dummies deform the dummy/null exchangeability the
+     *  FDR calibration relies on. */
     bool cluster_dummies = true;
 
     /** @brief Groups of the variables: a 0-based group ID per variable
@@ -395,10 +382,7 @@ struct TRexTikhonovControlParameter {
      *  `solver_type` must be TIKNET, the homotopy solver of the general
      *  Tikhonov penalty, and the default here names it, where the base
      *  class's own default is TLARS. Every other solver is refused at
-     *  construction. Among them is TCDTIKNET, the deprecated
-     *  coordinate-descent solver, which the selector accepted up to 1.0.0:
-     *  it is not finally developed and can stop at its sweep budget before
-     *  it has converged. All other base knobs (K, L-loop strategy, warm
+     *  construction. All other base knobs (K, L-loop strategy, warm
      *  starts, memory mapping, ...) apply unchanged. */
     tc::TRexControlParameter trex_ctrl = [] {
         tc::TRexControlParameter t;
@@ -434,8 +418,7 @@ struct TRexTikhonovControlParameter {
  *
  *  The solver. TIKNET, the homotopy solver, is the one solver of the
  *  selector and the default of the nested base control. Every other solver
- *  is refused, also TCDTIKNET, the deprecated coordinate-descent solver,
- *  which the selector accepted up to 1.0.0.
+ *  is refused.
  *
  *  The dummies. By default they are drawn per cluster of correlated
  *  variables, as in TRexGVSSelector (`cluster_dummies`): the clusters are
@@ -444,7 +427,7 @@ struct TRexTikhonovControlParameter {
  *  them. With an informed K, i.i.d. dummies would be less competitive than
  *  correlated null variables, which deforms the exchangeability the FDR
  *  calibration relies on. In the penalty every dummy takes the place of the
- *  variable it was drawn for (FOLDED coupling, `fold_dummy_coupling`), so
+ *  variable it was drawn for (FOLDED coupling), so
  *  dummies and null variables stay exchangeable for every K.
  *
  *  L-loop strategies. With cluster dummies STANDARD, HCONCAT, SKIPL and
@@ -536,7 +519,7 @@ public:
      *         or not positive semi-definite, a supplied `tikhonov_K` under
      *         GROUP_CENTERING that is not the centering matrix, a `lambda_2`
      *         that is not finite, a `solver_type` other than TIKNET,
-     *         `fold_dummy_coupling = false`, malformed `prior_groups` /
+     *         malformed `prior_groups` /
      *         `corr_max`, an unsupported
      *         `hc_linkage`, wrong sizes of the cross-validation or of the
      *         pilot rule, or — with `cluster_dummies` on — a
@@ -677,10 +660,6 @@ private:
 
     /** @brief What the last pilot did (`ran == false` when none ran). */
     Lambda2PilotResult lambda2_pilot_;
-
-    /** @brief GROUP_CENTERING: group ids as VectorXi for the solver
-     *  dispatch (owned; runner configs point into it). */
-    Eigen::VectorXi groups_vec_i_{};
 
     // ----- Cluster-aware dummy state (cluster_dummies == true) -----
 

@@ -25,7 +25,6 @@ test_that("the getter exists on the solver classes and returns a positive double
     TOMP_Solver$new(X, D, y, options = reader),
     TAFS_Solver$new(X, D, y, options = tsolver_options(normalize = FALSE, intercept = FALSE,
                                                        rho_afs = 0.5)),
-    quiet_cd(TCDLASSO_Solver$new(X, D, y, options = reader)),
     TENETAug_Solver$new(X, D, y, options = tsolver_options(normalize = FALSE, intercept = FALSE,
                                                            lambda2 = 0.5)),
     TIENET_Solver$new(X, D, y, groups = groups,

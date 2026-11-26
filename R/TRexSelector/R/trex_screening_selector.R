@@ -83,8 +83,6 @@ TRexScreeningSelector <- R6::R6Class("TRexScreeningSelector",
                           screen_control = trex_screen_control(),
                           control = trex_control()) {
 
-      .warn_cd_solver_name(control$solver)
-
       if (inherits(X, "MemoryMappedMatrix")) {
         y <- .as_double_vector(y)
         private$refs <- list(X = X, y = y)

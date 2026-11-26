@@ -19,16 +19,7 @@ tsolver_options(
   rho_afs = 0.3,
   ncgmp_variant = c("line_search", "fully_corrective"),
   tenet_aug_use_lars = FALSE,
-  tikhonov_validated = FALSE,
-  kappa_dummy = 1,
-  fold_dummies = FALSE,
-  group_penalty = c("MEAN", "CENTERING"),
-  cd_lambda_rel_tol = 0.001,
-  cd_tol_certify = 1e-10,
-  cd_tol_probe = 1e-08,
-  cd_gram_cap = 400,
-  cd_max_sweeps = 2000,
-  cd_certified_localization = TRUE
+  tikhonov_validated = FALSE
 )
 }
 \arguments{
@@ -90,29 +81,10 @@ selectors; 1 is forward stepwise.}
 augmented system with a pure-LARS inner path that never drops variables
 (default \code{FALSE}: LASSO inner path).}
 
-\item{tikhonov_validated}{Logical; TIKNET and TCDTIKNET. \code{TRUE} says that the
+\item{tikhonov_validated}{Logical; TIKNET. \code{TRUE} says that the
 Tikhonov matrix was checked by the caller (finite entries, symmetric, positive
 semi-definite), and the solver skips its own check. For a caller that builds many
 solvers on one matrix, as the T-Rex selector does. Default \code{FALSE}.}
-
-\item{kappa_dummy}{Ridge weight of the dummy block of TCDENET, and of
-TCDTIKNET with \code{fold_dummies = FALSE}. Default 1. Deprecated: it
-will be removed with the coordinate-descent family in TRexSelector 2.1.0.}
-
-\item{fold_dummies}{Logical; TCDTIKNET dummy coupling. Default
-\code{FALSE}. Deprecated: it will be removed with the coordinate-descent
-family in TRexSelector 2.1.0.}
-
-\item{group_penalty}{TCDIENET structured penalty, \code{"MEAN"} (default)
-or \code{"CENTERING"}. Deprecated: it will be removed with the
-coordinate-descent family in TRexSelector 2.1.0.}
-
-\item{cd_lambda_rel_tol, cd_tol_certify, cd_tol_probe, cd_gram_cap, cd_max_sweeps, cd_certified_localization}{Knobs of the coordinate-descent solver family; the defaults are the
-solver defaults (1e-3, 1e-10, 1e-8, 400, 2000, \code{TRUE}). A solve
-that stops at the sweep budget \code{cd_max_sweeps} far from a solution
-(KKT violation above 0.001 lambda_1) raises an error instead of
-continuing on an unconverged path. Deprecated: the six knobs will be
-removed with the coordinate-descent family in TRexSelector 2.1.0.}
 }
 \value{
 A named list suitable for the \code{options} argument of every
@@ -149,10 +121,6 @@ tsolver_options(lambda2 = 0.5, normalize = FALSE)
 Other T-solvers:
 \code{\link{TACGP_Solver}},
 \code{\link{TAFS_Solver}},
-\code{\link{TCDENET_Solver}},
-\code{\link{TCDIENET_Solver}},
-\code{\link{TCDLASSO_Solver}},
-\code{\link{TCDTIKNET_Solver}},
 \code{\link{TENETAug_Solver}},
 \code{\link{TENET_Solver}},
 \code{\link{TGP_Solver}},

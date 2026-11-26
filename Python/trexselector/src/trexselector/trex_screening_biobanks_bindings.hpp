@@ -80,8 +80,6 @@ public:
         int seed,
         bool verbose
     ) {
-        warn_if_cd_solver_type(bio_ctrl.trex_screen_ctrl.trex_ctrl.solver_type);
-
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                   X.rows(),
                                                                   X.cols());
@@ -105,8 +103,6 @@ public:
         int seed,
         bool verbose
     ) {
-        warn_if_cd_solver_type(bio_ctrl.trex_screen_ctrl.trex_ctrl.solver_type);
-
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                   X.rows(),
                                                                   X.cols());

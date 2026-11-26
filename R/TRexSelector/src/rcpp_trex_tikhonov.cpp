@@ -159,10 +159,6 @@ TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control)
             Rcpp::as<bool>(control["pilot_shared_dummies"]);
     }
 
-    if (control.containsElementNamed("fold_dummy_coupling")) {
-        params.fold_dummy_coupling =
-            Rcpp::as<bool>(control["fold_dummy_coupling"]);
-    }
     if (control.containsElementNamed("cluster_dummies")) {
         params.cluster_dummies = Rcpp::as<bool>(control["cluster_dummies"]);
     }

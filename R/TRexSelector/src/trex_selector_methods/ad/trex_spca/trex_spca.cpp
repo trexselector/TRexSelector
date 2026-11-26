@@ -183,10 +183,10 @@ const TRexSPCAResult& TRexSPCA::select() {
         tg::TRexGVSControlParameter gvs_ctrl = spca_ctrl_.gvs_ctrl;
 
         // gvs_type is EN (checked in the constructor). The solver variant is
-        // user-selectable via spca_ctrl_.en_solver (TENET / TENET_AUG /
-        // TCDENET — all equivalent for lambda2 > 0); solver_type is set to
-        // the matching enumerator so a conflicting value in the forwarded
-        // gvs_ctrl can never reach GVS's derivation check.
+        // user-selectable via spca_ctrl_.en_solver (TENET / TENET_AUG,
+        // equivalent for lambda2 > 0). solver_type is set to the matching
+        // enumerator so a conflicting value in the forwarded gvs_ctrl can
+        // never reach GVS's derivation check.
         gvs_ctrl.en_solver             = spca_ctrl_.en_solver;
         gvs_ctrl.trex_ctrl.solver_type = tg::toSolverType(spca_ctrl_.en_solver);
 

@@ -55,8 +55,6 @@
 #include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
 
@@ -73,8 +71,7 @@ namespace trex::trex_selector_methods::ad::trex_gvs {
 namespace cdum = trex::trex_selector_methods::ad::utils::cluster_dummies;
 namespace dn   = trex::trex_selector_methods::ad::utils::data_normalizer;
 namespace lars = trex::tsolvers::ad::linear_model::lars_based;
-namespace ccd  = trex::tsolvers::ad::linear_model::cd_based;
-namespace mm   = trex::trex_selector_methods::ad::utils::memmap_manager;
+namespace mm  = trex::trex_selector_methods::ad::utils::memmap_manager;
 namespace rerr = trex::trex_selector_methods::ad::utils::region_error;
 
 // Static helper: prepare the nested base control parameters before they are
@@ -89,8 +86,8 @@ namespace rerr = trex::trex_selector_methods::ad::utils::region_error;
 //   2. For `gvs_type == EN`, `solver_type` is DERIVED from `en_solver`
 //      (the single EN-solver knob). The pre-derivation value may only be
 //      the neutral default (TENET) or already consistent; an explicitly
-//      conflicting EN-family value throws so a legacy `solver_type = TCDENET`
-//      / `TENET_AUG` request is never silently downgraded. Non-EN-family
+//      conflicting EN-family value throws so a `solver_type = TENET_AUG`
+//      request is never silently downgraded. Non-EN-family
 //      values are left for the constructor's IEN/EN family check to reject
 //      with the appropriate message.
 static tc::TRexControlParameter prepareBaseCtrl(
@@ -103,14 +100,13 @@ static tc::TRexControlParameter prepareBaseCtrl(
         const disp::SolverTypeForTRex derived = toSolverType(g.en_solver);
         const bool en_family =
             q.solver_type == disp::SolverTypeForTRex::TENET ||
-            q.solver_type == disp::SolverTypeForTRex::TENET_AUG ||
-            q.solver_type == disp::SolverTypeForTRex::TCDENET;
+            q.solver_type == disp::SolverTypeForTRex::TENET_AUG;
         if (en_family &&
             q.solver_type != disp::SolverTypeForTRex::TENET &&  // neutral default
             q.solver_type != derived) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = EN selects its solver via "
-                "en_solver (TENET / TENET_AUG / TCDENET); trex_ctrl.solver_type "
+                "en_solver (TENET / TENET_AUG); trex_ctrl.solver_type "
                 "is derived from it. Set en_solver instead of solver_type."
             );
         }
@@ -155,28 +151,24 @@ TRexGVSSelector::TRexGVSSelector(
         // What remains to reject here is a non-EN-family solver_type that
         // the derivation deliberately left untouched (e.g. TLARS, TOMP).
         if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TENET &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TENET_AUG &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TCDENET) {
+            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TENET_AUG) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = EN drives the ENET solver "
                 "family only; select the variant via en_solver "
-                "(TENET / TENET_AUG / TCDENET) and leave solver_type at its "
+                "(TENET / TENET_AUG) and leave solver_type at its "
                 "default."
             );
         }
     } else { // IEN
         // IEN drives its concrete solver from solver_type directly:
-        // TIENET (native pathwise LARS-IEN), TIENET_AUG (group penalty
-        // absorbed into the row-augmented system built by TIENETAug_Solver),
-        // or TCDIENET (pathwise CCD with the O(1) group-sum penalty hooks).
-        // All three solve the same IEN problem family.
+        // TIENET (native pathwise LARS-IEN) or TIENET_AUG (group penalty
+        // absorbed into the row-augmented system built by TIENETAug_Solver).
+        // Both solve the same IEN problem family.
         if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET_AUG &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TCDIENET) {
+            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET_AUG) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = IEN requires solver_type = "
-                "TIENET (native pathwise), TIENET_AUG (row-augmented), or "
-                "TCDIENET (CCD)."
+                "TIENET (native pathwise) or TIENET_AUG (row-augmented)."
             );
         }
     }
@@ -517,7 +509,7 @@ double TRexGVSSelector::computeLambda2() const {
     // ---- IEN-geometry tuners (solver scale; NO p/2 conversion) -------------
     // Both consume the group structure (gvs_setup_ is populated before this
     // call) and return lambda_2 on the unit-L2 solver scale — directly
-    // consumable by TIENET / TIENET_AUG / TCDIENET; only the ZSCORE
+    // consumable by TIENET / TIENET_AUG; only the ZSCORE
     // working-scale factor (n-1) applies (X_ columns then have squared norm
     // n-1 instead of 1).
     const bool ien_method =
@@ -788,7 +780,7 @@ Eigen::MatrixXd TRexGVSSelector::extractPhiContribFromPath(
     // the crossing of every count it skips. This is the only convention
     // under which phi_T does not depend on whether a near-tie happened to
     // be recorded as one step or two. Measured effect vs strict equality:
-    // none (demo_03_trex_gvs_study Part 3d, TENET vs TCDENET, 50 MC,
+    // none (demo_03_trex_gvs_study Part 3d, 50 MC,
     // identical at K = 2/5/20); zero columns come from the
     // `found_col == n_steps` branch (the path never reaches t dummies).
     for (std::size_t t = 1; t <= T_stop; ++t) {
@@ -837,13 +829,9 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
     const bool ien                           = (trex_gvs_ctrl_.gvs_type == GVSType::IEN);
     const bool ien_native = ien &&
         (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TIENET);
-    const bool ien_ccd = ien &&
-        (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TCDIENET);
     // EN variants branch on en_solver, the single EN axis (the frozen
     // trex_ctrl_.solver_type was derived from it in prepareBaseCtrl()).
-    const bool en_ccd    = (trex_gvs_ctrl_.gvs_type == GVSType::EN &&
-                            trex_gvs_ctrl_.en_solver == ENSolverType::TCDENET);
-    const bool en_aug    = (trex_gvs_ctrl_.gvs_type == GVSType::EN &&
+    const bool en_aug   = (trex_gvs_ctrl_.gvs_type == GVSType::EN &&
                             trex_gvs_ctrl_.en_solver == ENSolverType::TENET_AUG);
 
     // Single scaling convention for the whole pipeline: X (base class),
@@ -908,8 +896,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                 std::unique_ptr<tsolvers::ad::TSolver_Base> solver;
                 // Construction-time options shared by every variant below:
                 // the K-loop runs the solvers AS CONSTRUCTED on
-                // the pre-normalized X_ / centered y_ (normalize = false);
-                // the CD knobs of the control apply to the CCD variants.
+                // the pre-normalized X_ / centered y_ (normalize = false).
                 tsolvers::ad::SolverOptions opts;
                 opts.lambda2            = lambda2_;
                 opts.normalize          = false;
@@ -920,7 +907,6 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                 opts.verbose            = false;
                 opts.scaling_mode       = solver_scaling;
                 opts.tenet_aug_use_lars = trex_gvs_ctrl_.tenet_aug_use_lars;
-                disp::applyCdKnobs(opts, trex_ctrl_.solver_params);
                 // Per-experiment deterministic tie-break seed, derived from
                 // the selector seed exactly as the base ExperimentRunner does
                 // (dispatchForExperiment); -1 seeds the solver from
@@ -952,23 +938,6 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                         gvs_setup_.groups_vec,
                         opts
                     );
-                } else if (ien_ccd) {
-                    // IEN CCD: exact fixed-lambda1 IEN minimizers per dummy
-                    // crossing (O(1) group-sum penalty hooks). Same data
-                    // convention as the native pathwise TIENET: shared
-                    // pre-normalized X, center-only D_k, centered y —
-                    // normalize/intercept=false.
-                    // The shared CD knobs ride in opts (tight crossing
-                    // localization keeps the recorded supports aligned with
-                    // the LARS-path variants); the group penalty is the
-                    // canonical MEAN variant.
-                    solver = std::make_unique<ccd::TCDIENET_Solver>(
-                        *X_solver_map_,
-                        *D_solver_maps_[k],
-                        *y_solver_map_,
-                        gvs_setup_.groups_vec,
-                        opts
-                    );
                 } else if (ien) {
                     // IEN aug: group-informed row augmentation inside
                     // TIENETAug_Solver. D_k is RAW; with normalize=false,
@@ -988,18 +957,6 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                         *y_solver_map_,
                         gvs_setup_.groups_vec,
                         ien_aug_opts
-                    );
-                } else if (en_ccd) {
-                    // EN CCD: exact fixed-lambda1 elastic-net minimizers per
-                    // dummy crossing (K = I; dummies get the same unit ridge,
-                    // preserving exchangeability). Same data convention as
-                    // plain TENET: pre-normalized X, center-only D_k,
-                    // centered y — normalize/intercept=false.
-                    solver = std::make_unique<ccd::TCDENET_Solver>(
-                        *X_solver_map_,
-                        *D_solver_maps_[k],
-                        *y_solver_map_,
-                        opts
                     );
                 } else if (en_aug) {
                     // EN-aug: Zou-Hastie augmentation inside TENETAug_Solver,
@@ -1037,11 +994,10 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
             // Activeness threshold: machine epsilon, NOT eps_ (= solver tol).
             // Same rationale as the base runner (trex.cpp buildRunnerConfig
             // cfg.eps): a tol-sized threshold delays the "T-th dummy entered"
-            // milestone and, for solvers reporting RAW minimizers (the CCD
-            // family, no Zou-Hastie rescaling), erases coefficients of scale
-            // ~1/(1+lambda2) once lambda2 approaches 1/tol — punctured dummy
-            // counts then zero whole phi columns (the demo_02 TCDENET
-            // collapse at the CV-chosen lambda2 ~ 1e6).
+            // milestone. For a solver that reports its minimizers without
+            // the Zou-Hastie rescaling it also erases coefficients of scale
+            // ~1/(1+lambda2) once lambda2 approaches 1/tol. Punctured dummy
+            // counts then zero whole phi columns.
             phi_T_per_k[k] = extractPhiContribFromPath(
                 beta_path, p_, num_dummies, T_stop,
                 std::numeric_limits<double>::epsilon(), verbose_);
@@ -1122,11 +1078,10 @@ void TRexGVSSelector::prepareDummiesForLStep(LStepContext& ctx)
     const std::size_t LL    = ctx.L_iter;
 
     const bool ien = (trex_gvs_ctrl_.gvs_type == GVSType::IEN);
-    // Native-convention IEN solvers (pathwise LARS-IEN and CCD-IEN) consume
-    // the center-only D_k directly; only the TIENETAug wrapper takes it raw.
+    // The native IEN solver (pathwise LARS-IEN) consumes the center-only
+    // D_k directly; only the TIENETAug wrapper takes it raw.
     const bool ien_native = ien &&
-        (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TIENET ||
-         trex_ctrl_.solver_type == disp::SolverTypeForTRex::TCDIENET);
+        (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TIENET);
 
     // Fresh dummy data invalidates the cached solvers. Clear them BEFORE the
     // dummy buffers they view are reassigned below, so no dangling view
@@ -1231,8 +1186,8 @@ void TRexGVSSelector::prepareDummiesForLStep(LStepContext& ctx)
             // lambda_2): PC1 FDR inflated from ~0.10 (the 1.x versions of the R
             // package, which keep the fluctuation) to ~0.13. Center-only matches
             // their pipeline (dummies are centered by the augmented scale() there).
-            // Applies to the EN variants AND the native-convention IEN
-            // solvers (TIENET / TCDIENET); only the TIENETAug wrapper takes
+            // Applies to the EN variants AND the native IEN solver
+            // (TIENET); only the TIENETAug wrapper takes
             // the block raw and reaches the same state via its own centering.
                 dmap.rowwise() -= dmap.colwise().mean();
             }

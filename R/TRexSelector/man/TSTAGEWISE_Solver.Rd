@@ -36,10 +36,6 @@ Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
 Other T-solvers:
 \code{\link{TACGP_Solver}},
 \code{\link{TAFS_Solver}},
-\code{\link{TCDENET_Solver}},
-\code{\link{TCDIENET_Solver}},
-\code{\link{TCDLASSO_Solver}},
-\code{\link{TCDTIKNET_Solver}},
 \code{\link{TENETAug_Solver}},
 \code{\link{TENET_Solver}},
 \code{\link{TGP_Solver}},

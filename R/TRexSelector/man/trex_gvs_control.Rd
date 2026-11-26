@@ -61,13 +61,9 @@ IEN-geometry \code{"CV_1SE_IEN_CCD"}, \code{"CV_MIN_IEN_CCD"},
 \code{gvs_type = "IEN"} — they consume the group structure).}
 
 \item{en_solver}{Elastic Net solver variant for \code{gvs_type = "EN"}:
-\code{"TENET"} (default, Gram-based), \code{"TENET_AUG"}
-(row-augmented LASSO), or \code{"TCDENET"} (coordinate descent; exact
-fixed-lambda1 elastic-net minimizers per dummy crossing; deprecated,
-it will be removed in TRexSelector 2.1.0, use \code{"TENET"}). All solve
-the same EN
-problem and select the same variables up to path-vs-minimizer
-differences; the switch exists to validate solver equivalence,
+\code{"TENET"} (default, Gram-based) or \code{"TENET_AUG"}
+(row-augmented LASSO). Both solve the same EN problem and select the
+same variables. The switch exists to validate solver equivalence,
 \strong{not} to choose a LARS vs LASSO path (for that, see
 \code{tenet_aug_use_lars}).}
 
@@ -126,17 +122,12 @@ A named list for use in TRexGVSSelector.
 \description{
 Build a control list for the grouped variable selection of
 \code{\link{TRexGVSSelector}}. The solver follows \code{gvs_type}. For
-"EN" \code{en_solver} chooses it: TENET (default), TENET_AUG or the
-deprecated TCDENET. For "IEN" the \code{solver} of
-\code{\link{trex_control}} names it, TIENET (native pathwise),
-TIENET_AUG or the deprecated TCDIENET, so the IEN track needs a base
+"EN" \code{en_solver} chooses it: TENET (default) or TENET_AUG.
+For "IEN" the \code{solver} of
+\code{\link{trex_control}} names it, TIENET (native pathwise) or
+TIENET_AUG, so the IEN track needs a base
 control with one of them. The selector refuses a base control whose
-solver does not fit the track. TCDIENET is not finally developed: its
-sweeps grow with \code{lambda_2} and on saturating designs, and a solve
-that does not converge within \code{cd_max_sweeps} raises an error.
-TCDENET and TCDIENET are deprecated and will be removed with the
-coordinate-descent family in TRexSelector 2.1.0: the selector raises a
-deprecation warning for them. Use TENET and TIENET.
+solver does not fit the track.
 }
 \examples{
 trex_gvs_control()

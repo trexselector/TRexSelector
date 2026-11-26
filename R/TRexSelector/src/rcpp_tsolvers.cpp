@@ -21,10 +21,6 @@
 #include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 #include <utils/memmap/memory_mapped_matrix.hpp>
 
 // ==============================================================================
@@ -43,7 +39,6 @@ using namespace trex::tsolvers::ad;
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
-using namespace trex::tsolvers::ad::linear_model::cd_based;
 
 // ==============================================================================
 // TSolverRcpp — zero-copy holder, defined once in TRexSelector_types.h
@@ -85,8 +80,8 @@ static Eigen::Map<Eigen::VectorXd> map_of(Rcpp::NumericVector& v) {
 // ==============================================================================
 //
 // Every solver is constructed as (X, D, y, options) — plus the 1-based group
-// vector of the IEN solvers (TIENETAug, TIENET, TCDIENET) or the Tikhonov
-// matrix of the sparse-K solvers (TIKNET, TCDTIKNET) — where
+// vector of the IEN solvers (TIENETAug, TIENET) or the Tikhonov
+// matrix of the sparse-K solver TIKNET — where
 // `options` is the R list built by tsolver_options().
 // parse_solver_options() maps it onto the C++ SolverOptions; absent fields
 // keep the C++ defaults.
@@ -123,23 +118,6 @@ SolverOptions parse_solver_options(const Rcpp::List& o) {
     }
     if (has("tenet_aug_use_lars")) opts.tenet_aug_use_lars = Rcpp::as<bool>(o["tenet_aug_use_lars"]);
     if (has("tikhonov_validated")) opts.tikhonov_validated = Rcpp::as<bool>(o["tikhonov_validated"]);
-    if (has("kappa_dummy"))        opts.kappa_dummy        = Rcpp::as<double>(o["kappa_dummy"]);
-    if (has("fold_dummies"))       opts.fold_dummies       = Rcpp::as<bool>(o["fold_dummies"]);
-    if (has("group_penalty")) {
-        const std::string g = Rcpp::as<std::string>(o["group_penalty"]);
-        if (g == "MEAN")           opts.group_penalty = GroupPenaltyVariant::MEAN;
-        else if (g == "CENTERING") opts.group_penalty = GroupPenaltyVariant::CENTERING;
-        else Rcpp::stop("tsolver_options: group_penalty must be \"MEAN\" or \"CENTERING\"; got " + g);
-    }
-    if (has("cd_lambda_rel_tol")) opts.cd_lambda_rel_tol = Rcpp::as<double>(o["cd_lambda_rel_tol"]);
-    if (has("cd_tol_certify"))    opts.cd_tol_certify    = Rcpp::as<double>(o["cd_tol_certify"]);
-    if (has("cd_tol_probe"))      opts.cd_tol_probe      = Rcpp::as<double>(o["cd_tol_probe"]);
-    if (has("cd_gram_cap"))       opts.cd_gram_cap       = static_cast<std::size_t>(Rcpp::as<double>(o["cd_gram_cap"]));
-    if (has("cd_max_sweeps")) {
-        opts.cd_max_sweeps = static_cast<std::size_t>(Rcpp::as<double>(o["cd_max_sweeps"]));
-    }
-    if (has("cd_certified_localization"))
-        opts.cd_certified_localization = Rcpp::as<bool>(o["cd_certified_localization"]);
     return opts;
 }
 
@@ -587,114 +565,6 @@ XPtr<TSolverRcpp> tsolver_tafs_create(
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TCDLASSO_Solver
-//'
-//' @param X Design matrix or mmap_matrix
-//' @param D Dummy matrix or mmap_matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdlasso_create(
-    SEXP X,
-    SEXP D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
-                                           map_of(y));
-    h->solver_ = new TCDLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins X, D and y until the finalizer has run (a
-    // writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X, D, y));
-}
-
-//' @title Create TCDENET_Solver
-//'
-//' @param X Design matrix or mmap_matrix
-//' @param D Dummy matrix or mmap_matrix
-//' @param y Response vector
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdenet_create(
-    SEXP X,
-    SEXP D,
-    Rcpp::NumericVector y,
-    Rcpp::List options
-) {
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
-                                           map_of(y));
-    h->solver_ = new TCDENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
-    // The protection slot pins X, D and y until the finalizer has run (a
-    // writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X, D, y));
-}
-
-//' @title Create TCDIENET_Solver
-//'
-//' @param X Design matrix or mmap_matrix
-//' @param D Dummy matrix or mmap_matrix
-//' @param y Response vector
-//' @param groups 1-based group ids, one per predictor
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdienet_create(
-    SEXP X,
-    SEXP D,
-    Rcpp::NumericVector y,
-    IntegerVector groups,
-    Rcpp::List options
-) {
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
-                                           map_of(y));
-    h->solver_ = new TCDIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
-    // The protection slot pins X, D and y until the finalizer has run (a
-    // writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X, D, y));
-}
-
-//' @title Create TCDTIKNET_Solver
-//'
-//' @param X Design matrix or mmap_matrix
-//' @param D Dummy matrix or mmap_matrix
-//' @param y Response vector
-//' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-//' @param options List from tsolver_options()
-//'
-//' @return XPtr to TSolverRcpp
-//' @noRd
-// [[Rcpp::export]]
-XPtr<TSolverRcpp> tsolver_tcdtiknet_create(
-    SEXP X,
-    SEXP D,
-    Rcpp::NumericVector y,
-    SEXP tikhonov_K,
-    Rcpp::List options
-) {
-    const SolverOptions opts = parse_solver_options(options);
-    auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
-                                           map_of(y));
-    h->solver_ = new TCDTIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
-    // The protection slot pins X, D and y until the finalizer has run (a
-    // writer's restore() writes back through the maps).
-    return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
-                             Rcpp::List::create(X, D, y));
-}
-
 // ==============================================================================
 // Common TSolver API endpoints (called via XPtr<TSolverRcpp>)
 // ==============================================================================
@@ -999,15 +869,6 @@ void tsolver_save(
         archive(*p);
     } else if (auto* p = dynamic_cast<TOMP_Solver*>(s)) {
         archive(*p);
-    // CD family
-    } else if (auto* p = dynamic_cast<TCDTIKNET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDIENET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDENET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDLASSO_Solver*>(s)) {
-        archive(*p);
     // Independent families
     } else if (auto* p = dynamic_cast<TNCGMP_Solver*>(s)) {
         archive(*p);
@@ -1081,15 +942,6 @@ void tsolver_load(
         archive(*p);
     } else if (auto* p = dynamic_cast<TOMP_Solver*>(s)) {
         archive(*p);
-    // CD family
-    } else if (auto* p = dynamic_cast<TCDTIKNET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDIENET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDENET_Solver*>(s)) {
-        archive(*p);
-    } else if (auto* p = dynamic_cast<TCDLASSO_Solver*>(s)) {
-        archive(*p);
     // Independent families
     } else if (auto* p = dynamic_cast<TNCGMP_Solver*>(s)) {
         archive(*p);
@@ -1104,7 +956,7 @@ void tsolver_load(
 
 
 // ==============================================================================
-// Family getters of TIENET, the CD family and the sparse-K solvers
+// Family getters of TIENET and of the sparse-K solver
 // ==============================================================================
 
 //' @title TIENET: group-ridge penalty used
@@ -1136,95 +988,12 @@ int tsolver_tienet_get_num_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance
     stop("tsolver_tienet_get_num_groups: Solver is not a TIENET_Solver.");
 }
 
-//' @title TCDIENET: 1-based group ids, one per predictor
-//' @noRd
-// [[Rcpp::export]]
-IntegerVector tsolver_tcdienet_get_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDIENET_Solver*>(ptr->solver_)) {
-        // group_of_ covers the unified (p + L) columns; the first p entries
-        // are the original variables (dummy layers copy their variable's group).
-        const std::vector<int>& g = p->getGroupOf();
-        const auto np = static_cast<int>(p->getDummyStartIndex());
-        IntegerVector out(np);
-        for (int i = 0; i < np; ++i) out[i] = g[static_cast<std::size_t>(i)] + 1;
-        return out;
-    }
-    stop("tsolver_tcdienet_get_groups: Solver is not a TCDIENET_Solver.");
-}
-
-//' @title TCDIENET: number of groups
-//' @noRd
-// [[Rcpp::export]]
-int tsolver_tcdienet_get_num_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDIENET_Solver*>(ptr->solver_)) return static_cast<int>(p->getNumGroups());
-    stop("tsolver_tcdienet_get_num_groups: Solver is not a TCDIENET_Solver.");
-}
-
-//' @title CD family: lambda_1 at every recorded step
-//' @noRd
-// [[Rcpp::export]]
-NumericVector tsolver_cd_get_lambda(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return wrap(p->getLambda());
-    stop("tsolver_cd_get_lambda: Solver is not a CD-family solver.");
-}
-
-//' @title CD family: quadratic penalty weight lambda_2 (0 for TCDLASSO)
-//' @noRd
-// [[Rcpp::export]]
-double tsolver_cd_get_lambda2(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return p->getLambda2();
-    stop("tsolver_cd_get_lambda2: Solver is not a CD-family solver.");
-}
-
-//' @title CD family: certified crossing localization active?
-//' @noRd
-// [[Rcpp::export]]
-bool tsolver_cd_is_certified_localization(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return p->isCertifiedLocalization();
-    stop("tsolver_cd_is_certified_localization: Solver is not a CD-family solver.");
-}
-
-//' @title CD family: did certification fall back to LEGACY along the path?
-//' @noRd
-// [[Rcpp::export]]
-bool tsolver_cd_is_certified_degraded(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return p->isCertifiedDegraded();
-    stop("tsolver_cd_is_certified_degraded: Solver is not a CD-family solver.");
-}
-
-//' @title CD family: duality gap at every recorded step
-//' @noRd
-// [[Rcpp::export]]
-NumericVector tsolver_cd_get_record_gaps(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return wrap(p->getRecordGaps());
-    stop("tsolver_cd_get_record_gaps: Solver is not a CD-family solver.");
-}
-
-//' @title CD family: KKT violation at every recorded step
-//' @noRd
-// NOLINTBEGIN(performance-unnecessary-value-param)
-// [[Rcpp::export]]
-NumericVector tsolver_cd_get_record_kkt_violations(XPtr<TSolverRcpp> ptr) {
-    if (auto* p = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_)) return wrap(p->getRecordKktViolations());
-    stop("tsolver_cd_get_record_kkt_violations: Solver is not a CD-family solver.");
-}
-// NOLINTEND(performance-unnecessary-value-param)
-
-//' @title Sparse-K solvers: quadratic penalty weight lambda_2
+//' @title TIKNET: quadratic penalty weight lambda_2
 //' @noRd
 // [[Rcpp::export]]
 double tsolver_tik_get_lambda2(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TIKNET_Solver*>(ptr->solver_))    return p->getLambda2();
-    if (auto* p = dynamic_cast<TCDTIKNET_Solver*>(ptr->solver_)) return p->getLambda2();
-    stop("tsolver_tik_get_lambda2: Solver is not a sparse-K solver.");
-}
-
-//' @title TCDTIKNET: FOLDED dummy coupling active?
-//' @noRd
-// [[Rcpp::export]]
-bool tsolver_tcdtiknet_is_folded(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TCDTIKNET_Solver*>(ptr->solver_)) return p->isFoldedDummyCoupling();
-    stop("tsolver_tcdtiknet_is_folded: Solver is not a TCDTIKNET_Solver.");
+    if (auto* p = dynamic_cast<TIKNET_Solver*>(ptr->solver_)) return p->getLambda2();
+    stop("tsolver_tik_get_lambda2: Solver is not a TIKNET_Solver.");
 }
 
 
@@ -1378,11 +1147,3 @@ Eigen::SparseMatrix<double> tsolver_tik_get_tikhonov_k(XPtr<TSolverRcpp> ptr) {
 }
 // NOLINTEND(performance-unnecessary-value-param)
 
-//' @noRd
-// [[Rcpp::export]]
-double tsolver_cd_get_kkt_violation(XPtr<TSolverRcpp> ptr,
-    double lambda1) { // NOLINT(performance-unnecessary-value-param)
-    auto* s = dynamic_cast<TCDLASSO_Solver*>(ptr->solver_);
-    if (s == nullptr) stop("get_kkt_violation: not a CD-family solver.");
-    return s->getKktViolation(lambda1);
-}

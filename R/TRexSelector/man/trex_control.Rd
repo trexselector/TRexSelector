@@ -24,12 +24,6 @@ trex_control(
   exch_tie_alpha = -1,
   exch_tie_floor = 0.5,
   tenet_aug_use_lars = FALSE,
-  cd_lambda_rel_tol = 1e-06,
-  cd_tol_certify = -1,
-  cd_tol_probe = -1,
-  cd_gram_cap = 0,
-  cd_max_sweeps = 0,
-  cd_certified_localization = TRUE,
   dummy_distribution = trex_dummy_distribution(),
   scaling_mode = c("L2", "ZSCORE", "NONE")
 )
@@ -37,32 +31,24 @@ trex_control(
 \arguments{
 \item{solver}{Solver algorithm: "TLARS", "TLASSO", "TENET", "TENET_AUG",
 "TSTAGEWISE", "TSTEPWISE", "TOMP", "TGP", "TACGP", "TMP", "TNCGMP",
-"TOOLS", "TAFS", "TCDLASSO", "TCDENET" (default: "TLARS"). "TENET_AUG"
+"TOOLS", "TAFS" (default: "TLARS"). "TENET_AUG"
 is the row-augmented formulation of the TENET elastic net (proved
 equivalent for \code{lambda2 >= 0}) and is accepted wherever TENET
 runs; it solves with the standard LASSO inner path unless the optional
-\code{tenet_aug_use_lars} is set. The coordinate-descent (CD) family
-(TCDLASSO/TCDENET) records exact penalized-lasso minimizers per dummy
-crossing. The IEN-family names "TIENET", "TIENET_AUG", and "TCDIENET"
-are accepted by the parser but only dispatchable inside
+\code{tenet_aug_use_lars} is set. The IEN-family names "TIENET" and
+"TIENET_AUG" are accepted by the parser but only dispatchable inside
 \code{TRexGVSSelector} with \code{gvs_type = "IEN"}; "TIKNET" needs a
 penalty matrix and is dispatchable only inside
 \code{TRexTikhonovSelector}. The plain selector rejects both families
-with an informative error. The coordinate-descent names "TCDLASSO",
-"TCDENET" and "TCDIENET" are deprecated and will be removed in
-TRexSelector 2.1.0: a selector that receives one of them raises a
-deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
-accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
-homotopy solvers of the same problems.}
+with an informative error.}
 
 \item{K}{Number of random experiments (default: 20, at least 2).}
 
 \item{tloop_stagnation_stop}{Whether to stop the T-loop on stagnation. NULL
 (default) leaves the choice to the C++ core, the same rule on every
 surface: FALSE for the path solvers (TLARS, TLASSO, TENET, TENET_AUG,
-TIENET, TIENET_AUG, TIKNET and the CD family TCDLASSO, TCDENET, TCDIENET,
-TCDTIKNET), TRUE for the greedy ones (the OMP family, TSTEPWISE,
-TSTAGEWISE, TAFS, TNCGMP, TOOLS).}
+TIENET, TIENET_AUG and TIKNET), TRUE for the greedy ones (the OMP family,
+TSTEPWISE, TSTAGEWISE, TAFS, TNCGMP, TOOLS).}
 
 \item{tloop_max_stagnant_steps}{Number of T steps in a row without a growing
 selection that ends the T-loop under the stagnation stop (default: 5, at
@@ -142,45 +128,6 @@ STANDARD LASSO inner path (variables can be dropped); \code{TRUE}
 opts into the pure-LARS inner path that never drops variables. Inside
 \code{TRexGVSSelector} use the \code{gvs_control} knob of the same
 name instead. Ignored by every other solver.}
-
-\item{cd_lambda_rel_tol}{Relative lambda step tolerance of the CCD family's
-crossing search (default: 1e-6, as in C++ and Python). Values <= 0 keep
-the solver's internal default. Ignored by the non-CCD solvers.
-Deprecated: it will be removed with the coordinate-descent family in
-TRexSelector 2.1.0.}
-
-\item{cd_tol_certify}{KKT certification tolerance of the CCD family. Must
-be set together with \code{cd_tol_probe}; the default -1 keeps the
-solver's own tolerances. Ignored by the non-CCD solvers. Deprecated: it
-will be removed with the coordinate-descent family in TRexSelector 2.1.0.}
-
-\item{cd_tol_probe}{Probing tolerance of the CCD family's coordinate
-sweeps. Must be set together with \code{cd_tol_certify}; the default -1
-keeps the solver's own tolerances. Ignored by the non-CCD solvers.
-Deprecated: it will be removed with the coordinate-descent family in
-TRexSelector 2.1.0.}
-
-\item{cd_gram_cap}{Column cap for the CCD family's cached Gram matrix;
-above it the solver falls back to the naive updates (default: 0 = keep
-the solver's internal default). Ignored by the non-CCD solvers.
-Deprecated: it will be removed with the coordinate-descent family in
-TRexSelector 2.1.0.}
-
-\item{cd_max_sweeps}{Maximum coordinate sweeps per CCD subproblem
-(default: 0 = keep the solver's internal default of 2000). A solve that
-stops at this budget far from a solution (KKT violation above 0.001
-lambda_1) raises an error instead of continuing on an unconverged path.
-Ignored by the non-CCD solvers. Deprecated: it will be removed with the
-coordinate-descent family in TRexSelector 2.1.0.}
-
-\item{cd_certified_localization}{Logical (default \code{TRUE}): the CD
-family localizes every dummy crossing with certificates — a duality
-gap and coordinate statuses at every bracket endpoint, closed-form
-continuation between them, the record placed at the knot.
-\code{FALSE} selects the LEGACY probe bisection with the
-support-nesting stop (the pre-2026-08 behaviour, kept as the A/B
-baseline). Ignored by the non-CD solvers. Deprecated: it will be removed
-with the coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{dummy_distribution}{Dummy variable distribution, created with
 \code{\link{trex_dummy_distribution}} (default: standard Normal).}

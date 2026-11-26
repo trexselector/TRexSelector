@@ -131,19 +131,14 @@ TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
             {"TNCGMP",     SolverTypeForTRex::TNCGMP},
             {"TOOLS",     SolverTypeForTRex::TOOLS},
             {"TAFS",      SolverTypeForTRex::TAFS},
-            // CD family (exact penalized-lasso minimizers per crossing).
-            {"TCDLASSO",  SolverTypeForTRex::TCDLASSO},
-            {"TCDENET",   SolverTypeForTRex::TCDENET},
             {"TENET_AUG", SolverTypeForTRex::TENET_AUG},
             // IEN family: GVS-only names, accepted so the full enum
             // vocabulary parses (gvs_type = "IEN" + this solver field);
             // validate_core_solver_type() rejects them elsewhere.
             {"TIENET",    SolverTypeForTRex::TIENET},
             {"TIENET_AUG", SolverTypeForTRex::TIENET_AUG},
-            {"TCDIENET",  SolverTypeForTRex::TCDIENET},
             // Tikhonov family: needs a penalty matrix K, dispatchable only
             // inside TRexTikhonovSelector (same gate).
-            {"TCDTIKNET", SolverTypeForTRex::TCDTIKNET},
             {"TIKNET",    SolverTypeForTRex::TIKNET}
         };
 
@@ -177,30 +172,6 @@ TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("tenet_aug_use_lars")) {
         params.solver_params.tenet_aug_use_lars =
             Rcpp::as<bool>(control["tenet_aug_use_lars"]);
-    }
-
-    // CD knobs (TCDLASSO/TCDENET/TCDIENET/TCDTIKNET; ignored by the other
-    // families).
-    if (control.containsElementNamed("cd_certified_localization")) {
-        params.solver_params.cd_certified_localization =
-            Rcpp::as<bool>(control["cd_certified_localization"]);
-    }
-    if (control.containsElementNamed("cd_lambda_rel_tol")) {
-        params.solver_params.cd_lambda_rel_tol = control["cd_lambda_rel_tol"];
-    }
-    if (control.containsElementNamed("cd_tol_certify")) {
-        params.solver_params.cd_tol_certify = control["cd_tol_certify"];
-    }
-    if (control.containsElementNamed("cd_tol_probe")) {
-        params.solver_params.cd_tol_probe = control["cd_tol_probe"];
-    }
-    if (control.containsElementNamed("cd_gram_cap")) {
-        params.solver_params.cd_gram_cap =
-            static_cast<std::size_t>(Rcpp::as<double>(control["cd_gram_cap"]));
-    }
-    if (control.containsElementNamed("cd_max_sweeps")) {
-        params.solver_params.cd_max_sweeps =
-            static_cast<std::size_t>(Rcpp::as<double>(control["cd_max_sweeps"]));
     }
 
     // Dummy variable distribution
@@ -296,13 +267,6 @@ void validate_core_solver_type(const TRexControlParameter& params) {
         case SolverTypeForTRex::TIENET_AUG:
             Rcpp::stop("solver = \"TIENET_AUG\" is a GVS-only solver; use "
                        "TRexGVSSelector with gvs_type = \"IEN\".");
-        case SolverTypeForTRex::TCDIENET:
-            Rcpp::stop("solver = \"TCDIENET\" needs a group assignment; use "
-                       "TRexGVSSelector with gvs_type = \"IEN\".");
-        case SolverTypeForTRex::TCDTIKNET:
-            Rcpp::stop("solver = \"TCDTIKNET\" is no longer accepted by a "
-                       "selector; use TRexTikhonovSelector, whose solver is "
-                       "\"TIKNET\".");
         case SolverTypeForTRex::TIKNET:
             Rcpp::stop("solver = \"TIKNET\" needs a Tikhonov penalty "
                        "matrix; use TRexTikhonovSelector.");

@@ -46,12 +46,8 @@
 #include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
 
-// AFS- and CD-based solvers
+// AFS-based solvers
 #include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 
 // memory helpers
 #include <tsolvers/ad/solver_utils/memory_bytes.hpp>
@@ -67,7 +63,6 @@ namespace trex::test::tsolvers::ad::memory {
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
-using namespace trex::tsolvers::ad::linear_model::cd_based;
 using trex::tsolvers::ad::SolverOptions;
 using trex::tsolvers::ad::SparseBetaStep;
 using trex::tsolvers::ad::TSolver_Base;
@@ -218,13 +213,6 @@ TEST_F(TSolverMemoryHandCount, TAFSRhoHalf) {
     EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, 320));
 }
 
-TEST_F(TSolverMemoryHandCount, TCDLASSO) {
-    TCDLASSO_Solver s(maps.X, maps.D, maps.y, readerOptions());
-    // lambda sequence reserved for M + 1 entries; the empty sparse K keeps a
-    // one-entry outer index; the CD caches are built by the first step
-    EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, M) + kD * (M + 1) + sizeof(int));
-}
-
 TEST_F(TSolverMemoryHandCount, TENETAug) {
     SolverOptions o = readerOptions();
     o.lambda2 = 0.5;
@@ -316,8 +304,6 @@ TEST(TSolverMemoryExclusions, DoublingNChangesOnlyTheNVectors) {
     EXPECT_EQ(constructionBytes<TOMP_Solver>(80, r) - constructionBytes<TOMP_Solver>(40, r), expected);
     EXPECT_EQ(constructionBytes<TOOLS_Solver>(80, r) - constructionBytes<TOOLS_Solver>(40, r), expected);
     EXPECT_EQ(constructionBytes<TAFS_Solver>(80, afs) - constructionBytes<TAFS_Solver>(40, afs), expected);
-    EXPECT_EQ(constructionBytes<TCDLASSO_Solver>(80, r) - constructionBytes<TCDLASSO_Solver>(40, r),
-              expected);
 }
 
 /** @brief A writer (normalize and intercept) holds the means and norms of X and
@@ -344,7 +330,6 @@ TEST(TSolverMemoryExclusions, WriterMinusReaderIsTheStatistics) {
     expectWriterMinusReader<TLARS_Solver>();
     expectWriterMinusReader<TOMP_Solver>();
     expectWriterMinusReader<TAFS_Solver>();
-    expectWriterMinusReader<TCDLASSO_Solver>();
 }
 
 // ========================================================================================
@@ -355,8 +340,7 @@ typedef ::testing::Types<
     TLARS_Solver, TLASSO_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver, TENET_Solver,
     TENETAug_Solver, TIENET_Solver, TIENETAug_Solver, TIKNET_Solver,
     TOMP_Solver, TGP_Solver, TACGP_Solver, TMP_Solver, TNCGMP_Solver, TOOLS_Solver,
-    TAFS_Solver,
-    TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver
+    TAFS_Solver
 > AllSolvers;
 
 /** @brief Every solver on (X, D, y, options) with lambda2 = 0.5; the IEN family
@@ -365,12 +349,11 @@ template <typename T>
 std::unique_ptr<T> makeSolver(Maps& m, SolverOptions options) {
     options.lambda2 = 0.5;
     const Eigen::Index p = m.X.cols();
-    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver> ||
-                  std::is_same_v<T, TCDIENET_Solver>) {
+    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>) {
         const Eigen::VectorXi groups =
             Eigen::VectorXi::LinSpaced(p, 0, static_cast<int>(p) - 1);
         return std::make_unique<T>(m.X, m.D, m.y, groups, options);
-    } else if constexpr (std::is_same_v<T, TIKNET_Solver> || std::is_same_v<T, TCDTIKNET_Solver>) {
+    } else if constexpr (std::is_same_v<T, TIKNET_Solver>) {
         Eigen::SparseMatrix<double> K(p, p);
         K.setIdentity();
         return std::make_unique<T>(m.X, m.D, m.y, K, options);

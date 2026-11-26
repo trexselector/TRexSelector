@@ -81,13 +81,12 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnSolverMismatch) {
 
 
 /** @brief EN selects its solver via en_solver alone; solver_type is derived.
- *  The legacy pattern (EN-family solver_type conflicting with en_solver)
- *  must throw instead of being silently downgraded. */
+ *  An EN-family solver_type that conflicts with en_solver must throw
+ *  instead of being silently downgraded. */
 TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 
     // en_solver alone selects each variant (solver_type left at default).
-    for (auto en : {ENSolverType::TENET, ENSolverType::TENET_AUG,
-                    ENSolverType::TCDENET}) {
+    for (auto en : {ENSolverType::TENET, ENSolverType::TENET_AUG}) {
         TRexGVSControlParameter ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = en;
@@ -98,28 +97,16 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
     {
         TRexGVSControlParameter ctrl;
         ctrl.gvs_type  = GVSType::EN;
-        ctrl.en_solver = ENSolverType::TCDENET;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDENET;
+        ctrl.en_solver = ENSolverType::TENET_AUG;
+        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
         EXPECT_NO_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl));
     }
 
-    // Legacy conflict: solver_type = TCDENET with en_solver = TENET throws
-    // (pre-rework this silently selected the CCD variant via solver_type).
+    // Conflict: solver_type = TENET_AUG with en_solver = TENET throws.
     {
         TRexGVSControlParameter ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = ENSolverType::TENET;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TCDENET;
-        EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl),
-                     std::invalid_argument);
-    }
-
-    // Conflict in the other direction: solver_type = TENET_AUG with
-    // en_solver = TCDENET throws as well.
-    {
-        TRexGVSControlParameter ctrl;
-        ctrl.gvs_type  = GVSType::EN;
-        ctrl.en_solver = ENSolverType::TCDENET;
         ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
         EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl),
                      std::invalid_argument);
@@ -313,7 +300,6 @@ void run_gvs_select_e2e(GVSType gvs_type,
     ctrl.trex_ctrl.solver_type = solver_type;
     ctrl.trex_ctrl.K = 5;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
-    ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     TRexGVSSelector trex(X_map, y_map, 0.2, ctrl, 42, false);
     auto result = trex.select();
@@ -390,27 +376,11 @@ TEST_F(TRexGVSTest, EndToEnd_IEN_TIENET) {
                        /*use_lars_inner=*/false, /*fixed_lambda2=*/1.0);
 }
 
-/** @brief EN with the CCD solver (TCDENET) recovers the planted groups
- *  (selected via en_solver, the single EN axis). */
-TEST_F(TRexGVSTest, EndToEnd_EN_TCDENET) {
-    run_gvs_select_e2e(GVSType::EN, ENSolverType::TCDENET,
-                       SolverTypeForTRex::TENET);
-}
-
-/** @brief IEN with the CCD solver (TCDIENET) recovers the planted groups
- *  (same lambda_2 pinning rationale as the other IEN tests). */
-TEST_F(TRexGVSTest, EndToEnd_IEN_TCDIENET) {
-    run_gvs_select_e2e(GVSType::IEN, ENSolverType::TENET,
-                       SolverTypeForTRex::TCDIENET,
-                       /*use_lars_inner=*/false, /*fixed_lambda2=*/1.0);
-}
-
-
 /** @brief Memory-mapped GVS must select identically to the in-memory run:
  *  prepareDummiesForLStep writes the same cluster-MVN layers into the
  *  per-experiment mmap files as into the in-RAM buffers, and the T-steps
  *  reuse them without rewrite in both modes. Covers EN (TENET) and IEN
- *  (TCDIENET, pinned lambda_2). */
+ *  (TIENET, pinned lambda_2). */
 TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
 
     auto run_with = [&](GVSType gvs_type, SolverTypeForTRex solver_type,
@@ -427,8 +397,7 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         ctrl.trex_ctrl.use_memory_mapping = use_mmap;
-        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
-
+    
         TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -444,12 +413,12 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
     }
     {
         const auto mem  = run_with(GVSType::IEN,
-                                   SolverTypeForTRex::TCDIENET, 1.0, false);
+                                   SolverTypeForTRex::TIENET, 1.0, false);
         const auto mmap = run_with(GVSType::IEN,
-                                   SolverTypeForTRex::TCDIENET, 1.0, true);
+                                   SolverTypeForTRex::TIENET, 1.0, true);
         ASSERT_EQ(mem.size(), mmap.size());
         EXPECT_TRUE((mem.array() == mmap.array()).all())
-            << "IEN/TCDIENET: memory-mapped GVS selection differs from "
+            << "IEN/TIENET: memory-mapped GVS selection differs from "
                "in-memory.";
     }
 }
@@ -492,68 +461,6 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnIenLambdaMethodForEN) {
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
 
     EXPECT_THROW(TRexGVSSelector(Xm, ym, 0.2, ctrl, 42, false), std::invalid_argument);
-}
-
-
-/** @brief The CCD IEN solver and the native pathwise LARS-IEN solve the same
- *  problem; with identical seeds and dummies the crossing supports — and
- *  hence the selections — must coincide. */
-TEST_F(TRexGVSTest, EndToEnd_TCDIENETMatchesTIENET) {
-    const Eigen::Index n = 150, p = 40;
-
-    auto run_variant = [&](SolverTypeForTRex st) {
-        GroupedData d(n, p, 0.75, 1.0, 7);
-        Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
-        Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexGVSControlParameter ctrl;
-        ctrl.gvs_type  = GVSType::IEN;
-        ctrl.lambda_2  = 1.0;                    // FIXED, > 0
-        ctrl.trex_ctrl.solver_type = st;
-        ctrl.trex_ctrl.K = 5;
-        ctrl.trex_ctrl.max_dummy_multiplier = 2;
-        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
-        TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
-        return trex.select().selected_var;
-    };
-
-    const Eigen::VectorXi sel_ccd  = run_variant(SolverTypeForTRex::TCDIENET);
-    const Eigen::VectorXi sel_lars = run_variant(SolverTypeForTRex::TIENET);
-
-    EXPECT_TRUE((sel_ccd.array() == sel_lars.array()).all())
-        << "TCDIENET and TIENET selected different variable sets.\n"
-        << "  TCDIENET n_selected = " << sel_ccd.sum() << "\n"
-        << "  TIENET  n_selected = " << sel_lars.sum();
-}
-
-
-/** @brief The CCD EN solver and the Gram-based pathwise TENET solve the same
- *  problem; with identical seeds, dummies, and a fixed lambda_2 the
- *  selections must coincide. */
-TEST_F(TRexGVSTest, EndToEnd_TCDENETMatchesTENET) {
-    const Eigen::Index n = 150, p = 40;
-
-    auto run_variant = [&](ENSolverType en_solver) {
-        GroupedData d(n, p, 0.75, 1.0, 7);
-        Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
-        Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexGVSControlParameter ctrl;
-        ctrl.gvs_type  = GVSType::EN;
-        ctrl.en_solver = en_solver;              // single EN axis
-        ctrl.lambda_2  = 1.0;                    // FIXED, > 0
-        ctrl.trex_ctrl.K = 5;
-        ctrl.trex_ctrl.max_dummy_multiplier = 2;
-        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
-        TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
-        return trex.select().selected_var;
-    };
-
-    const Eigen::VectorXi sel_ccd  = run_variant(ENSolverType::TCDENET);
-    const Eigen::VectorXi sel_lars = run_variant(ENSolverType::TENET);
-
-    EXPECT_TRUE((sel_ccd.array() == sel_lars.array()).all())
-        << "TCDENET and TENET selected different variable sets.\n"
-        << "  TCDENET n_selected = " << sel_ccd.sum() << "\n"
-        << "  TENET  n_selected = " << sel_lars.sum();
 }
 
 

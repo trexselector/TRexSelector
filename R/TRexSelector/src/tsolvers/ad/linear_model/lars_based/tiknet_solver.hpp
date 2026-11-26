@@ -20,8 +20,7 @@
  *  for a user-supplied sparse PSD matrix K = Gamma^T Gamma (p x p) as a
  *  terminating LARS-type path algorithm (LARS-TIK). This generalizes the
  *  native LARS-IEN algorithm of TIENET_Solver from the group-mean penalty
- *  W = sum_m 1_m 1_m^T / p_m to arbitrary sparse K, mirroring the
- *  matrix-passing FOLDED mode of the CCD side (TCDTIKNET_Solver):
+ *  W = sum_m 1_m 1_m^T / p_m to arbitrary sparse K:
  *
  *  - FOLDED dummy convention (T-Rex+GVS layered): the penalty acts on the
  *    folded coefficient sums s in R^p with s_b = beta_b + sum of the betas
@@ -29,8 +28,7 @@
  *    b(t) = (t - p) mod p. Dummy/null exchangeability holds for arbitrary K.
  *  - Modified correlations  c_j = x_j^T r - lambda2 * (K s)_{b(j)} with the
  *    maintained coupling state v = K s (O(nnz(K col b)) per coefficient
- *    change; the LARS analogue of the CCD folded_w_). r stays in the
- *    observation space R^n.
+ *    change). r stays in the observation space R^n.
  *  - Active Gram matrix G_A = X_A^T X_A + lambda2 * K-tilde_A with
  *    K-tilde_{tu} = K_{b(t), b(u)} over unified active columns, maintained
  *    through its Cholesky factor: the rank-1 update adds
@@ -54,9 +52,7 @@
  *  ULP margins — the anchor tests pin wide-margin designs). K = I gives
  *  the TIENET-with-singleton-groups behavior (each variable ridged jointly
  *  with its own dummy copies through the folded sum — NOT the decoupled
- *  TENET ridge). K = K_GC = blockdiag(I - J/p_m) walks the same path
- *  family as the CCD GROUP_CENTERING mode (crossing-support equivalence,
- *  opposite algorithmic sides).
+ *  TENET ridge).
  */
 // ============================================================================
 
@@ -245,7 +241,7 @@ public:
      */
     template<class Archive>
     void serialize(Archive& archive) {
-        // Sparse K passes through triplets (same convention as TCDLASSO).
+        // Sparse K passes through triplets.
         std::vector<int> K_rows, K_cols;
         std::vector<double> K_vals;
         for (int j = 0; j < tikhonov_K_.outerSize(); ++j) {

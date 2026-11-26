@@ -87,8 +87,6 @@ TRexBiobankScreeningSelector <- R6::R6Class("TRexBiobankScreeningSelector",
                           screen_control = trex_screen_control(),
                           control = trex_control()) {
 
-      .warn_cd_solver_name(control$solver)
-
       # A supplied tFDR replaces the target of the control, as in 2.0.1.
       biobank_control_list <- biobank_control
       if (!is.null(tFDR)) biobank_control_list$target_FDR_trex <- tFDR

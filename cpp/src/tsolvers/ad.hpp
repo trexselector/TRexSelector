@@ -13,7 +13,6 @@
 // ====================================================================
 
 #include <tsolvers/ad/linear_model/afs_based.hpp>
-#include <tsolvers/ad/linear_model/cd_based.hpp>
 #include <tsolvers/ad/linear_model/lars_based.hpp>
 #include <tsolvers/ad/linear_model/omp_based.hpp>
 

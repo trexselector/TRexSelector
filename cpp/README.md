@@ -227,7 +227,7 @@ and is future work, as its notes in `trex_sd.md` say.
 ### T-solvers (`src/tsolvers/ad/`)
 
 Each random experiment runs a terminating solver, a T-solver, which stops once a given number of
-dummies has entered its path. Twenty T-solvers derive from `TSolver_Base` in four families,
+dummies has entered its path. Sixteen T-solvers derive from `TSolver_Base` in three families,
 `SolverOptions` holds their options, and `TRexControlParameter::solver_type` picks the one a selector
 uses.
 
@@ -237,8 +237,6 @@ uses.
 * Matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver`
   and `TNCGMP_Solver`.
 * Adaptive forward stepwise: `TAFS_Solver`.
-* Coordinate descent (CD) based: `TCDLASSO_Solver`, from which `TCDENET_Solver`, `TCDIENET_Solver`
-  and `TCDTIKNET_Solver` derive. The family is deprecated and will be removed in the next minor release.
 
 ### ML methods (`src/ml_methods/`)
 

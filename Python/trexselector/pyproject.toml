@@ -68,7 +68,3 @@ TREX_PORTABLE_BUILD = "ON"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--verbose"
-# The tests that run the deprecated coordinate-descent family stay free of its warning.
-filterwarnings = [
-    "ignore:.* is deprecated and will be removed in the next minor release of trexselector:FutureWarning",
-]

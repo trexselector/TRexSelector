@@ -2308,64 +2308,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// tsolver_tcdlasso_create
-XPtr<TSolverRcpp> tsolver_tcdlasso_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdlasso_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdlasso_create(X, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdenet_create
-XPtr<TSolverRcpp> tsolver_tcdenet_create(SEXP X, SEXP D, Rcpp::NumericVector y, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdenet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdenet_create(X, D, y, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdienet_create
-XPtr<TSolverRcpp> tsolver_tcdienet_create(SEXP X, SEXP D, Rcpp::NumericVector y, IntegerVector groups, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdienet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP groupsSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< IntegerVector >::type groups(groupsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdienet_create(X, D, y, groups, options));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdtiknet_create
-XPtr<TSolverRcpp> tsolver_tcdtiknet_create(SEXP X, SEXP D, Rcpp::NumericVector y, SEXP tikhonov_K, Rcpp::List options);
-RcppExport SEXP _TRexSelector_tsolver_tcdtiknet_create(SEXP XSEXP, SEXP DSEXP, SEXP ySEXP, SEXP tikhonov_KSEXP, SEXP optionsSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< SEXP >::type X(XSEXP);
-    Rcpp::traits::input_parameter< SEXP >::type D(DSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< SEXP >::type tikhonov_K(tikhonov_KSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type options(optionsSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdtiknet_create(X, D, y, tikhonov_K, options));
-    return rcpp_result_gen;
-END_RCPP
-}
 // tsolver_execute_step
 void tsolver_execute_step(XPtr<TSolverRcpp> ptr, int T_stop, bool early_stop);
 RcppExport SEXP _TRexSelector_tsolver_execute_step(SEXP ptrSEXP, SEXP T_stopSEXP, SEXP early_stopSEXP) {
@@ -2632,94 +2574,6 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// tsolver_tcdienet_get_groups
-IntegerVector tsolver_tcdienet_get_groups(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_tcdienet_get_groups(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdienet_get_groups(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdienet_get_num_groups
-int tsolver_tcdienet_get_num_groups(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_tcdienet_get_num_groups(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdienet_get_num_groups(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_get_lambda
-NumericVector tsolver_cd_get_lambda(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_get_lambda(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_get_lambda(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_get_lambda2
-double tsolver_cd_get_lambda2(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_get_lambda2(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_get_lambda2(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_is_certified_localization
-bool tsolver_cd_is_certified_localization(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_is_certified_localization(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_is_certified_localization(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_is_certified_degraded
-bool tsolver_cd_is_certified_degraded(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_is_certified_degraded(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_is_certified_degraded(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_get_record_gaps
-NumericVector tsolver_cd_get_record_gaps(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_get_record_gaps(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_get_record_gaps(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_get_record_kkt_violations
-NumericVector tsolver_cd_get_record_kkt_violations(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_cd_get_record_kkt_violations(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_get_record_kkt_violations(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
 // tsolver_tik_get_lambda2
 double tsolver_tik_get_lambda2(XPtr<TSolverRcpp> ptr);
 RcppExport SEXP _TRexSelector_tsolver_tik_get_lambda2(SEXP ptrSEXP) {
@@ -2728,17 +2582,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tik_get_lambda2(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_tcdtiknet_is_folded
-bool tsolver_tcdtiknet_is_folded(XPtr<TSolverRcpp> ptr);
-RcppExport SEXP _TRexSelector_tsolver_tcdtiknet_is_folded(SEXP ptrSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_tcdtiknet_is_folded(ptr));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -2971,18 +2814,6 @@ BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
     rcpp_result_gen = Rcpp::wrap(tsolver_tik_get_tikhonov_k(ptr));
-    return rcpp_result_gen;
-END_RCPP
-}
-// tsolver_cd_get_kkt_violation
-double tsolver_cd_get_kkt_violation(XPtr<TSolverRcpp> ptr, double lambda1);
-RcppExport SEXP _TRexSelector_tsolver_cd_get_kkt_violation(SEXP ptrSEXP, SEXP lambda1SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< XPtr<TSolverRcpp> >::type ptr(ptrSEXP);
-    Rcpp::traits::input_parameter< double >::type lambda1(lambda1SEXP);
-    rcpp_result_gen = Rcpp::wrap(tsolver_cd_get_kkt_violation(ptr, lambda1));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -3426,10 +3257,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_TRexSelector_tsolver_tools_create", (DL_FUNC) &_TRexSelector_tsolver_tools_create, 4},
     {"_TRexSelector_tsolver_tncgmp_create", (DL_FUNC) &_TRexSelector_tsolver_tncgmp_create, 4},
     {"_TRexSelector_tsolver_tafs_create", (DL_FUNC) &_TRexSelector_tsolver_tafs_create, 4},
-    {"_TRexSelector_tsolver_tcdlasso_create", (DL_FUNC) &_TRexSelector_tsolver_tcdlasso_create, 4},
-    {"_TRexSelector_tsolver_tcdenet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdenet_create, 4},
-    {"_TRexSelector_tsolver_tcdienet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdienet_create, 5},
-    {"_TRexSelector_tsolver_tcdtiknet_create", (DL_FUNC) &_TRexSelector_tsolver_tcdtiknet_create, 5},
     {"_TRexSelector_tsolver_execute_step", (DL_FUNC) &_TRexSelector_tsolver_execute_step, 3},
     {"_TRexSelector_tsolver_get_beta", (DL_FUNC) &_TRexSelector_tsolver_get_beta, 2},
     {"_TRexSelector_tsolver_get_cp", (DL_FUNC) &_TRexSelector_tsolver_get_cp, 1},
@@ -3454,16 +3281,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_TRexSelector_tsolver_tienet_get_lambda2", (DL_FUNC) &_TRexSelector_tsolver_tienet_get_lambda2, 1},
     {"_TRexSelector_tsolver_tienet_get_groups", (DL_FUNC) &_TRexSelector_tsolver_tienet_get_groups, 1},
     {"_TRexSelector_tsolver_tienet_get_num_groups", (DL_FUNC) &_TRexSelector_tsolver_tienet_get_num_groups, 1},
-    {"_TRexSelector_tsolver_tcdienet_get_groups", (DL_FUNC) &_TRexSelector_tsolver_tcdienet_get_groups, 1},
-    {"_TRexSelector_tsolver_tcdienet_get_num_groups", (DL_FUNC) &_TRexSelector_tsolver_tcdienet_get_num_groups, 1},
-    {"_TRexSelector_tsolver_cd_get_lambda", (DL_FUNC) &_TRexSelector_tsolver_cd_get_lambda, 1},
-    {"_TRexSelector_tsolver_cd_get_lambda2", (DL_FUNC) &_TRexSelector_tsolver_cd_get_lambda2, 1},
-    {"_TRexSelector_tsolver_cd_is_certified_localization", (DL_FUNC) &_TRexSelector_tsolver_cd_is_certified_localization, 1},
-    {"_TRexSelector_tsolver_cd_is_certified_degraded", (DL_FUNC) &_TRexSelector_tsolver_cd_is_certified_degraded, 1},
-    {"_TRexSelector_tsolver_cd_get_record_gaps", (DL_FUNC) &_TRexSelector_tsolver_cd_get_record_gaps, 1},
-    {"_TRexSelector_tsolver_cd_get_record_kkt_violations", (DL_FUNC) &_TRexSelector_tsolver_cd_get_record_kkt_violations, 1},
     {"_TRexSelector_tsolver_tik_get_lambda2", (DL_FUNC) &_TRexSelector_tsolver_tik_get_lambda2, 1},
-    {"_TRexSelector_tsolver_tcdtiknet_is_folded", (DL_FUNC) &_TRexSelector_tsolver_tcdtiknet_is_folded, 1},
     {"_TRexSelector_tsolver_get_residuals", (DL_FUNC) &_TRexSelector_tsolver_get_residuals, 1},
     {"_TRexSelector_tsolver_get_beta_path", (DL_FUNC) &_TRexSelector_tsolver_get_beta_path, 1},
     {"_TRexSelector_tsolver_get_cp_with_sigma", (DL_FUNC) &_TRexSelector_tsolver_get_cp_with_sigma, 2},
@@ -3485,7 +3303,6 @@ static const R_CallMethodDef CallEntries[] = {
     {"_TRexSelector_tsolver_lars_set_kahan_refresh_interval", (DL_FUNC) &_TRexSelector_tsolver_lars_set_kahan_refresh_interval, 2},
     {"_TRexSelector_tsolver_tenet_get_alpha", (DL_FUNC) &_TRexSelector_tsolver_tenet_get_alpha, 1},
     {"_TRexSelector_tsolver_tik_get_tikhonov_k", (DL_FUNC) &_TRexSelector_tsolver_tik_get_tikhonov_k, 1},
-    {"_TRexSelector_tsolver_cd_get_kkt_violation", (DL_FUNC) &_TRexSelector_tsolver_cd_get_kkt_violation, 2},
     {"_TRexSelector_rcpp_set_custom_temp_dir", (DL_FUNC) &_TRexSelector_rcpp_set_custom_temp_dir, 1},
     {"_TRexSelector_mmap_matrix_create", (DL_FUNC) &_TRexSelector_mmap_matrix_create, 4},
     {"_TRexSelector_mmap_matrix_to_r_matrix", (DL_FUNC) &_TRexSelector_mmap_matrix_to_r_matrix, 1},

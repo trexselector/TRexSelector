@@ -1361,10 +1361,6 @@ trex_tikhonov_group_centering_k <- function(groups) {
     .Call(`_TRexSelector_trex_tikhonov_group_centering_k`, groups)
 }
 
-#' @title CD family: KKT violation at every recorded step
-#' @noRd
-NULL
-
 #' @noRd
 NULL
 
@@ -1588,60 +1584,6 @@ tsolver_tafs_create <- function(X, D, y, options) {
     .Call(`_TRexSelector_tsolver_tafs_create`, X, D, y, options)
 }
 
-#' @title Create TCDLASSO_Solver
-#'
-#' @param X Design matrix or mmap_matrix
-#' @param D Dummy matrix or mmap_matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdlasso_create <- function(X, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tcdlasso_create`, X, D, y, options)
-}
-
-#' @title Create TCDENET_Solver
-#'
-#' @param X Design matrix or mmap_matrix
-#' @param D Dummy matrix or mmap_matrix
-#' @param y Response vector
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdenet_create <- function(X, D, y, options) {
-    .Call(`_TRexSelector_tsolver_tcdenet_create`, X, D, y, options)
-}
-
-#' @title Create TCDIENET_Solver
-#'
-#' @param X Design matrix or mmap_matrix
-#' @param D Dummy matrix or mmap_matrix
-#' @param y Response vector
-#' @param groups 1-based group ids, one per predictor
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdienet_create <- function(X, D, y, groups, options) {
-    .Call(`_TRexSelector_tsolver_tcdienet_create`, X, D, y, groups, options)
-}
-
-#' @title Create TCDTIKNET_Solver
-#'
-#' @param X Design matrix or mmap_matrix
-#' @param D Dummy matrix or mmap_matrix
-#' @param y Response vector
-#' @param tikhonov_K p x p PSD Tikhonov matrix (dgCMatrix or dense)
-#' @param options List from tsolver_options()
-#'
-#' @return XPtr to TSolverRcpp
-#' @noRd
-tsolver_tcdtiknet_create <- function(X, D, y, tikhonov_K, options) {
-    .Call(`_TRexSelector_tsolver_tcdtiknet_create`, X, D, y, tikhonov_K, options)
-}
-
 #' @title Execute Step in TSolver
 #'
 #' @param ptr TSolverRcpp holder pointer
@@ -1821,62 +1763,10 @@ tsolver_tienet_get_num_groups <- function(ptr) {
     .Call(`_TRexSelector_tsolver_tienet_get_num_groups`, ptr)
 }
 
-#' @title TCDIENET: 1-based group ids, one per predictor
-#' @noRd
-tsolver_tcdienet_get_groups <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_tcdienet_get_groups`, ptr)
-}
-
-#' @title TCDIENET: number of groups
-#' @noRd
-tsolver_tcdienet_get_num_groups <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_tcdienet_get_num_groups`, ptr)
-}
-
-#' @title CD family: lambda_1 at every recorded step
-#' @noRd
-tsolver_cd_get_lambda <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_get_lambda`, ptr)
-}
-
-#' @title CD family: quadratic penalty weight lambda_2 (0 for TCDLASSO)
-#' @noRd
-tsolver_cd_get_lambda2 <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_get_lambda2`, ptr)
-}
-
-#' @title CD family: certified crossing localization active?
-#' @noRd
-tsolver_cd_is_certified_localization <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_is_certified_localization`, ptr)
-}
-
-#' @title CD family: did certification fall back to LEGACY along the path?
-#' @noRd
-tsolver_cd_is_certified_degraded <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_is_certified_degraded`, ptr)
-}
-
-#' @title CD family: duality gap at every recorded step
-#' @noRd
-tsolver_cd_get_record_gaps <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_get_record_gaps`, ptr)
-}
-
-tsolver_cd_get_record_kkt_violations <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_cd_get_record_kkt_violations`, ptr)
-}
-
-#' @title Sparse-K solvers: quadratic penalty weight lambda_2
+#' @title TIKNET: quadratic penalty weight lambda_2
 #' @noRd
 tsolver_tik_get_lambda2 <- function(ptr) {
     .Call(`_TRexSelector_tsolver_tik_get_lambda2`, ptr)
-}
-
-#' @title TCDTIKNET: FOLDED dummy coupling active?
-#' @noRd
-tsolver_tcdtiknet_is_folded <- function(ptr) {
-    .Call(`_TRexSelector_tsolver_tcdtiknet_is_folded`, ptr)
 }
 
 #' @noRd
@@ -1978,11 +1868,6 @@ tsolver_tenet_get_alpha <- function(ptr) {
 
 tsolver_tik_get_tikhonov_k <- function(ptr) {
     .Call(`_TRexSelector_tsolver_tik_get_tikhonov_k`, ptr)
-}
-
-#' @noRd
-tsolver_cd_get_kkt_violation <- function(ptr, lambda1) {
-    .Call(`_TRexSelector_tsolver_cd_get_kkt_violation`, ptr, lambda1)
 }
 
 #' @title Set custom temp directory for the C++ backend

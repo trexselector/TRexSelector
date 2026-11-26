@@ -134,7 +134,7 @@ exactly as their stored counterparts for the same seed. The dummies are standard
 ### T-solvers
 
 Each random experiment runs a terminating solver, a T-solver, which stops once a given number of dummies has entered
-its path. Twenty T-solvers are available as classes of their own under `trexselector.tsolvers.ad`, in four families
+its path. Sixteen T-solvers are available as classes of their own under `trexselector.tsolvers.ad`, in three families
 that are its submodules. `SolverOptions` holds their options, and `TRexControlParameter.solver_type` picks the one a
 selector uses, with the `SolverTypeForTRex` enum.
 
@@ -143,8 +143,6 @@ selector uses, with the `SolverTypeForTRex` enum.
 * `omp_based`, matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver` and
   `TNCGMP_Solver`.
 * `afs_based`, adaptive forward stepwise: `TAFS_Solver`.
-* `cd_based`, coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and
-  `TCDTIKNET_Solver`. The family is deprecated and will be removed in the next minor release.
 
 ### ML methods
 

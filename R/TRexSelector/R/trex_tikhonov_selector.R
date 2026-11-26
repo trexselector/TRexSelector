@@ -8,13 +8,9 @@
   if (!identical(solver, "TIKNET")) {
     stop("control$solver must be \"TIKNET\" for the Tikhonov selector. Got: \"",
          paste(format(solver), collapse = ", "), "\". ",
-         if (identical(solver, "TCDTIKNET")) {
-           "The deprecated solver \"TCDTIKNET\" is no longer accepted by the selector."
-         } else {
-           paste0("trex_control() names \"TLARS\" by default, so pass ",
-                  "trex_control(solver = \"TIKNET\", ...), or leave control out ",
-                  "to run the default control.")
-         })
+         "trex_control() names \"TLARS\" by default, so pass ",
+         "trex_control(solver = \"TIKNET\", ...), or leave control out ",
+         "to run the default control.")
   }
   invisible(NULL)
 }
@@ -58,8 +54,7 @@
 #' \code{"TIKNET"}, the homotopy solver, is the one solver of the selector. It
 #' is the solver of the base control that applies when \code{control} is left
 #' out, and a control that is passed has to name it. Every other solver is
-#' refused, also \code{"TCDTIKNET"}, the deprecated coordinate-descent solver,
-#' which the selector accepted up to TRexSelector 2.0.1.
+#' refused.
 #'
 #' @section The dummies:
 #' By default they are drawn per cluster of correlated variables, as in
@@ -69,9 +64,8 @@
 #' \code{dummy_clusters} reports them. With an informed K, i.i.d. dummies would
 #' be less competitive than correlated null variables, which deforms the
 #' exchangeability the FDR calibration relies on. In the penalty every dummy
-#' takes the place of the variable it was drawn for (folded coupling,
-#' \code{fold_dummy_coupling}), so dummies and null variables stay exchangeable
-#' for every K.
+#' takes the place of the variable it was drawn for (folded coupling), so
+#' dummies and null variables stay exchangeable for every K.
 #'
 #' @section L-loop strategies:
 #' With cluster dummies the strategies \code{"STANDARD"}, \code{"HCONCAT"},
@@ -184,9 +178,7 @@ TRexTikhonovSelector <- R6::R6Class("TRexTikhonovSelector",
     #'   passed is taken as it is, so its \code{solver} must be
     #'   \code{"TIKNET"}: \code{trex_control(solver = "TIKNET", ...)}. Every
     #'   other solver is an error, also \code{"TLARS"}, the default of
-    #'   \code{trex_control()}, and \code{"TCDTIKNET"}, the deprecated
-    #'   coordinate-descent solver, which the selector accepted up to
-    #'   TRexSelector 2.0.1.
+    #'   \code{trex_control()}.
     initialize = function(X, y,
                           tFDR = 0.1,
                           seed = -1,

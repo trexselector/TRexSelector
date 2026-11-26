@@ -10,12 +10,11 @@
   }
   named <- is.character(solver) && length(solver) == 1L
   if (gvs_control$gvs_type == "IEN") {
-    if (!named || !(solver %in% c("TIENET", "TIENET_AUG", "TCDIENET"))) {
+    if (!named || !(solver %in% c("TIENET", "TIENET_AUG"))) {
       stop("gvs_type = \"IEN\" needs a base control that names its solver, ",
            "control = trex_control(solver = \"TIENET\", ...) or ",
            "\"TIENET_AUG\". ", got)
     }
-    .warn_cd_solver_name(solver)
   } else {
     fits <- unique(c("TENET", gvs_control$en_solver))
     if (!named || !(solver %in% fits)) {
@@ -25,7 +24,6 @@
            "\"TLARS\" by default, so pass trex_control(solver = \"TENET\", ...), ",
            "or leave control out to run the default control.")
     }
-    .warn_cd_solver_name(gvs_control$en_solver, "en_solver")
   }
   invisible(NULL)
 }
@@ -99,9 +97,7 @@ TRexGVSSelector <- R6::R6Class("TRexGVSSelector",
     #' @param verbose Whether to print progress (default: TRUE).
     #' @param gvs_control A GVS control list from \code{\link{trex_gvs_control}()} (default:
     #'   \code{trex_gvs_control()}). For \code{gvs_type = "EN"} its \code{en_solver}
-    #'   chooses the solver, "TENET" by default. "TCDENET" and "TCDIENET" are
-    #'   deprecated and will be removed in TRexSelector 2.1.0: the selector raises a
-    #'   deprecation warning for them.
+    #'   chooses the solver, "TENET" by default.
     #' @param control A control list from \code{\link{trex_control}()}, or \code{NULL}
     #'   (default). With \code{NULL} the base control of the C++ class applies: the
     #'   defaults of \code{trex_control()} with the solver "TENET". A control that is

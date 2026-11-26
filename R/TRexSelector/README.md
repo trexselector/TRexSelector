@@ -204,8 +204,8 @@ describes every strategy and the seeds.
 ### T-solvers
 
 Each random experiment runs a terminating solver, a T-solver, which
-stops once a given number of dummies has entered its path. Twenty
-T-solvers are available as R6 classes in four families,
+stops once a given number of dummies has entered its path. Sixteen
+T-solvers are available as R6 classes in three families,
 `tsolver_options()` holds their options, and `trex_control(solver = )`
 picks the one a selector uses.
 
@@ -216,9 +216,6 @@ picks the one a selector uses.
 - Matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`,
   `TMP_Solver`, `TOOLS_Solver` and `TNCGMP_Solver`.
 - Adaptive forward stepwise: `TAFS_Solver`.
-- Coordinate descent (CD) based: `TCDLASSO_Solver`, `TCDENET_Solver`,
-  `TCDIENET_Solver` and `TCDTIKNET_Solver`. The family is deprecated and
-  will be removed in TRexSelector 2.1.0.
 
 ### ML methods
 

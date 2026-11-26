@@ -18,7 +18,6 @@ MODULES_TO_CHECK = [
     "trexselector.tsolvers.ad.lars_based",
     "trexselector.tsolvers.ad.omp_based",
     "trexselector.tsolvers.ad.afs_based",
-    "trexselector.tsolvers.ad.cd_based",
     "trexselector.trex_selector_methods",
     "trexselector.trex_selector_methods.ad",
     "trexselector.utils",
@@ -162,12 +161,9 @@ def test_tsolver_symbols_importable():
         assert callable(cls)
     assert ScalingMode.L2 is not None
     assert ScalingMode.ZSCORE is not None
-    from trexselector.tsolvers.ad import SolverOptions, GroupPenaltyVariant
-    from trexselector.tsolvers.ad.cd_based import (
-        TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver)
+    from trexselector.tsolvers.ad import SolverOptions
     from trexselector.tsolvers.ad.lars_based import TIENET_Solver, TIKNET_Solver
-    for cls in (TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver,
-                TIENET_Solver, TIKNET_Solver):
+    for cls in (TIENET_Solver, TIKNET_Solver):
         assert callable(cls)
     # One default inside a selector and in the stand-alone solver; the tolerances differ on purpose
     opts = SolverOptions()
@@ -175,7 +171,6 @@ def test_tsolver_symbols_importable():
     assert (opts.lambda2, opts.rho_afs) == (0.1, 0.3)
     assert (params.lambda2, params.rho_afs) == (opts.lambda2, opts.rho_afs)
     assert params.tol == 1e-6 and opts.tol == np.finfo(float).eps
-    assert GroupPenaltyVariant.MEAN is not None
     assert NCGMPVariant.LineSearch is not None
 
 
@@ -217,9 +212,9 @@ def test_dummy_mechanism_levels():
     assert trexselector.TRexControlParameter is selectors_ad.TRexControlParameter
     assert trexselector.SolverTypeForTRex is selectors_ad.SolverTypeForTRex
     # the compiled extension carries the same level
-    from trexselector._core.tsolvers.ad.cd_based import TCDTIKNET_Solver
+    from trexselector._core.tsolvers.ad.lars_based import TIKNET_Solver
     from trexselector._core.trex_selector_methods.ad import TRexTikhonovSelector
-    assert callable(TCDTIKNET_Solver) and callable(TRexTikhonovSelector)
+    assert callable(TIKNET_Solver) and callable(TRexTikhonovSelector)
 
 
 def test_tikhonov_symbols_importable():

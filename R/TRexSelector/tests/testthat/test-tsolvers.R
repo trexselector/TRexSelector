@@ -83,19 +83,11 @@ y <- X[, 5] * 4.0 + X[, 15] * (-2.5) + X[, 25] * 3.1 + rnorm(n)
       intercept = ic, ncgmp_variant = "fully_corrective")),
   TAFS       = function(nrm = TRUE, ic = TRUE) TAFS_Solver$new(X, D, y, options = tsolver_options(normalize = nrm,
       intercept = ic, rho_afs = 1.0)),
-  # Native IEN, the sparse-K solvers, the CD family.
+  # Native IEN and the sparse-K solver.
   TIENET     = function(nrm = TRUE, ic = TRUE) TIENET_Solver$new(X, D, y, groups = .tienet_groups,
                                             options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5)),
   TIKNET     = function(nrm = TRUE, ic = TRUE) TIKNET_Solver$new(X, D, y, tikhonov_K = .group_mean_k_30,
-                                            options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5)),
-  TCDLASSO   = function(nrm = TRUE, ic = TRUE) quiet_cd(TCDLASSO_Solver$new(X, D, y,
-      options = tsolver_options(normalize = nrm, intercept = ic))),
-  TCDENET    = function(nrm = TRUE, ic = TRUE) quiet_cd(TCDENET_Solver$new(X, D, y,
-      options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5))),
-  TCDIENET   = function(nrm = TRUE, ic = TRUE) quiet_cd(TCDIENET_Solver$new(X, D, y, groups = .tienet_groups,
-      options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5))),
-  TCDTIKNET  = function(nrm = TRUE, ic = TRUE) quiet_cd(TCDTIKNET_Solver$new(X, D, y, tikhonov_K = .group_mean_k_30,
-      options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5, fold_dummies = TRUE)))
+                                            options = tsolver_options(normalize = nrm, intercept = ic, lambda2 = 0.5))
 )
 
 
@@ -409,56 +401,31 @@ test_that("All solver types resume from checkpoint identically to a continuous r
 # Group 6: family getters
 # =============================================================================
 
-test_that("TIENET_Solver / TCDIENET_Solver: lambda2, groups (1-based), num_groups", {
-  for (cls in list(TIENET_Solver, TCDIENET_Solver)) {
-    s <- quiet_cd(cls$new(X, D, y, groups = .tienet_groups,
-                          options = tsolver_options(lambda2 = 0.5)))
-    s$execute_step(T_stop = 6)
-    expect_equal(s$get_lambda2(), 0.5)
-    expect_identical(s$get_groups(), as.integer(.tienet_groups))
-    expect_identical(s$get_num_groups(), 10L)
-    expect_gt(s$get_num_steps(), 0L)
-    s$restore()
-  }
-})
-
-test_that("CD family: certified localization getters and record vectors", {
-  s <- quiet_cd(TCDENET_Solver$new(X, D, y, options = tsolver_options(lambda2 = 0.5)))
+test_that("TIENET_Solver: lambda2, groups (1-based), num_groups", {
+  s <- TIENET_Solver$new(X, D, y, groups = .tienet_groups,
+                         options = tsolver_options(lambda2 = 0.5))
   s$execute_step(T_stop = 6)
-  expect_true(s$is_certified_localization())
-  expect_type(s$is_certified_degraded(), "logical")
   expect_equal(s$get_lambda2(), 0.5)
-  expect_length(s$get_lambda(), s$get_num_steps())   # one lambda_1 per recorded step
-  expect_true(all(s$get_record_gaps() >= 0))
-  expect_true(all(s$get_record_kkt_violations() >= 0))
+  expect_identical(s$get_groups(), as.integer(.tienet_groups))
+  expect_identical(s$get_num_groups(), 10L)
+  expect_gt(s$get_num_steps(), 0L)
   s$restore()
-
-  legacy <- quiet_cd(TCDLASSO_Solver$new(X, D, y,
-                                         options = tsolver_options(cd_certified_localization = FALSE)))
-  expect_false(legacy$is_certified_localization())
-  expect_equal(legacy$get_lambda2(), 0)
-  legacy$restore()
 })
 
-test_that("Sparse-K solvers accept a dense K or a dgCMatrix and report lambda2", {
+test_that("TIKNET_Solver accepts a dense K or a dgCMatrix and reports lambda2", {
   skip_if_not_installed("Matrix")
   K_sparse <- Matrix::Matrix(.group_mean_k_30, sparse = TRUE)
   # Readers on pre-scaled data: dense and sparse K then see identical X, D
   sx <- MLLpNormScaler$new(); sx$fit_transform_inplace(X)
   sd <- MLLpNormScaler$new(); sd$fit_transform_inplace(D)
   on.exit({ sx$inverse_transform_inplace(X); sd$inverse_transform_inplace(D) }, add = TRUE)
-  reader <- tsolver_options(lambda2 = 0.5, fold_dummies = TRUE,
-                            normalize = FALSE, intercept = FALSE)
-  for (cls in list(TIKNET_Solver, TCDTIKNET_Solver)) {
-    dense  <- quiet_cd(cls$new(X, D, y, tikhonov_K = .group_mean_k_30, options = reader))
-    sparse <- quiet_cd(cls$new(X, D, y, tikhonov_K = K_sparse, options = reader))
-    dense$execute_step(T_stop = 6)
-    sparse$execute_step(T_stop = 6)
-    expect_equal(dense$get_lambda2(), 0.5)
-    expect_identical(dense$get_beta(), sparse$get_beta())
-  }
-  tik <- quiet_cd(TCDTIKNET_Solver$new(X, D, y, tikhonov_K = .group_mean_k_30, options = reader))
-  expect_true(tik$is_folded_dummy_coupling())
+  reader <- tsolver_options(lambda2 = 0.5, normalize = FALSE, intercept = FALSE)
+  dense  <- TIKNET_Solver$new(X, D, y, tikhonov_K = .group_mean_k_30, options = reader)
+  sparse <- TIKNET_Solver$new(X, D, y, tikhonov_K = K_sparse, options = reader)
+  dense$execute_step(T_stop = 6)
+  sparse$execute_step(T_stop = 6)
+  expect_equal(dense$get_lambda2(), 0.5)
+  expect_identical(dense$get_beta(), sparse$get_beta())
   expect_error(TIKNET_Solver$new(X, D, y, tikhonov_K = -diag(30), options = reader), "PSD|positive")
 })
 
@@ -511,11 +478,6 @@ test_that("the family getters: Kahan interval, alpha, Tikhonov K, KKT violation"
   expect_s4_class(K, "dgCMatrix")
   expect_equal(as.matrix(K), .group_mean_k_30, tolerance = 1e-12)
   t$restore()
-
-  cd <- quiet_cd(TCDLASSO_Solver$new(X, D, y))
-  cd$execute_step(T_stop = 4)
-  expect_true(is.numeric(cd$get_kkt_violation()) && cd$get_kkt_violation() >= 0)
-  cd$restore()
 })
 
 test_that("precentered counts the intercept like intercept = TRUE and caps the active set at n - 1", {

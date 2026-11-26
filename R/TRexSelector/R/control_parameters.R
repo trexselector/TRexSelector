@@ -24,30 +24,22 @@
 #'
 #' @param solver Solver algorithm: "TLARS", "TLASSO", "TENET", "TENET_AUG",
 #'   "TSTAGEWISE", "TSTEPWISE", "TOMP", "TGP", "TACGP", "TMP", "TNCGMP",
-#'   "TOOLS", "TAFS", "TCDLASSO", "TCDENET" (default: "TLARS"). "TENET_AUG"
+#'   "TOOLS", "TAFS" (default: "TLARS"). "TENET_AUG"
 #'   is the row-augmented formulation of the TENET elastic net (proved
 #'   equivalent for \code{lambda2 >= 0}) and is accepted wherever TENET
 #'   runs; it solves with the standard LASSO inner path unless the optional
-#'   \code{tenet_aug_use_lars} is set. The coordinate-descent (CD) family
-#'   (TCDLASSO/TCDENET) records exact penalized-lasso minimizers per dummy
-#'   crossing. The IEN-family names "TIENET", "TIENET_AUG", and "TCDIENET"
-#'   are accepted by the parser but only dispatchable inside
+#'   \code{tenet_aug_use_lars} is set. The IEN-family names "TIENET" and
+#'   "TIENET_AUG" are accepted by the parser but only dispatchable inside
 #'   \code{TRexGVSSelector} with \code{gvs_type = "IEN"}; "TIKNET" needs a
 #'   penalty matrix and is dispatchable only inside
 #'   \code{TRexTikhonovSelector}. The plain selector rejects both families
-#'   with an informative error. The coordinate-descent names "TCDLASSO",
-#'   "TCDENET" and "TCDIENET" are deprecated and will be removed in
-#'   TRexSelector 2.1.0: a selector that receives one of them raises a
-#'   deprecation warning. "TCDTIKNET" is deprecated as well, and no selector
-#'   accepts it any more. Use "TLASSO", "TENET", "TIENET" and "TIKNET", the
-#'   homotopy solvers of the same problems.
+#'   with an informative error.
 #' @param K Number of random experiments (default: 20, at least 2).
 #' @param tloop_stagnation_stop Whether to stop the T-loop on stagnation. NULL
 #'   (default) leaves the choice to the C++ core, the same rule on every
 #'   surface: FALSE for the path solvers (TLARS, TLASSO, TENET, TENET_AUG,
-#'   TIENET, TIENET_AUG, TIKNET and the CD family TCDLASSO, TCDENET, TCDIENET,
-#'   TCDTIKNET), TRUE for the greedy ones (the OMP family, TSTEPWISE,
-#'   TSTAGEWISE, TAFS, TNCGMP, TOOLS).
+#'   TIENET, TIENET_AUG and TIKNET), TRUE for the greedy ones (the OMP family,
+#'   TSTEPWISE, TSTAGEWISE, TAFS, TNCGMP, TOOLS).
 #' @param tloop_max_stagnant_steps Number of T steps in a row without a growing
 #'   selection that ends the T-loop under the stagnation stop (default: 5, at
 #'   least 1). The selection is counted at the highest voting level whose FDP
@@ -111,39 +103,6 @@
 #'   opts into the pure-LARS inner path that never drops variables. Inside
 #'   \code{TRexGVSSelector} use the \code{gvs_control} knob of the same
 #'   name instead. Ignored by every other solver.
-#' @param cd_lambda_rel_tol Relative lambda step tolerance of the CCD family's
-#'   crossing search (default: 1e-6, as in C++ and Python). Values <= 0 keep
-#'   the solver's internal default. Ignored by the non-CCD solvers.
-#'   Deprecated: it will be removed with the coordinate-descent family in
-#'   TRexSelector 2.1.0.
-#' @param cd_tol_certify KKT certification tolerance of the CCD family. Must
-#'   be set together with \code{cd_tol_probe}; the default -1 keeps the
-#'   solver's own tolerances. Ignored by the non-CCD solvers. Deprecated: it
-#'   will be removed with the coordinate-descent family in TRexSelector 2.1.0.
-#' @param cd_tol_probe Probing tolerance of the CCD family's coordinate
-#'   sweeps. Must be set together with \code{cd_tol_certify}; the default -1
-#'   keeps the solver's own tolerances. Ignored by the non-CCD solvers.
-#'   Deprecated: it will be removed with the coordinate-descent family in
-#'   TRexSelector 2.1.0.
-#' @param cd_gram_cap Column cap for the CCD family's cached Gram matrix;
-#'   above it the solver falls back to the naive updates (default: 0 = keep
-#'   the solver's internal default). Ignored by the non-CCD solvers.
-#'   Deprecated: it will be removed with the coordinate-descent family in
-#'   TRexSelector 2.1.0.
-#' @param cd_max_sweeps Maximum coordinate sweeps per CCD subproblem
-#'   (default: 0 = keep the solver's internal default of 2000). A solve that
-#'   stops at this budget far from a solution (KKT violation above 0.001
-#'   lambda_1) raises an error instead of continuing on an unconverged path.
-#'   Ignored by the non-CCD solvers. Deprecated: it will be removed with the
-#'   coordinate-descent family in TRexSelector 2.1.0.
-#' @param cd_certified_localization Logical (default \code{TRUE}): the CD
-#'   family localizes every dummy crossing with certificates — a duality
-#'   gap and coordinate statuses at every bracket endpoint, closed-form
-#'   continuation between them, the record placed at the knot.
-#'   \code{FALSE} selects the LEGACY probe bisection with the
-#'   support-nesting stop (the pre-2026-08 behaviour, kept as the A/B
-#'   baseline). Ignored by the non-CD solvers. Deprecated: it will be removed
-#'   with the coordinate-descent family in TRexSelector 2.1.0.
 #' @param dummy_distribution Dummy variable distribution, created with
 #'   \code{\link{trex_dummy_distribution}} (default: standard Normal).
 #' @param scaling_mode Working-design convention, one of \code{"L2"}
@@ -194,12 +153,6 @@ trex_control <- function(solver = "TLARS",
                          exch_tie_alpha = -1,
                          exch_tie_floor = 0.5,
                          tenet_aug_use_lars = FALSE,
-                         cd_lambda_rel_tol = 1e-6,
-                         cd_tol_certify = -1,
-                         cd_tol_probe = -1,
-                         cd_gram_cap = 0,
-                         cd_max_sweeps = 0,
-                         cd_certified_localization = TRUE,
                          dummy_distribution = trex_dummy_distribution(),
                          scaling_mode = c("L2", "ZSCORE", "NONE")) {
 
@@ -220,19 +173,6 @@ trex_control <- function(solver = "TLARS",
   }
   if (max_inner_threads < 1) {
     stop("max_inner_threads must be >= 1. Got: ", max_inner_threads)
-  }
-  # The C++ side applies the certify/probe pair only when BOTH are > 0;
-  # fail loudly here instead of silently ignoring a half-set pair.
-  if (xor(cd_tol_certify > 0, cd_tol_probe > 0)) {
-    stop("cd_tol_certify and cd_tol_probe must be set together (both > 0), ",
-         "or both left at their defaults. Got: cd_tol_certify = ",
-         cd_tol_certify, ", cd_tol_probe = ", cd_tol_probe)
-  }
-  if (cd_gram_cap < 0) {
-    stop("cd_gram_cap must be >= 0. Got: ", cd_gram_cap)
-  }
-  if (cd_max_sweeps < 0) {
-    stop("cd_max_sweeps must be >= 0. Got: ", cd_max_sweeps)
   }
 
   # NULL stays NULL: the C++ core resolves it by its own solver rule, the one
@@ -261,12 +201,6 @@ trex_control <- function(solver = "TLARS",
     exch_tie_alpha          = exch_tie_alpha,
     exch_tie_floor          = exch_tie_floor,
     tenet_aug_use_lars      = tenet_aug_use_lars,
-    cd_lambda_rel_tol       = cd_lambda_rel_tol,
-    cd_tol_certify          = cd_tol_certify,
-    cd_tol_probe            = cd_tol_probe,
-    cd_gram_cap             = cd_gram_cap,
-    cd_max_sweeps           = cd_max_sweeps,
-    cd_certified_localization = as.logical(cd_certified_localization),
     dummy_distribution      = dummy_distribution,
     scaling_mode            = scaling_mode
   )
@@ -370,17 +304,12 @@ trex_da_control <- function(da_method = "BT",
 #'
 #' @description Build a control list for the grouped variable selection of
 #'   \code{\link{TRexGVSSelector}}. The solver follows \code{gvs_type}. For
-#'   "EN" \code{en_solver} chooses it: TENET (default), TENET_AUG or the
-#'   deprecated TCDENET. For "IEN" the \code{solver} of
-#'   \code{\link{trex_control}} names it, TIENET (native pathwise),
-#'   TIENET_AUG or the deprecated TCDIENET, so the IEN track needs a base
+#'   "EN" \code{en_solver} chooses it: TENET (default) or TENET_AUG.
+#'   For "IEN" the \code{solver} of
+#'   \code{\link{trex_control}} names it, TIENET (native pathwise) or
+#'   TIENET_AUG, so the IEN track needs a base
 #'   control with one of them. The selector refuses a base control whose
-#'   solver does not fit the track. TCDIENET is not finally developed: its
-#'   sweeps grow with \code{lambda_2} and on saturating designs, and a solve
-#'   that does not converge within \code{cd_max_sweeps} raises an error.
-#'   TCDENET and TCDIENET are deprecated and will be removed with the
-#'   coordinate-descent family in TRexSelector 2.1.0: the selector raises a
-#'   deprecation warning for them. Use TENET and TIENET.
+#'   solver does not fit the track.
 #'
 #' @param gvs_type Penalty of the grouped selection: "EN" (elastic net) or "IEN" (informed
 #'   elastic net) (default: "EN").
@@ -415,13 +344,9 @@ trex_da_control <- function(da_method = "BT",
 #'   \code{"CV_1SE_TIK_SVD"}, \code{"CV_MIN_TIK_SVD"} (require
 #'   \code{gvs_type = "IEN"} — they consume the group structure).
 #' @param en_solver Elastic Net solver variant for \code{gvs_type = "EN"}:
-#'   \code{"TENET"} (default, Gram-based), \code{"TENET_AUG"}
-#'   (row-augmented LASSO), or \code{"TCDENET"} (coordinate descent; exact
-#'   fixed-lambda1 elastic-net minimizers per dummy crossing; deprecated,
-#'   it will be removed in TRexSelector 2.1.0, use \code{"TENET"}). All solve
-#'   the same EN
-#'   problem and select the same variables up to path-vs-minimizer
-#'   differences; the switch exists to validate solver equivalence,
+#'   \code{"TENET"} (default, Gram-based) or \code{"TENET_AUG"}
+#'   (row-augmented LASSO). Both solve the same EN problem and select the
+#'   same variables. The switch exists to validate solver equivalence,
 #'   \strong{not} to choose a LARS vs LASSO path (for that, see
 #'   \code{tenet_aug_use_lars}).
 #' @param tenet_aug_use_lars Logical. For the augmented solvers, \code{en_solver =
@@ -506,7 +431,7 @@ trex_gvs_control <- function(gvs_type = "EN",
          "tuner (it consumes the group structure) and requires ",
          "gvs_type = \"IEN\".")
   }
-  en_solver <- match.arg(en_solver, c("TENET", "TENET_AUG", "TCDENET"))
+  en_solver <- match.arg(en_solver, c("TENET", "TENET_AUG"))
   if (!is.null(groups)) {
     .check_group_numbers(groups, "groups")
   }
@@ -832,13 +757,6 @@ trex_dummy_distribution <- function(type     = "Normal",
 #'   main run do not depend on the pick, and the main run equals a run at the
 #'   picked lambda_2 with the same seed. \code{TRUE}: the pilot uses the first
 #'   dummy block of the main strategy (not with the PERMUTATION strategies).
-#' @param fold_dummy_coupling Logical (default \code{TRUE}): in the penalty
-#'   every dummy takes the place of the variable it was drawn for (folded
-#'   coupling), so dummies and null variables stay exchangeable for every K.
-#'   \code{FALSE}, a ridge block of the dummies decoupled from K, is an
-#'   error: it existed with the solver \code{"TCDTIKNET"} only, which the
-#'   selector no longer accepts. Deprecated: the argument will be removed
-#'   with the coordinate-descent family in TRexSelector 2.1.0.
 #' @param cluster_dummies Logical (default \code{TRUE}): draw the dummies per
 #'   cluster of correlated variables, as in \code{\link{TRexGVSSelector}}.
 #'   \code{FALSE} gives i.i.d. dummies, for validation runs only: with an
@@ -895,7 +813,6 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
                                   pilot_statistic = "MAJORITY",
                                   pilot_group_fraction = 0.5,
                                   pilot_shared_dummies = FALSE,
-                                  fold_dummy_coupling = TRUE,
                                   cluster_dummies = TRUE,
                                   prior_groups = NULL,
                                   corr_max = 0.5,
@@ -962,7 +879,6 @@ trex_tikhonov_control <- function(tikhonov_K = NULL,
     pilot_statistic      = pilot_statistic,
     pilot_group_fraction = as.numeric(pilot_group_fraction),
     pilot_shared_dummies = as.logical(pilot_shared_dummies),
-    fold_dummy_coupling  = fold_dummy_coupling,
     cluster_dummies      = cluster_dummies,
     prior_groups         = prior_groups,
     corr_max             = corr_max,

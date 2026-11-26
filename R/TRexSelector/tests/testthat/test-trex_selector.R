@@ -317,3 +317,72 @@ test_that("SKIPL with a large budget warns only without the stagnation stop", {
   expect_false(warns("SKIPL", 20, TRUE))
   expect_false(warns("STANDARD", 20))
 })
+
+
+# =======================================================================================
+# Solvers of the plain selector
+# =======================================================================================
+
+# Planted design: strong signal on the variables 1:5.
+.planted_data <- function(n = 100, p = 20, data_seed = 42) {
+  set.seed(data_seed)
+  X <- matrix(rnorm(n * p), n, p)
+  beta <- c(rep(5, 5), rep(0, p - 5))
+  y <- as.vector(X %*% beta + rnorm(n))
+  list(X = X, y = y, support = 1:5, p = p)
+}
+
+
+test_that("GVS-only solvers are rejected by the plain selector with guidance", {
+  d <- .planted_data(n = 50, p = 10)
+
+  run_with <- function(s) {
+    selector <- TRexSelector$new(d$X, d$y, tFDR = 0.2, seed = 42,
+                                 verbose = FALSE,
+                                 control = trex_control(solver = s, K = 3))
+    selector$select()
+  }
+  expect_error(run_with("TIENET"), "GVS-only solver")
+  expect_error(run_with("TIENET_AUG"), "GVS-only solver")
+  # TIKNET needs a penalty matrix: TRexTikhonovSelector only.
+  expect_error(run_with("TIKNET"), "Tikhonov penalty matrix")
+})
+
+
+test_that("TENET_AUG runs in the plain selector and matches TENET", {
+  d <- .planted_data()
+
+  run_with <- function(s) {
+    selector <- TRexSelector$new(d$X, d$y, tFDR = 0.2, seed = 42,
+                                 verbose = FALSE,
+                                 control = trex_control(solver = s, K = 5))
+    selector$select()
+    selector$selected_var
+  }
+
+  sel_tenet <- run_with("TENET")
+  sel_aug   <- run_with("TENET_AUG")
+
+  # TENET_AUG is the row-augmented formulation of the same elastic-net
+  # problem (proved equivalent for lambda2 >= 0): identical data and seed
+  # must select identically.
+  expect_identical(sel_aug, sel_tenet)
+  expect_true(all(d$support %in% which(sel_aug)))
+})
+
+
+test_that("an error from inside the random experiments reaches R, and the design comes back", {
+  # The trigger is an option that the solver checks and the selector does not: TAFS refuses a
+  # shrinkage step of 0 when it is constructed inside the experiments. select() then ends with
+  # the error of the solver, the design is given back at once and the selector is retired.
+  d <- .planted_data(n = 50, p = 10)
+  X <- d$X
+  X0 <- X + 0
+
+  sel <- TRexSelector$new(X, d$y, tFDR = 0.2, seed = 4, verbose = FALSE,
+                          control = trex_control(solver = "TAFS", rho_afs = 0, K = 5))
+  expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
+  expect_error(sel$select(), "TAFS_Solver: rho must be in the range (0, 1].", fixed = TRUE)
+  expect_equal(X, X0, tolerance = 1e-12)          # given back
+  expect_error(sel$select(), "can no longer run") # retired
+})

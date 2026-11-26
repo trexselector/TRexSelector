@@ -153,16 +153,15 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
     ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
 
-    // The coordinate-descent solver is no longer accepted, and the message says so.
+    // A refused solver leaves X alone, and the message names TIKNET.
     const Eigen::MatrixXd X_before = X;
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
+    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TLARS;
     try {
         TRexTikhonovSelector refused(X_map, y_map, 0.1, ctrl);
-        FAIL() << "TCDTIKNET was accepted";
+        FAIL() << "TLARS was accepted";
     } catch (const std::invalid_argument& e) {
         const std::string what = e.what();
         EXPECT_NE(what.find("solver_type must be TIKNET"), std::string::npos) << what;
-        EXPECT_NE(what.find("TCDTIKNET is no longer accepted"), std::string::npos) << what;
     }
     EXPECT_LT((X - X_before).cwiseAbs().maxCoeff(), 1e-12);   // a refused control leaves X alone
 }
@@ -843,7 +842,7 @@ TEST_F(TRexTikhonovTest, ClusterDummies_MemmapMatchesInMemory) {
  *  the folded K-coupling being the exact generalization of the GVS layered
  *  group convention — the identical solver problem, so the selected sets
  *  must coincide. This is the anchor of the FOLDED coupling. */
-TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
+TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen) {
     const Eigen::Index n = 150, p = 40;
 
     std::vector<Eigen::Index> prior_groups(static_cast<std::size_t>(p));
@@ -876,10 +875,9 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 1.0;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
+        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
-        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -890,7 +888,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
     ASSERT_EQ(sel_tik.size(), sel_gvs.size());
     EXPECT_GT(sel_tik.sum(), 0);
     EXPECT_TRUE((sel_tik.array() == sel_gvs.array()).all())
-        << "FOLDED group-mean-K Tikhonov run diverged from GVS-TCDIENET.\n"
+        << "FOLDED group-mean-K Tikhonov run diverged from GVS-TIENET.\n"
         << "  Tikhonov n_selected = " << sel_tik.sum() << "\n"
         << "  GVS      n_selected = " << sel_gvs.sum();
 }
@@ -902,7 +900,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet) {
  *  must still draw identical cluster dummies and solve the identical
  *  problem — a singleton's K entry is 1 on the Tikhonov side and a
  *  one-member group row on the GVS side. */
-TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) {
+TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_Singletons) {
     const Eigen::Index n = 150, p = 40, grouped = 20, gsize = 5;
 
     // 4 groups of 5, then 20 singletons with their own ids.
@@ -947,10 +945,9 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 10.0;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
+        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
-        ctrl.trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
         return trex.select().selected_var;
     };
@@ -959,7 +956,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
     const Eigen::VectorXi sel_gvs = run_gvs();
     ASSERT_EQ(sel_tik.size(), sel_gvs.size());
     EXPECT_TRUE((sel_tik.array() == sel_gvs.array()).all())
-        << "FOLDED group-mean-K Tikhonov run diverged from GVS-TCDIENET on a"
+        << "FOLDED group-mean-K Tikhonov run diverged from GVS-TIENET on a"
            " partition with singletons.\n"
         << "  Tikhonov n_selected = " << sel_tik.sum() << "\n"
         << "  GVS      n_selected = " << sel_gvs.sum();
@@ -974,7 +971,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_Singletons) 
  *  sets. Together with the DISABLED test below this pins WHERE the two
  *  selectors part company: only when the L-loop extends the cluster
  *  dummies beyond L = p (found in the TRex_Tikhonov demos). */
-TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_LcappedAtP) {
+TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_DemoControl_LcappedAtP) {
     const Eigen::Index n = 150, p = 100, grouped = 20, gsize = 5;
     std::vector<Eigen::Index> prior_groups(static_cast<std::size_t>(p));
     for (Eigen::Index j = 0; j < p; ++j) {
@@ -1004,7 +1001,6 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_
         t.tloop_stagnation_stop    = true;
         t.tloop_max_stagnant_steps = 5;
         t.use_memory_mapping       = false;
-        t.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
     };
 
     int n_diff = 0;
@@ -1030,7 +1026,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_
                 ctrl.gvs_type     = gvs::GVSType::IEN;
                 ctrl.prior_groups = prior_groups;
                 ctrl.lambda_2     = lambda2;
-                ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
+                ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
                 demo_control(ctrl.trex_ctrl, 1);
                 gvs::TRexGVSSelector trex(Xm, ym, 0.1, ctrl, 42, false);
                 return trex.select().selected_var;
@@ -1042,7 +1038,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsTcdienet_DemoControl_
         }
     }
     EXPECT_EQ(n_diff, 0)
-        << "Tikhonov and GVS-TCDIENET diverged on " << n_diff
+        << "Tikhonov and GVS-TIENET diverged on " << n_diff
         << " of 80 cases with the L-loop capped at L = p.";
 }
 
@@ -1088,9 +1084,6 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         t.tloop_stagnation_stop    = true;
         t.tloop_max_stagnant_steps = 5;
         t.use_memory_mapping       = false;
-        // With up to 10 p dummies the paths saturate, where the CD solvers
-        // need more sweeps than their default budget to converge.
-        t.solver_params.cd_max_sweeps = 200000;
     };
     struct Case { double lambda2; unsigned seed; };
     const std::vector<Case> cases = {{10.0, 22}, {10.0, 51}, {10.0, 63},
@@ -1112,7 +1105,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         gvs::TRexGVSControlParameter gc;
         gc.gvs_type = gvs::GVSType::IEN; gc.prior_groups = prior_groups;
         gc.lambda_2 = c.lambda2;
-        gc.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
+        gc.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
         demo_control(gc.trex_ctrl);
         gvs::TRexGVSSelector g(Xm2, ym2, 0.1, gc, 42, false);
 
@@ -1276,39 +1269,6 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringMatchesSparseCenteringMatrix)
 // ========================================================================================
 // TIKNET solver routing (native sparse-K LARS)
 // ========================================================================================
-
-/** @brief TIKNET constructs with the FOLDED coupling. The decoupled dummy
- *  block is refused: it existed with TCDTIKNET only, which the selector no
- *  longer accepts. */
-TEST_F(TRexTikhonovTest, SolverGate_TiknetFoldedOnly) {
-
-    TRexTikhonovControlParameter base;
-    base.tikhonov_K = identityK(10);
-
-    {   // TIKNET constructs on the default (FOLDED) path.
-        auto ctrl = base;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
-        EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
-    }
-    {   // The decoupled dummy block has no solver left.
-        auto ctrl = base;
-        ctrl.fold_dummy_coupling = false;
-        try {
-            TRexTikhonovSelector refused(X_map, y_map, 0.1, ctrl);
-            FAIL() << "fold_dummy_coupling = false was accepted";
-        } catch (const std::invalid_argument& e) {
-            EXPECT_NE(std::string(e.what()).find("fold_dummy_coupling = false is no longer available"),
-                      std::string::npos) << e.what();
-        }
-    }
-    {   // With TCDTIKNET the solver is refused first.
-        auto ctrl = base;
-        ctrl.fold_dummy_coupling = false;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDTIKNET;
-        EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl), std::invalid_argument);
-    }
-}
-
 
 /** @brief End-to-end with the native LARS path solver (TIKNET) on the
  *  K_GC penalty: the planted actives (cols 0-5, group-constant signs per

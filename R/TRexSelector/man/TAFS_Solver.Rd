@@ -30,10 +30,6 @@ Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
 \seealso{
 Other T-solvers:
 \code{\link{TACGP_Solver}},
-\code{\link{TCDENET_Solver}},
-\code{\link{TCDIENET_Solver}},
-\code{\link{TCDLASSO_Solver}},
-\code{\link{TCDTIKNET_Solver}},
 \code{\link{TENETAug_Solver}},
 \code{\link{TENET_Solver}},
 \code{\link{TGP_Solver}},

@@ -82,23 +82,6 @@ enum class SolverTypeForTRex {
     TSTAGEWISE, // Terminating Stagewise
     // -------------------------------
 
-    // CCD-based solvers (exact penalized-lasso minimizers per crossing).
-    // The family is deprecated, each enumerator names its replacement.
-    // -------------------------------
-    /** @brief Terminating Cyclic Coordinate Descent (LASSO).
-     *  @deprecated Will be removed in the next minor release. Use TLASSO. */
-    TCDLASSO,
-    /** @brief Terminating CCD Elastic Net (diagonal ridge).
-     *  @deprecated Will be removed in the next minor release. Use TENET. */
-    TCDENET,
-    /** @brief Terminating CCD Informed Elastic Net (GVS only).
-     *  @deprecated Will be removed in the next minor release. Use TIENET. */
-    TCDIENET,
-    /** @brief Terminating CCD Tikhonov Net (sparse-K, FOLDED or ridge).
-     *  @deprecated Will be removed in the next minor release. Use TIKNET. */
-    TCDTIKNET,
-    // -------------------------------
-
     // OMP-based solvers
     // -------------------------------
     TOMP,       // Terminating OMP
@@ -157,56 +140,6 @@ struct SolverHyperparameters {
      * inner path that can (false). Same knob as the GVS
      * tenet_aug_use_lars; ignored by every other solver. */
     bool tenet_aug_use_lars = false;
-
-    // --- CD-family knobs (TCDLASSO / TCDENET / TCDIENET / TCDTIKNET; ignored by other solvers) ---
-    // Deprecated with the family: the six knobs will be removed in the next minor release.
-
-    /** @brief Relative lambda tolerance of the CD crossing bisection.
-     * The TRex-layer default is deliberately tighter than the solver's own
-     * generic default (1e-3): exact crossing localization keeps the recorded
-     * supports aligned with the LARS-path variants (a loose lambda window can
-     * pull a borderline real into the crossing step). <= 0 keeps the solver's
-     * own default.
-     *
-     * 1e-6 rather than the former 1e-5: measured on the TENET/TCDENET
-     * agreement reproducer (Demos "TRex CCD"/demo_03_trex_gvs_study Part 3b,
-     * Hastie blocks n=200 p=500 rho=0.70 SNR=2, 50 MC), exact-match rose
-     * 0.880 -> 0.900 at no runtime cost, and saturated there — 1e-8 gives the
-     * same answer as 1e-6, while loosening to 1e-4 drops it to 0.620.
-     * @deprecated Will be removed with the coordinate descent family. */
-    double cd_lambda_rel_tol = 1e-6;
-
-    /** @brief CD certification-sweep tolerance (recorded steps). Applied
-     * together with cd_tol_probe; <= 0 (default) keeps the solver's own
-     * defaults (1e-10 / 1e-8).
-     * @deprecated Will be removed with the coordinate descent family. */
-    double cd_tol_certify = -1.0;
-
-    /** @brief CD probe-sweep tolerance (jump/bisection solves). See
-     * cd_tol_certify.
-     * @deprecated Will be removed with the coordinate descent family. */
-    double cd_tol_probe = -1.0;
-
-    /** @brief Max ever-active gram slots before the CD solver falls back to
-     * naive residual sweeps. 0 (default) keeps the solver's own default
-     * (400).
-     * @deprecated Will be removed with the coordinate descent family. */
-    std::size_t cd_gram_cap = 0;
-
-    /** @brief Stall guard: max coordinate sweeps per fixed-lambda solve.
-     * 0 (default) keeps the solver's own default (2000). A solve that stops
-     * at the budget far from a solution throws, see SolverOptions.
-     * @deprecated Will be removed with the coordinate descent family. */
-    std::size_t cd_max_sweeps = 0;
-
-    /** @brief Crossing-localization mode of the CD family. true (default):
-     * CERTIFIED — certified points (duality-gap and coordinate-status
-     * certificates), closed-form continuation, records placed at the knot.
-     * false: LEGACY — KKT-guided jumps plus probe bisection with the
-     * support-nesting stop (the pre-2026-08 behaviour; the A/B baseline).
-     * Applied on construction and after deserialization.
-     * @deprecated Will be removed with the coordinate descent family. */
-    bool cd_certified_localization = true;
 };
 
 
@@ -312,105 +245,35 @@ struct SolverConfig {
      *  solver is retained. */
     std::unique_ptr<tsolvers::ad::TSolver_Base>* retain_sink = nullptr;
 
-    // --- General-Tikhonov penalty (TCDTIKNET / TIKNET dispatch) ---
+    // --- General-Tikhonov penalty (TIKNET dispatch) ---
 
     /** @brief Non-owning pointer to a general Tikhonov matrix K = Gamma^T
      *  Gamma (p x p, PSD; nullptr = none). Required by the general-K
-     *  solvers TCDTIKNET / TIKNET (used by TRexTikhonovSelector).
+     *  solver TIKNET (used by TRexTikhonovSelector).
      *  Must outlive the dispatch call; on serialized warm starts K travels
      *  inside the solver state instead. */
     const Eigen::SparseMatrix<double>* tikhonov_K = nullptr;
 
     /** @brief tikhonov_K was checked by the caller (finite, symmetric,
-     *  positive semi-definite), so the solvers skip their own check. */
+     *  positive semi-definite), so the solver skips its own check. */
     bool tikhonov_K_validated = false;
-
-    /** @brief Dummy-coupling mode of the sparse-K TCDTIKNET dispatch:
-     *  false = INDEPENDENT_RIDGE (kappa_dummy * I dummy block; preserves
-     *  the K = I ≡ TCDENET collapse), true = FOLDED (dummy copies join
-     *  their originating variable's K-coupling — GVS layered convention;
-     *  restores dummy/null exchangeability for arbitrary K). Ignored
-     *  when tikhonov_K is nullptr; TIKNET is FOLDED-only. */
-    bool tikhonov_fold_dummies = false;
-
-    /** @brief Structured fast path: when set (with tikhonov_groups), the
-     *  TCDTIKNET dispatch routes to TCDIENET's O(1) GROUP_CENTERING hooks
-     *  (K = blockdiag(I - J/p_m), FOLDED coupling by construction) instead
-     *  of the matrix-passing sparse path; tikhonov_K is then ignored by the
-     *  solver (it remains the tuner-side representation). */
-    bool tikhonov_group_centering = false;
-
-    /** @brief Non-owning pointer to the 0-based contiguous group ids
-     *  (length p) for the GROUP_CENTERING fast path. Must outlive the
-     *  dispatch call. */
-    const Eigen::VectorXi* tikhonov_groups = nullptr;
 
 };
 
 
 // Aliases for clean reading in the if constexpr block
 namespace lars = trex::tsolvers::ad::linear_model::lars_based;
-namespace cd   = trex::tsolvers::ad::linear_model::cd_based;
 namespace omp  = trex::tsolvers::ad::linear_model::omp_based;
 namespace afs  = trex::tsolvers::ad::linear_model::afs_based;
-
-
-/**
- * @brief Apply the CD-family hyperparameter knobs to a CCD solver.
- *
- * @details Sentinel values (<= 0 / 0) keep the solver's own defaults. Called
- *          on fresh construction and after deserialization (the knobs are
- *          runtime configuration, not part of the serialized path state).
- *          In-memory warm-started solvers keep their construction-time knobs.
- *          Also used directly by TRexGVSSelector, which constructs its CCD
- *          solvers outside this dispatch.
- */
-/**
- * @brief Map the T-Rex CD knobs onto SolverOptions: a knob is copied only
- *        when set (> 0), so the solver defaults stay in force otherwise;
- *        the localization mode is always copied.
- */
-inline void applyCdKnobs(trex::tsolvers::ad::SolverOptions& o,
-                         const SolverHyperparameters& hp) {
-    if (hp.cd_lambda_rel_tol > 0.0) { o.cd_lambda_rel_tol = hp.cd_lambda_rel_tol; }
-    if (hp.cd_tol_certify > 0.0 && hp.cd_tol_probe > 0.0) {
-        o.cd_tol_certify = hp.cd_tol_certify;
-        o.cd_tol_probe   = hp.cd_tol_probe;
-    }
-    if (hp.cd_gram_cap > 0)   { o.cd_gram_cap   = hp.cd_gram_cap; }
-    if (hp.cd_max_sweeps > 0) { o.cd_max_sweeps = hp.cd_max_sweeps; }
-    o.cd_certified_localization = hp.cd_certified_localization;
-}
-
-/** @brief The same mapping applied to a constructed (warm-started) solver. */
-inline void applyCdKnobs(cd::TCDLASSO_Solver& solver,
-                         const SolverHyperparameters& hp) {
-    if (hp.cd_lambda_rel_tol > 0.0) {
-        solver.setLambdaRelTol(hp.cd_lambda_rel_tol);
-    }
-    if (hp.cd_tol_certify > 0.0 && hp.cd_tol_probe > 0.0) {
-        solver.setCdTolerances(hp.cd_tol_certify, hp.cd_tol_probe);
-    }
-    if (hp.cd_gram_cap > 0) {
-        solver.setGramCap(hp.cd_gram_cap);
-    }
-    if (hp.cd_max_sweeps > 0) {
-        solver.setMaxSweepsPerSolve(hp.cd_max_sweeps);
-    }
-    solver.setCertifiedLocalization(hp.cd_certified_localization);
-}
 
 
 /**
  * @brief Translate a SolverConfig into the solver-level SolverOptions.
  *
  * @details The T-Rex layer keeps its own SolverHyperparameters (lambda2 0.1
- *          and rho_afs 0.3 as the solvers' own defaults, its own tol 1e-6, CD
- *          knobs "<= 0 keeps the solver default"); this is the single place
- *          where they are mapped
- *          onto the solvers' construction-time options. The CD
- *          knobs are copied only when set (> 0), so the solver defaults
- *          stay in force otherwise.
+ *          and rho_afs 0.3 as the solvers' own defaults, its own tol 1e-6).
+ *          This is the single place where they are mapped onto the solvers'
+ *          construction-time options.
  */
 inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg) {
     trex::tsolvers::ad::SolverOptions o;
@@ -429,13 +292,7 @@ inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg
     o.ncgmp_variant  = static_cast<trex::tsolvers::ad::NCGMPVariant>(hp.ncgmp_variant);
     o.tenet_aug_use_lars = hp.tenet_aug_use_lars;
     o.n_threads      = cfg.n_threads;
-    o.kappa_dummy    = 1.0;
-    o.fold_dummies   = cfg.tikhonov_fold_dummies;
     o.tikhonov_validated = cfg.tikhonov_K_validated;
-    // GROUP_CENTERING is the structured fast path the dispatch serves for
-    // TCDIENET; the group-mean (MEAN) construction stays GVS-internal.
-    o.group_penalty  = trex::tsolvers::ad::GroupPenaltyVariant::CENTERING;
-    applyCdKnobs(o, hp);
     return o;
 }
 
@@ -443,48 +300,25 @@ inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg
 /**
  * @brief Construct a solver on the heap from the config.
  *
- * @details Every solver takes (X, D, y, options) plus, for the structured
- *          families, the data that is not an option: the group vector of
- *          the IEN solvers (TCDIENET, TIENET, TIENETAug) or the sparse
- *          Tikhonov matrix of the sparse-K solvers (TCDTIKNET, TIKNET).
- *          The options come from toSolverOptions(); the tolerance,
- *          the tie-break seed, the exchangeable-tie configuration and the
- *          CD knobs are applied at construction, so no post-construction
- *          setter is needed on this path (the warm-start paths still apply
- *          them to a restored solver).
+ * @details Every solver takes (X, D, y, options). The sparse-K solver TIKNET
+ *          takes its sparse Tikhonov matrix in addition, which is data and
+ *          not an option. The options come from toSolverOptions(). The
+ *          tolerance, the tie-break seed and the exchangeable-tie
+ *          configuration are applied at construction, so no
+ *          post-construction setter is needed on this path (the warm-start
+ *          paths still apply them to a restored solver).
  */
 template <typename TSolver>
 std::unique_ptr<TSolver> makeSolverForConfig(const SolverConfig& cfg) {
     const trex::tsolvers::ad::SolverOptions options = toSolverOptions(cfg);
 
-    if constexpr (std::is_same_v<TSolver, cd::TCDIENET_Solver> ||
-                  std::is_same_v<TSolver, lars::TIENET_Solver> ||
-                  std::is_same_v<TSolver, lars::TIENETAug_Solver>) {
-        if (cfg.tikhonov_groups == nullptr) {
-            throw std::invalid_argument(
-                "trex_solver_dispatch: the IEN solvers require a group "
-                "assignment (SolverConfig::tikhonov_groups).");
-        }
-        return std::make_unique<TSolver>(
-            cfg.X, cfg.D, cfg.y, *cfg.tikhonov_groups, options);
-    } else if constexpr (std::is_same_v<TSolver, cd::TCDTIKNET_Solver> ||
-                         std::is_same_v<TSolver, lars::TIKNET_Solver>) {
+    if constexpr (std::is_same_v<TSolver, lars::TIKNET_Solver>) {
+        // TIKNET implements the FOLDED dummy convention: dummy copy t
+        // couples as its base (t - p) mod p.
         if (cfg.tikhonov_K == nullptr) {
             throw std::invalid_argument(
-                "trex_solver_dispatch: the sparse-K solvers require a "
+                "trex_solver_dispatch: the sparse-K solver requires a "
                 "Tikhonov matrix (SolverConfig::tikhonov_K).");
-        }
-        if constexpr (!std::is_same_v<TSolver, cd::TCDTIKNET_Solver>) {
-            // The native sparse-K LARS homotopy implements the FOLDED dummy
-            // convention EXCLUSIVELY (dummy copy t couples as its base
-            // (t - p) mod p); there is no INDEPENDENT_RIDGE escape on that
-            // path.
-            if (!cfg.tikhonov_fold_dummies) {
-                throw std::invalid_argument(
-                    "trex_solver_dispatch: TIKNET implements FOLDED dummy "
-                    "coupling only; set tikhonov_fold_dummies = true (the "
-                    "INDEPENDENT_RIDGE escape exists only on the TCDTIKNET path).");
-            }
         }
         return std::make_unique<TSolver>(
             cfg.X, cfg.D, cfg.y, *cfg.tikhonov_K, options);
@@ -538,17 +372,14 @@ SparseBetaPath dispatchSolver(const SolverConfig& cfg) {
         solver.setExchangeableTie(cfg.hyperparams.exch_tie_alpha,
                                   cfg.hyperparams.exch_tie_floor);
         solver.setNumThreads(cfg.n_threads);   // not serialized: a loaded solver starts serial
-        if constexpr (std::is_base_of_v<cd::TCDLASSO_Solver, TSolver>) {
-            applyCdKnobs(solver, cfg.hyperparams);
-        }
         solver.executeStep(cfg.T_stop, cfg.early_stop);
         SparseBetaPath path = solver.getBetaPathSparse();
         solver.save(cfg.solver_file);
         return path;
     }
 
-    // 3. Fresh construction: tolerance, tie seed, exchangeable ties and the
-    //    CD knobs are part of the SolverOptions (toSolverOptions()).
+    // 3. Fresh construction: tolerance, tie seed and exchangeable ties are
+    //    part of the SolverOptions (toSolverOptions()).
     std::unique_ptr<TSolver> solver = makeSolverForConfig<TSolver>(cfg);
     solver->executeStep(cfg.T_stop, cfg.early_stop);
     SparseBetaPath path = solver->getBetaPathSparse();
@@ -590,8 +421,8 @@ inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const Solver
         case SolverTypeForTRex::TIKNET:
             // Dispatchable only with a Tikhonov matrix (TRexTikhonovSelector
             // sets cfg.tikhonov_K; with penalty_structure GROUP_CENTERING
-            // the selector materializes K_GC for the tuners, which this
-            // sparse path consumes directly — no O(1) specialization).
+            // the selector materializes K_GC, which this sparse path
+            // consumes directly).
             if (cfg.tikhonov_K != nullptr) {
                 return dispatchSolver<lars::TIKNET_Solver>(cfg);
             }
@@ -599,36 +430,6 @@ inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const Solver
                 "trex_solver_dispatch: TIKNET needs a Tikhonov matrix "
                 "(TRexTikhonovSelector / SolverConfig::tikhonov_K).");
         case SolverTypeForTRex::TSTAGEWISE: return dispatchSolver<lars::TSTAGEWISE_Solver>(cfg);
-
-        // CCD family
-        case SolverTypeForTRex::TCDLASSO:       return dispatchSolver<cd::TCDLASSO_Solver>(cfg);
-        case SolverTypeForTRex::TCDENET:     return dispatchSolver<cd::TCDENET_Solver>(cfg);
-        case SolverTypeForTRex::TCDIENET:
-            // Dispatchable only on the GROUP_CENTERING fast path
-            // (cfg.tikhonov_group_centering + cfg.tikhonov_groups, set by
-            // TRexTikhonovSelector); otherwise it stays a group-informed
-            // GVS-only solver.
-            if (cfg.tikhonov_group_centering) {
-                return dispatchSolver<cd::TCDIENET_Solver>(cfg);
-            }
-            throw std::invalid_argument(
-                "trex_solver_dispatch: TCDIENET is a group-informed solver; "
-                "use TRexGVSSelector with gvs_type=IEN, or "
-                "TRexTikhonovSelector with penalty_structure = "
-                "GROUP_CENTERING. For a general Tikhonov matrix use "
-                "TCDTIKNET.");
-        case SolverTypeForTRex::TCDTIKNET:
-            // General-K CCD (TRexTikhonovSelector sets cfg.tikhonov_K); the
-            // GROUP_CENTERING fast path routes to TCDIENET's O(1) hooks.
-            if (cfg.tikhonov_group_centering) {
-                return dispatchSolver<cd::TCDIENET_Solver>(cfg);
-            }
-            if (cfg.tikhonov_K != nullptr) {
-                return dispatchSolver<cd::TCDTIKNET_Solver>(cfg);
-            }
-            throw std::invalid_argument(
-                "trex_solver_dispatch: TCDTIKNET needs a Tikhonov matrix "
-                "(TRexTikhonovSelector / SolverConfig::tikhonov_K).");
 
         // OMP family
         case SolverTypeForTRex::TOMP:       return dispatchSolver<omp::TOMP_Solver>(cfg);

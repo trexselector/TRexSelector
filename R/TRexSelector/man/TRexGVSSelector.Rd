@@ -164,9 +164,7 @@ reproducible.}
       \item{\code{verbose}}{Whether to print progress (default: TRUE).}
       \item{\code{gvs_control}}{A GVS control list from \code{\link{trex_gvs_control}()} (default:
 \code{trex_gvs_control()}). For \code{gvs_type = "EN"} its \code{en_solver}
-chooses the solver, "TENET" by default. "TCDENET" and "TCDIENET" are
-deprecated and will be removed in TRexSelector 2.1.0: the selector raises a
-deprecation warning for them.}
+chooses the solver, "TENET" by default.}
       \item{\code{control}}{A control list from \code{\link{trex_control}()}, or \code{NULL}
 (default). With \code{NULL} the base control of the C++ class applies: the
 defaults of \code{trex_control()} with the solver "TENET". A control that is

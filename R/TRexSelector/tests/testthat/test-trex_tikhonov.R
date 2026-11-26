@@ -54,7 +54,6 @@ test_that("trex_tikhonov_control validates its arguments", {
     "arg"  # the argmax variant is gone; the knee with tolerance 0 reads it
   )
   expect_identical(ctrl$penalty_structure, "SPARSE_GENERAL")
-  expect_true(ctrl$fold_dummy_coupling)
   expect_true(ctrl$cluster_dummies)
   expect_identical(ctrl$cv_n_lambda1, 40L)
   expect_identical(ctrl$cv_n_lambda2, 100L)
@@ -114,20 +113,6 @@ test_that("construction gates translate as R errors", {
                                           prior_groups = rep(1, d$p - 1))),
     "prior_groups"
   )
-
-  # fold_dummy_coupling = FALSE existed with TCDTIKNET only, which the selector
-  # no longer accepts, so the decoupled dummy block is refused.
-  for (control in list(NULL, trex_control(solver = "TIKNET"))) {
-    expect_error(
-      TRexTikhonovSelector$new(
-        d$X, d$y, verbose = FALSE,
-        tik_control = trex_tikhonov_control(tikhonov_K = diag(d$p),
-                                            lambda_2 = 0.5,
-                                            fold_dummy_coupling = FALSE),
-        control = control),
-      "fold_dummy_coupling = false is no longer available"
-    )
-  }
 })
 
 
@@ -152,10 +137,6 @@ test_that("a base control that is passed has to name the solver TIKNET", {
   }
   expect_error(run(trex_control()), "leave control out")
   expect_error(run(trex_control(K = 5)), "TLARS")
-  # The deprecated coordinate-descent solver is refused as well, without a
-  # deprecation warning before the error
-  expect_error(expect_no_warning(run(trex_control(solver = "TCDTIKNET"))),
-               "\"TCDTIKNET\" is no longer accepted by the selector")
   # No selector was built, so the design is untouched
   expect_identical(d$X, X0)
 
@@ -168,9 +149,6 @@ test_that("a base control that is passed has to name the solver TIKNET", {
   expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = tik, seed = 1,
                                                 grid = c(0, 1), control = trex_control()),
                "control\\$solver must be \"TIKNET\"")
-  expect_error(trex_tikhonov_lambda2_power_rule(d$X, d$y, tik_control = tik, seed = 1, grid = c(0, 1),
-                                                control = trex_control(solver = "TCDTIKNET")),
-               "\"TCDTIKNET\" is no longer accepted by the selector")
   a <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,
                                         grid = c(0, 1))
   b <- trex_tikhonov_lambda2_power_rule(d$X, d$y, tFDR = 0.2, tik_control = tik, seed = 42,

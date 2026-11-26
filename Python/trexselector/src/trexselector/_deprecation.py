@@ -12,9 +12,6 @@ def warn_deprecated(old: str, new: str) -> None:
 
     The warning is attributed to the first caller outside the package, so it
     points at the user's line also when a wrapper of the package sits between.
-    The compiled bindings call this function where a solver class of the
-    coordinate-descent family is constructed and where a solver type of the
-    family reaches a selector.
     """
     level = 2
     frame = sys._getframe(1)
@@ -22,8 +19,7 @@ def warn_deprecated(old: str, new: str) -> None:
         frame = frame.f_back
         level += 1
     warnings.warn(
-        f"{old} is deprecated and will be removed in the next minor release of trexselector. "
-        f"Use {new}, the homotopy solver of the same problem.",
+        f"{old} is deprecated. Use {new}.",
         FutureWarning,
         stacklevel=level,
     )

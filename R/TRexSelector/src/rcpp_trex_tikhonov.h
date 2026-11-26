@@ -25,7 +25,7 @@ using namespace trex::trex_selector_methods::ad::trex_core;
  * @brief The control of a run. Without a base control the one nested in the
  *        Tikhonov control applies, whose solver is TIKNET. A base control
  *        that is passed replaces the nested one as it is, and the C++
- *        constructor refuses a solver outside TIKNET / TCDTIKNET.
+ *        constructor refuses a solver other than TIKNET.
  */
 inline TRexTikhonovControlParameter merge_tikhonov_control(
     const TRexTikhonovControlParameter& tik_control,

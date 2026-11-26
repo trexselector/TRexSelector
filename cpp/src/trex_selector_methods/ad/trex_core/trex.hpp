@@ -67,8 +67,8 @@ inline constexpr double AUTO_ESTIMATE_CORRELATION = -2.0;
  * @details Greedy solvers tend to run into a noise trap in the T-loop: they
  *          keep admitting variables until the maximum number of dummies is
  *          selected instead of terminating. The path solvers are free of this
- *          behavior: TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG,
- *          TIKNET and the coordinate-descent family. Every other solver
+ *          behavior: TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG
+ *          and TIKNET. Every other solver
  *          counts as greedy: TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP,
  *          TNCGMP, TOOLS and TAFS. Used to resolve the AUTO default of
  *          TRexControlParameter::tloop_stagnation_stop and for the
@@ -86,12 +86,6 @@ inline constexpr bool isGreedySolver(
         case sdx::SolverTypeForTRex::TIENET:
         case sdx::SolverTypeForTRex::TIENET_AUG:
         case sdx::SolverTypeForTRex::TIKNET:
-        // The CCD family records exact penalized-lasso minimizers per
-        // crossing — same termination behavior as the equiangular paths.
-        case sdx::SolverTypeForTRex::TCDLASSO:
-        case sdx::SolverTypeForTRex::TCDENET:
-        case sdx::SolverTypeForTRex::TCDIENET:
-        case sdx::SolverTypeForTRex::TCDTIKNET:
             return false;
         default:
             return true;
@@ -179,8 +173,8 @@ struct TRexControlParameter {
      *
      *  Tri-state: std::nullopt (default, "auto") resolves by solver family in
      *  the TRexSelector constructor. It is off for the path solvers (TLARS,
-     *  TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, TIKNET and the
-     *  coordinate-descent family), which terminate on their own, as in the
+     *  TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG and TIKNET), which
+     *  terminate on their own, as in the
      *  1.x versions and the T-Rex paper, neither of which has a stagnation
      *  stop. It is on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP,
      *  TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a

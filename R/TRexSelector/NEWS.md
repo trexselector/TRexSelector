@@ -1,3 +1,21 @@
+# TRexSelector 2.1.0
+
+## Removed
+
+* The coordinate-descent solver family is no longer part of the package, as TRexSelector 2.0.2
+  announced. This covers the classes `TCDLASSO_Solver`, `TCDENET_Solver`, `TCDIENET_Solver` and
+  `TCDTIKNET_Solver` with their base `TCDSolver_Base`, the solver names `"TCDLASSO"`, `"TCDENET"`,
+  `"TCDIENET"` and `"TCDTIKNET"` of `trex_control(solver = )`, and
+  `trex_gvs_control(en_solver = "TCDENET")`. The homotopy solvers of the same problems replace them,
+  `TLASSO_Solver`, `TENET_Solver`, `TIENET_Solver` and `TIKNET_Solver` with the solver names
+  `"TLASSO"`, `"TENET"`, `"TIENET"` and `"TIKNET"`. A call that names a member of the family is an
+  error.
+* The options that only the family read went with it. These are `cd_lambda_rel_tol`, `cd_tol_certify`,
+  `cd_tol_probe`, `cd_gram_cap`, `cd_max_sweeps` and `cd_certified_localization` of `trex_control()`
+  and `tsolver_options()`, `kappa_dummy`, `fold_dummies` and `group_penalty` of `tsolver_options()`,
+  and `fold_dummy_coupling` of `trex_tikhonov_control()`. A call that passes one of them is an error.
+* The selections of the other solvers do not change.
+
 # TRexSelector 2.0.3
 
 ## Fixed

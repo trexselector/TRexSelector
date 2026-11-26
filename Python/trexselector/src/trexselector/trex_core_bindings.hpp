@@ -98,8 +98,6 @@ public:
         int seed,
         bool verbose
     ) {
-        warn_if_cd_solver_type(trex_control.solver_type);
-
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                   X.rows(),
                                                                       X.cols());
@@ -291,22 +289,11 @@ inline void bind_trex_core(py::module& m_tsm) {
         .value("TAFS",       disp::SolverTypeForTRex::TAFS,       "Terminating AFS.")
         .value("TENET_AUG",  disp::SolverTypeForTRex::TENET_AUG,  "Terminating Elastic Net via augmented LASSO; "
             "accepted wherever TENET runs (LASSO inner path standard, LARS via tenet_aug_use_lars).")
-        .value("TCDLASSO",   disp::SolverTypeForTRex::TCDLASSO,   "Terminating coordinate-descent LASSO (exact "
-            "penalized-lasso minimizers per crossing; certified crossing localization by default). "
-            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TLASSO.")
-        .value("TCDENET",    disp::SolverTypeForTRex::TCDENET,    "Terminating coordinate-descent Elastic Net. "
-            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.")
         .value("TIENET",     disp::SolverTypeForTRex::TIENET,     "Terminating Informed Elastic Net, native pathwise "
             "(GVS-only, gvs_type=IEN; IEN default).")
         .value("TIENET_AUG", disp::SolverTypeForTRex::TIENET_AUG, "Terminating Informed Elastic Net via augmented "
             "LASSO "
             "(GVS-only, gvs_type=IEN).")
-        .value("TCDIENET",   disp::SolverTypeForTRex::TCDIENET,   "Terminating coordinate-descent Informed Elastic Net "
-            "(GVS-only, gvs_type=IEN). "
-            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIENET.")
-        .value("TCDTIKNET",  disp::SolverTypeForTRex::TCDTIKNET,  "Terminating coordinate-descent Tikhonov Net "
-            "(sparse-K; needs a penalty matrix, TRexTikhonovSelector only). "
-            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TIKNET.")
         .value("TIKNET",     disp::SolverTypeForTRex::TIKNET,     "Terminating Tikhonov Net, native pathwise "
             "(sparse-K, "
             "FOLDED; TRexTikhonovSelector only).")
@@ -333,30 +320,7 @@ inline void bind_trex_core(py::module& m_tsm) {
         .def_readwrite("exch_tie_floor", &disp::SolverHyperparameters::exch_tie_floor, "Minimum |correlation| for "
             "exchangeable-tie candidates in (0, 1); ignored unless exch_tie_alpha > 0.")
         .def_readwrite("tenet_aug_use_lars", &disp::SolverHyperparameters::tenet_aug_use_lars, "TENET_AUG: False "
-            "(default) = standard LASSO inner path; True = optional pure-LARS inner path that never drops variables.")
-        .def_readwrite("cd_lambda_rel_tol", &disp::SolverHyperparameters::cd_lambda_rel_tol, "CCD family: relative "
-            "lambda step tolerance of the crossing search (<= 0 keeps the solver default). "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .def_readwrite("cd_tol_certify", &disp::SolverHyperparameters::cd_tol_certify, "CCD family: KKT certification "
-            "tolerance; applied only when set together with cd_tol_probe (both > 0). "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .def_readwrite("cd_tol_probe", &disp::SolverHyperparameters::cd_tol_probe, "CCD family: probing tolerance; "
-            "applied only when set together with cd_tol_certify (both > 0). "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .def_readwrite("cd_gram_cap", &disp::SolverHyperparameters::cd_gram_cap, "CCD family: column cap for the "
-            "cached "
-            "Gram matrix (0 keeps the solver default). "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .def_readwrite("cd_max_sweeps", &disp::SolverHyperparameters::cd_max_sweeps, "CCD family: maximum coordinate "
-            "sweeps per subproblem (0 keeps the solver default of 2000). A solve that stops at this budget far from "
-            "a solution (KKT violation above 0.001 lambda_1) raises RuntimeError instead of continuing on an "
-            "unconverged path. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.")
-        .def_readwrite("cd_certified_localization", &disp::SolverHyperparameters::cd_certified_localization, "CCD "
-            "family: True (default) = certified crossing localization (duality-gap and coordinate-status certificates, "
-            "closed-form continuation, records at the knot); False = LEGACY probe bisection with the support-nesting "
-            "stop. "
-            "Deprecated: removed with the coordinate-descent family in the next minor release.");
+            "(default) = standard LASSO inner path; True = optional pure-LARS inner path that never drops variables.");
 
     // Bind DummyDistribution (wraps C++ dummygen::Distribution)
     py::class_<dg::Distribution> dummy_dist(m_tsm, "DummyDistribution",
@@ -471,8 +435,8 @@ inline void bind_trex_core(py::module& m_tsm) {
             "LLoopStrategy for the others.")
         .def_readwrite("tloop_stagnation_stop", &TRexControlParameter::tloop_stagnation_stop,
                        "T-loop early stopping when the selection stagnates. None (default) resolves by solver "
-                       "family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG, "
-                       "TIKNET and the coordinate-descent family), which terminate on their own, as in the 1.x "
+                       "family: off for the path solvers (TLARS, TLASSO, TENET, TENET_AUG, TIENET, TIENET_AUG "
+                       "and TIKNET), which terminate on their own, as in the 1.x "
                        "versions and the T-Rex paper, and on for the greedy solvers (TSTEPWISE, TSTAGEWISE, TOMP, "
                        "TGP, TACGP, TMP, TNCGMP, TOOLS, TAFS), which otherwise run into a noise trap. Set True or "
                        "False to override.")

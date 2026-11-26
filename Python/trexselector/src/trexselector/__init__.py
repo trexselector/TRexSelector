@@ -18,7 +18,6 @@ except PackageNotFoundError:  # Running from a source tree without install
 from . import ml_methods
 from . import tsolvers
 from . import utils
-from ._deprecation import warn_deprecated as _warn_deprecated
 
 # Import the compiled C++ extension inside the nested modules. The root
 # re-exports the augmented-dummy (ad) selectors as the everyday spelling;
@@ -56,10 +55,6 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
     region boundary and terminates the process instead of raising. Used by
     the plain/DA/screening/biobank wrappers; the GVS wrapper deliberately
     bypasses it (the IEN family is exactly its vocabulary).
-
-    A solver type of the deprecated coordinate-descent family raises its
-    FutureWarning before the refusal, as the types that a selector can run
-    do in the bindings.
     """
     st = trex_control.solver_type
     if st == SolverTypeForTRex.TIENET:
@@ -70,20 +65,10 @@ def _validate_core_solver_type(trex_control: "TRexControlParameter") -> None:
         raise ValueError(
             'solver_type = TIENET_AUG is a GVS-only solver; use '
             'TRexGVSSelector with gvs_type = IEN.')
-    if st == SolverTypeForTRex.TCDIENET:
-        _warn_deprecated("SolverTypeForTRex.TCDIENET", "SolverTypeForTRex.TIENET")
-        raise ValueError(
-            'solver_type = TCDIENET needs a group assignment; use '
-            'TRexGVSSelector with gvs_type = IEN.')
     if st == SolverTypeForTRex.TIKNET:
         raise ValueError(
             'solver_type = TIKNET needs a Tikhonov penalty matrix; use '
             'TRexTikhonovSelector.')
-    if st == SolverTypeForTRex.TCDTIKNET:
-        _warn_deprecated("SolverTypeForTRex.TCDTIKNET", "SolverTypeForTRex.TIKNET")
-        raise ValueError(
-            'solver_type = TCDTIKNET is no longer accepted by a selector; use '
-            'TRexTikhonovSelector, whose solver is TIKNET.')
 
 
 def _with_core_notes(core_cls):
@@ -117,13 +102,6 @@ class TRexSelector:
     ``ScalingMode.NONE`` it writes nothing into X and accepts an array that is not
     writable, for example the view of a file opened with ``AccessMode.ReadOnly``.
     The selectors derived from this class follow the same rule.
-
-    The coordinate-descent solver types ``TCDLASSO``, ``TCDENET`` and
-    ``TCDIENET`` are deprecated and will be removed in the next minor release:
-    a selector that receives one of them raises ``FutureWarning``.
-    ``TCDTIKNET`` is deprecated as well, and no selector accepts it any more.
-    Use ``TLASSO``, ``TENET``, ``TIENET`` and ``TIKNET``, the homotopy solvers
-    of the same problems.
 
     Parameters
     ----------
@@ -372,11 +350,6 @@ class TRexGVSSelector(TRexSelector):
     ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
     a base control that is passed has to name a solver of the track.
 
-    The coordinate-descent solvers of the two tracks, ``ENSolverType.TCDENET``
-    and ``SolverTypeForTRex.TCDIENET``, are deprecated and will be removed in
-    the next minor release: the selector raises ``FutureWarning`` for them.
-    Use ``ENSolverType.TENET`` and ``SolverTypeForTRex.TIENET``.
-
     Parameters
     ----------
     X : numpy.ndarray of shape (n, p)
@@ -486,10 +459,7 @@ class TRexTikhonovSelector(TRexSelector):
 
     The solver is TIKNET, the homotopy solver. Any other solver raises
     ``ValueError``, also ``TLARS``, the default of ``TRexControlParameter``:
-    a base control that is passed has to name the solver. TCDTIKNET, the
-    deprecated coordinate-descent solver, is refused as well. The selector
-    accepted it up to 1.0.0, where it could stop at its sweep budget before
-    it had converged once lambda_2 times K was large.
+    a base control that is passed has to name the solver.
 
     Parameters
     ----------

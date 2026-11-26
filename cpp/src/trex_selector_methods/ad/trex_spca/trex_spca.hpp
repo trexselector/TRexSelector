@@ -155,11 +155,8 @@ struct TRexSPCAControlParameter {
      *    form of the paper.
      *  - TENET: the elastic net on the Gram matrix, with the ridge part in
      *    the Cholesky update of X_A^T X_A + lambda_2 * I.
-     *  - TCDENET: coordinate descent. It is deprecated and will be removed
-     *    with the coordinate descent family in the next minor release. Use
-     *    TENET.
      *
-     *  The three solve the same elastic net problem.
+     *  The two solve the same elastic net problem.
      */
     tg::ENSolverType en_solver = tg::ENSolverType::TENET_AUG;
 

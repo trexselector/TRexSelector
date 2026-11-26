@@ -23,7 +23,6 @@ trex_tikhonov_control(
   pilot_statistic = "MAJORITY",
   pilot_group_fraction = 0.5,
   pilot_shared_dummies = FALSE,
-  fold_dummy_coupling = TRUE,
   cluster_dummies = TRUE,
   prior_groups = NULL,
   corr_max = 0.5,
@@ -145,14 +144,6 @@ draws its dummies from a seed stream of its own, so the dummies of the
 main run do not depend on the pick, and the main run equals a run at the
 picked lambda_2 with the same seed. \code{TRUE}: the pilot uses the first
 dummy block of the main strategy (not with the PERMUTATION strategies).}
-
-\item{fold_dummy_coupling}{Logical (default \code{TRUE}): in the penalty
-every dummy takes the place of the variable it was drawn for (folded
-coupling), so dummies and null variables stay exchangeable for every K.
-\code{FALSE}, a ridge block of the dummies decoupled from K, is an
-error: it existed with the solver \code{"TCDTIKNET"} only, which the
-selector no longer accepts. Deprecated: the argument will be removed
-with the coordinate-descent family in TRexSelector 2.1.0.}
 
 \item{cluster_dummies}{Logical (default \code{TRUE}): draw the dummies per
 cluster of correlated variables, as in \code{\link{TRexGVSSelector}}.

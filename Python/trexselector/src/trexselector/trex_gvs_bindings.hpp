@@ -38,7 +38,7 @@ namespace gvs_sd = trex::trex_selector_methods::ad::utils::solver_dispatch;
  *        nests the base control. Python can pass a base control as a second
  *        argument: it then replaces the nested one, as it is. Nothing is
  *        changed in either, and the C++ constructor derives or refuses the
- *        solver. A deprecated coordinate-descent solver raises its warning.
+ *        solver.
  */
 inline TRexGVSControlParameter merge_gvs_control(
     const TRexGVSControlParameter& gvs_control,
@@ -46,11 +46,6 @@ inline TRexGVSControlParameter merge_gvs_control(
 {
     TRexGVSControlParameter gvs_ctrl = gvs_control;
     if (trex_control) { gvs_ctrl.trex_ctrl = *trex_control; }
-    if (gvs_ctrl.gvs_type == GVSType::IEN) {
-        warn_if_cd_solver_type(gvs_ctrl.trex_ctrl.solver_type);
-    } else {
-        warn_if_cd_en_solver(gvs_ctrl.en_solver);
-    }
     return gvs_ctrl;
 }
 
@@ -139,18 +134,12 @@ inline void bind_trex_gvs(py::module& m) {
     py::enum_<GVSType>(m, "GVSType", "Penalty of the grouped selection of T-Rex+GVS.")
         .value("EN", GVSType::EN, "Elastic net. en_solver chooses the solver.")
         .value("IEN", GVSType::IEN, "Informed elastic net, with the groups in the penalty (solver via "
-            "trex_control.solver_type: TIENET default, TIENET_AUG, TCDIENET). TCDIENET is not finally developed: its "
-            "sweeps grow with lambda_2 and on saturating designs, and a solve that does not converge within "
-            "cd_max_sweeps raises RuntimeError. TCDIENET is deprecated and will be removed in the next minor "
-            "release: the selector raises FutureWarning for it. Use TIENET.")
+            "trex_control.solver_type: TIENET default, TIENET_AUG).")
         .export_values();
 
     py::enum_<ENSolverType>(m, "ENSolverType", "Elastic-Net solver variant used when gvs_type == EN.")
         .value("TENET",     ENSolverType::TENET,     "Gram-based Elastic Net (ridge absorbed via Cholesky update).")
         .value("TENET_AUG", ENSolverType::TENET_AUG, "Augmented-LASSO Elastic Net (row-augmented system).")
-        .value("TCDENET",   ENSolverType::TCDENET,   "Coordinate-descent Elastic Net (exact fixed-lambda1 minimizers "
-            "per dummy crossing). "
-            "Deprecated: removed in the next minor release, a selector raises FutureWarning for it. Use TENET.")
         .export_values();
 
     py::class_<trex::ml_methods::model_selection::lambda2_cv_diagnostics>(m, "Lambda2CVDiagnostics",
@@ -221,7 +210,7 @@ inline void bind_trex_gvs(py::module& m) {
         .def_readwrite("gvs_type",    &TRexGVSControlParameter::gvs_type,    "Penalty of the grouped selection: EN "
             "(elastic net, default) or IEN (informed elastic net).")
         .def_readwrite("en_solver",   &TRexGVSControlParameter::en_solver,   "EN solver variant when gvs_type == EN: "
-            "TENET (default), TENET_AUG, or TCDENET (deprecated, removed in the next minor release).")
+            "TENET (default) or TENET_AUG.")
         .def_readwrite("corr_max",    &TRexGVSControlParameter::corr_max,    "Correlation threshold of the automatic "
             "clustering (default 0.5). The dendrogram is cut at the height 1 - corr_max. With Single linkage "
             "(default) no two variables of different clusters correlate above corr_max. With Complete linkage every "

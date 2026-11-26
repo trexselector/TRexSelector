@@ -78,23 +78,21 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     const bool group_centering = trex_tik_ctrl_.penalty_structure ==
                                  TikPenaltyStructure::GROUP_CENTERING;
     if (group_centering) {
-        // Structured fast path: groups are REQUIRED (they define K_GC and
-        // feed the O(1) solver hooks); K is built internally when absent
-        // (the CV tuners consume it).
+        // Groups are REQUIRED (they define K_GC). K is built internally
+        // when absent.
         if (trex_tik_ctrl_.prior_groups.empty()) {
             throw std::invalid_argument(
                 "TRexTikhonovSelector: penalty_structure = GROUP_CENTERING "
-                "requires prior_groups (they define K_GC and the O(1) "
-                "solver hooks).");
+                "requires prior_groups (they define K_GC).");
         }
         cdum::validatePriorGroups(trex_tik_ctrl_.prior_groups, p_,
                                   "TRexTikhonovSelector");
         Eigen::SparseMatrix<double> K_gc =
             buildGroupCenteringK(trex_tik_ctrl_.prior_groups);
         if (trex_tik_ctrl_.tikhonov_K.nonZeros() != 0) {
-            // A supplied matrix has to be the centering matrix: the solver
-            // runs on the groups and the CV rules on the matrix, so another
-            // one would tune one penalty and apply a second.
+            // A supplied matrix has to be the centering matrix: the selector
+            // runs on the centering matrix of prior_groups, so another one
+            // would be replaced without a word.
             bool same = trex_tik_ctrl_.tikhonov_K.rows() == p_idx &&
                         trex_tik_ctrl_.tikhonov_K.cols() == p_idx;
             if (same) {
@@ -116,11 +114,6 @@ TRexTikhonovSelector::TRexTikhonovSelector(
             }
         }
         trex_tik_ctrl_.tikhonov_K = std::move(K_gc);
-        groups_vec_i_.resize(p_idx);
-        for (std::size_t j = 0; j < p_; ++j) {
-            groups_vec_i_(static_cast<Eigen::Index>(j)) =
-                static_cast<int>(trex_tik_ctrl_.prior_groups[j]);
-        }
     }
     // An ALL-SINGLETON partition under GROUP_CENTERING is legitimate: every
     // block of K_GC = I - J/p_m vanishes, the penalty is identically zero and
@@ -155,22 +148,11 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     }
 
     // ---- Solver gate ------------------------------------------------------
-    // TIKNET, the homotopy solver, is the one solver of the selector. The
-    // coordinate-descent solver TCDTIKNET is no longer accepted, and with it
-    // goes the decoupled dummy block, which only that solver had.
+    // TIKNET, the homotopy solver, is the one solver of the selector.
     if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIKNET) {
-        const bool was_cd = trex_ctrl_.solver_type == disp::SolverTypeForTRex::TCDTIKNET;
         throw std::invalid_argument(
-            std::string("TRexTikhonovSelector: solver_type must be TIKNET, the "
-                        "solver of the general Tikhonov penalty.") +
-            (was_cd ? " The deprecated coordinate-descent solver TCDTIKNET is no "
-                      "longer accepted by the selector." : ""));
-    }
-    if (!trex_tik_ctrl_.fold_dummy_coupling) {
-        throw std::invalid_argument(
-            "TRexTikhonovSelector: fold_dummy_coupling = false is no longer "
-            "available. The decoupled dummy block existed with the solver "
-            "TCDTIKNET only, which the selector no longer accepts.");
+            "TRexTikhonovSelector: solver_type must be TIKNET, the "
+            "solver of the general Tikhonov penalty.");
     }
 
     // ---- Cluster-aware dummy gates ----------------------------------------
@@ -459,16 +441,7 @@ er::ExperimentRunnerConfig TRexTikhonovSelector::buildRunnerConfig(
     // lambda2_ was resolved in onSelectBegin().
     cfg.tikhonov_K            = &trex_tik_ctrl_.tikhonov_K;
     cfg.tikhonov_K_validated  = true;   // checked once in the constructor
-    cfg.tikhonov_fold_dummies = trex_tik_ctrl_.fold_dummy_coupling;
     cfg.solver_params.lambda2 = lambda2_;
-
-    // GROUP_CENTERING fast path: route the solver through the O(1) hooks
-    // (groups_vec_i_ is owned by this selector and outlives the run).
-    if (trex_tik_ctrl_.penalty_structure ==
-        TikPenaltyStructure::GROUP_CENTERING) {
-        cfg.tikhonov_group_centering = true;
-        cfg.tikhonov_groups          = &groups_vec_i_;
-    }
 
     return cfg;
 }

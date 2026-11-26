@@ -9,12 +9,6 @@ import pytest
 
 from trexselector.tsolvers.ad import SolverOptions
 from trexselector.tsolvers.ad.afs_based import TAFS_Solver
-from trexselector.tsolvers.ad.cd_based import (
-    TCDENET_Solver,
-    TCDIENET_Solver,
-    TCDLASSO_Solver,
-    TCDTIKNET_Solver,
-)
 from trexselector.tsolvers.ad.lars_based import (
     TENET_Solver,
     TENETAug_Solver,
@@ -82,10 +76,6 @@ FACTORIES = {
     "TNCGMP": lambda X, D, y: TNCGMP_Solver(X, D, y, _reader()),
     "TOOLS": lambda X, D, y: TOOLS_Solver(X, D, y, _reader()),
     "TAFS": lambda X, D, y: TAFS_Solver(X, D, y, _reader(rho_afs=0.5)),
-    "TCDLASSO": lambda X, D, y: TCDLASSO_Solver(X, D, y, _reader()),
-    "TCDENET": lambda X, D, y: TCDENET_Solver(X, D, y, _reader(lambda2=0.5)),
-    "TCDIENET": lambda X, D, y: TCDIENET_Solver(X, D, y, _GROUPS, _reader(lambda2=0.5)),
-    "TCDTIKNET": lambda X, D, y: TCDTIKNET_Solver(X, D, y, _K, _reader(lambda2=0.5)),
 }
 
 

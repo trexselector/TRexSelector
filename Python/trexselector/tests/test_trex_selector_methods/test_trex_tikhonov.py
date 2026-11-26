@@ -2,9 +2,8 @@
 Tests for TRexTikhonovSelector (general-Tikhonov T-Rex).
 
 Mirrors the R suite (test-trex_tikhonov.R): control round trip, construction
-gates, the solver-family warning, a fixed-lambda_2 run with its getters, the
-group-mean-K equivalence with GVS-IEN TCDIENET, the K = I collapse onto the
-TCDENET run, the two K builders, and the lambda_2 tuners (CV and pilot).
+gates, a fixed-lambda_2 run with its getters, the two K builders, and the
+lambda_2 tuners (CV and pilot).
 """
 import warnings
 
@@ -72,7 +71,6 @@ def test_control_fields_roundtrip():
     assert ctrl.lambda2_method == tsn.TikLambda2Method.PILOT_KNEE
     assert not hasattr(tsn.TikLambda2Method, "PILOT_MAX")   # the argmax variant is gone
     assert ctrl.cluster_dummies is True
-    assert ctrl.fold_dummy_coupling is True
     assert ctrl.trex_ctrl.solver_type == tsn.SolverTypeForTRex.TIKNET   # the homotopy solver
     assert ctrl.tikhonov_K.shape == (0, 0)
     assert ctrl.cv_dfmax_ratio == pytest.approx(0.8)
@@ -96,7 +94,6 @@ def test_control_fields_roundtrip():
     ctrl.pilot_knee_tolerance = 2.0
     ctrl.pilot_group_fraction = 0.6
     ctrl.pilot_shared_dummies = True
-    ctrl.fold_dummy_coupling = False
     ctrl.cluster_dummies = False
     ctrl.prior_groups = [0, 0, 1, 1]
     ctrl.corr_max = 0.3
@@ -110,7 +107,6 @@ def test_control_fields_roundtrip():
     assert ctrl.pilot_knee_tolerance == pytest.approx(2.0)
     assert ctrl.pilot_group_fraction == pytest.approx(0.6)
     assert ctrl.pilot_shared_dummies is True
-    assert ctrl.fold_dummy_coupling is False
     assert ctrl.cluster_dummies is False
     assert list(ctrl.prior_groups) == [0, 0, 1, 1]
     assert ctrl.corr_max == pytest.approx(0.3)
@@ -155,43 +151,6 @@ def test_a_solver_outside_the_family_is_refused(solver):
     with pytest.raises(ValueError, match="solver_type must be TIKNET"):
         tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, seed=1, grid=[0.0, 1.0])
     np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
-
-
-def test_the_coordinate_descent_solver_is_refused():
-    """TCDTIKNET, which the selector accepted up to 1.0.0, is an error on every entry point, without a
-    deprecation warning before it."""
-    from trexselector.trex_selector_methods import ad as core
-
-    X, y, groups = _grouped_data()
-    X = np.asfortranarray(X)
-    X0 = X.copy(order="F")
-    tik = _tik_control(_group_mean_k(groups), 1.0, prior_groups=groups)
-    base = _base_control(solver=tsn.SolverTypeForTRex.TCDTIKNET)
-    refused = "TCDTIKNET is no longer accepted by the selector"
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        with pytest.raises(ValueError, match=refused):
-            tsn.TRexTikhonovSelector(X, y, tik_control=tik, trex_control=base, seed=1, verbose=False)
-        with pytest.raises(ValueError, match=refused):
-            core.TRexTikhonovSelector(X, y, 0.1, tik, base, 1, False)
-        with pytest.raises(ValueError, match=refused):
-            tsn.tikhonov_lambda2_power_rule(X, y, tik_control=tik, trex_control=base, seed=1, grid=[0.0, 1.0])
-        # Also when it is named on the nested control
-        tik.trex_ctrl.solver_type = tsn.SolverTypeForTRex.TCDTIKNET
-        with pytest.raises(ValueError, match=refused):
-            tsn.TRexTikhonovSelector(X, y, tik_control=tik, seed=1, verbose=False)
-    np.testing.assert_allclose(X, X0, atol=1e-12)     # a refused control leaves X alone
-
-
-def test_the_decoupled_dummy_block_is_refused():
-    """fold_dummy_coupling = False existed with TCDTIKNET only, so it has no solver left."""
-    X, y, _ = _grouped_data(seed=5)
-    tik = _tik_control(np.eye(X.shape[1]), 1.5, fold_dummy_coupling=False)
-    with pytest.raises(ValueError, match="fold_dummy_coupling = false is no longer available"):
-        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik, seed=42, verbose=False)
-    with pytest.raises(ValueError, match="fold_dummy_coupling = false is no longer available"):
-        tsn.TRexTikhonovSelector(X.copy(), y.copy(), tik_control=tik, trex_control=_base_control(),
-                                 seed=42, verbose=False)
 
 
 def test_the_nested_base_control_applies_without_trex_control():
@@ -401,11 +360,7 @@ def test_lambda2_power_rule_profiles_the_grid_and_keeps_the_contract():
 # ---------------------------------------------------------------------------
 
 def test_default_run_on_a_chain_laplacian_selects_the_planted_block():
-    """The default control (homotopy solver, pilot rule over its default grid up to 3000).
-
-    The coordinate-descent solver stops unconverged at the large grid values, the pilot then
-    takes its count there for the knee, picks 3000 and the selection is dominated by nulls.
-    """
+    """The default control (homotopy solver, pilot rule over its default grid up to 3000)."""
     rng = np.random.default_rng(2718)
     n, p = 120, 60
     X = np.asfortranarray(rng.standard_normal((n, p)))
@@ -736,4 +691,3 @@ def test_the_gvs_power_rule_runs_the_grid():
     with pytest.raises(ValueError, match="non-negative"):
         rule(seed=-1)
     assert gvs.lambda_2 == -1.0                              # the control of the caller is not changed
-

@@ -46,12 +46,8 @@
 #include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
 
-// AFS- and CD-based solvers
+// AFS-based solvers
 #include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdenet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdienet_solver.hpp>
-#include <tsolvers/ad/linear_model/cd_based/tcdtiknet_solver.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>
@@ -228,7 +224,6 @@ namespace trex::test::tsolvers::ad::memory_peak {
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
-using namespace trex::tsolvers::ad::linear_model::cd_based;
 using trex::tsolvers::ad::SolverOptions;
 namespace datagen = trex::utils::datageneration::datagen;
 
@@ -272,13 +267,12 @@ std::unique_ptr<T> makeSolver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::
     o.precentered = true;
     o.lambda2 = 0.5;
     const Eigen::Index p = X.cols();
-    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver> ||
-                  std::is_same_v<T, TCDIENET_Solver>) {
+    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>) {
         // groups of five neighbouring variables
         Eigen::VectorXi groups(p);
         for (Eigen::Index j = 0; j < p; ++j) { groups(j) = static_cast<int>(j / 5); }
         return std::make_unique<T>(X, D, y, groups, o);
-    } else if constexpr (std::is_same_v<T, TIKNET_Solver> || std::is_same_v<T, TCDTIKNET_Solver>) {
+    } else if constexpr (std::is_same_v<T, TIKNET_Solver>) {
         Eigen::SparseMatrix<double> K(p, p);
         K.setIdentity();
         return std::make_unique<T>(X, D, y, K, o);
@@ -289,9 +283,7 @@ std::unique_ptr<T> makeSolver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::
 
 // Measured on macOS arm64 and Linux arm64 (2026-09-28), n = 200, p = L = 500,
 // T = 10, peak / (memoryBytes() + sizeof): OMP, MP, OLS, AFS 1.02-1.20; LARS
-// family and augmented wrappers 1.00-1.45; CD family 1.21-4.30 (the certified
-// localization builds the restricted Gram H_SS, |S| up to 400, for an
-// eigen-solve when the penalty is not strongly convex). Held: 1.00-1.09.
+// family and augmented wrappers 1.00-1.45. Held: 1.00-1.09.
 
 /** @brief Upper bound of peak / held per solver family, with headroom over the
  *  measured values above for other platforms, allocators and data. */
@@ -300,8 +292,6 @@ constexpr double peakBound() {
     if constexpr (std::is_base_of_v<TLARS_Solver, T> || std::is_same_v<T, TENETAug_Solver> ||
                   std::is_same_v<T, TIENETAug_Solver>) {
         return 2.0;
-    } else if constexpr (std::is_base_of_v<TCDLASSO_Solver, T>) {
-        return 6.0;
     } else {
         return 1.5;
     }
@@ -320,8 +310,7 @@ typedef ::testing::Types<
     TLARS_Solver, TLASSO_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver, TENET_Solver,
     TENETAug_Solver, TIENET_Solver, TIENETAug_Solver, TIKNET_Solver,
     TOMP_Solver, TGP_Solver, TACGP_Solver, TMP_Solver, TNCGMP_Solver, TOOLS_Solver,
-    TAFS_Solver,
-    TCDLASSO_Solver, TCDENET_Solver, TCDIENET_Solver, TCDTIKNET_Solver
+    TAFS_Solver
 > AllSolvers;
 
 TYPED_TEST_SUITE(TSolverMemoryPeak, AllSolvers);

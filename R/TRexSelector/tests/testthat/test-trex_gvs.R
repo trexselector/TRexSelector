@@ -194,7 +194,6 @@ test_that("TRexGVSSelector refuses a base control whose solver does not fit the 
   for (case in fits) {
     expect_no_warning(new_gvs(case[[1]], case[[2]])$restore())
   }
-  expect_no_warning(quiet_cd(new_gvs(ien, trex_control(solver = "TCDIENET"))$restore()))
   expect_equal(X, X0, tolerance = 1e-12)
 
   # Without a base control the one of the C++ class applies, whose solver is
@@ -747,28 +746,6 @@ test_that("the IEN tuner grids pass through and the tuner diagnostics are expose
   expect_identical(d0$grid_size, 0L)
   expect_false(d0$boundary_pick)
   expect_identical(d0$dfmax_ratio, 0)
-})
-
-
-test_that("an unconverged coordinate descent is an error and the design comes back", {
-  # TCDIENET at a lambda_2 beyond its sweep budget, one group per variable: select() ends with an
-  # error instead of a selection from an unconverged path, the design is given back at once and
-  # the selector is retired
-  set.seed(2718)
-  n <- 120
-  p <- 60
-  X <- matrix(rnorm(n * p), n, p)
-  y <- as.numeric(rowSums(X[, 21:30]) + rnorm(n))
-  X0 <- X + 0
-
-  sel <- quiet_cd(TRexGVSSelector$new(X, y, tFDR = 0.1, seed = 4, verbose = FALSE,
-                                      gvs_control = trex_gvs_control(gvs_type = "IEN", lambda_2 = 3000,
-                                                                     groups = seq_len(p)),
-                                      control = trex_control(solver = "TCDIENET", K = 10)))
-  expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
-  expect_error(sel$select(), "sweep budget.*before it converged.*cd_max_sweeps")
-  expect_equal(X, X0, tolerance = 1e-12)          # given back
-  expect_error(sel$select(), "can no longer run") # retired
 })
 
 

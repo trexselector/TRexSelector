@@ -65,7 +65,6 @@ void run_trex_core_test(Eigen::Index n,
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
     trex_ctrl.lloop_strategy = l_strategy;
-    trex_ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
 
     if (multi_threaded) {
         trex_ctrl.parallel_rnd_experiments = true;
@@ -133,18 +132,6 @@ TEST(TRexCoreTest, Param_Solvers_TLASSO) {
 }
 
 
-/** @brief Test TRexSelector with the CCD lasso solver (TCDLASSO). */
-TEST(TRexCoreTest, Param_Solvers_TCDLASSO) {
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TCDLASSO);
-}
-
-
-/** @brief Test TRexSelector with the CCD elastic-net solver (TCDENET). */
-TEST(TRexCoreTest, Param_Solvers_TCDENET) {
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TCDENET);
-}
-
-
 /** @brief Test TRexSelector with the row-augmented elastic net (TENET_AUG). */
 TEST(TRexCoreTest, Param_Solvers_TENET_AUG) {
     run_trex_core_test(150, 200, disp::SolverTypeForTRex::TENET_AUG);
@@ -156,9 +143,9 @@ TEST(TRexCoreTest, Param_Solvers_TENET_AUG) {
  *  rule: an exception may not leave an `omp parallel` region — even an
  *  INACTIVE one (`if(false)`, single thread) — or the runtime calls
  *  std::terminate, which killed the R host session before the runner and
- *  GVS loops gained the capture-and-rethrow discipline. TCDIENET without a
- *  Tikhonov matrix throws inside the experiment loop at dispatch time,
- *  making it the canonical trigger. */
+ *  GVS loops gained the capture-and-rethrow discipline. TIENET, a solver
+ *  of the T-Rex+GVS selector, is refused inside the experiment loop at
+ *  dispatch time, which makes it the trigger. */
 TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
     std::vector<std::size_t> support = {1, 2, 3};
     std::vector<double> coefs = {5.0, -3.0, 2.0};
@@ -172,7 +159,7 @@ TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
     TRexControlParameter trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
-    trex_ctrl.solver_type = disp::SolverTypeForTRex::TCDIENET;
+    trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
 
     // Serial path (parallel_rnd_experiments = false): the omp region is
     // inactive but still a structured block.
@@ -512,14 +499,6 @@ TEST(TRexCoreTest, StagnationStop_AutoDefaultResolvesBySolverFamily) {
     EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TSTEPWISE, std::nullopt));
     EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TAFS,    std::nullopt));
 
-    // CCD family: currently classified non-greedy (exact penalized-lasso
-    // minimizers per crossing -> AUTO off, same as the equiangular paths).
-    // Whether CD paths can stagnate in the T-loop is an open question under
-    // investigation; these entries lock in the CURRENT default, not a
-    // settled answer.
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TCDLASSO,   std::nullopt));
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TCDENET, std::nullopt));
-
     // Explicit user choice overrides the family default in both directions.
     EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TLARS, true));
     EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TOMP, false));
@@ -709,61 +688,6 @@ TEST(TRexCoreTest, WarmStart_MemoryMappedMatchesInMemory) {
         res_in_memory.Phi_mat.rows() == res_memmap.Phi_mat.rows()) {
         EXPECT_LE((res_in_memory.Phi_mat - res_memmap.Phi_mat)
                       .cwiseAbs().maxCoeff(), 1e-9);
-    }
-}
-
-
-/** @brief CD-family serialized warm start at the TRex level: memory-mapped
- *         runs save/load TCDLASSO / TCDENET checkpoints per T-step, so the
- *         continuation goes through ensureCdState()'s gram re-entry after
- *         deserialization. The selection must reproduce the in-memory
- *         (retention-based) run exactly. */
-TEST(TRexCoreTest, WarmStart_MemoryMappedMatchesInMemory_CdFamily) {
-    std::vector<std::size_t> support = {1, 2, 3};
-    std::vector<double> coefs = {5.0, -3.0, 2.0};
-
-    for (auto solver : {disp::SolverTypeForTRex::TCDLASSO,
-                        disp::SolverTypeForTRex::TCDENET}) {
-        SyntheticData data(200, 50, support, coefs, 1.0, 42);
-
-        auto X_mem = data.getX();
-        auto y_mem = data.getY();
-        auto X_map_data = X_mem;   // independent copies: X is normalized in-place
-        auto y_map_data = y_mem;
-
-        TRexControlParameter ctrl;
-        ctrl.K = 3;
-        ctrl.max_dummy_multiplier = 2;
-        ctrl.solver_type = solver;
-        ctrl.solver_params.cd_max_sweeps = 200000;  // the CD solvers converge on every draw of the dummies
-        const double tFDR = 0.2;   // keeps the T-loop past T = 1 (see above)
-
-        Eigen::Map<Eigen::MatrixXd> X1(X_mem.data(), X_mem.rows(), X_mem.cols());
-        Eigen::Map<Eigen::VectorXd> y1(y_mem.data(), y_mem.size());
-        TRexSelector trex_in_memory(X1, y1, tFDR, ctrl, 42, false);
-        auto res_in_memory = trex_in_memory.select();
-
-        ctrl.use_memory_mapping = true;
-        Eigen::Map<Eigen::MatrixXd> X2(X_map_data.data(),
-                                       X_map_data.rows(), X_map_data.cols());
-        Eigen::Map<Eigen::VectorXd> y2(y_map_data.data(), y_map_data.size());
-        TRexSelector trex_memmap(X2, y2, tFDR, ctrl, 42, false);
-        auto res_memmap = trex_memmap.select();
-
-        EXPECT_EQ(res_in_memory.T_stop, res_memmap.T_stop);
-        EXPECT_GT(res_in_memory.T_stop, 1u)
-            << "CD solver run ended at T = 1; the serialized "
-               "load-and-continue cycle is not being exercised.";
-        ASSERT_EQ(res_in_memory.selected_var.size(),
-                  res_memmap.selected_var.size());
-        EXPECT_TRUE((res_in_memory.selected_var.array()
-                     == res_memmap.selected_var.array()).all())
-            << "Memory-mapped CD selection differs from the in-memory one.";
-        if (res_in_memory.Phi_mat.size() > 0 &&
-            res_in_memory.Phi_mat.rows() == res_memmap.Phi_mat.rows()) {
-            EXPECT_LE((res_in_memory.Phi_mat - res_memmap.Phi_mat)
-                          .cwiseAbs().maxCoeff(), 1e-9);
-        }
     }
 }
 
