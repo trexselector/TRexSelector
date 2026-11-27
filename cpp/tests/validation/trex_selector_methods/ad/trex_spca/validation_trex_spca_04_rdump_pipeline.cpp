@@ -7,7 +7,7 @@
  * @brief Step-by-step C++/R controlled comparison on identical R-generated data.
  *
  * @details
- *  This demo deliberately bypasses the TRexSPCA class and rebuilds the per-PC1
+ *  This demo deliberately bypasses the TRexSPCASelector class and rebuilds the per-PC1
  *  pipeline of the R reference (demo_trex_spca_01.R, "T-Rex EN" method) as an
  *  explicit sequence of steps, so each intermediate quantity can be diffed
  *  against R on the SAME input matrices:
@@ -292,7 +292,7 @@ int main(int argc, char** argv)
         Eigen::VectorXd y = ord.Z.col(0);
 
         // step 3: lambda_2 (LARS units)
-        tg::TRexGVSControlParameter gvs_ctrl;
+        tg::TRexGVSControl gvs_ctrl;
         gvs_ctrl.gvs_type   = tg::GVSType::EN;
         gvs_ctrl.en_solver  = tg::ENSolverType::TENET_AUG;
         gvs_ctrl.corr_max   = corr_max;
@@ -312,7 +312,7 @@ int main(int argc, char** argv)
             gvs_ctrl.cv_seed        = seed_base + mc;  // deterministic folds
         }
 
-        tc::TRexControlParameter trex_ctrl;
+        tc::TRexControl trex_ctrl;
         trex_ctrl.solver_type   = trex::trex_selector_methods::ad::utils::solver_dispatch::
                                       SolverTypeForTRex::TENET_AUG;
         trex_ctrl.scaling_mode  = zscore ? dn::ScalingMode::ZSCORE : dn::ScalingMode::L2;

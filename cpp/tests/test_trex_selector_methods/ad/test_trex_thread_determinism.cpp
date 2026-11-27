@@ -72,7 +72,7 @@ constexpr ThreadSetting kSettings[] = {
     {true,  4, 4, "parallel experiments on 4 threads with a solver budget of 4"},
 };
 
-void applySetting(TRexControlParameter& ctrl, const ThreadSetting& s) {
+void applySetting(TRexControl& ctrl, const ThreadSetting& s) {
     ctrl.parallel_rnd_experiments = s.parallel;
     ctrl.max_outer_threads = s.outer;
     ctrl.max_inner_threads = s.inner;
@@ -102,8 +102,8 @@ void expectBitwiseEqual(const Eigen::MatrixBase<Derived>& a,
     EXPECT_TRUE((a.array() == b.array()).all()) << what << " differs from the sequential run";
 }
 
-void expectSameSelection(const TRexSelector::SelectionResult& ref,
-                         const TRexSelector::SelectionResult& run) {
+void expectSameSelection(const TRexResult& ref,
+                         const TRexResult& run) {
     expectBitwiseEqual(ref.selected_var, run.selected_var, "selected_var");
     EXPECT_EQ(ref.T_stop, run.T_stop);
     EXPECT_EQ(ref.v_thresh, run.v_thresh);
@@ -140,7 +140,7 @@ TEST(TRexThreadDeterminismTest, CoreSelector) {
                 Eigen::VectorXd y = pb.y;
                 Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
                 Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-                TRexControlParameter ctrl;
+                TRexControl ctrl;
                 applySetting(ctrl, s);
                 ctrl.lloop_strategy = strategy;
                 TRexSelector sel(Xm, ym, 0.1, ctrl, 42, false);
@@ -159,7 +159,7 @@ TEST(TRexThreadDeterminismTest, DependencyAwareSelector) {
             Eigen::VectorXd y = pb.y;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-            da::TRexDAControlParameter ctrl;
+            da::TRexDAControl ctrl;
             ctrl.method = da::DAMethod::AR1;
             applySetting(ctrl.trex_ctrl, s);
             da::TRexDASelector sel(Xm, ym, 0.1, ctrl, 42, false);
@@ -177,7 +177,7 @@ TEST(TRexThreadDeterminismTest, GroupedVariableSelector) {
             Eigen::VectorXd y = pb.y;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-            gvs::TRexGVSControlParameter ctrl;
+            gvs::TRexGVSControl ctrl;
             ctrl.gvs_type = gvs::GVSType::EN;
             ctrl.lambda_2 = 1.0;
             applySetting(ctrl.trex_ctrl, s);
@@ -196,15 +196,15 @@ TEST(TRexThreadDeterminismTest, ScreeningSelector) {
             Eigen::VectorXd y = pb.y;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-            scr::ScreenTRexControlParameter ctrl;
+            scr::TRexScreeningControl ctrl;
             ctrl.trex_method = scr::ScreenTRexMethod::TREX;
             applySetting(ctrl.trex_ctrl, s);
             ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
-            scr::ScreenTRexSelector sel(Xm, ym, ctrl, 42, false);
+            scr::TRexScreeningSelector sel(Xm, ym, ctrl, 42, false);
             sel.select();
             return sel.getScreenResult();   // select() slices to the base type
         },
-        [](const scr::ScreenTRexSelectionResult& ref, const scr::ScreenTRexSelectionResult& run) {
+        [](const scr::TRexScreeningResult& ref, const scr::TRexScreeningResult& run) {
             expectBitwiseEqual(ref.selected_var, run.selected_var, "selected_var");
             EXPECT_EQ(ref.estimated_FDR, run.estimated_FDR);
             expectBitwiseEqual(ref.beta_mat, run.beta_mat, "beta_mat");
@@ -220,14 +220,14 @@ TEST(TRexThreadDeterminismTest, BiobankScreeningSelector) {
             Eigen::VectorXd y = pb.y;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-            bio::BiobankScreenTRexControl ctrl;
+            bio::TRexBiobankScreeningControl ctrl;
             ctrl.trex_screen_ctrl.trex_method = scr::ScreenTRexMethod::TREX;
             applySetting(ctrl.trex_screen_ctrl.trex_ctrl, s);
             ctrl.trex_screen_ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
-            bio::BiobankScreenTRex sel(Xm, ym, ctrl, 42, false);
+            bio::TRexBiobankScreeningSelector sel(Xm, ym, ctrl, 42, false);
             return sel.screenPhenotype();
         },
-        [](const bio::BiobankScreenTRexResult& ref, const bio::BiobankScreenTRexResult& run) {
+        [](const bio::TRexBiobankScreeningResult& ref, const bio::TRexBiobankScreeningResult& run) {
             EXPECT_EQ(ref.selected_indices, run.selected_indices);
             EXPECT_EQ(ref.estimated_FDR, run.estimated_FDR);
             EXPECT_EQ(ref.method_used, run.method_used);
@@ -241,10 +241,10 @@ TEST(TRexThreadDeterminismTest, SparsePcaSelector) {
         [&](const ThreadSetting& s) {
             Eigen::MatrixXd X = pb.X;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
-            spca::TRexSPCAControlParameter ctrl;
+            spca::TRexSPCAControl ctrl;
             ctrl.gvs_ctrl.lambda_2 = 1.0;
             applySetting(ctrl.gvs_ctrl.trex_ctrl, s);
-            spca::TRexSPCA sel(Xm, 2, 0.1, ctrl, 42, false);
+            spca::TRexSPCASelector sel(Xm, 2, 0.1, ctrl, 42, false);
             return sel.select();
         },
         [](const spca::TRexSPCAResult& ref, const spca::TRexSPCAResult& run) {
@@ -264,7 +264,7 @@ TEST(TRexThreadDeterminismTest, TikhonovSelector) {
             Eigen::VectorXd y = pb.y;
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
-            tik::TRexTikhonovControlParameter ctrl;
+            tik::TRexTikhonovControl ctrl;
             Eigen::SparseMatrix<double> K(p, p);
             K.setIdentity();
             ctrl.tikhonov_K = K;

@@ -3,10 +3,40 @@
 ## TRexSelector C++ 1.1.0 / R 2.1.0 / Python 1.1.0 (in preparation)
 
 The feature release after C++ 1.0.3, R 2.0.3 and Python 1.0.3, not published yet. The coordinate-descent
-solver family is excluded from the three packages, as their deprecation texts announced. The version
-files read C++ 1.0.3, R 2.0.3 and Python 1.0.3 until the release is prepared.
+solver family is excluded from the three packages, as their deprecation texts announced. A naming pass
+gives the three packages one set of names, C++ first. The version files read C++ 1.0.3, R 2.0.3 and Python
+1.0.3 until the release is prepared.
 
 ### 2026-11-27
+
+#### The naming pass starts: the C++ types take their final names
+
+- The names of the three packages are settled for the feature release. Fabian decided them on 2026-11-27,
+  question by question, and one list holds the 511 public names of today with the name each one takes. 260
+  of them change. The aim is one name on C++, Python and R, so the paper on the software prints a single
+  interface. The pass runs C++ first, then Python, then R, and each package is finished and checked before
+  the next one starts.
+- This entry is the first step in C++, the types. 42 classes and structs take their names. The selectors,
+  controls and results follow the triad `TRex<Method>Selector`, `TRex<Method>Control` and
+  `TRex<Method>Result` (`TRexDAControl` for `TRexDAControlParameter`, `TRexScreeningSelector` for
+  `ScreenTRexSelector`, `TRexResult` for `SelectionResult`). The T-solvers are `TSolver<Name>`
+  (`TSolverLARS` for `TLARS_Solver`, `TSolverOOLS` for `TOOLS_Solver`), with `TSolverBase`, `TSolverOptions`
+  and `TSolverParams` (before `SolverHyperparameters`). The ML classes are `SVD`, `Ridge`, `RidgeCV`,
+  `ElasticNet` and `ElasticNetCV`, and the class of the dummy distribution is `DummyDistribution`.
+- Every old type name stays for one release as an alias with `[[deprecated("Use <new name>")]]`, so C++ user
+  code keeps compiling and the compiler names the replacement. A new test holds the 42 aliases at compile
+  time.
+- The result types `TRexResult`, `TRexDAResult`, `TRexGVSResult` and `TRexBiobankScreeningStatistics` stand
+  at the namespace level. They were nested in their selector classes, where the old nested names remain as
+  aliases.
+- Messages that name a class carry the new name (`TSolverAFS: rho must be in the range (0, 1].`). R and
+  Python users read these messages too, and one test in R and one in Python that hold this text changed.
+- Five T-solver classes are registered for serialization under their full class name, which is the key
+  inside a saved solver file. The key strings stay as they were, so a file saved with an earlier version
+  loads.
+- The R and the Python surface do not change in this step. Their binding sources call the new C++ names,
+  and their tests pass with the test files as they were, apart from the two messages.
+- Tests. C++ 700 (one new), R 2,111 and Python 726.
 
 #### The selection mode of BT, NN and the prior groups is deprecated
 

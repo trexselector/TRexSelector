@@ -32,7 +32,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 /**
  * @brief T-Stepwise Regression Solver (Forward Selection with Dummy Variables)
  *
- * @details Specializes the TLARS_Solver for classical stepwise (greedy)
+ * @details Specializes the TSolverLARS for classical stepwise (greedy)
  * regression with dummy variable augmentation to support FDR-controlled
  * variable selection.
  *
@@ -48,7 +48,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  * 7. Result: All active variables have zero correlation with new residual
  *
  * Numerical Stability:
- * - Inherits Cholesky updates from TLARS_Solver (collinearity detection)
+ * - Inherits Cholesky updates from TSolverLARS (collinearity detection)
  * - Full correlation recomputation each step (no incremental drift)
  * - Orthogonal steps prevent accumulation of numerical errors
  *
@@ -60,13 +60,13 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TSTEPWISE_Solver: public TLARS_Solver {
+class TSolverStepwise: public TSolverLARS {
 
 protected:
     /**
     * @brief Protected constructor for inheritance by derived classes.
     */
-    explicit TSTEPWISE_Solver(SolverTypeLarsBased solver_type) : TLARS_Solver(solver_type) {}
+    explicit TSolverStepwise(SolverTypeLarsBased solver_type) : TSolverLARS(solver_type) {}
 
 public:
 
@@ -75,39 +75,39 @@ public:
     // ==========================================================================
 
     /**
-     * @brief Construct a new TSTEPWISE_Solver object
+     * @brief Construct a new TSolverStepwise object
      *
      * @param X Predictor matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (size n).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (unit L2-norm columns), intercept (centering), verbose
      *        (detailed status and diagnostics) and scaling_mode (L2 or
      *        z-score, default L2), the tolerance and the tie-breaking.
      */
-    TSTEPWISE_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverStepwise(Eigen::Map<Eigen::MatrixXd>& X,
                      Eigen::Map<Eigen::MatrixXd>& D,
                      Eigen::Map<Eigen::VectorXd>& y,
-                     const SolverOptions& options = SolverOptions{})
-        : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TSTEPWISE) {}
+                     const TSolverOptions& options = TSolverOptions{})
+        : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TSTEPWISE) {}
 
     /** @brief Default constructor for serialization or deferred initialization. */
-    TSTEPWISE_Solver() : TLARS_Solver(SolverTypeLarsBased::TSTEPWISE) {}
+    TSolverStepwise() : TSolverLARS(SolverTypeLarsBased::TSTEPWISE) {}
 
     /** @brief Deleted copy constructor. */
-    TSTEPWISE_Solver(const TSTEPWISE_Solver&) = delete;
+    TSolverStepwise(const TSolverStepwise&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TSTEPWISE_Solver& operator=(const TSTEPWISE_Solver&) = delete;
+    TSolverStepwise& operator=(const TSolverStepwise&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TSTEPWISE_Solver(TSTEPWISE_Solver&&) = default;
+    TSolverStepwise(TSolverStepwise&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TSTEPWISE_Solver& operator=(TSTEPWISE_Solver&&) = delete;
+    TSolverStepwise& operator=(TSolverStepwise&&) = delete;
 
     /** @brief Destructor. */
-    ~TSTEPWISE_Solver() override = default;
+    ~TSolverStepwise() override = default;
 
 
     // ==========================================================================
@@ -155,13 +155,13 @@ public:
      * @param archive Output/input archive object.
      *
      * @note X_ must be reconnected after deserialization.
-     * @note Inherits TLARS_Solver serialization.
+     * @note Inherits TSolverLARS serialization.
      */
 
     template<class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TLARS_Solver>(this)
+            cereal::base_class<TSolverLARS>(this)
         );
     }
 
@@ -179,13 +179,13 @@ public:
     void save(const std::string& filename) const override;
 
     /**
-     * @brief Load TSTEPWISE_Solver from file (binary serialization).
+     * @brief Load TSolverStepwise from file (binary serialization).
      *
      * @param filename Path to input file.
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      */
-    static TSTEPWISE_Solver load(const std::string& filename,
+    static TSolverStepwise load(const std::string& filename,
                                  Eigen::Map<Eigen::MatrixXd>& X,
                                  Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -218,6 +218,10 @@ protected:
     void recomputeCorrelations();
 
 };
+
+/** @brief Old name of TSolverStepwise.
+ *  @deprecated Use TSolverStepwise. */
+using TSTEPWISE_Solver [[deprecated("Use TSolverStepwise")]] = TSolverStepwise;
 
 // =============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::lars_based */

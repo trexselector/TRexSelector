@@ -16,7 +16,7 @@
 #include <utils/openmp/utils_openmp.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::utils::openmp::get_max_threads;
 using trex::utils::openmp::get_num_threads;
 using trex::utils::openmp::set_num_threads;
@@ -50,18 +50,18 @@ int main() {
 
     doc.begin("parallel");
     //! [parallel]
-    TRexControlParameter serial_ctrl;
+    TRexControl serial_ctrl;
     serial_ctrl.K = 10;
     TRexSelector serial(X_map, y_map, 0.1, serial_ctrl, /*seed=*/42, /*verbose=*/false);
     serial.select();
 
-    TRexControlParameter outer_ctrl = serial_ctrl;
+    TRexControl outer_ctrl = serial_ctrl;
     outer_ctrl.parallel_rnd_experiments = true;
     outer_ctrl.max_outer_threads = 2;
     TRexSelector parallel(X_map, y_map, 0.1, outer_ctrl, 42, false);
     parallel.select();
 
-    TRexControlParameter inner_ctrl = serial_ctrl;
+    TRexControl inner_ctrl = serial_ctrl;
     inner_ctrl.max_inner_threads = 2;
     TRexSelector budget(X_map, y_map, 0.1, inner_ctrl, 42, false);
     budget.select();
@@ -88,7 +88,7 @@ int main() {
         Eigen::Map<Eigen::MatrixXd> X_mc_map(X_mc.data(), n, p);
         Eigen::Map<Eigen::VectorXd> y_mc_map(y_mc.data(), n);
 
-        TRexControlParameter ctrl;   // serial inside the worker, the default
+        TRexControl ctrl;   // serial inside the worker, the default
         ctrl.K = 10;
         // seed -1: every trial draws its own dummies
         TRexSelector sel(X_mc_map, y_mc_map, 0.1, ctrl, /*seed=*/-1, false);

@@ -57,14 +57,14 @@
 // Nothing is copied: a solver constructed with normalize = TRUE or intercept =
 // TRUE preprocesses the R matrix (or the mmap file) IN PLACE and holds a claim
 // on it until $restore() or garbage collection; with both FALSE it is a reader
-// and never writes (TSolver_Base::restore() documents the contract). y is never
+// and never writes (TSolverBase::restore() documents the contract). y is never
 // written: the solver centers an internal copy.
 
 struct TSolverRcpp {
     Eigen::Map<Eigen::MatrixXd>  X_map_;    // view of the R matrix or of the memory-mapped file
     Eigen::Map<Eigen::MatrixXd>  D_map_;    // view of the R matrix or of the memory-mapped file
     Eigen::Map<Eigen::VectorXd>  y_map_;    // view over the R vector (never written)
-    trex::tsolvers::ad::TSolver_Base* solver_;   // the concrete solver (owned)
+    trex::tsolvers::ad::TSolverBase* solver_;   // the concrete solver (owned)
 
     TSolverRcpp(Eigen::Map<Eigen::MatrixXd> X,
                 Eigen::Map<Eigen::MatrixXd> D,
@@ -77,7 +77,7 @@ struct TSolverRcpp {
     TSolverRcpp& operator=(TSolverRcpp&&)      = delete;
 
     // A writer that is garbage-collected without $restore() writes the
-    // caller's X and D back from ~TSolver_Base (the finalizer safety net),
+    // caller's X and D back from ~TSolverBase (the finalizer safety net),
     // so the R matrix or the mmap file never stays preprocessed without an
     // owner. The R objects are still alive then (protection slot).
     ~TSolverRcpp() { delete solver_; }
@@ -90,12 +90,12 @@ using namespace trex::ml_methods::model_selection;
 
 // The ridge_cv_* endpoints are backed by the SVD-path implementation
 // (the former ridge_cv and the GCV variant were removed from the core).
-using ridge_cv = trex::ml_methods::model_selection::ridge_cv_svd;
+using ridge_cv = trex::ml_methods::model_selection::RidgeCV;
 
 // Elastic-net (coordinate-descent) endpoints: enet_path is the glmnet-style
 // path fit, enet_cv its K-fold CV lambda selector.
-using enet_path = trex::ml_methods::model_selection::enet_gaussian;
-using enet_cv   = trex::ml_methods::model_selection::enet_cv_ccd;
+using enet_path = trex::ml_methods::model_selection::ElasticNet;
+using enet_cv   = trex::ml_methods::model_selection::ElasticNetCV;
 
 // Memory-mapped matrix handle shared by the mmap_matrix() utilities and the
 // zero-copy *_mmap ml_methods endpoints.

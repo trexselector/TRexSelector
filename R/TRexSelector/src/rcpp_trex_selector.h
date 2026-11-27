@@ -48,7 +48,7 @@ using namespace trex::trex_selector_methods::ad::trex_core;
  */
 inline Eigen::Map<Eigen::MatrixXd> mapped_design_for(
     trex::utils::memmap::MemoryMappedMatrix<double>& X,
-    const TRexControlParameter& control
+    const TRexControl& control
 ) {
     namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
     return X.getMapFor(dn::writesDesign(control.scaling_mode));
@@ -94,7 +94,7 @@ public:
         Eigen::Map<Eigen::MatrixXd> X, // NOLINT (performance-unnecessary-value-param)
         Eigen::Map<Eigen::VectorXd> y, // NOLINT (performance-unnecessary-value-param)
         double tFDR,
-        const TRexControlParameter& trex_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) {
@@ -110,7 +110,7 @@ public:
     TRexSelector* get() const { return selector_.get(); }
 
     /** @brief Run the selection process. */
-    virtual TRexSelector::SelectionResult select() { return selector_->select(); }
+    virtual TRexResult select() { return selector_->select(); }
 
     /** @brief Give X back before select() (idempotent; no-op after select()). */
     void restore() { selector_->restore(); }

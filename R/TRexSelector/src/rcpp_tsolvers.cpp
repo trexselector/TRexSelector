@@ -59,7 +59,7 @@ using namespace trex::tsolvers::ad::linear_model::afs_based;
  *
  * @return Eigen::Map of the R matrix or of the memory-mapped file.
  */
-static Eigen::Map<Eigen::MatrixXd> design_map_of(SEXP m, const SolverOptions& opts, const char* name) {
+static Eigen::Map<Eigen::MatrixXd> design_map_of(SEXP m, const TSolverOptions& opts, const char* name) {
     if (Rf_inherits(m, "mmap_matrix")) {
         XPtr<MemoryMappedMatrix<double>> ptr(m);
         return ptr->getMapFor(opts.writesDesign());
@@ -83,14 +83,14 @@ static Eigen::Map<Eigen::VectorXd> map_of(Rcpp::NumericVector& v) {
 // vector of the IEN solvers (TIENETAug, TIENET) or the Tikhonov
 // matrix of the sparse-K solver TIKNET — where
 // `options` is the R list built by tsolver_options().
-// parse_solver_options() maps it onto the C++ SolverOptions; absent fields
+// parse_solver_options() maps it onto the C++ TSolverOptions; absent fields
 // keep the C++ defaults.
 
 /**
- * @brief Parse the tsolver_options() list into trex::tsolvers::ad::SolverOptions.
+ * @brief Parse the tsolver_options() list into trex::tsolvers::ad::TSolverOptions.
  */
-SolverOptions parse_solver_options(const Rcpp::List& o) {
-    SolverOptions opts;
+TSolverOptions parse_solver_options(const Rcpp::List& o) {
+    TSolverOptions opts;
     auto has = [&](const char* name) { return o.containsElementNamed(name); };
 
     if (has("normalize")) opts.normalize = Rcpp::as<bool>(o["normalize"]);
@@ -143,7 +143,7 @@ static Eigen::SparseMatrix<double> tsolver_as_sparse_matrix(SEXP m) {
 // Instance creators (X and D: an R matrix in memory or a memory-mapped file)
 // ==============================================================================
 
-//' @title Create TLARS_Solver
+//' @title Create TSolverLARS
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -159,17 +159,17 @@ XPtr<TSolverRcpp> tsolver_lars_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TLARS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverLARS(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TLASSO_Solver
+//' @title Create TSolverLASSO
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -185,17 +185,17 @@ XPtr<TSolverRcpp> tsolver_tlasso_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TLASSO_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverLASSO(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TSTEPWISE_Solver
+//' @title Create TSolverStepwise
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -211,17 +211,17 @@ XPtr<TSolverRcpp> tsolver_tstepwise_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TSTEPWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverStepwise(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TSTAGEWISE_Solver
+//' @title Create TSolverStagewise
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -237,17 +237,17 @@ XPtr<TSolverRcpp> tsolver_tstagewise_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TSTAGEWISE_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverStagewise(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TENET_Solver
+//' @title Create TSolverENET
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -263,17 +263,17 @@ XPtr<TSolverRcpp> tsolver_tenet_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TENET_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverENET(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TENETAug_Solver
+//' @title Create TSolverENETAug
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -289,17 +289,17 @@ XPtr<TSolverRcpp> tsolver_tenet_aug_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverENETAug(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TIENETAug_Solver
+//' @title Create TSolverIENETAug
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -317,17 +317,17 @@ XPtr<TSolverRcpp> tsolver_tienet_aug_create(
     IntegerVector groups,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TIENETAug_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
+    h->solver_ = new TSolverIENETAug(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TIENET_Solver
+//' @title Create TSolverIENET
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -345,17 +345,17 @@ XPtr<TSolverRcpp> tsolver_tienet_create(
     IntegerVector groups,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TIENET_Solver(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
+    h->solver_ = new TSolverIENET(h->X_map_, h->D_map_, h->y_map_, groups_from_r(groups), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TIKNET_Solver
+//' @title Create TSolverTIKNET
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -373,17 +373,17 @@ XPtr<TSolverRcpp> tsolver_tiknet_create(
     SEXP tikhonov_K,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TIKNET_Solver(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
+    h->solver_ = new TSolverTIKNET(h->X_map_, h->D_map_, h->y_map_, tsolver_as_sparse_matrix(tikhonov_K), opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TOMP_Solver
+//' @title Create TSolverOMP
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -399,17 +399,17 @@ XPtr<TSolverRcpp> tsolver_omp_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TOMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverOMP(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TGP_Solver
+//' @title Create TSolverGP
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -425,17 +425,17 @@ XPtr<TSolverRcpp> tsolver_tgp_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverGP(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TACGP_Solver
+//' @title Create TSolverACGP
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -451,17 +451,17 @@ XPtr<TSolverRcpp> tsolver_tacgp_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TACGP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverACGP(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TMP_Solver
+//' @title Create TSolverMP
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -477,17 +477,17 @@ XPtr<TSolverRcpp> tsolver_tmp_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverMP(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TOOLS_Solver
+//' @title Create TSolverOOLS
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -503,17 +503,17 @@ XPtr<TSolverRcpp> tsolver_tools_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TOOLS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverOOLS(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TNCGMP_Solver
+//' @title Create TSolverNCGMP
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -529,17 +529,17 @@ XPtr<TSolverRcpp> tsolver_tncgmp_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TNCGMP_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverNCGMP(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
                              Rcpp::List::create(X, D, y));
 }
 
-//' @title Create TAFS_Solver
+//' @title Create TSolverAFS
 //'
 //' @param X Design matrix or mmap_matrix
 //' @param D Dummy matrix or mmap_matrix
@@ -555,10 +555,10 @@ XPtr<TSolverRcpp> tsolver_tafs_create(
     Rcpp::NumericVector y,
     Rcpp::List options
 ) {
-    const SolverOptions opts = parse_solver_options(options);
+    const TSolverOptions opts = parse_solver_options(options);
     auto h = std::make_unique<TSolverRcpp>(design_map_of(X, opts, "X"), design_map_of(D, opts, "D"),
                                            map_of(y));
-    h->solver_ = new TAFS_Solver(h->X_map_, h->D_map_, h->y_map_, opts);
+    h->solver_ = new TSolverAFS(h->X_map_, h->D_map_, h->y_map_, opts);
     // The protection slot pins X, D and y until the finalizer has run (a
     // writer's restore() writes back through the maps).
     return XPtr<TSolverRcpp>(h.release(), true, R_NilValue,
@@ -738,7 +738,7 @@ List tsolver_get_actions(
 NumericVector tsolver_get_lambda(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TLARS_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverLARS*>(ptr->solver_)) {
         return Rcpp::wrap(p->getLambda());
     }
     stop("tsolver_get_lambda: Solver type does not have a lambda path.");
@@ -750,13 +750,13 @@ NumericVector tsolver_get_lambda(
 int tsolver_get_num_removals(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TSTAGEWISE_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverStagewise*>(ptr->solver_)) {
         return static_cast<int>(p->getNumRemovals());
     }
-    if (auto* p = dynamic_cast<TENET_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverENET*>(ptr->solver_)) {
         return static_cast<int>(p->getNumRemovals());
     }
-    if (auto* p = dynamic_cast<TLASSO_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverLASSO*>(ptr->solver_)) {
         return static_cast<int>(p->getNumRemovals());
     }
     stop("tsolver_get_num_removals: Solver type does not track removals.");
@@ -768,13 +768,13 @@ int tsolver_get_num_removals(
 double tsolver_get_cycling_ratio(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TSTAGEWISE_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverStagewise*>(ptr->solver_)) {
         return p->getCyclingRatio();
     }
-    if (auto* p = dynamic_cast<TENET_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverENET*>(ptr->solver_)) {
         return p->getCyclingRatio();
     }
-    if (auto* p = dynamic_cast<TLASSO_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverLASSO*>(ptr->solver_)) {
         return p->getCyclingRatio();
     }
     stop("tsolver_get_cycling_ratio: Solver type does not support getCyclingRatio().");
@@ -786,7 +786,7 @@ double tsolver_get_cycling_ratio(
 double tsolver_tienet_aug_get_lambda2(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TIENETAug_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverIENETAug*>(ptr->solver_)) {
         return p->getLambda2();
     }
     stop("tsolver_tienet_aug_get_lambda2: Solver is not a TIENETAug_Solver.");
@@ -798,7 +798,7 @@ double tsolver_tienet_aug_get_lambda2(
 IntegerVector tsolver_tienet_aug_get_groups(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TIENETAug_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverIENETAug*>(ptr->solver_)) {
         // Solver stores 0-based group ids; return 1-based (package convention).
         const Eigen::VectorXi& g = p->getGroups();
         IntegerVector out(g.size());
@@ -814,7 +814,7 @@ IntegerVector tsolver_tienet_aug_get_groups(
 int tsolver_tienet_aug_get_num_groups(
     XPtr<TSolverRcpp> ptr // NOLINT(performance-unnecessary-value-param)
 ) {
-    if (auto* p = dynamic_cast<TIENETAug_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverIENETAug*>(ptr->solver_)) {
         return static_cast<int>(p->getNumGroups());
     }
     stop("tsolver_tienet_aug_get_num_groups: Solver is not a TIENETAug_Solver.");
@@ -837,42 +837,42 @@ void tsolver_save(
     }
     cereal::PortableBinaryOutputArchive archive(os);
 
-    TSolver_Base* s = ptr->solver_;
+    TSolverBase* s = ptr->solver_;
     // Derived classes must be checked before their base classes.
     // LARS family
-    if (auto* p = dynamic_cast<TSTAGEWISE_Solver*>(s)) {
+    if (auto* p = dynamic_cast<TSolverStagewise*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TENETAug_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverENETAug*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIENETAug_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverIENETAug*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIENET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverIENET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIKNET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverTIKNET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TENET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverENET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TLASSO_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverLASSO*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TSTEPWISE_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverStepwise*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TLARS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverLARS*>(s)) {
         archive(*p);
     // OMP family
-    } else if (auto* p = dynamic_cast<TACGP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverACGP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TGP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverGP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverMP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TOOLS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverOOLS*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TOMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverOMP*>(s)) {
         archive(*p);
     // Independent families
-    } else if (auto* p = dynamic_cast<TNCGMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverNCGMP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TAFS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverAFS*>(s)) {
         archive(*p);
     } else {
         stop("tsolver_save: Unsupported TSolver type.");
@@ -910,42 +910,42 @@ void tsolver_load(
     }
     cereal::PortableBinaryInputArchive archive(is);
 
-    TSolver_Base* s = ptr->solver_;
+    TSolverBase* s = ptr->solver_;
     // Derived classes must be checked before their base classes.
     // LARS family
-    if (auto* p = dynamic_cast<TSTAGEWISE_Solver*>(s)) {
+    if (auto* p = dynamic_cast<TSolverStagewise*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TENETAug_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverENETAug*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIENETAug_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverIENETAug*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIENET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverIENET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TIKNET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverTIKNET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TENET_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverENET*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TLASSO_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverLASSO*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TSTEPWISE_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverStepwise*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TLARS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverLARS*>(s)) {
         archive(*p);
     // OMP family
-    } else if (auto* p = dynamic_cast<TACGP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverACGP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TGP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverGP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverMP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TOOLS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverOOLS*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TOMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverOMP*>(s)) {
         archive(*p);
     // Independent families
-    } else if (auto* p = dynamic_cast<TNCGMP_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverNCGMP*>(s)) {
         archive(*p);
-    } else if (auto* p = dynamic_cast<TAFS_Solver*>(s)) {
+    } else if (auto* p = dynamic_cast<TSolverAFS*>(s)) {
         archive(*p);
     } else {
         stop("tsolver_load: Unsupported TSolver type.");
@@ -963,7 +963,7 @@ void tsolver_load(
 //' @noRd
 // [[Rcpp::export]]
 double tsolver_tienet_get_lambda2(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TIENET_Solver*>(ptr->solver_)) return p->getLambda2();
+    if (auto* p = dynamic_cast<TSolverIENET*>(ptr->solver_)) return p->getLambda2();
     stop("tsolver_tienet_get_lambda2: Solver is not a TIENET_Solver.");
 }
 
@@ -971,7 +971,7 @@ double tsolver_tienet_get_lambda2(XPtr<TSolverRcpp> ptr) { // NOLINT(performance
 //' @noRd
 // [[Rcpp::export]]
 IntegerVector tsolver_tienet_get_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TIENET_Solver*>(ptr->solver_)) {
+    if (auto* p = dynamic_cast<TSolverIENET*>(ptr->solver_)) {
         const Eigen::VectorXi& g = p->getGroups();
         IntegerVector out(g.size());
         for (Eigen::Index i = 0; i < g.size(); ++i) out[i] = g[i] + 1;
@@ -984,7 +984,7 @@ IntegerVector tsolver_tienet_get_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(perfo
 //' @noRd
 // [[Rcpp::export]]
 int tsolver_tienet_get_num_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TIENET_Solver*>(ptr->solver_)) return static_cast<int>(p->getNumGroups());
+    if (auto* p = dynamic_cast<TSolverIENET*>(ptr->solver_)) return static_cast<int>(p->getNumGroups());
     stop("tsolver_tienet_get_num_groups: Solver is not a TIENET_Solver.");
 }
 
@@ -992,7 +992,7 @@ int tsolver_tienet_get_num_groups(XPtr<TSolverRcpp> ptr) { // NOLINT(performance
 //' @noRd
 // [[Rcpp::export]]
 double tsolver_tik_get_lambda2(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    if (auto* p = dynamic_cast<TIKNET_Solver*>(ptr->solver_)) return p->getLambda2();
+    if (auto* p = dynamic_cast<TSolverTIKNET*>(ptr->solver_)) return p->getLambda2();
     stop("tsolver_tik_get_lambda2: Solver is not a TIKNET_Solver.");
 }
 
@@ -1116,7 +1116,7 @@ void tsolver_clear_warnings(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnec
 //' @noRd
 // [[Rcpp::export]]
 int tsolver_lars_get_kahan_refresh_interval(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    auto* s = dynamic_cast<TLARS_Solver*>(ptr->solver_);
+    auto* s = dynamic_cast<TSolverLARS*>(ptr->solver_);
     if (s == nullptr) stop("get_kahan_refresh_interval: not a LARS-family solver.");
     return static_cast<int>(s->getKahanRefreshInterval());
 }
@@ -1125,7 +1125,7 @@ int tsolver_lars_get_kahan_refresh_interval(XPtr<TSolverRcpp> ptr) { // NOLINT(p
 // [[Rcpp::export]]
 void tsolver_lars_set_kahan_refresh_interval(XPtr<TSolverRcpp> ptr,
     int interval) { // NOLINT(performance-unnecessary-value-param)
-    auto* s = dynamic_cast<TLARS_Solver*>(ptr->solver_);
+    auto* s = dynamic_cast<TSolverLARS*>(ptr->solver_);
     if (s == nullptr) stop("set_kahan_refresh_interval: not a LARS-family solver.");
     s->setKahanRefreshInterval(static_cast<std::size_t>(interval));
 }
@@ -1133,7 +1133,7 @@ void tsolver_lars_set_kahan_refresh_interval(XPtr<TSolverRcpp> ptr,
 //' @noRd
 // [[Rcpp::export]]
 double tsolver_tenet_get_alpha(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-unnecessary-value-param)
-    auto* s = dynamic_cast<TENET_Solver*>(ptr->solver_);
+    auto* s = dynamic_cast<TSolverENET*>(ptr->solver_);
     if (s == nullptr) stop("get_alpha: not a TENET solver.");
     return s->getAlpha();
 }
@@ -1142,7 +1142,7 @@ double tsolver_tenet_get_alpha(XPtr<TSolverRcpp> ptr) { // NOLINT(performance-un
 // NOLINTBEGIN(performance-unnecessary-value-param)
 // [[Rcpp::export]]
 Eigen::SparseMatrix<double> tsolver_tik_get_tikhonov_k(XPtr<TSolverRcpp> ptr) {
-    if (auto* a = dynamic_cast<TIKNET_Solver*>(ptr->solver_)) return a->getTikhonovK();
+    if (auto* a = dynamic_cast<TSolverTIKNET*>(ptr->solver_)) return a->getTikhonovK();
     stop("get_tikhonov_k: not a TIKNET solver.");
 }
 // NOLINTEND(performance-unnecessary-value-param)

@@ -22,10 +22,10 @@
 #include <utils/memmap/memory_mapped_matrix.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
-using trex::tsolvers::ad::linear_model::lars_based::TLARS_Solver;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
+using trex::tsolvers::ad::linear_model::lars_based::TSolverLARS;
 using trex::ml_methods::scaler_methods::ZScoreScaler;
-using trex::ml_methods::model_selection::enet_gaussian;
+using trex::ml_methods::model_selection::ElasticNet;
 using trex::utils::memmap::AccessMode;
 using MappedMatrix = trex::utils::memmap::MemoryMappedMatrix<double>;
 namespace dn = trex::trex_selector_methods::ad::utils::data_normalizer;
@@ -102,7 +102,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     Eigen::VectorXd y = X * beta + noise;
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 10;
 
     TRexSelector sel_mem(X_map, y_map, 0.1, ctrl, /*seed=*/3, /*verbose=*/false);
@@ -129,7 +129,7 @@ void run(DocSections& doc, const fs::path& workdir) {
 
     MappedMatrix pre_ro(path_pre, n, p, AccessMode::ReadOnly);
     Eigen::Map<Eigen::VectorXd> y_pre_map(y_pre.data(), n);
-    TRexControlParameter none = ctrl;
+    TRexControl none = ctrl;
     none.scaling_mode = dn::ScalingMode::NONE;
 
     auto reader_view = pre_ro.getMapFor(dn::writesDesign(none.scaling_mode));   // reads only
@@ -148,7 +148,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     Eigen::MatrixXd D = Eigen::MatrixXd::NullaryExpr(n, p, [&] { return normal(gen); });
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), n, p);
 
-    TLARS_Solver s(view, D_map, y_map);
+    TSolverLARS s(view, D_map, y_map);
     s.executeStep(/*T_stop=*/2);
     for (std::size_t j : s.getActivePredictorIndices()) std::cout << j << ' ';
     std::cout << '\n';
@@ -159,7 +159,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     std::cout << (std::abs(view.col(0).mean()) < 1e-12) << '\n';   // the file is centered
     z.inverse_transform_inplace(view);
 
-    enet_gaussian en(/*low_memory=*/true);
+    ElasticNet en(/*low_memory=*/true);
     en.fit(view, y, /*alpha=*/1.0, /*n_lambda=*/20);
     std::cout << en.coef().rows() << " x " << en.coef().cols() << '\n';
     //! [solver]

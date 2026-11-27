@@ -19,7 +19,7 @@
  *      - DummyGenerator&    (generates / retrieves D matrices)
  *      - wsm::WarmStartManager&  (manages solver warm-start state)
  *      - mm::MemmapManager*     (optional, for memory-mapped D storage)
- *      - disp::SolverConfig template fields (from TRexControlParameter)
+ *      - disp::SolverConfig template fields (from TRexControl)
  *
  *   Ressources are owned by the TRexSelector only.
  *
@@ -111,7 +111,7 @@ struct ExperimentRunnerConfig {
 
     // --- Solver ---
     disp::SolverTypeForTRex solver_type = disp::SolverTypeForTRex::TLARS;
-    disp::SolverHyperparameters solver_params{};
+    disp::TSolverParams solver_params{};
 
     /** @brief Base for deterministic per-experiment tie-break seeds
      *  (< 0 = nondeterministic: the solvers are seeded from
@@ -129,7 +129,7 @@ struct ExperimentRunnerConfig {
 
     /** @brief X and y were centered by the selector (the dummies always
      *  are): the solvers cap their active sets at n - 1, the rank of the
-     *  centered design (SolverOptions::precentered). */
+     *  centered design (TSolverOptions::precentered). */
     bool precentered = false;
 
     // --- Warm start ---
@@ -144,7 +144,7 @@ struct ExperimentRunnerConfig {
      *  parallel_rnd_experiments is set; the runner caps the count at K. */
     int max_outer_threads = 1;
 
-    /** @brief Budget of the solvers' own regions (SolverOptions::n_threads);
+    /** @brief Budget of the solvers' own regions (TSolverOptions::n_threads);
      *  every solver pins Eigen's thread count to it for its own call and
      *  keeps its regions serial inside a parallel K-loop. */
     int max_inner_threads = 1;
@@ -165,7 +165,7 @@ struct ExperimentRunnerConfig {
 
     // --- T-Rex+Screening beta collection ---
     /** @brief If true, also accumulate per-experiment beta sums and non-zero dummy betas.
-     *  Used by ScreenTRexSelector for bootstrap and mean-coefficient computation.
+     *  Used by TRexScreeningSelector for bootstrap and mean-coefficient computation.
      *  Only meaningful when T_stop == 1. */
     bool collect_screen_betas = false;
 };
@@ -687,7 +687,7 @@ private:
             .tikhonov_K_validated = cfg.tikhonov_K_validated
         };
 
-        std::unique_ptr<trex::tsolvers::ad::TSolver_Base> retained;
+        std::unique_ptr<trex::tsolvers::ad::TSolverBase> retained;
         if (cfg.use_warm_start) {
             if (warm_start_mgr_.mode() == wsm::WarmStartMode::IN_MEMORY) {
                 if (warm_available) {

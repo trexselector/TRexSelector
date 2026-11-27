@@ -39,13 +39,13 @@ static Eigen::SparseMatrix<double> as_sparse_matrix(SEXP m) {
 
 
 /**
- * @brief Parses an R list into a TRexTikhonovControlParameter struct.
+ * @brief Parses an R list into a TRexTikhonovControl struct.
  *
  * The nested trex_ctrl keeps its C++ default here. merge_tikhonov_control()
  * replaces it when the caller passes a base control.
  */
-TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control) {
-    TRexTikhonovControlParameter params;
+TRexTikhonovControl parse_tikhonov_parameter(const Rcpp::List& control) {
+    TRexTikhonovControl params;
 
     if (control.containsElementNamed("tikhonov_K") &&
         !Rf_isNull(control["tikhonov_K"])) {
@@ -191,26 +191,26 @@ TRexTikhonovControlParameter parse_tikhonov_parameter(const Rcpp::List& control)
 // =========================================================================================
 
 // Shared parser from rcpp_trex_selector.cpp
-extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
+extern TRexControl parse_control_parameter(const Rcpp::List& control);
 
 // The control of a GVS run from the two R lists, from rcpp_trex_gvs.cpp
-extern TRexGVSControlParameter gvs_run_control(
+extern TRexGVSControl gvs_run_control(
     const Rcpp::List& gvs_control_list,
     const Rcpp::Nullable<Rcpp::List>& trex_control_list);
 
 // Shared tuner-diagnostics converter from rcpp_trex_gvs.cpp
 extern Rcpp::List lambda2_cv_diagnostics_to_list(
-    const trex::ml_methods::model_selection::lambda2_cv_diagnostics& d);
+    const trex::ml_methods::model_selection::Lambda2CVDiagnostics& d);
 
 
 /**
  * @brief The control of a run from the two R lists. A NULL base control
  *        leaves the one nested in the Tikhonov control in place.
  */
-static TRexTikhonovControlParameter tikhonov_run_control(
+static TRexTikhonovControl tikhonov_run_control(
     const Rcpp::List& tik_control_list,
     const Rcpp::Nullable<Rcpp::List>& trex_control_list) {
-    std::optional<TRexControlParameter> trex_control;
+    std::optional<TRexControl> trex_control;
     if (trex_control_list.isNotNull()) {
         trex_control = parse_control_parameter(Rcpp::List(trex_control_list));
     }
@@ -248,7 +248,7 @@ XPtr<RTRexTikhonovSelector> trex_tikhonov_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl =
+    const TRexTikhonovControl tik_ctrl =
         tikhonov_run_control(tik_control_list, trex_control_list);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
@@ -271,7 +271,7 @@ XPtr<RTRexTikhonovSelector> trex_tikhonov_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl =
+    const TRexTikhonovControl tik_ctrl =
         tikhonov_run_control(tik_control_list, trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexTikhonovSelector>(
@@ -454,7 +454,7 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_impl(
     // and y are read through their maps and never copied.
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl =
+    const TRexTikhonovControl tik_ctrl =
         tikhonov_run_control(tik_control_list, trex_control_list);
     return power_rule_result_to_list(tikhonov_lambda2_power_rule(
         X_map, y_map, tFDR, tik_ctrl, seed,
@@ -477,7 +477,7 @@ Rcpp::List trex_tikhonov_lambda2_power_rule_mmap_impl(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexTikhonovControlParameter tik_ctrl =
+    const TRexTikhonovControl tik_ctrl =
         tikhonov_run_control(tik_control_list, trex_control_list);
     // The probes work on the file through its Eigen::Map, as a selector does
     return power_rule_result_to_list(tikhonov_lambda2_power_rule(
@@ -502,7 +502,7 @@ Rcpp::List trex_gvs_lambda2_power_rule_impl(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
+    const TRexGVSControl gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     return power_rule_result_to_list(gvs_lambda2_power_rule(
         X_map, y_map, tFDR, gvs_ctrl, seed,
         power_rule_config(std::move(grid), knee_tolerance), verbose));
@@ -524,7 +524,7 @@ Rcpp::List trex_gvs_lambda2_power_rule_mmap_impl(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
+    const TRexGVSControl gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     return power_rule_result_to_list(gvs_lambda2_power_rule(
         mapped_design_for(*X_ptr, gvs_ctrl.trex_ctrl), y_map, tFDR, gvs_ctrl, seed,
         power_rule_config(std::move(grid), knee_tolerance), verbose));

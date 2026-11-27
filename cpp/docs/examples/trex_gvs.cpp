@@ -17,7 +17,7 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
-using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter;
+using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl;
 using trex::trex_selector_methods::ad::trex_gvs::GVSType;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 namespace rates = trex::utils::eval::rates;
@@ -65,7 +65,7 @@ int main() {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
 
-    TRexGVSControlParameter gvs_ctrl;
+    TRexGVSControl gvs_ctrl;
     gvs_ctrl.gvs_type = GVSType::EN;
     gvs_ctrl.lambda_2 = 1.0;
     gvs_ctrl.trex_ctrl.K = 10;
@@ -99,7 +99,7 @@ int main() {
 
     doc.begin("cv");
     //! [cv]
-    TRexGVSControlParameter cv_ctrl;
+    TRexGVSControl cv_ctrl;
     cv_ctrl.gvs_type = GVSType::EN;
     cv_ctrl.cv_n_lambda = 100;
     cv_ctrl.trex_ctrl.K = 10;
@@ -118,7 +118,7 @@ int main() {
 
     doc.begin("ien");
     //! [ien]
-    TRexGVSControlParameter ien_ctrl;
+    TRexGVSControl ien_ctrl;
     ien_ctrl.gvs_type = GVSType::IEN;
     ien_ctrl.prior_groups = std::vector<Eigen::Index>(groups.begin(), groups.end());
     ien_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;

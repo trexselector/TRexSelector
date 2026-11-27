@@ -36,11 +36,11 @@ included) and can undo their transformation.
 
 ## Ridge regression
 
-\ref trex::ml_methods::ridge::RidgeSolver "RidgeSolver" solves
+\ref trex::ml_methods::ridge::Ridge "Ridge" solves
 \f$\min_{\boldsymbol\beta} \|\boldsymbol y - \boldsymbol X \boldsymbol\beta\|_2^2
 + \lambda \|\boldsymbol\beta\|_2^2\f$ for one penalty \cite hoerl2000ridge, by the primal or the
 dual Cholesky path depending on the shape of `X`. The class
-\ref trex::ml_methods::model_selection::ridge_cv_svd "ridge_cv_svd" chooses the penalty
+\ref trex::ml_methods::model_selection::RidgeCV "RidgeCV" chooses the penalty
 by \f$K\f$-fold cross-validation over a geometric grid and reports the minimum and the
 one-standard-error rule.
 
@@ -56,12 +56,12 @@ minimum, so its error lies between the minimum and the largest error on the grid
 
 \image html ml_methods_ridge.png "Figure 1: Cross-validation error of the ridge penalty with the minimum and the one-standard-error choice." width=80%
 
-`ridge_cv_svd(true)` runs the dual (kernel) form on column blocks of `X` read in place, with memory
+`RidgeCV(true)` runs the dual (kernel) form on column blocks of `X` read in place, with memory
 \f$O(n^2)\f$ instead of \f$O(np)\f$, the route for \f$p \gg n\f$.
 
 ## The elastic net
 
-The class \ref trex::ml_methods::model_selection::enet_gaussian "enet_gaussian" fits the
+The class \ref trex::ml_methods::model_selection::ElasticNet "ElasticNet" fits the
 elastic-net path \cite zou2005elasticnet by coordinate descent over a glmnet-style grid
 \cite friedman2010glmnet. `alpha = 1` is the lasso, `alpha = 0` the ridge. The coefficients are
 reported on the original scale.
@@ -69,7 +69,7 @@ reported on the original scale.
 \snippet{trimleft} ml_methods.cpp enet
 \output{ml_methods.enet.txt}
 
-The class \ref trex::ml_methods::model_selection::enet_cv_ccd "enet_cv_ccd" selects the penalty by
+The class \ref trex::ml_methods::model_selection::ElasticNetCV "ElasticNetCV" selects the penalty by
 cross-validation on a shared grid. The strong rules \cite tibshirani2012strong speed up the sweeps.
 
 \snippet{trimleft} ml_methods.cpp enet-cv
@@ -80,7 +80,7 @@ memory-mapped matrix included, without an allocation of the size of `X`.
 
 ## SVD and PCA
 
-The `compute(X, M)` method of \ref trex::ml_methods::svd::SVDSolver "SVDSolver" returns the
+The `compute(X, M)` method of \ref trex::ml_methods::svd::SVD "SVD" returns the
 top-\f$M\f$ truncated SVD as an \ref trex::ml_methods::svd::SVDResult "SVDResult" with `U`, `S` and
 `V`, by a direct, a Gram or a randomized path depending on the shape of `X`.
 

@@ -85,7 +85,7 @@ struct TRexSDOptions {
     bool   posthoc_mode      = false;
 
     // T-loop stagnation stop (dummy-burn guard). Tri-state mirroring the
-    // classic TRexControlParameter::tloop_stagnation_stop: nullopt ("auto")
+    // classic TRexControl::tloop_stagnation_stop: nullopt ("auto")
     // resolves by algorithm — DISABLED for LARS (the equiangular path
     // terminates properly on its own; matches the 1.x versions and the T-Rex
     // paper), ENABLED for the greedy solvers (OMP/AFS otherwise run into a

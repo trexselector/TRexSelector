@@ -21,28 +21,28 @@ using namespace trex::trex_selector_methods::ad::trex_biobank_screening;
 // ==============================================================================
 
 /**
- * @brief Rcpp wrapper class for BiobankScreenTRex leveraging zero-copy references.
+ * @brief Rcpp wrapper class for TRexBiobankScreeningSelector leveraging zero-copy references.
  */
 class RTRexBiobankScreeningSelector {
 private:
     std::unique_ptr<Eigen::Map<Eigen::MatrixXd>> X_map_;
     std::unique_ptr<Eigen::Map<Eigen::VectorXd>> y_map_1d_;
     std::unique_ptr<Eigen::Map<Eigen::MatrixXd>> Y_map_2d_;
-    std::unique_ptr<BiobankScreenTRex> selector_;
+    std::unique_ptr<TRexBiobankScreeningSelector> selector_;
 
 public:
     // 1D Constructor (single phenotype)
     RTRexBiobankScreeningSelector(
         Eigen::Map<Eigen::MatrixXd> X,
         Eigen::Map<Eigen::VectorXd> y,
-        const BiobankScreenTRexControl& bio_ctrl,
+        const TRexBiobankScreeningControl& bio_ctrl,
         int seed,
         bool verbose
     ) {
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X);
         this->y_map_1d_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y);
 
-        this->selector_ = std::make_unique<BiobankScreenTRex>(
+        this->selector_ = std::make_unique<TRexBiobankScreeningSelector>(
             *(this->X_map_), *(this->y_map_1d_), bio_ctrl, seed, verbose
         );
     }
@@ -51,19 +51,19 @@ public:
     RTRexBiobankScreeningSelector(
         Eigen::Map<Eigen::MatrixXd> X,
         Eigen::Map<Eigen::MatrixXd> Y,
-        const BiobankScreenTRexControl& bio_ctrl,
+        const TRexBiobankScreeningControl& bio_ctrl,
         int seed,
         bool verbose
     ) {
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X);
         this->Y_map_2d_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(Y);
 
-        this->selector_ = std::make_unique<BiobankScreenTRex>(
+        this->selector_ = std::make_unique<TRexBiobankScreeningSelector>(
             *(this->X_map_), *(this->Y_map_2d_), bio_ctrl, seed, verbose
         );
     }
 
-    BiobankScreenTRex* get() const { return this->selector_.get(); }
+    TRexBiobankScreeningSelector* get() const { return this->selector_.get(); }
 };
 
 // ==============================================================================

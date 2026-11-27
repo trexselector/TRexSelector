@@ -59,28 +59,28 @@ protected:
 
 /** @brief Ensure invalid phenotypic calls map to runtime_errors */
 TEST_F(TRexBiobankScreeningTest, Validation_ThrowsOnMismatchedPhenotypeCalls) {
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
 
     // Single Phenotype constructor
-    BiobankScreenTRex single_pheno_selector(X_map, y_map, control);
+    TRexBiobankScreeningSelector single_pheno_selector(X_map, y_map, control);
     EXPECT_THROW(single_pheno_selector.screenPhenotypes(), std::runtime_error);
 
     // Multiple Phenotype constructor
-    BiobankScreenTRex multi_pheno_selector(X_map, Y_matrix_map, control);
+    TRexBiobankScreeningSelector multi_pheno_selector(X_map, Y_matrix_map, control);
     EXPECT_THROW(multi_pheno_selector.screenPhenotype(), std::runtime_error);
 }
 
 
 /** @brief Standard single execution works cleanly */
 TEST_F(TRexBiobankScreeningTest, Execution_SinglePhenotypeDoesNotThrow) {
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
     control.trex_screen_ctrl.trex_method = ScreenTRexMethod::TREX;
 
     // As identified, we must override internal defaults to standard!
     control.trex_screen_ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
     control.trex_screen_ctrl.trex_ctrl.K = 5;
 
-    BiobankScreenTRex selector(X_map, y_map, control);
+    TRexBiobankScreeningSelector selector(X_map, y_map, control);
     EXPECT_NO_THROW({
         auto result = selector.screenPhenotype();
     });
@@ -90,10 +90,10 @@ TEST_F(TRexBiobankScreeningTest, Execution_SinglePhenotypeDoesNotThrow) {
 namespace {
 
 /** @brief Probe exposing the seed derivation for testing. */
-class BiobankScreenTRexProbe : public BiobankScreenTRex {
+class BiobankScreenTRexProbe : public TRexBiobankScreeningSelector {
 public:
-    using BiobankScreenTRex::BiobankScreenTRex;
-    using BiobankScreenTRex::phenotypeSeed;
+    using TRexBiobankScreeningSelector::TRexBiobankScreeningSelector;
+    using TRexBiobankScreeningSelector::phenotypeSeed;
 };
 
 } // namespace
@@ -102,7 +102,7 @@ public:
 /** @brief Phenotype i runs with seed + i. Phenotype 0 keeps the seed, a
  *  negative seed is passed on, and the sum stays a non-negative int. */
 TEST_F(TRexBiobankScreeningTest, Seed_PhenotypeSeedDerivation) {
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
 
     BiobankScreenTRexProbe seeded(X_map, Y_matrix_map, control, 11, false);
     EXPECT_EQ(seeded.phenotypeSeed(0), 11);
@@ -139,7 +139,7 @@ TEST(TRexBiobankScreeningSeedTest, Execution_PhenotypesUseIndependentSeeds) {
     }
     for (Eigen::Index i = 0; i < n; ++i) { y(i) = uniform(); }
 
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
     control.trex_screen_ctrl.R_boot = 100;
     control.trex_screen_ctrl.trex_ctrl.K = 10;
     const int seed = 11;
@@ -149,10 +149,10 @@ TEST(TRexBiobankScreeningSeedTest, Execution_PhenotypesUseIndependentSeeds) {
         Eigen::VectorXd y_run = y;
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
-        BiobankScreenTRex selector(X_map, y_map, control, run_seed, false);
+        TRexBiobankScreeningSelector selector(X_map, y_map, control, run_seed, false);
         return selector.screenPhenotype();
     };
-    auto same = [](const BiobankScreenTRexResult& a, const BiobankScreenTRexResult& b) {
+    auto same = [](const TRexBiobankScreeningResult& a, const TRexBiobankScreeningResult& b) {
         return a.selected_indices == b.selected_indices
             && a.selected_indices_screen_ordinary == b.selected_indices_screen_ordinary
             && a.selected_indices_screen_bootstrap == b.selected_indices_screen_bootstrap
@@ -163,7 +163,7 @@ TEST(TRexBiobankScreeningSeedTest, Execution_PhenotypesUseIndependentSeeds) {
 
     // The single runs, up to the first seed that changes the result
     const std::size_t limit = 1000;
-    std::vector<BiobankScreenTRexResult> singles;
+    std::vector<TRexBiobankScreeningResult> singles;
     singles.push_back(single(seed));
     while (singles.size() < limit && same(singles.back(), singles.front())) {
         singles.push_back(single(seed + static_cast<int>(singles.size())));
@@ -177,7 +177,7 @@ TEST(TRexBiobankScreeningSeedTest, Execution_PhenotypesUseIndependentSeeds) {
     Eigen::MatrixXd Y = y.replicate(1, copies);
     Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
     Eigen::Map<Eigen::MatrixXd> Y_map(Y.data(), Y.rows(), Y.cols());
-    BiobankScreenTRex selector(X_map, Y_map, control, seed, false);
+    TRexBiobankScreeningSelector selector(X_map, Y_map, control, seed, false);
     const auto results = selector.screenPhenotypes();
     ASSERT_EQ(results.size(), singles.size());
 
@@ -213,13 +213,13 @@ TEST(TRexBiobankScreeningEstimateTest, Execution_EmptyScreeningFallsBack) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
     control.lower_bound_FDR = 0.0;
     control.upper_bound_FDR = 0.15;
     control.trex_screen_ctrl.R_boot = 100;
     control.trex_screen_ctrl.trex_ctrl.K = 5;
 
-    BiobankScreenTRex selector(X_map, y_map, control, 5, false);
+    TRexBiobankScreeningSelector selector(X_map, y_map, control, 5, false);
     const auto result = selector.screenPhenotype();
 
     EXPECT_TRUE(result.selected_indices_screen_ordinary.empty());
@@ -239,13 +239,13 @@ TEST(TRexBiobankScreeningEstimateTest, Execution_EmptyScreeningFallsBack) {
  *  whatever use_bootstrap_CI says. */
 TEST_F(TRexBiobankScreeningTest, Execution_FollowsTheDocumentedDecisionRule) {
     auto run = [&](double lower, double upper, bool use_bootstrap) {
-        BiobankScreenTRexControl control;
+        TRexBiobankScreeningControl control;
         control.lower_bound_FDR = lower;
         control.upper_bound_FDR = upper;
         control.trex_screen_ctrl.use_bootstrap_CI = use_bootstrap;
         control.trex_screen_ctrl.R_boot = 100;
         control.trex_screen_ctrl.trex_ctrl.K = 5;
-        BiobankScreenTRex selector(X_map, y_map, control, 5, false);
+        TRexBiobankScreeningSelector selector(X_map, y_map, control, 5, false);
         return selector.screenPhenotype();
     };
 
@@ -276,7 +276,7 @@ TEST_F(TRexBiobankScreeningTest, Execution_FollowsTheDocumentedDecisionRule) {
 
 /** @brief Execute fallback testing under impossible bounds */
 TEST_F(TRexBiobankScreeningTest, Execution_FallbackLogicActivation) {
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
     // Force the decision logic to abandon Screen-TRex by setting impossible bounds:
     control.lower_bound_FDR = 0.99;
     control.upper_bound_FDR = 0.00;
@@ -285,7 +285,7 @@ TEST_F(TRexBiobankScreeningTest, Execution_FallbackLogicActivation) {
     control.trex_screen_ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
     control.trex_screen_ctrl.trex_ctrl.K = 2; // Keep loop overhead low
 
-    BiobankScreenTRex selector(X_map, y_map, control);
+    TRexBiobankScreeningSelector selector(X_map, y_map, control);
     auto result = selector.screenPhenotype();
 
     // Verify Algorithm 1 dumped us into the full T-Rex calculation tree
@@ -315,7 +315,7 @@ TEST(TRexBiobankScreeningMemoryMappedTest, Execution_ReadsAReadOnlyMemoryMappedY
         for (Eigen::Index i = 0; i < n; ++i) { Y(i, k) = 4.0 * X(i, k) - 3.0 * X(i, k + 10) + N01(rng); }
     }
 
-    BiobankScreenTRexControl control;
+    TRexBiobankScreeningControl control;
     control.trex_screen_ctrl.R_boot = 100;
     control.trex_screen_ctrl.trex_ctrl.K = 10;
     const int seed = 5;
@@ -325,7 +325,7 @@ TEST(TRexBiobankScreeningMemoryMappedTest, Execution_ReadsAReadOnlyMemoryMappedY
     Eigen::MatrixXd Y_memory = Y;
     Eigen::Map<Eigen::MatrixXd> X_memory_map(X_memory.data(), n, p);
     Eigen::Map<Eigen::MatrixXd> Y_memory_map(Y_memory.data(), n, q);
-    BiobankScreenTRex reference(X_memory_map, Y_memory_map, control, seed, false);
+    TRexBiobankScreeningSelector reference(X_memory_map, Y_memory_map, control, seed, false);
     const auto expected = reference.screenPhenotypes();
 
     const std::string file = (fs::path(::testing::TempDir()) / "biobank_readonly_Y.bin").string();
@@ -339,7 +339,7 @@ TEST(TRexBiobankScreeningMemoryMappedTest, Execution_ReadsAReadOnlyMemoryMappedY
         auto Y_map = mapped.getReaderMap();
         Eigen::MatrixXd X_run = X;
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), n, p);
-        BiobankScreenTRex selector(X_map, Y_map, control, seed, false);
+        TRexBiobankScreeningSelector selector(X_map, Y_map, control, seed, false);
         const auto results = selector.screenPhenotypes();
 
         ASSERT_EQ(results.size(), expected.size());

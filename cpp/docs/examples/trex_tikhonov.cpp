@@ -16,7 +16,7 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_tikhonov::TRexTikhonovSelector;
-using trex::trex_selector_methods::ad::trex_tikhonov::TRexTikhonovControlParameter;
+using trex::trex_selector_methods::ad::trex_tikhonov::TRexTikhonovControl;
 using trex::trex_selector_methods::ad::trex_tikhonov::TikPenaltyStructure;
 using trex::trex_selector_methods::ad::trex_tikhonov::Lambda2PowerRuleConfig;
 using trex::trex_selector_methods::ad::trex_tikhonov::tikhonov_lambda2_power_rule;
@@ -72,7 +72,7 @@ int main() {
 
     doc.begin("run");
     //! [run]
-    TRexTikhonovControlParameter tik_ctrl;
+    TRexTikhonovControl tik_ctrl;
     tik_ctrl.tikhonov_K = K;
     tik_ctrl.lambda_2 = 1.0;
     tik_ctrl.trex_ctrl.K = 10;
@@ -89,7 +89,7 @@ int main() {
 
     doc.begin("pilot");
     //! [pilot]
-    TRexTikhonovControlParameter pilot_ctrl;
+    TRexTikhonovControl pilot_ctrl;
     pilot_ctrl.tikhonov_K = K;
     pilot_ctrl.pilot_grid = {0.0, 1.0, 10.0};
     pilot_ctrl.pilot_K = 4;
@@ -109,7 +109,7 @@ int main() {
 
     doc.begin("power-rule");
     //! [power-rule]
-    TRexTikhonovControlParameter rule_ctrl;
+    TRexTikhonovControl rule_ctrl;
     rule_ctrl.tikhonov_K = K;
     rule_ctrl.trex_ctrl.K = 10;
     Lambda2PowerRuleConfig cfg;
@@ -127,7 +127,7 @@ int main() {
     std::vector<Eigen::Index> groups(p);
     for (Eigen::Index j = 0; j < p; ++j) groups[j] = j / 10;   // six groups of ten
 
-    TRexTikhonovControlParameter gc_ctrl;
+    TRexTikhonovControl gc_ctrl;
     gc_ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
     gc_ctrl.prior_groups = groups;
     gc_ctrl.lambda_2 = 1.0;

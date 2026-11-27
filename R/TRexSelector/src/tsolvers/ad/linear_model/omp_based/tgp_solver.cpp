@@ -21,14 +21,14 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructors
 // ==================================================================================
 
-TGP_Solver::TGP_Solver(SolverTypeOMPBased solver_type)
-    : TOMP_Solver(solver_type) {}
+TSolverGP::TSolverGP(SolverTypeOMPBased solver_type)
+    : TSolverOMP(solver_type) {}
 
 // ==================================================================================
 // Main Algorithm: executeStep()
 // ==================================================================================
 
-void TGP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverGP::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     // Set openMP dominance for the entire algorithm
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
@@ -123,7 +123,7 @@ void TGP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // GP-Specific Helper Methods
 // ==================================================================================
 
-void TGP_Solver::computeGradientDirection() {
+void TSolverGP::computeGradientDirection() {
 
     // Gradient for active variables: d^{n} = c^{n}_A = X^{T}_A r
     Eigen::Index k = static_cast<Eigen::Index>(actives_.size());
@@ -135,7 +135,7 @@ void TGP_Solver::computeGradientDirection() {
 }
 
 
-void TGP_Solver::projectDirection() {
+void TSolverGP::projectDirection() {
 
     // Projected direction into data space: p^{n} = X_A * d^{n}
     Eigen::Index n = X_->rows();
@@ -150,7 +150,7 @@ void TGP_Solver::projectDirection() {
 }
 
 
-double TGP_Solver::computeStepSize() {
+double TSolverGP::computeStepSize() {
     // Step size: alpha^{n} = <r^{n-1}, p^{n}> / ||p^{n}||^2
     double numerator = r_.dot(projected_direction_);
     double denominator = projected_direction_.squaredNorm();
@@ -173,7 +173,7 @@ double TGP_Solver::computeStepSize() {
 }
 
 
-void TGP_Solver::updateActiveCoefficients() {
+void TSolverGP::updateActiveCoefficients() {
     std::size_t k = actives_.size();
 
     // Ensure active_coefficients_ has correct size
@@ -189,13 +189,13 @@ void TGP_Solver::updateActiveCoefficients() {
 }
 
 
-void TGP_Solver::updateResiduals() {
+void TSolverGP::updateResiduals() {
     // GP residual update: r^{n} = r^{n-1} - alpha^{n} * p^{n}
     r_.noalias() -= step_size_ * projected_direction_;
 }
 
 
-void TGP_Solver::updateBetaPath() {
+void TSolverGP::updateBetaPath() {
     // active_coefficients_ is already the sparse coefficient vector over
     // actives_ — snapshot it directly.
     setRunningBeta(actives_, active_coefficients_);
@@ -208,13 +208,13 @@ void TGP_Solver::updateBetaPath() {
 // ==================================================================================
 
 std::pair<double, std::vector<std::size_t>>
-TGP_Solver::findTiedMaxCorrelations() const {
+TSolverGP::findTiedMaxCorrelations() const {
     // Scan ALL non-dropped variables (atom re-selection is allowed in GP)
     return findTiedMaxCorrelationsAllNonDropped();
 }
 
 
-std::vector<int> TGP_Solver::updateActiveSet(const std::vector<std::size_t>& new_vars) {
+std::vector<int> TSolverGP::updateActiveSet(const std::vector<std::size_t>& new_vars) {
 
     std::vector<int> actions_this_step;
 
@@ -251,7 +251,7 @@ std::vector<int> TGP_Solver::updateActiveSet(const std::vector<std::size_t>& new
 }
 
 
-void TGP_Solver::updateCorrelations() {
+void TSolverGP::updateCorrelations() {
     // c^n = X^T r for ALL non-dropped variables (to allow re-selection)
     refreshAllCorrelations();
 }
@@ -261,9 +261,9 @@ void TGP_Solver::updateCorrelations() {
 // Memory report
 // ==================================================================================
 
-std::size_t TGP_Solver::memoryBytes() const noexcept {
+std::size_t TSolverGP::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
-    return TOMP_Solver::memoryBytes() + bytesOf(direction_) +
+    return TSolverOMP::memoryBytes() + bytesOf(direction_) +
            bytesOf(projected_direction_) + bytesOf(active_coefficients_);
 }
 
@@ -272,13 +272,13 @@ std::size_t TGP_Solver::memoryBytes() const noexcept {
 // De-/Serialization
 // ==================================================================================
 
-void TGP_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverGP::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TGP_Solver TGP_Solver::load(const std::string& filename,
+TSolverGP TSolverGP::load(const std::string& filename,
                             Eigen::Map<Eigen::MatrixXd>& X,
                             Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TGP_Solver>(filename, X, D);
+    return loadImpl<TSolverGP>(filename, X, D);
 }
 
 // ==================================================================================

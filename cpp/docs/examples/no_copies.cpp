@@ -18,12 +18,12 @@
 #include <ml_methods/model_selection/ridge_cv_svd.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
-using trex::tsolvers::ad::SolverOptions;
-using trex::tsolvers::ad::linear_model::lars_based::TLARS_Solver;
-using trex::tsolvers::ad::linear_model::lars_based::TLASSO_Solver;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
+using trex::tsolvers::ad::TSolverOptions;
+using trex::tsolvers::ad::linear_model::lars_based::TSolverLARS;
+using trex::tsolvers::ad::linear_model::lars_based::TSolverLASSO;
 using trex::ml_methods::scaler_methods::LpNormScaler;
-using trex::ml_methods::model_selection::ridge_cv_svd;
+using trex::ml_methods::model_selection::RidgeCV;
 //! [includes]
 
 int main() {
@@ -52,7 +52,7 @@ int main() {
     const Eigen::MatrixXd X_before = X;
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 10;
 
     TRexSelector sel(X_map, y_map, 0.1, ctrl, /*seed=*/2, /*verbose=*/false);
@@ -68,9 +68,9 @@ int main() {
     Eigen::MatrixXd D = Eigen::MatrixXd::NullaryExpr(n, p, [&] { return normal(gen); });
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), n, p);
 
-    TLARS_Solver w1(X_map, D_map, y_map);   // a writer: normalize and intercept on
+    TSolverLARS w1(X_map, D_map, y_map);   // a writer: normalize and intercept on
     try {
-        TLASSO_Solver w2(X_map, D_map, y_map);   // a second writer on claimed matrices
+        TSolverLASSO w2(X_map, D_map, y_map);   // a second writer on claimed matrices
     } catch (const std::runtime_error& e) {
         std::cout << "error: " << std::string(e.what()).substr(0, 90) << " ...\n";
     }
@@ -86,12 +86,12 @@ int main() {
     Eigen::VectorXd y_c = y.array() - y.mean();
     Eigen::Map<Eigen::VectorXd> yc_map(y_c.data(), n);
 
-    SolverOptions opts;
+    TSolverOptions opts;
     opts.normalize = false;
     opts.intercept = false;
     opts.precentered = true;
-    TLARS_Solver r1(X_map, D_map, yc_map, opts);
-    TLASSO_Solver r2(X_map, D_map, yc_map, opts);
+    TSolverLARS r1(X_map, D_map, yc_map, opts);
+    TSolverLASSO r2(X_map, D_map, yc_map, opts);
     r1.executeStep(/*T_stop=*/2);
     r2.executeStep(2);
 
@@ -102,9 +102,9 @@ int main() {
 
     doc.begin("low-memory");
     //! [low-memory]
-    ridge_cv_svd cv_a(/*low_memory=*/false);
+    RidgeCV cv_a(/*low_memory=*/false);
     cv_a.fit(X, y, /*n_folds=*/5, /*n_lambda=*/30);
-    ridge_cv_svd cv_b(true);
+    RidgeCV cv_b(true);
     cv_b.fit(X, y, 5, 30);
     std::cout << cv_a.cv_mse().isApprox(cv_b.cv_mse()) << '\n';
     //! [low-memory]

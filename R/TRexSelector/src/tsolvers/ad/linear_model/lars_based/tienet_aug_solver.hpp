@@ -8,7 +8,7 @@
  * @file tienet_aug_solver.hpp
  *
  * @brief Terminating Informed Elastic Net via row augmentation
- *        (TIENETAug_Solver): thin wrapper around TLASSO_Solver / TLARS_Solver
+ *        (TSolverIENETAug): thin wrapper around TSolverLASSO / TSolverLARS
  *        on a group-informed row-augmented system.
  *
  * @details
@@ -32,7 +32,7 @@
  *      y_aug = [ y ; 0_M ],
  *
  *  where M is the number of disjoint variable groups and p_m the size of
- *  group m. Unlike the Zou-Hastie elastic-net augmentation (TENETAug_Solver),
+ *  group m. Unlike the Zou-Hastie elastic-net augmentation (TSolverENETAug),
  *  the IEN appends only M << p rows and carries NO global 1/sqrt(1+lambda2)
  *  factor.
  *
@@ -51,7 +51,7 @@
  *  centered), the group-ridge rows are appended afterwards, and the
  *  augmented columns are NOT re-normalized. The inner solver then runs with
  *  `normalize = false, intercept = false`. This makes the wrapper exactly
- *  equivalent to the native pathwise TIENET_Solver. The augmented copies are
+ *  equivalent to the native pathwise TSolverIENET. The augmented copies are
  *  owned, so memoryBytes() grows with 8 (n + M)(p + L + 1) bytes (M = 0 at
  *  lambda2 = 0).
  *
@@ -67,11 +67,11 @@
  *
  *  Degenerate case lambda2 == 0: the group penalty vanishes and the solver
  *  collapses to a plain TLASSO / TLARS on the ORIGINAL (X, D, y), forwarding
- *  the caller's `normalize` / `intercept` flags (mirror of TENETAug_Solver).
+ *  the caller's `normalize` / `intercept` flags (mirror of TSolverENETAug).
  *
  *  @note This wrapper is distinct from the reserved path-wise TIENET solver
  *        (tienet_solver.hpp), which would absorb the group penalty into the
- *        Gram matrix like TENET_Solver does for the EN.
+ *        Gram matrix like TSolverENET does for the EN.
  */
 // ============================================================================
 
@@ -94,7 +94,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 // ============================================================================
 
 /**
- * @brief Terminating Informed Elastic Net (T-IENET) solver via row augmentation, wrapping TLASSO_Solver.
+ * @brief Terminating Informed Elastic Net (T-IENET) solver via row augmentation, wrapping TSolverLASSO.
  *
  *  References:
  *  -----------
@@ -109,7 +109,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TIENETAug_Solver : public TSolver_Base {
+class TSolverIENETAug : public TSolverBase {
 
     // ========================================================================
     // Owned augmented data
@@ -143,13 +143,13 @@ class TIENETAug_Solver : public TSolver_Base {
     // Inner forward-selection solver
     // ========================================================================
     /** @brief Inner solver run on the augmented system. Held by base pointer so
-     *  it can be either a TLASSO_Solver (LARS-LASSO; can drop variables — the
-     *  default) or a plain TLARS_Solver (pure LARS; never drops — matches R's
+     *  it can be either a TSolverLASSO (LARS-LASSO; can drop variables — the
+     *  default) or a plain TSolverLARS (pure LARS; never drops — matches R's
      *  trex(type="lar")). */
-    std::unique_ptr<TLARS_Solver> inner_;
+    std::unique_ptr<TSolverLARS> inner_;
 
-    /** @brief If true, the inner solver is a pure-LARS TLARS_Solver instead of
-     *  the default TLASSO_Solver. Diagnostic / R-parity option. */
+    /** @brief If true, the inner solver is a pure-LARS TSolverLARS instead of
+     *  the default TSolverLASSO. Diagnostic / R-parity option. */
     bool use_lars_inner_{false};
 
     // ========================================================================
@@ -195,7 +195,7 @@ class TIENETAug_Solver : public TSolver_Base {
 
     /**
      * @brief Copy the inner solver's diagnostic state into the inherited
-     * TSolver_Base members so all base getters (getRSS, getActives,
+     * TSolverBase members so all base getters (getRSS, getActives,
      * getNumSteps, ...) report the inner solver's progress.
      *
      * Called after construction, after every executeStep(), and after
@@ -211,8 +211,8 @@ class TIENETAug_Solver : public TSolver_Base {
      *        false on the augmented system).
      * @param verbose Passed to the inner solver.
      * @param scaling_mode Passed to the inner solver (L2 or z-score scaling).
-     * @param tie_seed Seed of the inner tie-break engine (SolverOptions::tie_seed).
-     * @param n_threads Thread budget of the inner solver (SolverOptions::n_threads).
+     * @param tie_seed Seed of the inner tie-break engine (TSolverOptions::tie_seed).
+     * @param n_threads Thread budget of the inner solver (TSolverOptions::n_threads).
      */
     void buildInnerSolver(bool normalize, bool intercept, bool precentered,
                           bool verbose, ScalingMode scaling_mode, long long tie_seed,
@@ -224,7 +224,7 @@ public:
     // ========================================================================
 
     /**
-     * @brief Construct a TIENETAug_Solver.
+     * @brief Construct a TSolverIENETAug.
      *
      * Standardizes the DATA blocks per the caller's intercept/normalize
      * flags (pre-augmentation family convention), appends the group-ridge
@@ -237,7 +237,7 @@ public:
      *                   group.
      * @param y          Response vector (n).
      * @param groups     0-based contiguous group ids in [0, M-1], length p.
-     * @param options    Every other input (SolverOptions); this solver reads
+     * @param options    Every other input (TSolverOptions); this solver reads
      *                   lambda2, the group-ridge (L2) regularisation parameter
      *                   (>= 0), and the preprocessing flags: normalize
      *                   rescales the DATA-block columns (unit L2 / unit SD per
@@ -250,17 +250,17 @@ public:
      *                   post-augmentation preprocessing (and the lambda2 == 0
      *                   inner solver; default L2), and tenet_aug_use_lars
      *                   makes the inner forward-selection solver a pure-LARS
-     *                   TLARS_Solver (never drops variables) instead of the
-     *                   default TLASSO_Solver.
+     *                   TSolverLARS (never drops variables) instead of the
+     *                   default TSolverLASSO.
      *
      * @throws std::invalid_argument on lambda2 < 0, malformed groups, or
      *         D.cols() not a multiple of X.cols() (lambda2 > 0 only).
      */
-    TIENETAug_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverIENETAug(Eigen::Map<Eigen::MatrixXd>& X,
                      Eigen::Map<Eigen::MatrixXd>& D,
                      Eigen::Map<Eigen::VectorXd>& y,
                      const Eigen::VectorXi& groups,
-                     const SolverOptions& options = SolverOptions{});
+                     const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for Cereal deserialization.
@@ -268,25 +268,25 @@ public:
      * @note After deserialization the Maps and inner solver are rebuilt
      * automatically by the serialize() template (via buildMaps()).
      */
-    TIENETAug_Solver() = default;
+    TSolverIENETAug() = default;
 
     /** @brief Deleted copy constructor. */
-    TIENETAug_Solver(const TIENETAug_Solver&) = delete;
+    TSolverIENETAug(const TSolverIENETAug&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TIENETAug_Solver& operator=(const TIENETAug_Solver&) = delete;
+    TSolverIENETAug& operator=(const TSolverIENETAug&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TIENETAug_Solver(TIENETAug_Solver&&) = default;
+    TSolverIENETAug(TSolverIENETAug&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TIENETAug_Solver& operator=(TIENETAug_Solver&&) = delete;
+    TSolverIENETAug& operator=(TSolverIENETAug&&) = delete;
 
     /** @brief Defaulted destructor. */
-    ~TIENETAug_Solver() override = default;
+    ~TSolverIENETAug() override = default;
 
     // ========================================================================
-    // Core solver interface (TSolver_Base pure virtuals)
+    // Core solver interface (TSolverBase pure virtuals)
     // ========================================================================
 
     /**
@@ -336,7 +336,7 @@ public:
     /** @brief Set the thread budget on the wrapper and on the inner solver
      *  (the inner solver owns every region). */
     void setNumThreads(int n_threads) override {
-        TSolver_Base::setNumThreads(n_threads);
+        TSolverBase::setNumThreads(n_threads);
         inner_->setNumThreads(n_threads);
     }
 
@@ -372,7 +372,7 @@ public:
     /**
      * @brief Serialize owned buffers, wrapper metadata, and inner solver state.
      *
-     * @note X_ and D_ (non-owned TSolver_Base pointers) are NOT serialized.
+     * @note X_ and D_ (non-owned TSolverBase pointers) are NOT serialized.
      * On load, the Maps are rebuilt from the owned buffers, the inner solver
      * is reconnected to them, and the wrapper's diagnostic mirror is refreshed.
      */
@@ -425,12 +425,16 @@ public:
      * @param filename Path to input file.
      * @param X Map to the original feature matrix (dimension check only).
      * @param D Map to the original dummy matrix (dimension check only).
-     * @return Deserialized TIENETAug_Solver.
+     * @return Deserialized TSolverIENETAug.
      */
-    static TIENETAug_Solver load(const std::string& filename,
+    static TSolverIENETAug load(const std::string& filename,
                                  Eigen::Map<Eigen::MatrixXd>& X,
                                  Eigen::Map<Eigen::MatrixXd>& D);
 };
+
+/** @brief Old name of TSolverIENETAug.
+ *  @deprecated Use TSolverIENETAug. */
+using TIENETAug_Solver [[deprecated("Use TSolverIENETAug")]] = TSolverIENETAug;
 
 // ============================================================================
 } // namespace trex::tsolvers::ad::linear_model::lars_based

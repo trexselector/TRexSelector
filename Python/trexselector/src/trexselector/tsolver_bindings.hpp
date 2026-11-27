@@ -168,7 +168,7 @@ public:
 
     /** @brief Get the estimated Mallow's Cp values at each step with provided sigma squared. */
     std::vector<double> getCpWithSigma(double sigma_hat_sq) const {
-        return static_cast<const trex::tsolvers::ad::TSolver_Base*>(solver_.get())->getCp(sigma_hat_sq);
+        return static_cast<const trex::tsolvers::ad::TSolverBase*>(solver_.get())->getCp(sigma_hat_sq);
     }
 
     /** @brief Get the residual sum of squares at each step. */
@@ -214,7 +214,7 @@ public:
     /** @brief Quantify the number of path steps successfully taken thus far. */
     std::size_t getNumSteps() const { return solver_->getNumSteps(); }
 
-    /** @brief Heap bytes the solver holds (TSolver_Base::memoryBytes(); the
+    /** @brief Heap bytes the solver holds (TSolverBase::memoryBytes(); the
      *  borrowed X and D and the views of this wrapper are not counted). */
     std::size_t getMemoryBytes() const { return solver_->memoryBytes(); }
 
@@ -336,7 +336,7 @@ public:
 /**
  * @brief The in-place writer/reader contract, appended to every T-solver's
  *        constructor docstring (the C++ text lives on
- *        TSolver_Base::restore()).
+ *        TSolverBase::restore()).
  */
 inline const std::string kInPlaceContractDoc =
     "\n\nX and D are Fortran-ordered float64 arrays, which the solver shares without "
@@ -368,7 +368,7 @@ inline const std::string kReaderSolverDoc =
 /** @brief X or D of a solver from an array that is taken as it is. */
 inline Eigen::Ref<Eigen::MatrixXd> solver_design_ref(
     const DesignArray& M,
-    const trex::tsolvers::ad::SolverOptions& options,
+    const trex::tsolvers::ad::TSolverOptions& options,
     const char* name
 ) {
     return reader_design_map(M, options.writesDesign(), name, kSolverDesignRule);
@@ -380,7 +380,7 @@ inline Eigen::Ref<Eigen::MatrixXd> solver_design_ref(
 inline std::pair<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>> solver_design_refs(
     const DesignArray& X,
     const DesignArray& D,
-    const trex::tsolvers::ad::SolverOptions& options
+    const trex::tsolvers::ad::TSolverOptions& options
 ) {
     Eigen::Ref<Eigen::MatrixXd> X_ref = solver_design_ref(X, options, "X");
     Eigen::Ref<Eigen::MatrixXd> D_ref = solver_design_ref(D, options, "D");
@@ -391,7 +391,7 @@ inline std::pair<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>> solve
 /**
  * @brief Attach the method set shared by every T-Solver to an existing class binding.
  *
- * @details Binds all TSolver_Base-backed methods (path execution, coefficient and
+ * @details Binds all TSolverBase-backed methods (path execution, coefficient and
  *          diagnostics getters, state management, and Cereal serialization). The
  *          constructor is intentionally NOT bound here — each solver attaches the
  *          init matching its own C++ constructor signature.
@@ -496,7 +496,7 @@ py::class_<PySolverWrapper<Solver>>& add_standard_tsolver_methods(
  * @brief Standardized Pybind11 registration for the T-Solvers.
  *
  * @details Binds the canonical `(X, D, y, options)` constructor (every
- *          input except the data lives in SolverOptions) plus the
+ *          input except the data lives in TSolverOptions) plus the
  *          shared method set. The IEN solvers, which also take a group
  *          vector, bind their own init and call add_standard_tsolver_methods().
  *
@@ -506,32 +506,32 @@ py::class_<PySolverWrapper<Solver>>& add_standard_tsolver_methods(
  * @param name The class name assigned in the Python wrapper space.
  * @param class_doc The class docstring: a one-line brief of the solver and
  *        its References section.
- * @param doc One sentence naming the SolverOptions fields this solver reads.
+ * @param doc One sentence naming the TSolverOptions fields this solver reads.
  */
 template<typename Solver>
 py::class_<PySolverWrapper<Solver>> bind_standard_tsolver(py::module& m, const std::string& name,
                                                           const char* class_doc,
                                                           const std::string& doc = {}) {
-    using trex::tsolvers::ad::SolverOptions;
+    using trex::tsolvers::ad::TSolverOptions;
     py::class_<PySolverWrapper<Solver>> cls(m, name.c_str(), class_doc);
     const std::string init_doc =
         "Initializes the solver via zero-copy views of X, D and y; every other input "
         "comes from `options` (SolverOptions). " + doc + kInPlaceContractDoc;
     cls.def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>,
-                      Eigen::Ref<Eigen::VectorXd>, const SolverOptions&>(),
+                      Eigen::Ref<Eigen::VectorXd>, const TSolverOptions&>(),
              py::arg("X"),
              py::arg("D"),
              py::arg("y"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
-                        const SolverOptions& options) {
+                        const TSolverOptions& options) {
                  auto [X_ref, D_ref] = solver_design_refs(X, D, options);
                  return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
@@ -548,25 +548,25 @@ template<typename Solver>
 py::class_<PySolverWrapper<Solver>> bind_groups_tsolver(py::module& m, const std::string& name,
                                                         const char* class_doc,
                                                         const std::string& doc = {}) {
-    using trex::tsolvers::ad::SolverOptions;
+    using trex::tsolvers::ad::TSolverOptions;
     py::class_<PySolverWrapper<Solver>> cls(m, name.c_str(), class_doc);
     const std::string init_doc =
         "Initializes the solver via zero-copy views of X, D and y with a 0-based group id per "
         "original variable (`groups`, length p); every other input comes from `options` "
         "(SolverOptions). " + doc + kInPlaceContractDoc;
     cls.def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>,
-                      Eigen::Ref<Eigen::VectorXd>, const Eigen::VectorXi&, const SolverOptions&>(),
+                      Eigen::Ref<Eigen::VectorXd>, const Eigen::VectorXi&, const TSolverOptions&>(),
              py::arg("X"), py::arg("D"), py::arg("y"), py::arg("groups"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
-                        const Eigen::VectorXi& groups, const SolverOptions& options) {
+                        const Eigen::VectorXi& groups, const TSolverOptions& options) {
                  auto [X_ref, D_ref] = solver_design_refs(X, D, options);
                  return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, groups, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
@@ -585,7 +585,7 @@ template<typename Solver>
 py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const std::string& name,
                                                           const char* class_doc,
                                                           const std::string& doc = {}) {
-    using trex::tsolvers::ad::SolverOptions;
+    using trex::tsolvers::ad::TSolverOptions;
     py::class_<PySolverWrapper<Solver>> cls(m, name.c_str(), class_doc);
     const std::string init_doc =
         "Initializes the solver via zero-copy views of X, D and y with the p x p PSD Tikhonov "
@@ -593,22 +593,22 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
         "from `options` (SolverOptions). " + doc + kInPlaceContractDoc;
     cls.def(py::init([](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::MatrixXd> D,
                         Eigen::Ref<Eigen::VectorXd> y, const Eigen::MatrixXd& tikhonov_K,
-                        const SolverOptions& options) {
+                        const TSolverOptions& options) {
                  const Eigen::SparseMatrix<double> K = tikhonov_K.sparseView();
                  return std::make_unique<PySolverWrapper<Solver>>(X, D, y, K, options);
              }),
              py::arg("X"), py::arg("D"), py::arg("y"), py::arg("tikhonov_K"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              init_doc.c_str());
     cls.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
-                        const Eigen::MatrixXd& tikhonov_K, const SolverOptions& options) {
+                        const Eigen::MatrixXd& tikhonov_K, const TSolverOptions& options) {
                  const Eigen::SparseMatrix<double> K = tikhonov_K.sparseView();
                  auto [X_ref, D_ref] = solver_design_refs(X, D, options);
                  return std::make_unique<PySolverWrapper<Solver>>(X_ref, D_ref, y, K, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("tikhonov_K"),
-             py::arg("options") = SolverOptions{},
+             py::arg("options") = TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              kReaderSolverDoc.c_str());
     add_standard_tsolver_methods<Solver>(cls);
@@ -617,21 +617,21 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
 
 
 /**
- * @brief Bind trex::tsolvers::ad::SolverOptions with a keyword constructor
- *        (`SolverOptions(lambda2=0.5, normalize=False)`) and read/write fields.
+ * @brief Bind trex::tsolvers::ad::TSolverOptions with a keyword constructor
+ *        (`TSolverOptions(lambda2=0.5, normalize=False)`) and read/write fields.
  */
 inline void bind_solver_options(py::module& m) {
-    using trex::tsolvers::ad::SolverOptions;
+    using trex::tsolvers::ad::TSolverOptions;
     using trex::tsolvers::ad::NCGMPVariant;
     using ScalingMode = trex::tsolvers::ad::ScalingMode;
 
-    py::class_<SolverOptions> cls(m, "SolverOptions",
+    py::class_<TSolverOptions> cls(m, "SolverOptions",
         "Every T-solver input except the data X, D and y. Each solver reads the fields it "
         "needs and ignores the rest; the defaults are the solver-level defaults. Construct "
         "with keywords (`SolverOptions(lambda2=0.5, normalize=False)`) or set attributes.");
     cls.def(py::init<>(), "All defaults.")
        .def(py::init([](py::kwargs kwargs) {
-                SolverOptions o;
+                TSolverOptions o;
                 py::object self = py::cast(&o, py::return_value_policy::reference);
                 for (auto item : kwargs) {
                     const std::string key = py::str(item.first);
@@ -642,53 +642,53 @@ inline void bind_solver_options(py::module& m) {
                 }
                 return o;
             }), "Keyword constructor: every keyword must name a SolverOptions field.")
-       .def_readwrite("normalize", &SolverOptions::normalize,
+       .def_readwrite("normalize", &TSolverOptions::normalize,
             "Scale each column of X (and D) to unit L2 norm (or unit SD, see scaling_mode), "
             "IN PLACE through the views (the solver becomes a writer and claims the buffers "
             "until restore() or destruction). False when the caller pre-scaled. Default True.")
-       .def_readwrite("intercept", &SolverOptions::intercept,
+       .def_readwrite("intercept", &TSolverOptions::intercept,
             "Center X and D in place (a writer, as for normalize) and the solver's internal "
             "copy of y (an intercept is fitted). False when the caller pre-centered. Default True.")
-       .def_readwrite("precentered", &SolverOptions::precentered,
+       .def_readwrite("precentered", &TSolverOptions::precentered,
             "The caller centered X, D and y (intercept=False on centered data, as in the T-Rex "
             "selectors). The centered columns span at most n - 1 dimensions, so the solver counts "
             "the intercept as with intercept=True: the active set is capped at n - 1 and the "
             "degrees of freedom and Cp include the intercept. The data are not touched. Redundant "
             "when intercept is True. Default False.")
-       .def_readwrite("scaling_mode", &SolverOptions::scaling_mode,
+       .def_readwrite("scaling_mode", &TSolverOptions::scaling_mode,
             "Column scaling applied when normalize is True: ScalingMode.L2 (default) or ZSCORE.")
-       .def_readwrite("verbose", &SolverOptions::verbose, "Print status and diagnostics. Default False.")
-       .def_readwrite("tol", &SolverOptions::tol,
+       .def_readwrite("verbose", &TSolverOptions::verbose, "Print status and diagnostics. Default False.")
+       .def_readwrite("tol", &TSolverOptions::tol,
             "Numerical tolerance of the solver's internal comparisons. Default: machine epsilon. A\n"
             "selector sets its own tolerance on the solvers it runs (1e-6 by default).")
-       .def_readwrite("tie_seed", &SolverOptions::tie_seed,
+       .def_readwrite("tie_seed", &TSolverOptions::tie_seed,
             "Seed of the tie-break engine. Default 0: a fixed seed, so a solver run is reproducible "
             "also where exact ties occur; < 0 seeds from std::random_device (nondeterministic).")
-       .def_readwrite("n_threads", &SolverOptions::n_threads,
+       .def_readwrite("n_threads", &TSolverOptions::n_threads,
             "Thread budget of the solver's own passes over the design (correlation refreshes, "
             "step-length search, standardization). Default 1 (serial); a whole number of at least "
             "1. A pass splits only above about a million entries and never inside a parallel region "
             "of the caller. The T-Rex selectors set it from max_inner_threads.")
-       .def_readwrite("exch_tie_alpha", &SolverOptions::exch_tie_alpha,
+       .def_readwrite("exch_tie_alpha", &TSolverOptions::exch_tie_alpha,
             "Exchangeable-tie band width of the greedy solvers (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS); "
             "0 (default) = off. The path solvers ignore it.")
-       .def_readwrite("exch_tie_floor", &SolverOptions::exch_tie_floor,
+       .def_readwrite("exch_tie_floor", &TSolverOptions::exch_tie_floor,
             "Minimum |correlation| for exchangeable-tie candidates in [0, 1). Default 0.5.")
-       .def_readwrite("lambda2", &SolverOptions::lambda2,
+       .def_readwrite("lambda2", &TSolverOptions::lambda2,
             "L2 (ridge / group-ridge / Tikhonov) penalty weight, >= 0; read by the elastic-net, "
             "IEN and Tikhonov solvers. Default 0.1, as inside the selectors; 0 means no quadratic penalty.")
-       .def_readwrite("rho_afs", &SolverOptions::rho_afs,
+       .def_readwrite("rho_afs", &TSolverOptions::rho_afs,
             "TAFS shrinkage step in (0, 1]. Default 0.3, as inside the selectors; 1 is forward stepwise.")
-       .def_readwrite("ncgmp_variant", &SolverOptions::ncgmp_variant,
+       .def_readwrite("ncgmp_variant", &TSolverOptions::ncgmp_variant,
             "TNCGMP variant (NCGMPVariant). Default LineSearch.")
-       .def_readwrite("tenet_aug_use_lars", &SolverOptions::tenet_aug_use_lars,
+       .def_readwrite("tenet_aug_use_lars", &TSolverOptions::tenet_aug_use_lars,
             "TENETAug / TIENETAug: pure-LARS inner path that never drops variables (True) instead of the LASSO inner "
                 "path (False, default).")
-       .def_readwrite("tikhonov_validated", &SolverOptions::tikhonov_validated,
+       .def_readwrite("tikhonov_validated", &TSolverOptions::tikhonov_validated,
             "TIKNET: True says that the Tikhonov matrix was checked by the caller (finite "
             "entries, symmetric, positive semi-definite), and the solver skips its own check. For a caller "
             "that builds many solvers on one matrix, as the T-Rex selector does. Default False.")
-       .def("__repr__", [](const SolverOptions& o) {
+       .def("__repr__", [](const TSolverOptions& o) {
             return "SolverOptions(normalize=" + std::string(o.normalize ? "True" : "False") +
                    ", intercept=" + (o.intercept ? "True" : "False") +
                    ", precentered=" + (o.precentered ? "True" : "False") +
@@ -719,7 +719,7 @@ inline void bind_tsolvers_module(py::module& m) {
         .export_values();
 
     // Sub-modules first: the option enums live where their solvers live and
-    // SolverOptions (bound next) refers to them.
+    // TSolverOptions (bound next) refers to them.
     py::module m_lars = m.def_submodule("lars_based", "LARS-based T-Solvers");
     py::module m_omp  = m.def_submodule("omp_based",  "OMP-based T-Solvers");
     py::module m_afs  = m.def_submodule("afs_based",  "AFS-based T-Solvers");
@@ -744,7 +744,7 @@ inline void bind_tsolvers_module(py::module& m) {
     // -------------------------------------------------------------------------
     using namespace trex::tsolvers::ad::linear_model::lars_based;
 
-    bind_standard_tsolver<TLARS_Solver>(m_lars, "TLARS_Solver",
+    bind_standard_tsolver<TSolverLARS>(m_lars, "TLARS_Solver",
         "Terminating least angle regression (T-LARS) solver.\n"
         "\n"
         "References\n"
@@ -755,15 +755,15 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
         "Plain T-LARS reads no family hyperparameter.")
-        .def("getLambda", &PySolverWrapper<TLARS_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverLARS>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).")
-        .def("getKahanRefreshInterval", &PySolverWrapper<TLARS_Solver>::getKahanRefreshInterval,
+        .def("getKahanRefreshInterval", &PySolverWrapper<TSolverLARS>::getKahanRefreshInterval,
              "Get the current Kahan summation refresh interval.")
-        .def("setKahanRefreshInterval", &PySolverWrapper<TLARS_Solver>::setKahanRefreshInterval,
+        .def("setKahanRefreshInterval", &PySolverWrapper<TSolverLARS>::setKahanRefreshInterval,
              py::arg("interval"),
              "Set the Kahan summation refresh interval (call before executeStep).");
 
-    bind_standard_tsolver<TLASSO_Solver>(m_lars, "TLASSO_Solver",
+    bind_standard_tsolver<TSolverLASSO>(m_lars, "TLASSO_Solver",
         "Terminating LASSO (T-LASSO) solver: the LARS-LASSO path with variable removals.\n"
         "\n"
         "References\n"
@@ -777,14 +777,14 @@ inline void bind_tsolvers_module(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
-        .def("getLambda", &PySolverWrapper<TLASSO_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverLASSO>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).")
-        .def("getNumRemovals", &PySolverWrapper<TLASSO_Solver>::getNumRemovals,
+        .def("getNumRemovals", &PySolverWrapper<TSolverLASSO>::getNumRemovals,
              "Get the total number of variable removals during solution path.")
-        .def("getCyclingRatio", &PySolverWrapper<TLASSO_Solver>::getCyclingRatio,
+        .def("getCyclingRatio", &PySolverWrapper<TSolverLASSO>::getCyclingRatio,
              "Get the cycling ratio (removals / additions).");
 
-    bind_standard_tsolver<TSTEPWISE_Solver>(m_lars, "TSTEPWISE_Solver",
+    bind_standard_tsolver<TSolverStepwise>(m_lars, "TSTEPWISE_Solver",
         "Terminating forward stepwise regression (T-Stepwise) solver.\n"
         "\n"
         "References\n"
@@ -794,10 +794,10 @@ inline void bind_tsolvers_module(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
-        .def("getLambda", &PySolverWrapper<TSTEPWISE_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverStepwise>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).");
 
-    bind_standard_tsolver<TSTAGEWISE_Solver>(m_lars, "TSTAGEWISE_Solver",
+    bind_standard_tsolver<TSolverStagewise>(m_lars, "TSTAGEWISE_Solver",
         "Terminating incremental forward stagewise (T-Stagewise) solver via the LARS-stagewise path.\n"
         "\n"
         "References\n"
@@ -812,14 +812,14 @@ inline void bind_tsolvers_module(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
-        .def("getLambda", &PySolverWrapper<TSTAGEWISE_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverStagewise>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).")
-        .def("getNumRemovals", &PySolverWrapper<TSTAGEWISE_Solver>::getNumRemovals,
+        .def("getNumRemovals", &PySolverWrapper<TSolverStagewise>::getNumRemovals,
              "Get the total number of coefficient removals.")
-        .def("getCyclingRatio", &PySolverWrapper<TSTAGEWISE_Solver>::getCyclingRatio,
+        .def("getCyclingRatio", &PySolverWrapper<TSolverStagewise>::getCyclingRatio,
              "Get the cycling ratio (removals / additions).");
 
-    bind_standard_tsolver<TENET_Solver>(m_lars, "TENET_Solver",
+    bind_standard_tsolver<TSolverENET>(m_lars, "TENET_Solver",
         "Terminating elastic net (T-ENET) solver via the native T-LARS-EN path (L1 + L2 penalty).\n"
         "\n"
         "References\n"
@@ -832,17 +832,17 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
         "Reads options.lambda2, the secondary L2 penalty (default 0: the lasso path).")
-        .def("getLambda", &PySolverWrapper<TENET_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverENET>::getLambda,
              "Get the regularization parameter sequence: an initial entry followed by the decreasing L1 "
              "penalty per step, so its length is the number of steps plus one.")
-        .def("getAlpha", &PySolverWrapper<TENET_Solver>::getAlpha,
+        .def("getAlpha", &PySolverWrapper<TSolverENET>::getAlpha,
              "Get the Elastic Net mixing parameter alpha implied by lambda2.")
-        .def("getNumRemovals", &PySolverWrapper<TENET_Solver>::getNumRemovals,
+        .def("getNumRemovals", &PySolverWrapper<TSolverENET>::getNumRemovals,
              "Get the total number of variable removals during solution path.")
-        .def("getCyclingRatio", &PySolverWrapper<TENET_Solver>::getCyclingRatio,
+        .def("getCyclingRatio", &PySolverWrapper<TSolverENET>::getCyclingRatio,
              "Get the cycling ratio (removals / additions).");
 
-    bind_standard_tsolver<TENETAug_Solver>(m_lars, "TENETAug_Solver",
+    bind_standard_tsolver<TSolverENETAug>(m_lars, "TENETAug_Solver",
         "Terminating elastic net (T-ENETAug) solver via row augmentation around an inner T-LASSO.\n"
         "\n"
         "References\n"
@@ -861,7 +861,7 @@ inline void bind_tsolvers_module(py::module& m) {
 
     // TIENETAug: Informed Elastic Net via augmented LASSO (group-ridge penalty);
     // the group vector is data, not an option.
-    py::class_<PySolverWrapper<TIENETAug_Solver>> cls_tienet_aug(m_lars, "TIENETAug_Solver",
+    py::class_<PySolverWrapper<TSolverIENETAug>> cls_tienet_aug(m_lars, "TIENETAug_Solver",
         "Terminating informed elastic net (T-IENETAug) solver via row augmentation around an inner\n"
         "T-LASSO.\n"
         "\n"
@@ -879,37 +879,37 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n");
     cls_tienet_aug.def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::MatrixXd>,
                                 Eigen::Ref<Eigen::VectorXd>, const Eigen::VectorXi&,
-                                const trex::tsolvers::ad::SolverOptions&>(),
+                                const trex::tsolvers::ad::TSolverOptions&>(),
              py::arg("X"),
              py::arg("D"),
              py::arg("y"),
              py::arg("groups"),
-             py::arg("options") = trex::tsolvers::ad::SolverOptions{},
+             py::arg("options") = trex::tsolvers::ad::TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              ("Initializes the augmented-LASSO Informed Elastic Net solver with a 0-based group"
               " id per original variable (`groups`, length p); reads options.lambda2 (the"
               " group-ridge penalty) and options.tenet_aug_use_lars." + kInPlaceContractDoc).c_str());
     cls_tienet_aug.def(py::init([](const DesignArray& X, const DesignArray& D, Eigen::Ref<Eigen::VectorXd> y,
                                    const Eigen::VectorXi& groups,
-                                   const trex::tsolvers::ad::SolverOptions& options) {
+                                   const trex::tsolvers::ad::TSolverOptions& options) {
                  auto [X_ref, D_ref] = solver_design_refs(X, D, options);
-                 return std::make_unique<PySolverWrapper<TIENETAug_Solver>>(X_ref, D_ref, y, groups, options);
+                 return std::make_unique<PySolverWrapper<TSolverIENETAug>>(X_ref, D_ref, y, groups, options);
              }),
              py::arg("X").noconvert(), py::arg("D").noconvert(), py::arg("y"), py::arg("groups"),
-             py::arg("options") = trex::tsolvers::ad::SolverOptions{},
+             py::arg("options") = trex::tsolvers::ad::TSolverOptions{},
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(), py::keep_alive<1, 4>(),
              kReaderSolverDoc.c_str());
-    add_standard_tsolver_methods<TIENETAug_Solver>(cls_tienet_aug);
+    add_standard_tsolver_methods<TSolverIENETAug>(cls_tienet_aug);
     cls_tienet_aug
-        .def("getLambda2", &PySolverWrapper<TIENETAug_Solver>::getLambda2,
+        .def("getLambda2", &PySolverWrapper<TSolverIENETAug>::getLambda2,
              "Get the group-ridge penalty lambda2 used.")
-        .def("getGroups", &PySolverWrapper<TIENETAug_Solver>::getGroups,
+        .def("getGroups", &PySolverWrapper<TSolverIENETAug>::getGroups,
              "Get the 0-based group id per original variable (length p).")
-        .def("getNumGroups", &PySolverWrapper<TIENETAug_Solver>::getNumGroups,
+        .def("getNumGroups", &PySolverWrapper<TSolverIENETAug>::getNumGroups,
              "Get the number of disjoint groups.");
 
     // TIENET: native pathwise LARS-IEN (no augmented copies); groups are data.
-    bind_groups_tsolver<TIENET_Solver>(m_lars, "TIENET_Solver",
+    bind_groups_tsolver<TSolverIENET>(m_lars, "TIENET_Solver",
         "Terminating informed elastic net (T-IENET) solver via the native pathwise LARS-IEN algorithm.\n"
         "\n"
         "References\n"
@@ -925,17 +925,17 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
         "Reads options.lambda2, the group-ridge penalty.")
-        .def("getLambda", &PySolverWrapper<TIENET_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverIENET>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).")
-        .def("getLambda2", &PySolverWrapper<TIENET_Solver>::getLambda2,
+        .def("getLambda2", &PySolverWrapper<TSolverIENET>::getLambda2,
              "Get the group-ridge penalty lambda2 used.")
-        .def("getGroups", &PySolverWrapper<TIENET_Solver>::getGroups,
+        .def("getGroups", &PySolverWrapper<TSolverIENET>::getGroups,
              "Get the 0-based group id per original variable (length p).")
-        .def("getNumGroups", &PySolverWrapper<TIENET_Solver>::getNumGroups,
+        .def("getNumGroups", &PySolverWrapper<TSolverIENET>::getNumGroups,
              "Get the number of disjoint groups.");
 
     // TIKNET: native LARS homotopy under lambda2 * beta' K beta (FOLDED dummies).
-    bind_tikhonov_tsolver<TIKNET_Solver>(m_lars, "TIKNET_Solver",
+    bind_tikhonov_tsolver<TSolverTIKNET>(m_lars, "TIKNET_Solver",
         "Terminating Tikhonov net (T-TIKNET) solver via the native pathwise LARS-TIK algorithm.\n"
         "\n"
         "References\n"
@@ -959,11 +959,11 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n",
         "Reads options.lambda2, the quadratic penalty weight; FOLDED dummy coupling only "
         "(D.cols() a multiple of X.cols() when lambda2 > 0).")
-        .def("getLambda", &PySolverWrapper<TIKNET_Solver>::getLambda,
+        .def("getLambda", &PySolverWrapper<TSolverTIKNET>::getLambda,
              "Get the regularization parameter sequence (max correlation per step).")
-        .def("getLambda2", &PySolverWrapper<TIKNET_Solver>::getLambda2,
+        .def("getLambda2", &PySolverWrapper<TSolverTIKNET>::getLambda2,
              "Get the quadratic penalty weight lambda2 used.")
-        .def("getTikhonovK", &PySolverWrapper<TIKNET_Solver>::getTikhonovK,
+        .def("getTikhonovK", &PySolverWrapper<TSolverTIKNET>::getTikhonovK,
              "The Tikhonov matrix K as a dense p x p array.");
 
     // -------------------------------------------------------------------------
@@ -971,7 +971,7 @@ inline void bind_tsolvers_module(py::module& m) {
     // -------------------------------------------------------------------------
     using namespace trex::tsolvers::ad::linear_model::omp_based;
 
-    bind_standard_tsolver<TOMP_Solver>(m_omp, "TOMP_Solver",
+    bind_standard_tsolver<TSolverOMP>(m_omp, "TOMP_Solver",
         "Terminating orthogonal matching pursuit (T-OMP) solver.\n"
         "\n"
         "References\n"
@@ -987,7 +987,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
         "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
-    bind_standard_tsolver<TGP_Solver>(m_omp, "TGP_Solver",
+    bind_standard_tsolver<TSolverGP>(m_omp, "TGP_Solver",
         "Terminating gradient pursuit (T-GP) solver.\n"
         "\n"
         "References\n"
@@ -998,7 +998,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
         "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
-    bind_standard_tsolver<TACGP_Solver>(m_omp, "TACGP_Solver",
+    bind_standard_tsolver<TSolverACGP>(m_omp, "TACGP_Solver",
         "Terminating approximate conjugate gradient pursuit (T-ACGP) solver.\n"
         "\n"
         "References\n"
@@ -1009,7 +1009,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
         "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
-    bind_standard_tsolver<TMP_Solver>(m_omp, "TMP_Solver",
+    bind_standard_tsolver<TSolverMP>(m_omp, "TMP_Solver",
         "Terminating matching pursuit (T-MP) solver.\n"
         "\n"
         "References\n"
@@ -1020,7 +1020,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
         "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
-    bind_standard_tsolver<TOOLS_Solver>(m_omp, "TOOLS_Solver",
+    bind_standard_tsolver<TSolverOOLS>(m_omp, "TOOLS_Solver",
         "Terminating orthogonal least squares (T-OLS) solver.\n"
         "\n"
         "References\n"
@@ -1034,7 +1034,7 @@ inline void bind_tsolvers_module(py::module& m) {
         "  Discovery Rate Control,\" in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026,\n"
         "  pp. 2511-2515.\n",
         "Reads options.exch_tie_alpha / exch_tie_floor, the exchangeable-tie band.");
-    bind_standard_tsolver<TNCGMP_Solver>(m_omp, "TNCGMP_Solver",
+    bind_standard_tsolver<TSolverNCGMP>(m_omp, "TNCGMP_Solver",
         "Terminating norm-corrective generalized matching pursuit (T-NCGMP) solver.\n"
         "\n"
         "References\n"
@@ -1053,7 +1053,7 @@ inline void bind_tsolvers_module(py::module& m) {
     // -------------------------------------------------------------------------
     using namespace trex::tsolvers::ad::linear_model::afs_based;
 
-    bind_standard_tsolver<TAFS_Solver>(m_afs, "TAFS_Solver",
+    bind_standard_tsolver<TSolverAFS>(m_afs, "TAFS_Solver",
         "Terminating adaptive forward stepwise (T-AFS) solver.\n"
         "\n"
         "References\n"

@@ -27,8 +27,8 @@ written in C++20 on top of Eigen and installs as static libraries with CMake pac
 The library currently has five groups of tools.
 
 - **T-Rex selectors.** The core TRexSelector and its variants for dependent variables
-  (TRexDASelector), grouped variables (TRexGVSSelector), fast screening (ScreenTRexSelector,
-  BiobankScreenTRex), sparse principal component analysis (PCA) (TRexSPCA) and a general Tikhonov
+  (TRexDASelector), grouped variables (TRexGVSSelector), fast screening (TRexScreeningSelector,
+  TRexBiobankScreeningSelector), sparse principal component analysis (PCA) (TRexSPCASelector) and a general Tikhonov
   penalty (TRexTikhonovSelector), under `src/trex_selector_methods/ad/`.
 - **T-solvers.** The terminating forward selection solvers the selectors run inside their random
   experiments, of the least angle regression, orthogonal matching pursuit and adaptive forward
@@ -123,12 +123,12 @@ time, and `getVotingGrid()` the voting levels. The T-Rex selector page walks thr
 | Independent or modestly dependent variables | TRexSelector | T-Rex selector |
 | Strongly dependent variables (autoregressive, equi-correlated, clustered) | TRexDASelector | T-Rex+DA |
 | Groups of correlated variables that should enter together | TRexGVSSelector | T-Rex+GVS |
-| Very large \f$p\f$, a fast first pass before the full selector | ScreenTRexSelector | T-Rex+Screening |
-| Many phenotypes against one genotype matrix | BiobankScreenTRex | T-Rex+Screening |
-| Sparse principal components | TRexSPCA | T-Rex+SPCA |
+| Very large \f$p\f$, a fast first pass before the full selector | TRexScreeningSelector | T-Rex+Screening |
+| Many phenotypes against one genotype matrix | TRexBiobankScreeningSelector | T-Rex+Screening |
+| Sparse principal components | TRexSPCASelector | T-Rex+SPCA |
 | A structured penalty (smoothness, graph Laplacian, groups) | TRexTikhonovSelector | T-Rex+Tikhonov |
 
-The solver inside the random experiments is set in `TRexControlParameter::solver_type`. T-LARS
+The solver inside the random experiments is set in `TRexControl::solver_type`. T-LARS
 (terminating least angle regression) is the default and the solver of the T-Rex paper. T-LASSO adds
 the lasso modification, T-ENET the elastic net, and the orthogonal matching pursuit (OMP) family and
 the adaptive forward stepwise family are greedy and faster per step. The T-solvers page describes

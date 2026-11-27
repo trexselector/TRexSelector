@@ -19,12 +19,12 @@
  *      r_en_beta_<i>.csv    / r_en_act_<i>.csv      : EN (augmented lasso_star)
  *
  *  Five C++ solver runs are checked against the matching R reference:
- *      TLARS_Solver   vs r_lar      (pure LARS)
- *      TLASSO_Solver  vs r_lasso    (LARS-LASSO, sign-change drops)
- *      TENET_Solver   vs r_en       (Gram-based elastic net; LASSO-style drops)
- *      TENETAug_Solver vs r_en      (augmented-lasso elastic net; default TLASSO
+ *      TSolverLARS   vs r_lar      (pure LARS)
+ *      TSolverLASSO  vs r_lasso    (LARS-LASSO, sign-change drops)
+ *      TSolverENET   vs r_en       (Gram-based elastic net; LASSO-style drops)
+ *      TSolverENETAug vs r_en      (augmented-lasso elastic net; default TLASSO
  *                                    inner) -- same EN path as TENET.
- *      TENETAug_Solver vs r_enlar   (augmented-lasso EN with use_lars_inner=true;
+ *      TSolverENETAug vs r_enlar   (augmented-lasso EN with use_lars_inner=true;
  *                                    pure-LARS inner, augmented type="lar").
  *
  *  API mapping: R uses ONE matrix Z = cbind(X, D) with num_dummies = L; the C++
@@ -120,7 +120,7 @@ static std::vector<int> read_actions(const std::filesystem::path& path)
 /**
  * @brief Flatten getActions() into a single signed action stream.
  *  The tsolvers actions are ALREADY R's signed-1-based
- *  convention (TSolver_Base::actionAdd(j) = +(j+1), actionDrop(j) =
+ *  convention (TSolverBase::actionAdd(j) = +(j+1), actionDrop(j) =
  *  -(j+1)); the previous +1/-1 remap here double-shifted every index and
  *  made the action comparison report DIFFER even for paths matching at
  *  1e-13. Pass through verbatim.
@@ -274,7 +274,7 @@ int main(int argc, char** argv)
 
         // ----- TLARS vs r_lar -----
         {
-            lars::TLARS_Solver s(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.normalize = false,
+            lars::TSolverLARS s(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.normalize = false,
                 .intercept = false});
             s.executeStep(full, /*early_stop=*/false);
             const auto cmp = compare(s.getBetaPathSparse().dense(), flatten_actions_to_r(s.getActions()),
@@ -286,7 +286,7 @@ int main(int argc, char** argv)
         }
         // ----- TLASSO vs r_lasso -----
         {
-            lars::TLASSO_Solver s(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.normalize = false,
+            lars::TSolverLASSO s(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.normalize = false,
                 .intercept = false});
             s.executeStep(full, /*early_stop=*/false);
             const auto cmp = compare(s.getBetaPathSparse().dense(), flatten_actions_to_r(s.getActions()),
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
         }
         // ----- TENET (Gram EN) vs r_en -----
         {
-            lars::TENET_Solver s(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.normalize = false,
+            lars::TSolverENET s(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.normalize = false,
                 .intercept = false, .lambda2 = lambda2});
             s.executeStep(full, /*early_stop=*/false);
             const auto cmp = compare(s.getBetaPathSparse().dense(), flatten_actions_to_r(s.getActions()),
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
         }
         // ----- TENET_AUG (augmented-lasso EN) vs r_en -----
         {
-            lars::TENETAug_Solver s(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.normalize = false,
+            lars::TSolverENETAug s(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.normalize = false,
                 .intercept = false, .lambda2 = lambda2});
             s.executeStep(full, /*early_stop=*/false);
             const auto cmp = compare(s.getBetaPathSparse().dense(), flatten_actions_to_r(s.getActions()),
@@ -319,7 +319,7 @@ int main(int argc, char** argv)
         }
         // ----- TENET_AUG with pure-LARS inner vs r_enlar (augmented type="lar") -----
         {
-            lars::TENETAug_Solver s(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.normalize = false,
+            lars::TSolverENETAug s(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.normalize = false,
                 .intercept = false, .lambda2 = lambda2, .tenet_aug_use_lars = true});
             s.executeStep(full, /*early_stop=*/false);
             const auto cmp = compare(s.getBetaPathSparse().dense(), flatten_actions_to_r(s.getActions()),

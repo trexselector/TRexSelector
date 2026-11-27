@@ -56,10 +56,10 @@ namespace trex::test::tsolvers::ad::buffer_guard {
 
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
-using trex::tsolvers::ad::SolverOptions;
+using trex::tsolvers::ad::TSolverOptions;
 using trex::ml_methods::scaler_methods::LpNormScaler;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 namespace bufreg = trex::tsolvers::ad::solver_utils::buffer_registry;
 namespace datagen = trex::utils::datageneration::datagen;
@@ -79,7 +79,7 @@ protected:
             {3.0, -2.0, 2.5},
             1.0, 42, -1, -1,
             datagen::predictor_policy::Normal(),
-            datagen::dummygen::Distribution::Normal(),
+            datagen::dummygen::DummyDistribution::Normal(),
             datagen::noisegen::noise_policy::Normal()
         );
         X = data.getX();
@@ -91,11 +91,11 @@ protected:
     Eigen::Map<Eigen::MatrixXd> mapD() { return {D.data(), D.rows(), D.cols()}; }
     Eigen::Map<Eigen::VectorXd> mapY() { return {y.data(), y.size()}; }
 
-    static SolverOptions writer() {
-        return SolverOptions{.normalize = true, .intercept = true, .verbose = false};
+    static TSolverOptions writer() {
+        return TSolverOptions{.normalize = true, .intercept = true, .verbose = false};
     }
-    static SolverOptions reader() {
-        return SolverOptions{.normalize = false, .intercept = false, .verbose = false};
+    static TSolverOptions reader() {
+        return TSolverOptions{.normalize = false, .intercept = false, .verbose = false};
     }
 };
 
@@ -152,18 +152,18 @@ TEST(BufferRegistry, ClaimReleaseAndRaii) {
 TEST_F(TSolverBufferGuardTest, SecondWriterOnLiveBufferThrows) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
 
-    TSTAGEWISE_Solver first(Xm, Dm, ym, writer());
+    TSolverStagewise first(Xm, Dm, ym, writer());
     EXPECT_TRUE(bufreg::isClaimed(X.data()));
     EXPECT_TRUE(bufreg::isClaimed(D.data()));
 
     // Same family or another family: the buffer is the buffer.
-    EXPECT_THROW(TSTAGEWISE_Solver second(Xm, Dm, ym, writer()), std::runtime_error);
-    EXPECT_THROW(TLARS_Solver third(Xm, Dm, ym, writer()), std::runtime_error);
-    EXPECT_THROW(TOMP_Solver fourth(Xm, Dm, ym, writer()), std::runtime_error);
+    EXPECT_THROW(TSolverStagewise second(Xm, Dm, ym, writer()), std::runtime_error);
+    EXPECT_THROW(TSolverLARS third(Xm, Dm, ym, writer()), std::runtime_error);
+    EXPECT_THROW(TSolverOMP fourth(Xm, Dm, ym, writer()), std::runtime_error);
 
     // The message tells the user what to do
     try {
-        TLARS_Solver again(Xm, Dm, ym, writer());
+        TSolverLARS again(Xm, Dm, ym, writer());
         FAIL() << "expected a throw";
     } catch (const std::runtime_error& e) {
         const std::string msg = e.what();
@@ -182,16 +182,16 @@ TEST_F(TSolverBufferGuardTest, SecondWriterOnLiveBufferThrows) {
 TEST_F(TSolverBufferGuardTest, InterceptOnlyAndNormalizeOnlyClaim) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
     {
-        TLARS_Solver s(Xm, Dm, ym,
-                       SolverOptions{.normalize = false, .intercept = true, .verbose = false});
+        TSolverLARS s(Xm, Dm, ym,
+                       TSolverOptions{.normalize = false, .intercept = true, .verbose = false});
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         EXPECT_TRUE(bufreg::isClaimed(D.data()));
         s.restore(Xm, Dm, ym);
     }
     EXPECT_FALSE(bufreg::isClaimed(X.data()));
     {
-        TLARS_Solver s(Xm, Dm, ym,
-                       SolverOptions{.normalize = true, .intercept = false, .verbose = false});
+        TSolverLARS s(Xm, Dm, ym,
+                       TSolverOptions{.normalize = true, .intercept = false, .verbose = false});
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         EXPECT_TRUE(bufreg::isClaimed(D.data()));
     }
@@ -205,7 +205,7 @@ TEST_F(TSolverBufferGuardTest, RestoreReleasesTheClaim) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
     const Eigen::MatrixXd X0 = X, D0 = D;
 
-    TSTAGEWISE_Solver first(Xm, Dm, ym, writer());
+    TSolverStagewise first(Xm, Dm, ym, writer());
     first.executeStep(5, true);
     first.restore(Xm, Dm, ym);
     EXPECT_FALSE(bufreg::isClaimed(X.data()));
@@ -215,7 +215,7 @@ TEST_F(TSolverBufferGuardTest, RestoreReleasesTheClaim) {
 
     // `first` is still alive but has released: a second writer is fine now
     EXPECT_NO_THROW({
-        TSTAGEWISE_Solver second(Xm, Dm, ym, writer());
+        TSolverStagewise second(Xm, Dm, ym, writer());
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         second.restore(Xm, Dm, ym);
     });
@@ -233,20 +233,20 @@ TEST_F(TSolverBufferGuardTest, RestoreIsIdempotentAndOnlyTheWriterWritesBack) {
 
     // A reader never holds and its restore() leaves the data untouched
     {
-        TSTAGEWISE_Solver r(Xm, Dm, ym, reader());
+        TSolverStagewise r(Xm, Dm, ym, reader());
         EXPECT_FALSE(r.holdsPreprocessed());
         r.restore(Xm, Dm, ym);
         EXPECT_EQ((X - X0).cwiseAbs().maxCoeff(), 0.0);
     }
 
-    TSTAGEWISE_Solver w(Xm, Dm, ym, writer());
+    TSolverStagewise w(Xm, Dm, ym, writer());
     EXPECT_TRUE(w.holdsPreprocessed());
     w.executeStep(3, true);
     w.save(checkpoint);
 
     // A solver resumed from the checkpoint is a reader: no claim, no write-back
     {
-        TSTAGEWISE_Solver resumed = TSTAGEWISE_Solver::load(checkpoint, Xm, Dm);
+        TSolverStagewise resumed = TSolverStagewise::load(checkpoint, Xm, Dm);
         EXPECT_FALSE(resumed.holdsPreprocessed());
         const Eigen::MatrixXd X_pre = X;
         resumed.restore(Xm, Dm, ym);
@@ -278,7 +278,7 @@ TEST_F(TSolverBufferGuardTest, DestructionWritesBackAndReleasesTheClaim) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
     const Eigen::MatrixXd X0 = X, D0 = D;
     {
-        TLARS_Solver s(Xm, Dm, ym, writer());
+        TSolverLARS s(Xm, Dm, ym, writer());
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         EXPECT_FALSE(X.isApprox(X0, 1e-12));   // preprocessed in place
     }
@@ -289,14 +289,14 @@ TEST_F(TSolverBufferGuardTest, DestructionWritesBackAndReleasesTheClaim) {
 
     // Claimable again, and the data is raw: no already-preprocessed warning
     {
-        TLARS_Solver again(Xm, Dm, ym, writer());
+        TSolverLARS again(Xm, Dm, ym, writer());
         EXPECT_TRUE(again.getWarnings().empty());
     }
 
     // A constructor that throws after the base preprocessed (TENET validates
     // lambda2 after the base constructor ran) leaves X and D restored.
-    EXPECT_THROW(TENET_Solver bad(Xm, Dm, ym,
-                     SolverOptions{.normalize = true, .intercept = true,
+    EXPECT_THROW(TSolverENET bad(Xm, Dm, ym,
+                     TSolverOptions{.normalize = true, .intercept = true,
                                    .verbose = false, .lambda2 = -1.0}),
                  std::invalid_argument);
     EXPECT_FALSE(bufreg::isClaimed(X.data()));
@@ -311,13 +311,13 @@ TEST_F(TSolverBufferGuardTest, MoveTransfersTheClaimAndTheWriteBack) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
     const Eigen::MatrixXd X0 = X;
     {
-        TLARS_Solver src(Xm, Dm, ym, writer());
-        TLARS_Solver dst(std::move(src));
+        TSolverLARS src(Xm, Dm, ym, writer());
+        TSolverLARS dst(std::move(src));
         EXPECT_FALSE(src.holdsPreprocessed());   // NOLINT(bugprone-use-after-move)
         EXPECT_TRUE(dst.holdsPreprocessed());
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         // dst owns the claim: a second writer still throws
-        EXPECT_THROW(TLARS_Solver w(Xm, Dm, ym, writer()), std::runtime_error);
+        EXPECT_THROW(TSolverLARS w(Xm, Dm, ym, writer()), std::runtime_error);
         // src is destroyed first (reverse order) and must leave X alone: the
         // data is still preprocessed when dst's destructor writes it back.
     }
@@ -334,18 +334,18 @@ TEST_F(TSolverBufferGuardTest, ReadersNeverClaim) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
 
     {
-        TSTAGEWISE_Solver r(Xm, Dm, ym, reader());
+        TSolverStagewise r(Xm, Dm, ym, reader());
         EXPECT_FALSE(bufreg::isClaimed(X.data()));
         EXPECT_FALSE(bufreg::isClaimed(D.data()));
     }
 
-    TSTAGEWISE_Solver w(Xm, Dm, ym, writer());
+    TSolverStagewise w(Xm, Dm, ym, writer());
     EXPECT_TRUE(bufreg::isClaimed(X.data()));
 
     // Readers on the writer's (now preprocessed) buffers are allowed
     EXPECT_NO_THROW({
-        TSTAGEWISE_Solver r1(Xm, Dm, ym, reader());
-        TLARS_Solver r2(Xm, Dm, ym, reader());
+        TSolverStagewise r1(Xm, Dm, ym, reader());
+        TSolverLARS r2(Xm, Dm, ym, reader());
         r1.executeStep(3, true);
         r2.executeStep(3, true);
     });
@@ -359,13 +359,13 @@ TEST_F(TSolverBufferGuardTest, LoadedSolverNeverClaims) {
     const std::string checkpoint = ::testing::TempDir() + "temp_guard_checkpoint.bin";
 
     {
-        TSTAGEWISE_Solver w(Xm, Dm, ym, writer());
+        TSolverStagewise w(Xm, Dm, ym, writer());
         w.executeStep(5, true);
         w.save(checkpoint);
         // Loading onto the writer's live buffers is the checkpoint pattern
         // and must not collide with the writer's claim.
         EXPECT_NO_THROW({
-            TSTAGEWISE_Solver resumed = TSTAGEWISE_Solver::load(checkpoint, Xm, Dm);
+            TSolverStagewise resumed = TSolverStagewise::load(checkpoint, Xm, Dm);
             EXPECT_EQ(resumed.getNumSteps(), w.getNumSteps());
         });
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
@@ -373,7 +373,7 @@ TEST_F(TSolverBufferGuardTest, LoadedSolverNeverClaims) {
     EXPECT_FALSE(bufreg::isClaimed(X.data()));
 
     {
-        TSTAGEWISE_Solver resumed = TSTAGEWISE_Solver::load(checkpoint, Xm, Dm);
+        TSolverStagewise resumed = TSolverStagewise::load(checkpoint, Xm, Dm);
         EXPECT_FALSE(bufreg::isClaimed(X.data()));
         EXPECT_FALSE(bufreg::isClaimed(D.data()));
     }
@@ -391,7 +391,7 @@ TEST_F(TSolverBufferGuardTest, WriterOnPreprocessedDataWarns) {
 
     // Raw data: no warning
     {
-        TLARS_Solver s(Xm, Dm, ym, writer());
+        TSolverLARS s(Xm, Dm, ym, writer());
         EXPECT_TRUE(s.getWarnings().empty());
         s.restore(Xm, Dm, ym);
     }
@@ -403,7 +403,7 @@ TEST_F(TSolverBufferGuardTest, WriterOnPreprocessedDataWarns) {
     sd.fit_transform_inplace(Dm);
 
     {
-        TLARS_Solver s(Xm, Dm, ym, writer());   // a writer on preprocessed data
+        TSolverLARS s(Xm, Dm, ym, writer());   // a writer on preprocessed data
         ASSERT_GE(s.getWarnings().size(), 2u);   // one for X, one for D
         bool saw_x = false, saw_d = false;
         for (const auto& w : s.getWarnings()) {
@@ -417,7 +417,7 @@ TEST_F(TSolverBufferGuardTest, WriterOnPreprocessedDataWarns) {
 
     // A reader on preprocessed data is the intended pattern: silent
     {
-        TLARS_Solver r(Xm, Dm, ym, reader());
+        TSolverLARS r(Xm, Dm, ym, reader());
         EXPECT_TRUE(r.getWarnings().empty());
     }
 
@@ -433,7 +433,7 @@ TEST_F(TSolverBufferGuardTest, WriterOnPreprocessedDataWarns) {
 TEST_F(TSolverBufferGuardTest, SelectorAndWriterSolverShareTheRegistry) {
     auto Xm = mapX(); auto Dm = mapD(); auto ym = mapY();
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 5;
     ctrl.max_dummy_multiplier = 2;
     ctrl.solver_type = SolverTypeForTRex::TLARS;
@@ -442,14 +442,14 @@ TEST_F(TSolverBufferGuardTest, SelectorAndWriterSolverShareTheRegistry) {
         TRexSelector sel(Xm, ym, /*tFDR=*/0.2, ctrl, /*seed=*/7, /*verbose=*/false);
         EXPECT_TRUE(bufreg::isClaimed(X.data()));
         // A writer solver on the selector's X must throw
-        EXPECT_THROW(TLARS_Solver w(Xm, Dm, ym, writer()), std::runtime_error);
+        EXPECT_THROW(TSolverLARS w(Xm, Dm, ym, writer()), std::runtime_error);
         // A reader is fine
-        EXPECT_NO_THROW(TLARS_Solver r(Xm, Dm, ym, reader()));
+        EXPECT_NO_THROW(TSolverLARS r(Xm, Dm, ym, reader()));
     }
     EXPECT_FALSE(bufreg::isClaimed(X.data()));
 
     {
-        TLARS_Solver w(Xm, Dm, ym, writer());
+        TSolverLARS w(Xm, Dm, ym, writer());
         // A selector on the writer's X must throw
         EXPECT_THROW(TRexSelector sel(Xm, ym, 0.2, ctrl, 7, false), std::runtime_error);
         w.restore(Xm, Dm, ym);
@@ -482,16 +482,16 @@ TEST_F(TSolverBufferGuardTest, PreScaledSharedBufferCheckpointRoundTripIsBitIden
     constexpr int T_partial = 7, T_final = 15;
 
     // Reference: continuous run
-    TSTAGEWISE_Solver ref(Xm, Dm, ym, reader());
+    TSolverStagewise ref(Xm, Dm, ym, reader());
     ref.executeStep(T_final, true);
 
     // Checkpoint after T_partial, resume on the same buffers
     {
-        TSTAGEWISE_Solver part(Xm, Dm, ym, reader());
+        TSolverStagewise part(Xm, Dm, ym, reader());
         part.executeStep(T_partial, true);
         part.save(checkpoint);
     }
-    TSTAGEWISE_Solver resumed = TSTAGEWISE_Solver::load(checkpoint, Xm, Dm);
+    TSolverStagewise resumed = TSolverStagewise::load(checkpoint, Xm, Dm);
     resumed.executeStep(T_final, true);
 
     EXPECT_FALSE(bufreg::isClaimed(X.data()));

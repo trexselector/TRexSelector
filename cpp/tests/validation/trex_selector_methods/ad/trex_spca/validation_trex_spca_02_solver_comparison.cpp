@@ -9,7 +9,7 @@
  * @details
  *  The per-PC GVS(EN) sub-selector can use either of two mathematically
  *  equivalent solvers (for lambda2 > 0), now selectable via
- *  TRexSPCAControlParameter::en_solver:
+ *  TRexSPCAControl::en_solver:
  *
  *    - ENSolverType::TENET     — Gram-based EN (Cholesky update on
  *                                X_A^T X_A + lambda2*I).
@@ -64,10 +64,10 @@ using namespace spca_sim;
 // Helpers
 // ==============================================================================
 
-/** @brief Run a single TRexSPCA fit and return the per-PC active sets.
+/** @brief Run a single TRexSPCASelector fit and return the per-PC active sets.
  *
  *  X_centered is taken by value so each solver receives an identical, private
- *  copy (TRexSPCA centers / restores in place).
+ *  copy (TRexSPCASelector centers / restores in place).
  */
 static std::vector<std::vector<Eigen::Index>>
 run_single_spca(Eigen::MatrixXd X_centered,
@@ -76,7 +76,7 @@ run_single_spca(Eigen::MatrixXd X_centered,
                 unsigned        seed,
                 ENSolverType    en_solver)
 {
-    TRexSPCAControlParameter ctrl;
+    TRexSPCAControl ctrl;
     ctrl.mode                    = SPCAMode::ActiveSet;
     ctrl.en_solver               = en_solver;
     ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
@@ -84,7 +84,7 @@ run_single_spca(Eigen::MatrixXd X_centered,
 
     Eigen::Map<Eigen::MatrixXd> X_map(
         X_centered.data(), X_centered.rows(), X_centered.cols());
-    TRexSPCA spca(X_map, M, tFDR, ctrl, static_cast<int>(seed));
+    TRexSPCASelector spca(X_map, M, tFDR, ctrl, static_cast<int>(seed));
     return spca.select().active_sets;
 }
 

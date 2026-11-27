@@ -14,7 +14,7 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
 
@@ -40,7 +40,7 @@ int main() {
             Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
             Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
 
-            TRexControlParameter ctrl;
+            TRexControl ctrl;
             ctrl.K = 10;
             TRexSelector sel(X_map, y_map, 0.1, ctrl, 7 + trial, false);
             sel.select();

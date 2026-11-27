@@ -35,7 +35,7 @@
  *
  * Thread safety:
  *   - Each trial owns its data (returned by-value from factory).
- *   - TRexControlParameter is passed by const-ref; TRexSelector copies it by value.
+ *   - TRexControl is passed by const-ref; TRexSelector copies it by value.
  *   - mmap variant uses per-thread file names derived from omp_get_thread_num().
  *   - WarmStartManager / TRexMemMapManager use TempDirManager::create() which
  *     generates unique directories via std::random_device — safe under OpenMP.
@@ -79,7 +79,7 @@
 namespace trex_sim {
 
 namespace rates = trex::utils::eval::rates;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 
@@ -609,7 +609,7 @@ inline TrexGridPointResult run_mc_trials_trex(
     const std::string&           progress_label,
     const TrexDGPFactory&        make_data,
     double                       tFDR,
-    const TRexControlParameter&  trex_ctrl,
+    const TRexControl&  trex_ctrl,
     unsigned                     base_seed_offset)
 {
     const int iMC = static_cast<int>(num_MC);
@@ -703,7 +703,7 @@ inline TrexGridPointResult run_mc_trials_trex_mmap(
     const std::string&           progress_label,
     const TrexMmapDGPFactory&    make_data,
     double                       tFDR,
-    const TRexControlParameter&  trex_ctrl,
+    const TRexControl&  trex_ctrl,
     unsigned                     base_seed_offset,
     const std::string&           mmap_filestem)
 {

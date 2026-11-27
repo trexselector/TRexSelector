@@ -37,7 +37,8 @@ namespace trex::test::trex_selector_methods::lloop_seeded {
 namespace datagen = trex::utils::datageneration::datagen;
 namespace dummygen = trex::utils::datageneration::dummygen;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
+using trex::trex_selector_methods::ad::trex_core::TRexResult;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 using trex::trex_selector_methods::ad::utils::dummy_generator::DummyGenerator;
@@ -58,7 +59,7 @@ std::vector<std::size_t> runSelection(LLoopStrategy strategy, int seed) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 10;
     ctrl.max_dummy_multiplier = 3;
     ctrl.solver_type = SolverTypeForTRex::TLARS;
@@ -91,7 +92,7 @@ TEST(LLoopSeeded, PermutationSeededMatchesStoredPermutation) {
  *         aliased DIRECT). Checked at the DummyGenerator level. */
 TEST(LLoopSeeded, SeededPermutationsAreRowPermutationsNotFreshDraws) {
     const std::size_t n = 30, p = 20;
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/55);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/55);
 
     const std::uint64_t base_id = 1234u;
     const Eigen::MatrixXd base = gen.generate(p, static_cast<std::size_t>(base_id));
@@ -137,7 +138,7 @@ TEST(LLoopSeeded, SeededStrategiesAreSeedReproducible) {
 namespace {
 
 /** @brief Run a seeded core selection and return the whole result. */
-TRexSelector::SelectionResult runResult(LLoopStrategy strategy, int seed, bool mmap = false) {
+TRexResult runResult(LLoopStrategy strategy, int seed, bool mmap = false) {
     const Eigen::Index n = 60, p = 100;
     std::vector<std::size_t> sup = {3, 20, 45, 70, 90};
     std::vector<double> coefs(sup.size(), 2.0);
@@ -149,7 +150,7 @@ TRexSelector::SelectionResult runResult(LLoopStrategy strategy, int seed, bool m
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 10;
     ctrl.max_dummy_multiplier = 3;
     ctrl.solver_type = SolverTypeForTRex::TLARS;
@@ -160,8 +161,8 @@ TRexSelector::SelectionResult runResult(LLoopStrategy strategy, int seed, bool m
     return sel.select();
 }
 
-void expectSameResult(const TRexSelector::SelectionResult& a,
-                      const TRexSelector::SelectionResult& b, const char* what) {
+void expectSameResult(const TRexResult& a,
+                      const TRexResult& b, const char* what) {
     EXPECT_TRUE((a.selected_var.array() == b.selected_var.array()).all()) << what;
     EXPECT_EQ(a.T_stop, b.T_stop) << what;
     EXPECT_EQ(a.dummy_factor_L, b.dummy_factor_L) << what;
@@ -193,7 +194,7 @@ TEST(LLoopSeeded, SeededMatchesStandard) {
  *         from the HCONCAT (tag 0) draw it used to equal. */
 TEST(LLoopSeeded, SeededDrawsAreStandardsDraws) {
     const std::size_t n = 30, p = 20, K = 4;
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/55);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/55);
     for (std::size_t LL = 1; LL <= 3; ++LL) {
         gen.generateAndStore(K, LL * p, /*l_tag=*/LL);
         for (std::size_t k = 0; k < K; ++k) {
@@ -233,7 +234,7 @@ TEST(LLoopSeeded, SeededMatchesStandardInDA) {
         Eigen::VectorXd y = data.getY();
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-        da::TRexDAControlParameter ctrl;
+        da::TRexDAControl ctrl;
         ctrl.method = da::DAMethod::AR1;
         ctrl.trex_ctrl.K = 10;
         ctrl.trex_ctrl.max_dummy_multiplier = 3;
@@ -260,7 +261,7 @@ TEST(LLoopSeeded, SeededMatchesStandardInGVS) {
         Eigen::VectorXd y = data.getY();
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-        gvs::TRexGVSControlParameter ctrl;
+        gvs::TRexGVSControl ctrl;
         ctrl.gvs_type = gvs::GVSType::EN;
         ctrl.lambda_2 = 1.0;
         ctrl.trex_ctrl.K = 10;

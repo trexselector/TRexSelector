@@ -4,7 +4,7 @@
 /**
  * @file tsolver_base.cpp
  *
- * @brief Implementation file for the TSolver_Base class, providing common
+ * @brief Implementation file for the TSolverBase class, providing common
  * functionality for all terminating variable selection solvers.
  */
 // ===================================================================================
@@ -44,11 +44,11 @@ namespace fpc = trex::utils::fp_classify;
 // Constructor
 // ============================================================================
 
-TSolver_Base::TSolver_Base(
+TSolverBase::TSolverBase(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options
+    const TSolverOptions& options
     )
     : X_(X), D_(D), y_(y), normalize_(options.normalize),
       scaling_mode_(options.scaling_mode), intercept_(options.intercept),
@@ -70,20 +70,20 @@ TSolver_Base::TSolver_Base(
     // Validation
     if (X.rows() != y.size()) {
         throw std::invalid_argument(
-            concatMsg("TSolver_Base: X rows (", X.rows(), ") do not match y entries (",
+            concatMsg("TSolverBase: X rows (", X.rows(), ") do not match y entries (",
                          y.size(), ")")
         );
     }
     if (D.rows() != X.rows()) {
         throw std::invalid_argument(
-            concatMsg("TSolver_Base: D rows (", D.rows(), ") do not match X rows (", X.rows(),
+            concatMsg("TSolverBase: D rows (", D.rows(), ") do not match X rows (", X.rows(),
              ")")
         );
     }
 
     if (X.rows() == 1 && intercept_) {
         throw std::invalid_argument(
-            "TSolver_Base: cannot fit intercept with only one sample."
+            "TSolverBase: cannot fit intercept with only one sample."
         );
     }
 
@@ -97,16 +97,16 @@ TSolver_Base::TSolver_Base(
 // Thread budget
 // ============================================================================
 
-int TSolver_Base::resolveThreadBudget(int n_threads) const {
+int TSolverBase::resolveThreadBudget(int n_threads) const {
     if (n_threads < 1) {
         throw std::invalid_argument(
-            concatMsg("TSolver_Base: n_threads must be >= 1. Got: ", n_threads));
+            concatMsg("TSolverBase: n_threads must be >= 1. Got: ", n_threads));
     }
     return n_threads;
 }
 
 
-int TSolver_Base::threadsFor(double work) const noexcept {
+int TSolverBase::threadsFor(double work) const noexcept {
     return trex::utils::openmp::threads_for(n_threads_, work);
 }
 
@@ -115,7 +115,7 @@ int TSolver_Base::threadsFor(double work) const noexcept {
 // Internal Tools & Utilities
 // ============================================================================
 
-void TSolver_Base::preprocess() {
+void TSolverBase::preprocess() {
     // 0. Single-owner invariant for in-place preprocessing: this
     //    solver is about to transform the caller's X and D through the maps,
     //    so it claims both buffers for its lifetime (or until restore()). A
@@ -172,7 +172,7 @@ void TSolver_Base::preprocess() {
 }
 
 
-TSolver_Base::~TSolver_Base() {
+TSolverBase::~TSolverBase() {
     // A writer that was never restore()d — including a derived constructor
     // that threw after this base had preprocessed — writes X and D back
     // here, so the caller's buffers never stay preprocessed without an
@@ -181,7 +181,7 @@ TSolver_Base::~TSolver_Base() {
 }
 
 
-void TSolver_Base::writeBackOwnedBuffers() const noexcept {
+void TSolverBase::writeBackOwnedBuffers() const noexcept {
     if (!holds_preprocessed_.value) { return; }
     try {
         // The stored maps view the caller's writable buffers (the constructor
@@ -212,7 +212,7 @@ void TSolver_Base::writeBackOwnedBuffers() const noexcept {
 }
 
 
-void TSolver_Base::restore(Eigen::Map<Eigen::MatrixXd>& X,
+void TSolverBase::restore(Eigen::Map<Eigen::MatrixXd>& X,
                            Eigen::Map<Eigen::MatrixXd>& D,
                            Eigen::Map<Eigen::VectorXd>& y) const {
 
@@ -259,7 +259,7 @@ void TSolver_Base::restore(Eigen::Map<Eigen::MatrixXd>& X,
 }
 
 
-std::string TSolver_Base::writerClaimMessage(const char* which) const {
+std::string TSolverBase::writerClaimMessage(const char* which) const {
     return concatMsg(
         solverTypeToString(), ": the input matrix ", which,
         " is already held by another live T-solver or T-Rex selector that "
@@ -271,7 +271,7 @@ std::string TSolver_Base::writerClaimMessage(const char* which) const {
 }
 
 
-void TSolver_Base::warnIfAlreadyPreprocessed(const char* which,
+void TSolverBase::warnIfAlreadyPreprocessed(const char* which,
                                              const Eigen::VectorXd& means,
                                              const Eigen::VectorXd& norms) const {
     constexpr double tol = 1e-10;
@@ -293,12 +293,12 @@ void TSolver_Base::warnIfAlreadyPreprocessed(const char* which,
 }
 
 
-void TSolver_Base::updateDummyTracking() {
+void TSolverBase::updateDummyTracking() {
     dummies_at_step_.push_back(count_active_dummies_);
 }
 
 
-void TSolver_Base::initializeInactives() {
+void TSolverBase::initializeInactives() {
     inactives_.clear();
     std::size_t p_tot = p_original_ + num_dummies_;
     inactives_.reserve(p_tot - dropped_indices_.size());
@@ -321,7 +321,7 @@ void TSolver_Base::initializeInactives() {
 }
 
 
-void TSolver_Base::updateInactiveSet() {
+void TSolverBase::updateInactiveSet() {
     if (!any_dropped_) return;
 
     inactives_.clear();
@@ -345,20 +345,20 @@ void TSolver_Base::updateInactiveSet() {
 // Beta Path Storage (sparse)
 // ============================================================================
 
-void TSolver_Base::initBetaPathStorage() {
+void TSolverBase::initBetaPathStorage() {
     clearRunningBeta();
     betaPathSparse_.clear();
     betaPathSparse_.emplace_back();  // all-zero step 0
 }
 
 
-double TSolver_Base::runningBeta(std::size_t j) const {
+double TSolverBase::runningBeta(std::size_t j) const {
     auto it = beta_pos_.find(j);
     return (it == beta_pos_.end()) ? 0.0 : beta_val_[it->second];
 }
 
 
-double& TSolver_Base::runningBetaRef(std::size_t j) {
+double& TSolverBase::runningBetaRef(std::size_t j) {
     auto it = beta_pos_.find(j);
     if (it != beta_pos_.end()) { return beta_val_[it->second]; }
 
@@ -369,7 +369,7 @@ double& TSolver_Base::runningBetaRef(std::size_t j) {
 }
 
 
-void TSolver_Base::removeRunningBeta(std::size_t j) {
+void TSolverBase::removeRunningBeta(std::size_t j) {
     auto it = beta_pos_.find(j);
     if (it == beta_pos_.end()) { return; }
 
@@ -387,14 +387,14 @@ void TSolver_Base::removeRunningBeta(std::size_t j) {
 }
 
 
-void TSolver_Base::clearRunningBeta() {
+void TSolverBase::clearRunningBeta() {
     beta_idx_.clear();
     beta_val_.clear();
     beta_pos_.clear();
 }
 
 
-void TSolver_Base::setRunningBeta(const std::vector<std::size_t>& idx,
+void TSolverBase::setRunningBeta(const std::vector<std::size_t>& idx,
                                   const Eigen::Ref<const Eigen::VectorXd>& values) {
     clearRunningBeta();
     beta_idx_ = idx;
@@ -406,7 +406,7 @@ void TSolver_Base::setRunningBeta(const std::vector<std::size_t>& idx,
 }
 
 
-void TSolver_Base::recordBetaStep() {
+void TSolverBase::recordBetaStep() {
     SparseBetaStep step;
     step.idx = beta_idx_;
     step.val = beta_val_;
@@ -414,7 +414,7 @@ void TSolver_Base::recordBetaStep() {
 }
 
 
-SparseBetaPath TSolver_Base::makeScaledSparsePath(double pre_divisor) const {
+SparseBetaPath TSolverBase::makeScaledSparsePath(double pre_divisor) const {
     SparseBetaPath out;
     out.p_total = p_original_ + num_dummies_;
     out.steps = betaPathSparse_;
@@ -446,7 +446,7 @@ SparseBetaPath TSolver_Base::makeScaledSparsePath(double pre_divisor) const {
 // Correlation Utilities
 // ============================================================================
 
-void TSolver_Base::initializeCorrelations() {
+void TSolverBase::initializeCorrelations() {
     // setZero (not resize): entries of dropped columns are never written but
     // are serialized — leaving them uninitialized makes checkpoints
     // nondeterministic.
@@ -462,7 +462,7 @@ void TSolver_Base::initializeCorrelations() {
 
 
 std::pair<double, std::vector<std::size_t>>
-TSolver_Base::findTiedMaxCorrelations() const {
+TSolverBase::findTiedMaxCorrelations() const {
     double Cmax = 0.0;
     std::vector<std::size_t> tied;
     tied.reserve(10);
@@ -482,7 +482,7 @@ TSolver_Base::findTiedMaxCorrelations() const {
 
 
 std::pair<double, std::vector<std::size_t>>
-TSolver_Base::findTiedMaxCorrelationsAllNonDropped() const {
+TSolverBase::findTiedMaxCorrelationsAllNonDropped() const {
     double Cmax = 0.0;
     std::vector<std::size_t> tied;
     tied.reserve(10);
@@ -506,7 +506,7 @@ TSolver_Base::findTiedMaxCorrelationsAllNonDropped() const {
 }
 
 
-void TSolver_Base::refreshInactiveCorrelations() {
+void TSolverBase::refreshInactiveCorrelations() {
     [[maybe_unused]] const int nt = threadsFor(static_cast<double>(X_->rows()) *
                               static_cast<double>(inactives_.size()));
     #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
@@ -517,7 +517,7 @@ void TSolver_Base::refreshInactiveCorrelations() {
 }
 
 
-void TSolver_Base::refreshAllCorrelations() {
+void TSolverBase::refreshAllCorrelations() {
     std::size_t p_tot = p_original_ + num_dummies_;
     std::unordered_set<std::size_t> dropped_set(dropped_indices_.begin(),
                                                 dropped_indices_.end());
@@ -533,7 +533,7 @@ void TSolver_Base::refreshAllCorrelations() {
 // Cholesky update/downdate
 // ============================================================================
 
-Eigen::MatrixXd TSolver_Base::updateR(const Eigen::Ref<const Eigen::VectorXd>& xnew, double eps) {
+Eigen::MatrixXd TSolverBase::updateR(const Eigen::Ref<const Eigen::VectorXd>& xnew, double eps) {
     std::size_t m = actives_.size();
     double xtx = xnew.dot(xnew);
 
@@ -575,7 +575,7 @@ Eigen::MatrixXd TSolver_Base::updateR(const Eigen::Ref<const Eigen::VectorXd>& x
 }
 
 
-Eigen::MatrixXd TSolver_Base::downdateR(const Eigen::Ref<const Eigen::MatrixXd>& R,
+Eigen::MatrixXd TSolverBase::downdateR(const Eigen::Ref<const Eigen::MatrixXd>& R,
                                         std::size_t k,
                                         double eps
 ) {
@@ -632,7 +632,7 @@ Eigen::MatrixXd TSolver_Base::downdateR(const Eigen::Ref<const Eigen::MatrixXd>&
 // Triangular Solvers
 // ============================================================================
 
-Eigen::VectorXd TSolver_Base::backsolve(
+Eigen::VectorXd TSolverBase::backsolve(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::VectorXd>& b
 ) {
@@ -640,7 +640,7 @@ Eigen::VectorXd TSolver_Base::backsolve(
 }
 
 
-Eigen::VectorXd TSolver_Base::backsolveT(
+Eigen::VectorXd TSolverBase::backsolveT(
     const Eigen::Ref<const Eigen::MatrixXd>& R,
     const Eigen::Ref<const Eigen::VectorXd>& b
 ) {
@@ -652,7 +652,7 @@ Eigen::VectorXd TSolver_Base::backsolveT(
 // Tie Handling
 // ============================================================================
 
-void TSolver_Base::pruneTiedDummies(std::vector<std::size_t>& new_vars,
+void TSolverBase::pruneTiedDummies(std::vector<std::size_t>& new_vars,
                                     std::size_t T_stop,
                                     bool early_stop
 ) {
@@ -662,7 +662,7 @@ void TSolver_Base::pruneTiedDummies(std::vector<std::size_t>& new_vars,
     // budget were already exhausted, silently disabling the pruning below.
     if (count_active_dummies_ >= T_stop) {
         throw std::logic_error(
-            "TSolver_Base::pruneTiedDummies: dummy budget already exhausted "
+            "TSolverBase::pruneTiedDummies: dummy budget already exhausted "
             "(count_active_dummies_ >= T_stop)");
     }
     std::size_t budget = T_stop - count_active_dummies_;
@@ -681,7 +681,7 @@ void TSolver_Base::pruneTiedDummies(std::vector<std::size_t>& new_vars,
 }
 
 
-void TSolver_Base::applyExchangeableTieBreak(std::vector<std::size_t>& new_vars) {
+void TSolverBase::applyExchangeableTieBreak(std::vector<std::size_t>& new_vars) {
     if (exch_tie_alpha_ <= 0.0 || new_vars.empty()) { return; }
 
     // Top candidate among the step's proposed additions.
@@ -730,7 +730,7 @@ void TSolver_Base::applyExchangeableTieBreak(std::vector<std::size_t>& new_vars)
 // Getters and Diagnostics
 // ============================================================================
 
-Eigen::VectorXd TSolver_Base::getBeta(int step) const {
+Eigen::VectorXd TSolverBase::getBeta(int step) const {
     if (betaPathSparse_.empty()) {
         throw std::runtime_error(
             concatMsg(solverTypeToString(), "::getBeta: No path available.")
@@ -759,7 +759,7 @@ Eigen::VectorXd TSolver_Base::getBeta(int step) const {
 }
 
 
-double TSolver_Base::getIntercept(int step) const {
+double TSolverBase::getIntercept(int step) const {
     if (!intercept_) return 0.0;
     Eigen::VectorXd beta_orig = getBeta(step);
 
@@ -770,12 +770,12 @@ double TSolver_Base::getIntercept(int step) const {
 }
 
 
-SparseBetaPath TSolver_Base::getBetaPathSparse() const {
+SparseBetaPath TSolverBase::getBetaPathSparse() const {
     return makeScaledSparsePath(1.0);
 }
 
 
-std::vector<double> TSolver_Base::getCp() const {
+std::vector<double> TSolverBase::getCp() const {
     std::vector<double> cp_out;
     if (RSS_.empty() || DoF_.empty()) return cp_out;
 
@@ -802,7 +802,7 @@ std::vector<double> TSolver_Base::getCp() const {
 }
 
 
-std::vector<double> TSolver_Base::getCp(double sigma_hat_sq) const {
+std::vector<double> TSolverBase::getCp(double sigma_hat_sq) const {
     std::vector<double> cp_out;
     cp_out.reserve(RSS_.size());
 
@@ -818,7 +818,7 @@ std::vector<double> TSolver_Base::getCp(double sigma_hat_sq) const {
 }
 
 
-std::vector<std::size_t> TSolver_Base::getActivePredictorIndices() const {
+std::vector<std::size_t> TSolverBase::getActivePredictorIndices() const {
     std::vector<std::size_t> res;
     res.reserve(actives_.size() - count_active_dummies_);
     for (std::size_t j : actives_) if (j < dummy_start_idx_) res.push_back(j);
@@ -826,7 +826,7 @@ std::vector<std::size_t> TSolver_Base::getActivePredictorIndices() const {
 }
 
 
-std::vector<std::size_t> TSolver_Base::getActiveDummyIndices() const {
+std::vector<std::size_t> TSolverBase::getActiveDummyIndices() const {
     std::vector<std::size_t> res;
     res.reserve(count_active_dummies_);
     for (std::size_t j : actives_) if (j >= dummy_start_idx_) res.push_back(j);
@@ -834,7 +834,7 @@ std::vector<std::size_t> TSolver_Base::getActiveDummyIndices() const {
 }
 
 
-std::size_t TSolver_Base::memoryBytes() const noexcept {
+std::size_t TSolverBase::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
 
     // X_ and D_ view the caller's buffers (borrowed); y_ is an own copy
@@ -862,23 +862,23 @@ std::size_t TSolver_Base::memoryBytes() const noexcept {
 // ============================================================================
 
 
-void TSolver_Base::logMsg(const std::string& msg) const { if (verbose_) TREX_INFO(msg); }
+void TSolverBase::logMsg(const std::string& msg) const { if (verbose_) TREX_INFO(msg); }
 
-void TSolver_Base::logWarning(const std::string& msg) const {
+void TSolverBase::logWarning(const std::string& msg) const {
     // Warnings are user-relevant (dropped columns, collinear rejections):
     // record for programmatic retrieval and print unconditionally.
     warnings_.push_back(msg);
     TREX_WARN("[" + solverTypeToString() + "] [WARNING] " + msg);
 }
 
-void TSolver_Base::logInfo(const std::string& msg) const { logMsg("[Info] " + msg); }
+void TSolverBase::logInfo(const std::string& msg) const { logMsg("[Info] " + msg); }
 
 
 // ============================================================================
 // Serialization
 // ============================================================================
 
-void TSolver_Base::validateConnected() const {
+void TSolverBase::validateConnected() const {
     if (!is_connected_ || !X_.has_value()) {
         throw std::runtime_error(
             concatMsg(solverTypeToString(), " is not connected to design matrix. Call reconnect().")
@@ -895,7 +895,7 @@ void TSolver_Base::validateConnected() const {
 }
 
 
-void TSolver_Base::reconnect(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::MatrixXd>& D) {
+void TSolverBase::reconnect(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::MatrixXd>& D) {
     if (static_cast<std::size_t>(X.cols()) != p_original_ || X.rows() == 0) {
         throw std::runtime_error(
             concatMsg(

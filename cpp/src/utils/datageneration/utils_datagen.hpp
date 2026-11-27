@@ -135,7 +135,7 @@ namespace detail {
         const predictor_policy::Normal&,
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) {
-        dummygen::generate_dummies(X, n, p, base_seed, dummygen::Distribution::Normal(), 0,
+        dummygen::generate_dummies(X, n, p, base_seed, dummygen::DummyDistribution::Normal(), 0,
                                    n_threads);
     }
 
@@ -161,7 +161,7 @@ namespace detail {
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) {
         dummygen::generate_dummies(X, n, p, base_seed,
-            dummygen::Distribution::StudentT(policy.df), 0, n_threads);
+            dummygen::DummyDistribution::StudentT(policy.df), 0, n_threads);
     }
 
 
@@ -186,7 +186,7 @@ namespace detail {
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) {
         dummygen::generate_dummies(X, n, p, base_seed,
-            dummygen::Distribution::Gumbel(policy.location, policy.scale), 0, n_threads);
+            dummygen::DummyDistribution::Gumbel(policy.location, policy.scale), 0, n_threads);
     }
 
 
@@ -308,7 +308,7 @@ public:
         int X_seed = -1,
         int dummy_seed = -1,
         const PredictorPolicy& predictor_policy = PredictorPolicy(),
-        const dummygen::Distribution& dummy_dist = dummygen::Distribution::Normal(),
+        const dummygen::DummyDistribution& dummy_dist = dummygen::DummyDistribution::Normal(),
         const NoisePolicy& noise_policy = NoisePolicy(),
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) {
@@ -381,7 +381,7 @@ public:
         const NoisePolicy& noise_policy = NoisePolicy(),
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) : SyntheticData(n, p, 0, support, coefs, snr, seed, -1, -1, predictor_policy,
-        dummygen::Distribution::Normal(), noise_policy, n_threads) {}
+        dummygen::DummyDistribution::Normal(), noise_policy, n_threads) {}
 
     /** @brief Get the predictor matrix reference (read-only) */
     const Eigen::MatrixXd& getX() const { return X_; }
@@ -482,7 +482,7 @@ public:
      * @param predictor_policy Policy object specifying the distribution for predictor generation.
      *  Default is predictor_policy::Normal().
      * @param dummy_dist Distribution type for dummy generation.
-     *  Default is dummygen::Distribution::Normal().
+     *  Default is dummygen::DummyDistribution::Normal().
      * @param noise_policy Policy object specifying the distribution for noise generation.
      *  Default is noisegen::noise_policy::Normal().
      * @param n_threads Thread budget of the generation; the library's default
@@ -506,7 +506,7 @@ public:
         int X_seed = -1,
         int dummy_seed = -1,
         const PredictorPolicy& predictor_policy = PredictorPolicy(),
-        const dummygen::Distribution& dummy_dist = dummygen::Distribution::Normal(),
+        const dummygen::DummyDistribution& dummy_dist = dummygen::DummyDistribution::Normal(),
         const NoisePolicy& noise_policy = NoisePolicy(),
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) : X_filepath_(X_filepath), D_filepath_(D_filepath), y_filepath_(y_filepath),
@@ -601,7 +601,7 @@ public:
         int n_threads = ::trex::utils::openmp::get_num_threads()
     ) :
     SyntheticDataMapped(X_filepath, "", y_filepath, n, p, 0, support, coefs, snr, seed, -1, -1,
-         predictor_policy, dummygen::Distribution::Normal(), noise_policy, n_threads) {}
+         predictor_policy, dummygen::DummyDistribution::Normal(), noise_policy, n_threads) {}
 
     /** @brief Get the memory-mapped predictor matrix. */
     auto getX() { return X_mmap_->getMap(); }
@@ -679,7 +679,7 @@ inline Eigen::MatrixXd create_dummy_matrix(
     std::size_t n,
     std::size_t num_dummies,
     int seed = -1,
-    const dummygen::Distribution& dummy_dist = dummygen::Distribution::Normal(),
+    const dummygen::DummyDistribution& dummy_dist = dummygen::DummyDistribution::Normal(),
     int n_threads = ::trex::utils::openmp::get_num_threads()
 ) {
     Eigen::MatrixXd D(n, num_dummies);
@@ -704,7 +704,7 @@ inline void create_mapped_dummy_matrix(
     std::size_t n,
     std::size_t num_dummies,
     int seed = -1,
-    const dummygen::Distribution& dummy_dist = dummygen::Distribution::Normal(),
+    const dummygen::DummyDistribution& dummy_dist = dummygen::DummyDistribution::Normal(),
     int n_threads = ::trex::utils::openmp::get_num_threads()
 ) {
     memmap::MemoryMappedMatrix<double> D_mmap(

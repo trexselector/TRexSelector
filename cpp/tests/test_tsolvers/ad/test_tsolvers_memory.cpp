@@ -3,7 +3,7 @@
 // ========================================================================================
 /**
  * @file test_tsolvers_memory.cpp
- * @brief TSolver_Base::memoryBytes(): hand counts at construction, growth bounds,
+ * @brief TSolverBase::memoryBytes(): hand counts at construction, growth bounds,
  *        the borrowed X and D, the writer statistics, every T-solver, the
  *        checkpoint. The peak of a step: test_tsolvers_memory_peak.cpp.
  */
@@ -63,9 +63,9 @@ namespace trex::test::tsolvers::ad::memory {
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
-using trex::tsolvers::ad::SolverOptions;
+using trex::tsolvers::ad::TSolverOptions;
 using trex::tsolvers::ad::SparseBetaStep;
-using trex::tsolvers::ad::TSolver_Base;
+using trex::tsolvers::ad::TSolverBase;
 using trex::tsolvers::ad::solver_utils::memory_bytes::bytesOf;
 namespace datagen = trex::utils::datageneration::datagen;
 namespace fs = std::filesystem;
@@ -88,7 +88,7 @@ Problem makeProblem(Eigen::Index n, Eigen::Index p, Eigen::Index L, int seed = 4
     datagen::SyntheticData data(
         n, p, L, {0, 1, 2}, {3.0, -2.0, 2.5}, 1.0, seed, -1, -1,
         datagen::predictor_policy::Normal(),
-        datagen::dummygen::Distribution::Normal(),
+        datagen::dummygen::DummyDistribution::Normal(),
         datagen::noisegen::noise_policy::Normal());
     return {data.getX(), data.getD(), data.getY()};
 }
@@ -104,8 +104,8 @@ struct Maps {
 };
 
 /** @brief Reader options: the solver never touches X and D. */
-SolverOptions readerOptions() {
-    SolverOptions o;
+TSolverOptions readerOptions() {
+    TSolverOptions o;
     o.normalize = false;
     o.intercept = false;
     return o;
@@ -189,34 +189,34 @@ protected:
 };
 
 TEST_F(TSolverMemoryHandCount, TLARS) {
-    TLARS_Solver s(maps.X, maps.D, maps.y, readerOptions());
+    TSolverLARS s(maps.X, maps.D, maps.y, readerOptions());
     // lambda sequence reserved for M + 1 entries, Kahan compensation over P
     EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, M) + kD * (M + 1) + kD * P);
 }
 
 TEST_F(TSolverMemoryHandCount, TOMP) {
-    TOMP_Solver s(maps.X, maps.D, maps.y, readerOptions());
+    TSolverOMP s(maps.X, maps.D, maps.y, readerOptions());
     EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, M));
 }
 
 TEST_F(TSolverMemoryHandCount, TOOLS) {
-    TOOLS_Solver s(maps.X, maps.D, maps.y, readerOptions());
+    TSolverOOLS s(maps.X, maps.D, maps.y, readerOptions());
     // projected norms of all P columns
     EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, M) + kD * P);
 }
 
 TEST_F(TSolverMemoryHandCount, TAFSRhoHalf) {
-    SolverOptions o = readerOptions();
+    TSolverOptions o = readerOptions();
     o.rho_afs = 0.5;
-    TAFS_Solver s(maps.X, maps.D, maps.y, o);
+    TSolverAFS s(maps.X, maps.D, maps.y, o);
     // maxSteps = ceil(8 min(max_actives, effective_n) / rho) = 320
     EXPECT_EQ(s.memoryBytes(), baseAtConstruction(n, P, 320));
 }
 
 TEST_F(TSolverMemoryHandCount, TENETAug) {
-    SolverOptions o = readerOptions();
+    TSolverOptions o = readerOptions();
     o.lambda2 = 0.5;
-    TENETAug_Solver s(maps.X, maps.D, maps.y, o);
+    TSolverENETAug s(maps.X, maps.D, maps.y, o);
 
     // Owned augmented system: (n + P) rows for X, D and y
     const std::size_t na = n + P;
@@ -231,7 +231,7 @@ TEST_F(TSolverMemoryHandCount, TENETAug) {
 
     // Heap objects of the wrapper: three views and the inner solver
     const std::size_t objects = 2 * sizeof(Eigen::Map<Eigen::MatrixXd>) +
-                                sizeof(Eigen::Map<Eigen::VectorXd>) + sizeof(TLASSO_Solver);
+                                sizeof(Eigen::Map<Eigen::VectorXd>) + sizeof(TSolverLASSO);
 
     EXPECT_EQ(s.memoryBytes(), owned + inner + mirror + objects);
 }
@@ -245,7 +245,7 @@ TEST_F(TSolverMemoryHandCount, TENETAug) {
  *  coefficients), at most twice that (geometric capacity growth) plus the
  *  lookup map and one own per-active vector (T-LARS signs, T-OMP cache). */
 template <class S>
-void expectGrowthBounds(SolverOptions options) {
+void expectGrowthBounds(TSolverOptions options) {
     Problem prob = makeProblem(60, 30, 30, 7);
     Maps m(prob);
     LookupProbe<S> s(m.X, m.D, m.y, options);
@@ -272,12 +272,12 @@ void expectGrowthBounds(SolverOptions options) {
 }
 
 TEST(TSolverMemoryGrowth, BoundedByActiveSetAndPath) {
-    expectGrowthBounds<TLARS_Solver>(readerOptions());
-    expectGrowthBounds<TOMP_Solver>(readerOptions());
-    expectGrowthBounds<TOOLS_Solver>(readerOptions());
-    SolverOptions afs = readerOptions();
+    expectGrowthBounds<TSolverLARS>(readerOptions());
+    expectGrowthBounds<TSolverOMP>(readerOptions());
+    expectGrowthBounds<TSolverOOLS>(readerOptions());
+    TSolverOptions afs = readerOptions();
     afs.rho_afs = 0.5;
-    expectGrowthBounds<TAFS_Solver>(afs);
+    expectGrowthBounds<TSolverAFS>(afs);
 }
 
 // ========================================================================================
@@ -286,7 +286,7 @@ TEST(TSolverMemoryGrowth, BoundedByActiveSetAndPath) {
 
 /** @brief Report of a reader at construction with n rows, p = L = 10. */
 template <class S>
-std::size_t constructionBytes(Eigen::Index n, SolverOptions options) {
+std::size_t constructionBytes(Eigen::Index n, TSolverOptions options) {
     Problem prob = makeProblem(n, 10, 10);
     Maps m(prob);
     S s(m.X, m.D, m.y, options);
@@ -297,13 +297,13 @@ std::size_t constructionBytes(Eigen::Index n, SolverOptions options) {
  *  and the residual (2 x 8 x 40 bytes); counted X and D would add 12,800. */
 TEST(TSolverMemoryExclusions, DoublingNChangesOnlyTheNVectors) {
     const std::size_t expected = 2 * kD * 40;
-    const SolverOptions r = readerOptions();
-    SolverOptions afs = r;
+    const TSolverOptions r = readerOptions();
+    TSolverOptions afs = r;
     afs.rho_afs = 0.5;
-    EXPECT_EQ(constructionBytes<TLARS_Solver>(80, r) - constructionBytes<TLARS_Solver>(40, r), expected);
-    EXPECT_EQ(constructionBytes<TOMP_Solver>(80, r) - constructionBytes<TOMP_Solver>(40, r), expected);
-    EXPECT_EQ(constructionBytes<TOOLS_Solver>(80, r) - constructionBytes<TOOLS_Solver>(40, r), expected);
-    EXPECT_EQ(constructionBytes<TAFS_Solver>(80, afs) - constructionBytes<TAFS_Solver>(40, afs), expected);
+    EXPECT_EQ(constructionBytes<TSolverLARS>(80, r) - constructionBytes<TSolverLARS>(40, r), expected);
+    EXPECT_EQ(constructionBytes<TSolverOMP>(80, r) - constructionBytes<TSolverOMP>(40, r), expected);
+    EXPECT_EQ(constructionBytes<TSolverOOLS>(80, r) - constructionBytes<TSolverOOLS>(40, r), expected);
+    EXPECT_EQ(constructionBytes<TSolverAFS>(80, afs) - constructionBytes<TSolverAFS>(40, afs), expected);
 }
 
 /** @brief A writer (normalize and intercept) holds the means and norms of X and
@@ -314,10 +314,10 @@ void expectWriterMinusReader() {
     Problem rp = wp;
     Maps wm(wp), rm(rp);
 
-    SolverOptions writer;
+    TSolverOptions writer;
     writer.normalize = true;
     writer.intercept = true;
-    SolverOptions reader = readerOptions();
+    TSolverOptions reader = readerOptions();
     reader.precentered = true;
 
     S w(wm.X, wm.D, wm.y, writer);
@@ -327,9 +327,9 @@ void expectWriterMinusReader() {
 }
 
 TEST(TSolverMemoryExclusions, WriterMinusReaderIsTheStatistics) {
-    expectWriterMinusReader<TLARS_Solver>();
-    expectWriterMinusReader<TOMP_Solver>();
-    expectWriterMinusReader<TAFS_Solver>();
+    expectWriterMinusReader<TSolverLARS>();
+    expectWriterMinusReader<TSolverOMP>();
+    expectWriterMinusReader<TSolverAFS>();
 }
 
 // ========================================================================================
@@ -337,23 +337,23 @@ TEST(TSolverMemoryExclusions, WriterMinusReaderIsTheStatistics) {
 // ========================================================================================
 
 typedef ::testing::Types<
-    TLARS_Solver, TLASSO_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver, TENET_Solver,
-    TENETAug_Solver, TIENET_Solver, TIENETAug_Solver, TIKNET_Solver,
-    TOMP_Solver, TGP_Solver, TACGP_Solver, TMP_Solver, TNCGMP_Solver, TOOLS_Solver,
-    TAFS_Solver
+    TSolverLARS, TSolverLASSO, TSolverStepwise, TSolverStagewise, TSolverENET,
+    TSolverENETAug, TSolverIENET, TSolverIENETAug, TSolverTIKNET,
+    TSolverOMP, TSolverGP, TSolverACGP, TSolverMP, TSolverNCGMP, TSolverOOLS,
+    TSolverAFS
 > AllSolvers;
 
 /** @brief Every solver on (X, D, y, options) with lambda2 = 0.5; the IEN family
  *  takes singleton groups, the Tikhonov family K = I. */
 template <typename T>
-std::unique_ptr<T> makeSolver(Maps& m, SolverOptions options) {
+std::unique_ptr<T> makeSolver(Maps& m, TSolverOptions options) {
     options.lambda2 = 0.5;
     const Eigen::Index p = m.X.cols();
-    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>) {
+    if constexpr (std::is_same_v<T, TSolverIENET> || std::is_same_v<T, TSolverIENETAug>) {
         const Eigen::VectorXi groups =
             Eigen::VectorXi::LinSpaced(p, 0, static_cast<int>(p) - 1);
         return std::make_unique<T>(m.X, m.D, m.y, groups, options);
-    } else if constexpr (std::is_same_v<T, TIKNET_Solver>) {
+    } else if constexpr (std::is_same_v<T, TSolverTIKNET>) {
         Eigen::SparseMatrix<double> K(p, p);
         K.setIdentity();
         return std::make_unique<T>(m.X, m.D, m.y, K, options);
@@ -371,14 +371,14 @@ TYPED_TEST_SUITE(TSolverMemoryAll, AllSolvers);
 TYPED_TEST(TSolverMemoryAll, PositiveAndGrowsWithThePath) {
     Problem prob = makeProblem(50, 10, 10);
     Maps m(prob);
-    auto solver = makeSolver<TypeParam>(m, SolverOptions{});
+    auto solver = makeSolver<TypeParam>(m, TSolverOptions{});
 
     const std::size_t at_construction = solver->memoryBytes();
     EXPECT_GT(at_construction, 0u);
 
     solver->executeStep(5, true);
     ASSERT_GT(solver->getNumSteps(), 0u);
-    const TSolver_Base& base = *solver;
+    const TSolverBase& base = *solver;
     EXPECT_EQ(base.memoryBytes(), solver->memoryBytes());
     EXPECT_GT(solver->memoryBytes(), at_construction);
 }
@@ -389,7 +389,7 @@ TYPED_TEST(TSolverMemoryAll, PositiveAndGrowsWithThePath) {
 TYPED_TEST(TSolverMemoryAll, CheckpointUnchanged) {
     Problem prob = makeProblem(50, 10, 10);
     Maps m(prob);
-    auto solver = makeSolver<TypeParam>(m, SolverOptions{});
+    auto solver = makeSolver<TypeParam>(m, TSolverOptions{});
     solver->executeStep(5, true);
 
     const std::string stem = ::testing::TempDir() + "memory_checkpoint_" +

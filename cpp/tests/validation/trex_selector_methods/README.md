@@ -28,7 +28,7 @@ Monte-Carlo studies, so they are not auto-run).
 | `validation_trex_spca_03_scaling_comparison` | `trex_spca/` | Unit-L2 vs z-score scaling |
 | `validation_trex_spca_04_rdump_pipeline` | `trex_spca/` | Step-by-step C++/R diff; reads the baked `rdump/` (injected via `TREX_SPCA_RDUMP_DIR`; `--dir` overrides) |
 | `validation_trex_spca_05_lambda2_foldmatch` | `trex_spca/` | Identical-fold CV curve comparison; reads committed `lambda2_probe_*` / `fm_*` refs |
-| `validation_trex_spca_06_handrolled_comparison` | `trex_spca/` | Hand-rolled legacy-R recipe vs the `TRexSPCA` class |
+| `validation_trex_spca_06_handrolled_comparison` | `trex_spca/` | Hand-rolled legacy-R recipe vs the `TRexSPCASelector` class |
 | `validation_trex_spca_07_matrix_dump` | `trex_spca/` | Dumps GVS Phi/FDP calibration matrices; reads the baked `rdump10/` (injected via `TREX_SPCA_RDUMP10_DIR`; `--dir` overrides) |
 
 ### `trex_spca/` R reference material (co-located)

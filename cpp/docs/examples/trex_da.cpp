@@ -16,9 +16,9 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_da::TRexDASelector;
-using trex::trex_selector_methods::ad::trex_da::TRexDAControlParameter;
+using trex::trex_selector_methods::ad::trex_da::TRexDAControl;
 using trex::trex_selector_methods::ad::trex_da::DAMethod;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 namespace rates = trex::utils::eval::rates;
@@ -70,13 +70,13 @@ int main() {
     //! [compare]
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 10;
 
     TRexSelector plain(X_map, y_map, 0.1, ctrl, /*seed=*/7, /*verbose=*/false);
     plain.select();
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = DAMethod::BT;
     da_ctrl.trex_ctrl = ctrl;
     TRexDASelector da(X_map, y_map, 0.1, da_ctrl, 7, false);
@@ -108,7 +108,7 @@ int main() {
 
     doc.begin("ar1");
     //! [ar1]
-    TRexDAControlParameter ar1_ctrl;
+    TRexDAControl ar1_ctrl;
     ar1_ctrl.method = DAMethod::AR1;
     ar1_ctrl.trex_ctrl = ctrl;
     TRexDASelector ar1(X_map, y_map, 0.1, ar1_ctrl, 7, false);
@@ -122,7 +122,7 @@ int main() {
     std::vector<Eigen::Index> blocks(p);                       // ten blocks of ten variables
     for (Eigen::Index j = 0; j < p; ++j) blocks[j] = j / 10 + 1;
 
-    TRexDAControlParameter pg_ctrl;
+    TRexDAControl pg_ctrl;
     pg_ctrl.prior_groups = {blocks};
     pg_ctrl.trex_ctrl = ctrl;
     TRexDASelector pg(X_map, y_map, 0.1, pg_ctrl, 7, false);
@@ -133,11 +133,11 @@ int main() {
 
     doc.begin("greedy");
     //! [greedy]
-    TRexControlParameter greedy_ctrl;
+    TRexControl greedy_ctrl;
     greedy_ctrl.solver_type = SolverTypeForTRex::TOMP;
     greedy_ctrl.K = 10;
 
-    TRexDAControlParameter bt_ctrl;
+    TRexDAControl bt_ctrl;
     bt_ctrl.method = DAMethod::BT;
     bt_ctrl.trex_ctrl = greedy_ctrl;
     TRexDASelector greedy(X_map, y_map, 0.1, bt_ctrl, 7, false);

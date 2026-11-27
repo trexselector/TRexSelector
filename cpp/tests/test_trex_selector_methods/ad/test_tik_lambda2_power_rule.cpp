@@ -107,9 +107,9 @@ Eigen::SparseMatrix<double> groupMeanK(const std::vector<Eigen::Index>& groups)
 }
 
 /** @brief The family's base control at a test-sized budget. */
-TRexControlParameter baseControl()
+TRexControl baseControl()
 {
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K                        = 10;
     ctrl.max_dummy_multiplier     = 2;
     ctrl.use_max_T_stop           = true;
@@ -121,9 +121,9 @@ TRexControlParameter baseControl()
 }
 
 /** @brief K_center on the prior groups through the GROUP_CENTERING route. */
-TRexTikhonovControlParameter centeringControl(const std::vector<Eigen::Index>& groups)
+TRexTikhonovControl centeringControl(const std::vector<Eigen::Index>& groups)
 {
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
     ctrl.prior_groups      = groups;
     ctrl.cluster_dummies   = true;
@@ -133,9 +133,9 @@ TRexTikhonovControlParameter centeringControl(const std::vector<Eigen::Index>& g
 }
 
 /** @brief The group-mean prior through the SPARSE_GENERAL route. */
-TRexTikhonovControlParameter groupMeanControl(const std::vector<Eigen::Index>& groups)
+TRexTikhonovControl groupMeanControl(const std::vector<Eigen::Index>& groups)
 {
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;
@@ -259,7 +259,7 @@ TEST(TikLambda2PowerRule, Driver_Validation) {
 TEST(TikLambda2PowerRule, DefaultGridIsTheGridOfThePilotRule) {
     const std::vector<double> grid = default_lambda2_grid();
     EXPECT_EQ(Lambda2PowerRuleConfig{}.grid, grid);
-    EXPECT_EQ(TRexTikhonovControlParameter{}.pilot_grid, grid);
+    EXPECT_EQ(TRexTikhonovControl{}.pilot_grid, grid);
     ASSERT_FALSE(grid.empty());
     EXPECT_DOUBLE_EQ(grid.front(), 0.0);
     EXPECT_EQ(validate_lambda2_grid(grid), grid);   // ascending, no duplicates
@@ -349,7 +349,7 @@ TEST(TikLambda2PowerRule, GridMeansTheSameShrinkageUnderZscore) {
     EXPECT_EQ(a.index, b.index);
     EXPECT_DOUBLE_EQ(b.lambda2, a.lambda2 * n_minus_1);
 
-    gvs::TRexGVSControlParameter gvs_l2;
+    gvs::TRexGVSControl gvs_l2;
     gvs_l2.prior_groups = d.groups;
     gvs_l2.trex_ctrl    = baseControl();
     gvs_l2.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
@@ -374,7 +374,7 @@ TEST(TikLambda2PowerRule, NegativeSeedIsRefused) {
     EXPECT_THROW(tikhonov_lambda2_power_rule(d.X, d.y, 0.1, centeringControl(d.groups), -1, cfg),
                  std::invalid_argument);
 
-    gvs::TRexGVSControlParameter gvs_ctrl;
+    gvs::TRexGVSControl gvs_ctrl;
     gvs_ctrl.prior_groups = d.groups;
     gvs_ctrl.trex_ctrl    = baseControl();
     gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
@@ -387,7 +387,7 @@ TEST(TikLambda2PowerRule, NegativeSeedIsRefused) {
  *  returns a consistent pick. */
 TEST(TikLambda2PowerRule, Gvs_ElasticNetRuleRuns) {
     const BlockData d = testDesign();
-    gvs::TRexGVSControlParameter ctrl;
+    gvs::TRexGVSControl ctrl;
     ctrl.gvs_type     = gvs::GVSType::EN;
     ctrl.en_solver    = gvs::ENSolverType::TENET;
     ctrl.prior_groups = d.groups;
@@ -468,7 +468,7 @@ TEST(PostSelectionCriteria, OlsRefit_RecoversAndValidates) {
 namespace {
 
 /** @brief A control that requests the pilot rule on a grid. */
-TRexTikhonovControlParameter pilotControl(TRexTikhonovControlParameter ctrl, TikLambda2Method method,
+TRexTikhonovControl pilotControl(TRexTikhonovControl ctrl, TikLambda2Method method,
                                           std::vector<double> grid, std::size_t K_pilot, std::size_t T_pilot = 3)
 {
     ctrl.lambda_2       = -1.0;
@@ -488,7 +488,7 @@ struct SelectorRun {
     Eigen::MatrixXd          phi;
 };
 
-SelectorRun runSelector(const BlockData& d, const TRexTikhonovControlParameter& ctrl, int seed)
+SelectorRun runSelector(const BlockData& d, const TRexTikhonovControl& ctrl, int seed)
 {
     Eigen::MatrixXd X = d.X;
     Eigen::VectorXd y = d.y;
@@ -716,7 +716,7 @@ TEST(TikLambda2Pilot, UserLambda2Bypasses) {
 /** @brief Malformed pilot controls are refused at construction. */
 TEST(TikLambda2Pilot, Validation) {
     const BlockData d = testDesign();
-    const auto expect_throw = [&](const TRexTikhonovControlParameter& ctrl) {
+    const auto expect_throw = [&](const TRexTikhonovControl& ctrl) {
         Eigen::MatrixXd X = d.X;
         Eigen::VectorXd y = d.y;
         Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
@@ -796,7 +796,7 @@ TEST(TikLambda2Pilot, GroupMajorityStatistic) {
     fixed.lambda_2 = r.lambda2;
     EXPECT_EQ(r.selected, runSelector(d, fixed, 2026).selected);
 
-    const auto expect_throw = [&](const TRexTikhonovControlParameter& c) {
+    const auto expect_throw = [&](const TRexTikhonovControl& c) {
         Eigen::MatrixXd X = d.X;
         Eigen::VectorXd y = d.y;
         Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());

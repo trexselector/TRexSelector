@@ -3,8 +3,8 @@
  * @file test_ml_methods_model_selection.cpp
  *
  * @brief Unit tests for ML methods model selection: the coordinate-descent
- *        elastic-net engine (enet_gaussian), its CV wrapper (enet_cv_ccd), and
- *        the SVD-based ridge CV (ridge_cv_svd).
+ *        elastic-net engine (ElasticNet), its CV wrapper (ElasticNetCV), and
+ *        the SVD-based ridge CV (RidgeCV).
  */
 // ==================================================================================
 
@@ -86,7 +86,7 @@ GlmnetScaling glmnet_preprocess(const Eigen::MatrixXd& X, const Eigen::VectorXd&
 
 
 // ==================================================================================
-// enet_gaussian: coordinate-descent engine
+// ElasticNet: coordinate-descent engine
 // ==================================================================================
 
 /**
@@ -106,7 +106,7 @@ TEST(EnetGaussianTest, RidgeClosedFormSingleLambda) {
     Eigen::VectorXd grid(1);
     grid << lambda;
 
-    enet_gaussian en;
+    ElasticNet en;
     en.fit(X, y, grid, /*alpha=*/0.0, /*standardize=*/true, /*intercept=*/true,
            /*use_strong_rule=*/false, /*max_iter=*/100000, /*tol=*/1e-12);
     ASSERT_TRUE(en.converged());
@@ -140,7 +140,7 @@ TEST(EnetGaussianTest, LassoPathStartsEmptyAndGrows) {
     Eigen::MatrixXd X = random_matrix(n, p, 11);
     Eigen::VectorXd y = 2.0 * X.col(0) - X.col(3) + 0.3 * random_vector(n, 12);
 
-    enet_gaussian en;
+    ElasticNet en;
     en.fit(X, y, /*alpha=*/1.0, /*n_lambda=*/50);
 
     const Eigen::Index K = en.lambdas().size();
@@ -185,7 +185,7 @@ TEST(EnetGaussianTest, LassoKKTConditionsHold) {
 
     Eigen::VectorXd grid(1);
     grid << lambda;
-    enet_gaussian en;
+    ElasticNet en;
     en.fit(X, y, grid, /*alpha=*/1.0, /*standardize=*/true, /*intercept=*/true,
            /*use_strong_rule=*/false, /*max_iter=*/100000, /*tol=*/1e-12);
     ASSERT_TRUE(en.converged());
@@ -214,7 +214,7 @@ TEST(EnetGaussianTest, ValidationAndDegenerateThrows) {
     Eigen::MatrixXd X = random_matrix(10, 3, 31);
     Eigen::VectorXd y = random_vector(10, 32);
 
-    enet_gaussian en;
+    ElasticNet en;
     // Dimension mismatch / bad alpha / empty explicit grid
     EXPECT_THROW(en.fit(X, random_vector(9, 33)), std::invalid_argument);
     EXPECT_THROW(en.fit(X, y, /*alpha=*/-0.1), std::invalid_argument);
@@ -229,7 +229,7 @@ TEST(EnetGaussianTest, ValidationAndDegenerateThrows) {
 
 
 // ==================================================================================
-// ridge_cv_svd: SVD-based ridge cross-validation
+// RidgeCV: SVD-based ridge cross-validation
 // ==================================================================================
 
 /**
@@ -245,7 +245,7 @@ TEST(RidgeCvSvdTest, NoiselessSignalSelectsSmallestLambda) {
     w << 1.0, -2.0, 0.5, 3.0, -1.5;
     Eigen::VectorXd y = X * w;  // exact linear signal, no noise
 
-    ridge_cv_svd cv;
+    RidgeCV cv;
     cv.fit(X, y, /*n_folds=*/5, /*n_lambda=*/50, /*lambda_ratio=*/1e4, /*seed=*/1);
 
     const Eigen::Index K = cv.lambdas().size();
@@ -267,7 +267,7 @@ TEST(RidgeCvSvdTest, GridPropertiesAndAccessors) {
     Eigen::VectorXd y = X * random_vector(p, 52) + 0.2 * random_vector(n, 53);
 
     const double ratio = 1000.0;
-    ridge_cv_svd cv;
+    RidgeCV cv;
     cv.fit(X, y, /*n_folds=*/5, /*n_lambda=*/25, ratio, /*seed=*/0);
 
     const Eigen::VectorXd& lam = cv.lambdas();
@@ -293,7 +293,7 @@ TEST(RidgeCvSvdTest, DeterministicWithSeed) {
     Eigen::MatrixXd X = random_matrix(n, p, 61);
     Eigen::VectorXd y = X * random_vector(p, 62) + 0.3 * random_vector(n, 63);
 
-    ridge_cv_svd cv1, cv2;
+    RidgeCV cv1, cv2;
     cv1.fit(X, y, 5, 30, 1000.0, /*seed=*/7);
     cv2.fit(X, y, 5, 30, 1000.0, /*seed=*/7);
 
@@ -308,7 +308,7 @@ TEST(RidgeCvSvdTest, ValidationAndDegenerateThrows) {
     Eigen::MatrixXd X = random_matrix(10, 3, 71);
     Eigen::VectorXd y = random_vector(10, 72);
 
-    ridge_cv_svd cv;
+    RidgeCV cv;
     EXPECT_THROW(cv.fit(X, random_vector(9, 73)), std::invalid_argument);
     EXPECT_THROW(cv.fit(X, y, /*n_folds=*/1), std::invalid_argument);
     EXPECT_THROW(cv.fit(X, y, /*n_folds=*/11), std::invalid_argument);
@@ -330,7 +330,7 @@ TEST(RidgeCvSvdTest, ValidationAndDegenerateThrows) {
 
 
 // ==================================================================================
-// enet_cv_ccd: glmnet-faithful CV wrapper
+// ElasticNetCV: glmnet-faithful CV wrapper
 // ==================================================================================
 
 /**
@@ -345,7 +345,7 @@ TEST(EnetCvCcdTest, NoiselessRidgeStructure) {
     w << 1.0, -2.0, 0.5, 3.0, -1.5;
     Eigen::VectorXd y = X * w;  // exact linear signal
 
-    enet_cv_ccd cv;
+    ElasticNetCV cv;
     cv.fit(X, y, /*alpha=*/0.0, /*n_folds=*/5, /*n_lambda=*/60);
 
     const Eigen::VectorXd& lam = cv.lambdas();
@@ -372,7 +372,7 @@ TEST(EnetCvCcdTest, DeterministicWithSeed) {
     Eigen::MatrixXd X = random_matrix(n, p, 91);
     Eigen::VectorXd y = X * random_vector(p, 92) + 0.3 * random_vector(n, 93);
 
-    enet_cv_ccd cv1, cv2;
+    ElasticNetCV cv1, cv2;
     cv1.fit(X, y, 0.0, 5, 40, -1.0, /*seed=*/3);
     cv2.fit(X, y, 0.0, 5, 40, -1.0, /*seed=*/3);
 
@@ -387,7 +387,7 @@ TEST(EnetCvCcdTest, ValidationThrows) {
     Eigen::MatrixXd X = random_matrix(10, 3, 95);
     Eigen::VectorXd y = random_vector(10, 96);
 
-    enet_cv_ccd cv;
+    ElasticNetCV cv;
     EXPECT_THROW(cv.fit(X, random_vector(9, 97)), std::invalid_argument);
     EXPECT_THROW(cv.fit(X, y, 0.0, /*n_folds=*/1), std::invalid_argument);
     EXPECT_THROW(cv.fit(X, y, 0.0, /*n_folds=*/11), std::invalid_argument);
@@ -400,7 +400,7 @@ TEST(EnetCvCcdTest, ValidationThrows) {
 // tikhonov_cv_svd (generalized-Tikhonov ridge CV, IEN geometry)
 // ==================================================================================
 
-/** @brief All-singleton groups (K = I) must reproduce ridge_cv_svd exactly:
+/** @brief All-singleton groups (K = I) must reproduce RidgeCV exactly:
  *  identical grid anchor, folds (same seed), and CV curves — for BOTH the
  *  closed-form group basis and the general eigendecomposition path. */
 TEST(TikhonovCvSvdTest, SingletonGroupsMatchRidgeCvSvd) {
@@ -408,7 +408,7 @@ TEST(TikhonovCvSvdTest, SingletonGroupsMatchRidgeCvSvd) {
     Eigen::MatrixXd X = random_matrix(n, p, 11);
     Eigen::VectorXd y = X.col(0) - 2.0 * X.col(3) + 0.5 * random_vector(n, 12);
 
-    ridge_cv_svd ref;
+    RidgeCV ref;
     ref.fit(X, y, 5, 50, 1e4, 3);
 
     // Closed-form group basis (singleton groups).
@@ -765,7 +765,7 @@ TEST(IenetCvCcdTest, DiagnosticsDescribeTheChosenPick) {
  *  profile-only mode, and its support-cap case; the message names the mode
  *  and the remedies. */
 TEST(Lambda2CvDiagnosticsTest, GridPickRecordAndMessage) {
-    lambda2_cv_diagnostics d;
+    Lambda2CVDiagnostics d;
     record_grid_pick(d, 0, 10);
     EXPECT_TRUE(d.at_grid_edge); EXPECT_TRUE(d.boundary_pick);
     EXPECT_NE(boundary_pick_message(d, "S", "CV_1SE_CCD", 2.0).find("first point"),
@@ -958,7 +958,7 @@ TEST(IenetCvCcdTest, BindingSupportCapIsReportedAndNamed) {
 }
 
 
-/** @brief ridge_cv_svd's dimensional checker: `interpolates()` is decided by
+/** @brief RidgeCV's dimensional checker: `interpolates()` is decided by
  *  p vs the SMALLEST training fold, and the grid-edge checker fires only when
  *  a pick really sits on a grid boundary. Ridge is used at alpha = 0 only, so
  *  it has no support to saturate and needs no cap — these two accessors are
@@ -970,7 +970,7 @@ TEST(RidgeCvSvdTest, DimensionalAndGridCheckers) {
         Eigen::MatrixXd X = random_matrix(60, 20, 121);
         Eigen::VectorXd y = 2.0 * X.col(0) - X.col(4)
                             + 0.5 * random_vector(60, 122);
-        ridge_cv_svd cv;
+        RidgeCV cv;
         cv.fit(X, y, 4, 200, 1e3);
         EXPECT_FALSE(cv.interpolates());
         EXPECT_FALSE(cv.selection_at_grid_edge());
@@ -979,21 +979,21 @@ TEST(RidgeCvSvdTest, DimensionalAndGridCheckers) {
         Eigen::MatrixXd X = random_matrix(60, 80, 123);
         Eigen::VectorXd y = 2.0 * X.col(0) - X.col(4)
                             + 0.5 * random_vector(60, 124);
-        ridge_cv_svd cv;
+        RidgeCV cv;
         cv.fit(X, y, 4, 200, 1e3);
         EXPECT_TRUE(cv.interpolates());
     }
     {   // A one-point grid is by construction both ends at once.
         Eigen::MatrixXd X = random_matrix(60, 20, 121);
         Eigen::VectorXd y = 2.0 * X.col(0) + 0.5 * random_vector(60, 122);
-        ridge_cv_svd cv;
+        RidgeCV cv;
         cv.fit(X, y, 4, 1, 1e3);
         EXPECT_TRUE(cv.selection_at_grid_edge());
     }
 }
 
 
-/** @brief enet_cv_ccd keeps glmnet's (n < p ? 1e-2 : 1e-4) rule ON PURPOSE —
+/** @brief ElasticNetCV keeps glmnet's (n < p ? 1e-2 : 1e-4) rule ON PURPOSE —
  *  the opposite of ienet_cv_ccd. Its lambda is the selection target of a 1-D
  *  CV, not a nuisance profiled out, so the deep end is a region the answer
  *  may legitimately occupy, and the flat 1e-2 that ienet_cv_ccd uses would be
@@ -1016,7 +1016,7 @@ TEST(EnetCvCcdTest, KeepsGlmnetLambdaRuleAndDetectsGridFloorPin) {
     Eigen::VectorXd y = 2.0 * X.col(0) - X.col(6)
                         + 0.5 * random_vector(60, 132);
 
-    enet_cv_ccd cv;
+    ElasticNetCV cv;
     cv.fit(X, y, 0.0, 4, 100);
     const Eigen::Index K = cv.lambdas().size();
     ASSERT_GT(K, 1);
@@ -1037,7 +1037,7 @@ TEST(EnetCvCcdTest, KeepsGlmnetLambdaRuleAndDetectsGridFloorPin) {
     // implementation-defined: the same mt19937 seed gives different deviates
     // under libc++ (macOS: ratio 1.9) and libstdc++ (Linux: 1.32). The
     // margin below holds on both.
-    enet_cv_ccd wide;
+    ElasticNetCV wide;
     wide.fit(X, y, 0.0, 4, 100, 1e-6);
     EXPECT_FALSE(wide.selection_at_grid_edge());
     EXPECT_LT(wide.cv_min(), cv.cv_min());

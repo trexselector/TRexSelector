@@ -382,7 +382,7 @@ test_that("an error from inside the random experiments reaches R, and the design
   sel <- TRexSelector$new(X, d$y, tFDR = 0.2, seed = 4, verbose = FALSE,
                           control = trex_control(solver = "TAFS", rho_afs = 0, K = 5))
   expect_false(isTRUE(all.equal(X, X0)))          # standardized in place
-  expect_error(sel$select(), "TAFS_Solver: rho must be in the range (0, 1].", fixed = TRUE)
+  expect_error(sel$select(), "TSolverAFS: rho must be in the range (0, 1].", fixed = TRUE)
   expect_equal(X, X0, tolerance = 1e-12)          # given back
   expect_error(sel$select(), "can no longer run") # retired
 })

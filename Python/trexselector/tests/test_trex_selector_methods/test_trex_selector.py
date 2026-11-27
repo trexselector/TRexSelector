@@ -681,7 +681,7 @@ def test_an_error_inside_the_experiments_raises_and_gives_the_design_back():
     ctrl.solver_params.rho_afs = 0.0
     sel = trexselector.TRexSelector(X, y, trex_control=ctrl, seed=4, verbose=False)
     assert not np.allclose(X, X0)                     # standardized in place
-    with pytest.raises(ValueError, match=r"TAFS_Solver: rho must be in the range \(0, 1\]"):
+    with pytest.raises(ValueError, match=r"TSolverAFS: rho must be in the range \(0, 1\]"):
         sel.select()
     np.testing.assert_allclose(X, X0, atol=1e-10)     # given back
     with pytest.raises(RuntimeError, match="can no longer run"):

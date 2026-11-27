@@ -146,7 +146,7 @@ SelectorRun runSelector(Eigen::MatrixXd& X, Eigen::VectorXd& y, dn::ScalingMode 
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = K;
     ctrl.max_dummy_multiplier = 2;
     ctrl.scaling_mode = mode;
@@ -351,7 +351,7 @@ TEST(ScalingNone, SelectorLeavesXAndYUntouchedAndReportsIdentityParams) {
     {
         Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(d.y.data(), d.y.size());
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 5;
         ctrl.max_dummy_multiplier = 2;
         ctrl.scaling_mode = dn::ScalingMode::NONE;
@@ -402,7 +402,7 @@ TEST(ScalingNone, InterceptFreeDictionaryIsRejectedUnderL2AndSelectableUnderNone
         const Eigen::MatrixXd X0 = dict.X;
         Eigen::Map<Eigen::MatrixXd> X_map(dict.X.data(), dict.X.rows(), dict.X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(dict.y.data(), dict.y.size());
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 10;
         try {
             TRexSelector sel(X_map, y_map, 0.2, ctrl, 11, false);
@@ -446,7 +446,7 @@ TEST(ScalingNone, SelectorRejectsNonFiniteInputInEveryMode) {
         d.X(1, 2) = std::numeric_limits<double>::quiet_NaN();
         Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(d.y.data(), d.y.size());
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 3;
         ctrl.scaling_mode = mode;
         EXPECT_THROW(TRexSelector(X_map, y_map, 0.2, ctrl, 1, false), std::invalid_argument);
@@ -476,14 +476,14 @@ struct DerivedRun {
 
 DerivedRun runGvs(Eigen::MatrixXd& X, Eigen::VectorXd& y, dn::ScalingMode mode) {
     using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
-    using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter;
+    using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl;
     using trex::trex_selector_methods::ad::trex_gvs::GVSType;
     namespace disp = trex::trex_selector_methods::ad::utils::solver_dispatch;
 
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexGVSControlParameter ctrl;
+    TRexGVSControl ctrl;
     ctrl.gvs_type = GVSType::EN;
     ctrl.lambda_2 = 0.5;                       // fixed: no CV tuner
     ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TENET;
@@ -498,13 +498,13 @@ DerivedRun runGvs(Eigen::MatrixXd& X, Eigen::VectorXd& y, dn::ScalingMode mode) 
 
 DerivedRun runDa(Eigen::MatrixXd& X, Eigen::VectorXd& y, dn::ScalingMode mode) {
     using trex::trex_selector_methods::ad::trex_da::TRexDASelector;
-    using trex::trex_selector_methods::ad::trex_da::TRexDAControlParameter;
+    using trex::trex_selector_methods::ad::trex_da::TRexDAControl;
     using trex::trex_selector_methods::ad::trex_da::DAMethod;
 
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter ctrl;
+    TRexDAControl ctrl;
     ctrl.method = DAMethod::BT;
     ctrl.trex_ctrl.K = 5;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
@@ -587,7 +587,7 @@ TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
             auto X_map = mapped.getMapFor(dn::writesDesign(dn::ScalingMode::NONE));
             Eigen::VectorXd y = pre.y;
             Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-            TRexControlParameter ctrl;
+            TRexControl ctrl;
             ctrl.K = 20;
             ctrl.max_dummy_multiplier = 2;
             ctrl.scaling_mode = dn::ScalingMode::NONE;
@@ -603,7 +603,7 @@ TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
             auto X_map = mapped.getMapFor(false);
             Eigen::VectorXd y = pre.y;
             Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-            trex::trex_selector_methods::ad::trex_da::TRexDAControlParameter ctrl;
+            trex::trex_selector_methods::ad::trex_da::TRexDAControl ctrl;
             ctrl.method = trex::trex_selector_methods::ad::trex_da::DAMethod::AR1;
             ctrl.trex_ctrl.K = 10;
             ctrl.trex_ctrl.scaling_mode = dn::ScalingMode::NONE;
@@ -614,7 +614,7 @@ TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
             auto X_map = mapped.getMapFor(false);
             Eigen::VectorXd y = pre.y;
             Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-            trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter ctrl;
+            trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl ctrl;
             ctrl.trex_ctrl.K = 10;
             ctrl.trex_ctrl.scaling_mode = dn::ScalingMode::NONE;
             trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector sel(X_map, y_map, 0.2, ctrl, 11, false);

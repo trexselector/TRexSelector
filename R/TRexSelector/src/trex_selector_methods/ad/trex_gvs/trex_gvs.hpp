@@ -20,12 +20,12 @@
  *                     The concrete solver is chosen by ENSolverType:
  *
  *                     - ENSolverType::TENET (default) — Gram-based EN
- *                       (TENET_Solver): a pathwise LARS-EN solver that absorbs
+ *                       (TSolverENET): a pathwise LARS-EN solver that absorbs
  *                       the ridge penalty via a Cholesky update on
  *                       X_A^T X_A + lambda2*I (Zou & Hastie, 2005).
  *
  *                     - ENSolverType::TENET_AUG — augmented-LASSO formulation
- *                       (TENETAug_Solver; Machkour et al. 2022, 2023). The
+ *                       (TSolverENETAug; Machkour et al. 2022, 2023). The
  *                       solver internally builds the Zou-Hastie system
  *                         X_aug = d2 * [ X ; d1*I_p ; 0_L ],
  *                         D_aug = d2 * [ D ; 0_p ; d1*I_L ],
@@ -167,7 +167,7 @@ enum class GVSType {
     /** @brief Informed Elastic Net. Solver variant chosen via
      *  trex_ctrl.solver_type: TIENET (native pathwise LARS-IEN) or
      *  TIENET_AUG (group-informed row-augmented system built inside
-     *  TIENETAug_Solver). */
+     *  TSolverIENETAug). */
     IEN
 };
 
@@ -182,12 +182,12 @@ enum class GVSType {
  *  lambda2 > 0.
  */
 enum class ENSolverType {
-    /** @brief Gram-based EN (TENET_Solver): X, D, y are passed unaugmented;
+    /** @brief Gram-based EN (TSolverENET): X, D, y are passed unaugmented;
      *  the ridge penalty is absorbed via a Cholesky update on X_A^T X_A + lambda2*I.
      */
     TENET,
 
-    /** @brief Augmented-LASSO EN (TENETAug_Solver): builds augmented matrices internally.
+    /** @brief Augmented-LASSO EN (TSolverENETAug): builds augmented matrices internally.
      *  d1 = sqrt(lambda2),  d2 = 1/sqrt(1+lambda2)
      *  X_aug = d2*[X; d1*I_p; 0_L]    (n+p+L rows)
      *  D_aug = d2*[D; 0_p;   d1*I_L]  (n+p+L rows)
@@ -202,7 +202,7 @@ enum class ENSolverType {
  * @brief Map an ENSolverType to the corresponding SolverTypeForTRex enumerator.
  *
  * @details Used by `TRexGVSSelector` to derive the nested
- *  `trex_ctrl.solver_type` when `gvs_type == EN`, and by `TRexSPCA` when
+ *  `trex_ctrl.solver_type` when `gvs_type == EN`, and by `TRexSPCASelector` when
  *  forwarding its `en_solver` knob to the per-PC GVS runs.
  */
 inline constexpr disp::SolverTypeForTRex toSolverType(ENSolverType en_solver) {
@@ -220,10 +220,10 @@ inline constexpr disp::SolverTypeForTRex toSolverType(ENSolverType en_solver) {
  *
  * @details
  *   EN-shaped methods (both tracks):
- *   - `CV_1SE_SVD` / `CV_MIN_SVD` : ridge CV via `ridge_cv_svd` (JacobiSVD);
+ *   - `CV_1SE_SVD` / `CV_MIN_SVD` : ridge CV via `RidgeCV` (JacobiSVD);
  *                 for numerical validation.
  *   - `CV_1SE_CCD` / `CV_MIN_CCD` : glmnet-faithful coordinate-descent ridge CV
- *                 (`enet_cv_ccd`, alpha=0) with glmnet's fdev/devmax path
+ *                 (`ElasticNetCV`, alpha=0) with glmnet's fdev/devmax path
  *                 early-termination. Reproduces `cv.glmnet(alpha=0)` lambda.min exactly
  *                 and lambda.1se within CV fold noise; returns lambda on glmnet's
  *                 reported scale, so the p/2 factor converts to LARS units as
@@ -270,7 +270,7 @@ enum class LambdaSelectionMethod {
 /**
  * @brief GVS-specific control parameters.
  */
-struct TRexGVSControlParameter {
+struct TRexGVSControl {
 
     /** @brief Penalty of the grouped selection: EN (elastic net) or IEN
      *  (informed elastic net). Default: EN.
@@ -328,10 +328,10 @@ struct TRexGVSControlParameter {
 
     /** @brief Selection rule for auto-computing `lambda_2` when `lambda_2 < 0`.
      *         Options (see the `LambdaSelectionMethod` enum for details):
-     *          - CV_1SE_SVD / CV_MIN_SVD : JacobiSVD ridge CV (ridge_cv_svd);
+     *          - CV_1SE_SVD / CV_MIN_SVD : JacobiSVD ridge CV (RidgeCV);
      *            for numerical validation.
      *          - CV_1SE_CCD / CV_MIN_CCD : glmnet-faithful coordinate-descent ridge CV
-     *            (enet_cv_ccd, alpha=0) with glmnet's fdev/devmax path early
+     *            (ElasticNetCV, alpha=0) with glmnet's fdev/devmax path early
      *            stopping. Default: CV_1SE_CCD; on the IEN track the
      *            constructor turns this default into CV_1SE_IEN_CCD (the
      *            same rule on every surface), and the IEN-geometry rules
@@ -425,15 +425,19 @@ struct TRexGVSControlParameter {
      *      pathwise) or TIENET_AUG (row-augmented).
      *  The default here overrides the base class's own default (TLARS) with
      *  TENET, matching the default `gvs_type = EN` / `en_solver = TENET`, so
-     *  a fully-defaulted `TRexGVSControlParameter` constructs without
+     *  a fully-defaulted `TRexGVSControl` constructs without
      *  throwing.
      */
-    tc::TRexControlParameter trex_ctrl = [] {
-        tc::TRexControlParameter t;
+    tc::TRexControl trex_ctrl = [] {
+        tc::TRexControl t;
         t.solver_type = disp::SolverTypeForTRex::TENET;
         return t;
     }();
 };
+
+/** @brief Old name of TRexGVSControl.
+ *  @deprecated Use TRexGVSControl. */
+using TRexGVSControlParameter [[deprecated("Use TRexGVSControl")]] = TRexGVSControl;
 
 
 // ===================================================================================
@@ -483,6 +487,40 @@ struct GVSSetupResult {
 // ===================================================================================
 
 /**
+ * @brief Extended result for T-Rex+GVS, adding group / lambda diagnostics.
+ */
+struct TRexGVSResult : public tc::TRexResult {
+
+    /** @brief lambda_2 of the last select(): the supplied value, or the
+     *  pick of the cross-validation rule `lambda2_method`. */
+    double lambda2_used = 0.0;
+
+    /** @brief What the lambda_2 tuner did to arrive at `lambda2_used`
+     *  (`ran == false`: the value came from the caller). */
+    ms::Lambda2CVDiagnostics lambda2_cv;
+
+    /** @brief Penalty of the grouped selection that was applied. */
+    GVSType gvs_type = GVSType::EN;
+
+    /** @brief Number of groups M, supplied or found by the clustering. */
+    std::size_t max_clusters = 0;
+
+    /** @brief Origin of the groups: "prior" when they were supplied, else
+     *  the linkage of the clustering, "single", "complete", "average" or
+     *  "wpgma". */
+    std::string hc_method_used;
+
+    /** @brief 0-based cluster assignment per variable (length p). */
+    Eigen::VectorXi groups_vec;
+
+    /** @brief Group labels (may be empty if not supplied). */
+    std::vector<std::string> group_labels;
+
+    /** @brief Virtual destructor. */
+    ~TRexGVSResult() override = default;
+};
+
+/**
  * @brief T-Rex selector for grouped variable selection (T-Rex+GVS): FDR-controlled
  *        variable selection for groups of highly correlated variables.
  *
@@ -525,39 +563,9 @@ public:
     // Result Structure
     // ============================================================
 
-    /**
-     * @brief Extended result for T-Rex+GVS, adding group / lambda diagnostics.
-     */
-    struct GVSSelectionResult : public SelectionResult {
-
-        /** @brief lambda_2 of the last select(): the supplied value, or the
-         *  pick of the cross-validation rule `lambda2_method`. */
-        double lambda2_used = 0.0;
-
-        /** @brief What the lambda_2 tuner did to arrive at `lambda2_used`
-         *  (`ran == false`: the value came from the caller). */
-        ms::lambda2_cv_diagnostics lambda2_cv;
-
-        /** @brief Penalty of the grouped selection that was applied. */
-        GVSType gvs_type = GVSType::EN;
-
-        /** @brief Number of groups M, supplied or found by the clustering. */
-        std::size_t max_clusters = 0;
-
-        /** @brief Origin of the groups: "prior" when they were supplied, else
-         *  the linkage of the clustering, "single", "complete", "average" or
-         *  "wpgma". */
-        std::string hc_method_used;
-
-        /** @brief 0-based cluster assignment per variable (length p). */
-        Eigen::VectorXi groups_vec;
-
-        /** @brief Group labels (may be empty if not supplied). */
-        std::vector<std::string> group_labels;
-
-        /** @brief Virtual destructor. */
-        ~GVSSelectionResult() override = default;
-    };
+    /** @brief Old name of TRexGVSResult.
+     *  @deprecated Use TRexGVSResult. */
+    using GVSSelectionResult [[deprecated("Use TRexGVSResult")]] = TRexGVSResult;
 
 
     // ============================================================
@@ -584,7 +592,7 @@ public:
         Eigen::Map<Eigen::MatrixXd>& X,
         Eigen::Map<Eigen::VectorXd>& y,
         double                       tFDR         = 0.1,
-        TRexGVSControlParameter      trex_gvs_ctrl = TRexGVSControlParameter(),
+        TRexGVSControl      trex_gvs_ctrl = TRexGVSControl(),
         int                          seed         = -1,
         bool                         verbose      = true
     );
@@ -616,12 +624,12 @@ public:
      * accessor exposes the widened GVS-specific result populated by
      * `finalizeSelectionResult()`.
      */
-    const GVSSelectionResult& getGVSResult() const noexcept { return gvs_result_; }
+    const TRexGVSResult& getGVSResult() const noexcept { return gvs_result_; }
 
     /** @brief Health record of the lambda_2 resolution of the last
      *  `select()` call. Available after `select()`; also mirrored into
      *  `getGVSResult().lambda2_cv`. */
-    const ms::lambda2_cv_diagnostics& getLambda2CVDiagnostics() const noexcept {
+    const ms::Lambda2CVDiagnostics& getLambda2CVDiagnostics() const noexcept {
         return lambda2_cv_diag_;
     }
 
@@ -633,7 +641,7 @@ protected:
     // ============================================================
 
     /** @brief GVS-specific control parameters (nests the base trex_ctrl). */
-    TRexGVSControlParameter trex_gvs_ctrl_;
+    TRexGVSControl trex_gvs_ctrl_;
 
     /** @brief Pre-computed group structure. */
     GVSSetupResult gvs_setup_;
@@ -644,7 +652,7 @@ protected:
     /** @brief Health record of the last `computeLambda2()` call. Mutable
      *  because `computeLambda2()` is const — it reports what it did
      *  alongside the value it returns. */
-    mutable ms::lambda2_cv_diagnostics lambda2_cv_diag_;
+    mutable ms::Lambda2CVDiagnostics lambda2_cv_diag_;
 
     /** @brief Resolved CV fold-permutation seed.
      *
@@ -656,7 +664,7 @@ protected:
     unsigned int resolved_cv_seed_{0};
 
     /** @brief Full GVS result of the last select() call. */
-    GVSSelectionResult gvs_result_;
+    TRexGVSResult gvs_result_;
 
     // ----- Per-experiment dummy-layer cache -----
 
@@ -703,7 +711,7 @@ protected:
      *  Cleared at the end of every L-iteration.
      *  Within one L-iteration the same instance is reused across T-iterations.
      */
-    std::vector<std::unique_ptr<tsolvers::ad::TSolver_Base>> solvers_cache_;
+    std::vector<std::unique_ptr<tsolvers::ad::TSolverBase>> solvers_cache_;
 
     // ============================================================
     // Setup helpers (called from select())
@@ -866,11 +874,11 @@ protected:
      *  Populates `gvs_result_` with both the base fields (copied from
      *  `base_result`) and the GVS-specific diagnostics, then releases the
      *  per-experiment buffers and solver cache. Returns a base-sliced
-     *  `SelectionResult` so that the inherited `select()` can continue with
+     *  `TRexResult` so that the inherited `select()` can continue with
      *  warm-start cleanup and X denormalization.
      */
-    SelectionResult finalizeSelectionResult(
-        SelectionResult&& base_result) override;
+    tc::TRexResult finalizeSelectionResult(
+        tc::TRexResult&& base_result) override;
 
 // -----------------------------------------------------------------------
 }; /* End of class TRexGVSSelector */

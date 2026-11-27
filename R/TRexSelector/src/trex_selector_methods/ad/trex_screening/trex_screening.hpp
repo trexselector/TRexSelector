@@ -68,7 +68,7 @@ enum class ScreenTRexMethod {
 
 
 /** @brief Configuration for T-Rex+Screening specific parameters. */
-struct ScreenTRexControlParameter {
+struct TRexScreeningControl {
     /** @brief Whether the confidence-based screening (bootstrap) makes the
      *  selection (default: false). The FDR estimate stays one over the number
      *  of selected variables. With a dependency-aware variant it mostly
@@ -126,16 +126,20 @@ struct ScreenTRexControlParameter {
      *  1 internally (screening always runs at exactly L = p dummies),
      *  which also sizes memory-mapped D files at the width actually used.
      */
-    tc::TRexControlParameter trex_ctrl;
+    tc::TRexControl trex_ctrl;
 };
 
+/** @brief Old name of TRexScreeningControl.
+ *  @deprecated Use TRexScreeningControl. */
+using ScreenTRexControlParameter [[deprecated("Use TRexScreeningControl")]] = TRexScreeningControl;
 
-/** @brief Result structure for T-Rex+Screening, extending SelectionResult.
+
+/** @brief Result structure for T-Rex+Screening, extending TRexResult.
  *
  * @details
  *  Adds T-Rex+Screening specific diagnostics on top of the standard result.
  */
-struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
+struct TRexScreeningResult : public tc::TRexResult {
     /** @brief Estimated FDR = 1 / max(1, R) with R selected variables, so
      *  an empty selection reports 1. It rests on the expected number of
      *  false discoveries, about one, and is no bound on the FDP of a run
@@ -163,9 +167,13 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
     double estimated_correlation = 0.0;
 };
 
+/** @brief Old name of TRexScreeningResult.
+ *  @deprecated Use TRexScreeningResult. */
+using ScreenTRexSelectionResult [[deprecated("Use TRexScreeningResult")]] = TRexScreeningResult;
+
 
 // ===================================================================================
-// ScreenTRexSelector
+// TRexScreeningSelector
 // ===================================================================================
 
 /**
@@ -213,7 +221,7 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
  *  permutation_base_seed_), but the base matrix is re-derived from the
  *  seed instead of being stored for the selector's lifetime.
  *  Memory-mapped D storage is supported through the base class MemmapManager
- *  when TRexControlParameter::use_memory_mapping is set.
+ *  when TRexControl::use_memory_mapping is set.
  *
  *  Variants:
  *  1. Ordinary T-Rex+Screening: selects variables where Phi > 0.5.
@@ -233,7 +241,7 @@ struct ScreenTRexSelectionResult : public tc::TRexSelector::SelectionResult {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class ScreenTRexSelector : public tc::TRexSelector {
+class TRexScreeningSelector : public tc::TRexSelector {
 
 protected:
     // ==========================================================================
@@ -241,7 +249,7 @@ protected:
     // ==========================================================================
 
     /** @brief T-Rex+Screening control parameters (nests the base trex_ctrl). */
-    ScreenTRexControlParameter trex_screen_ctrl_;
+    TRexScreeningControl trex_screen_ctrl_;
 
     /** @brief Sum of betas for original features across K experiments (p × 1). */
     Eigen::MatrixXd accumulated_beta_mat_;
@@ -250,7 +258,7 @@ protected:
     std::vector<double> collected_dummy_betas_;
 
     /** @brief Full T-Rex+Screening result from the last select() call. */
-    ScreenTRexSelectionResult screen_result_;
+    TRexScreeningResult screen_result_;
 
 public:
     // ==========================================================================
@@ -258,7 +266,7 @@ public:
     // ==========================================================================
 
     /**
-     * @brief Construct a ScreenTRexSelector.
+     * @brief Construct a TRexScreeningSelector.
      *
      * @param X             Feature matrix (n × p) — Eigen::Map, not copied.
      * @param y             Response vector (n × 1) — Eigen::Map, copied internally.
@@ -274,28 +282,28 @@ public:
      * @throws std::invalid_argument on an unsupported lloop_strategy
      *         (HCONCAT / SKIPL).
      */
-    ScreenTRexSelector(
+    TRexScreeningSelector(
         Eigen::Map<Eigen::MatrixXd>& X,
         Eigen::Map<Eigen::VectorXd>& y,
-        ScreenTRexControlParameter   trex_screen_ctrl = ScreenTRexControlParameter(),
+        TRexScreeningControl   trex_screen_ctrl = TRexScreeningControl(),
         int  seed    = -1,
         bool verbose = true
     );
 
     /** @brief Virtual destructor. */
-    virtual ~ScreenTRexSelector() = default;
+    virtual ~TRexScreeningSelector() = default;
 
     /** @brief Deleted copy constructor. */
-    ScreenTRexSelector(const ScreenTRexSelector&) = delete;
+    TRexScreeningSelector(const TRexScreeningSelector&) = delete;
 
     /** @brief Deleted copy assignment. */
-    ScreenTRexSelector& operator=(const ScreenTRexSelector&) = delete;
+    TRexScreeningSelector& operator=(const TRexScreeningSelector&) = delete;
 
     /** @brief Deleted move constructor. */
-    ScreenTRexSelector(ScreenTRexSelector&&) = delete;
+    TRexScreeningSelector(TRexScreeningSelector&&) = delete;
 
     /** @brief Deleted move assignment. */
-    ScreenTRexSelector& operator=(ScreenTRexSelector&&) = delete;
+    TRexScreeningSelector& operator=(TRexScreeningSelector&&) = delete;
 
     // ==========================================================================
     // Main method
@@ -308,10 +316,10 @@ public:
      *          to run exactly one fixed-budget experiment set, then selects variables
      *          via ordinary thresholding or bootstrap CI on dummy betas.
      *
-     * @return SelectionResult (sliced to base type). Use getScreenResult() for
+     * @return TRexResult (sliced to base type). Use getScreenResult() for
      *         full T-Rex+Screening diagnostics.
      */
-    virtual SelectionResult select() override;
+    virtual tc::TRexResult select() override;
 
     // ==========================================================================
     // Public Getter
@@ -320,9 +328,9 @@ public:
     /**
      * @brief Retrieve the full T-Rex+Screening result from the last select() call.
      *
-     * @return Const reference to ScreenTRexSelectionResult.
+     * @return Const reference to TRexScreeningResult.
      */
-    const ScreenTRexSelectionResult& getScreenResult() const;
+    const TRexScreeningResult& getScreenResult() const;
 
 
     /**
@@ -337,10 +345,10 @@ public:
      * @param ordinary_result  Result from a prior ordinary select() call.
      *                         Must contain non-empty dummy_betas and beta_mat.
      *
-     * @return ScreenTRexSelectionResult with bootstrap-based selection.
+     * @return TRexScreeningResult with bootstrap-based selection.
      */
-    ScreenTRexSelectionResult applyBootstrapToOrdinaryResult(
-        const ScreenTRexSelectionResult& ordinary_result
+    TRexScreeningResult applyBootstrapToOrdinaryResult(
+        const TRexScreeningResult& ordinary_result
     );
 
 
@@ -368,7 +376,7 @@ protected:
      */
     void performOrdinarySelection(
         const Eigen::VectorXd&    Phi,
-        ScreenTRexSelectionResult& result_out
+        TRexScreeningResult& result_out
     ) const;
 
 
@@ -385,7 +393,7 @@ protected:
     void performBootstrapSelection(
         const Eigen::VectorXd&    Phi,
         const Eigen::VectorXd&    beta_means,
-        ScreenTRexSelectionResult& result
+        TRexScreeningResult& result
     );
 
 
@@ -394,7 +402,7 @@ protected:
      *
      * @param result Reference to result object (read selected_var, write estimated_FDR).
      */
-    void computeEstimatedFDR(ScreenTRexSelectionResult& result) const;
+    void computeEstimatedFDR(TRexScreeningResult& result) const;
 
 
     /**
@@ -561,6 +569,10 @@ protected:
     void validateBootstrapParameters() const;
 
 };
+
+/** @brief Old name of TRexScreeningSelector.
+ *  @deprecated Use TRexScreeningSelector. */
+using ScreenTRexSelector [[deprecated("Use TRexScreeningSelector")]] = TRexScreeningSelector;
 
 // ===================================================================================
 } /* End of namespace trex::trex_selector_methods::ad::trex_screening */

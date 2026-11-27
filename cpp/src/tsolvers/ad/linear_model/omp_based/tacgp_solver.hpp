@@ -23,7 +23,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // ==================================================================================
 
 /**
- * @class TACGP_Solver
+ * @class TSolverACGP
  *
  * @brief Terminating Approximate Conjugate Gradient Pursuit (T-ACGP) solver.
  *
@@ -71,7 +71,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
  *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
  *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
  */
-class TACGP_Solver : public TGP_Solver {
+class TSolverACGP : public TSolverGP {
 
 protected:
     // ==================================================================================
@@ -103,7 +103,7 @@ protected:
      *
      * @param solver_type Type of the solver.
      */
-    explicit TACGP_Solver(SolverTypeOMPBased solver_type);
+    explicit TSolverACGP(SolverTypeOMPBased solver_type);
 
 public:
     // ==================================================================================
@@ -111,45 +111,45 @@ public:
     // ==================================================================================
 
     /**
-     * @brief Construct a TACGP_Solver object using data and configuration.
+     * @brief Construct a TSolverACGP object using data and configuration.
      *
      * @param X Design matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (each column of X and D scaled to unit L2-norm),
      *        intercept (X, D and y centered, intercept fitted) and verbose
      *        (status and diagnostics during execution), the tolerance and the
      *        tie-breaking (exch_tie_alpha / exch_tie_floor, the
      *        exchangeable-tie band of the greedy solvers).
      */
-    TACGP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverACGP(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options = SolverOptions{})
-        : TGP_Solver(X, D, y, options) {
+                 const TSolverOptions& options = TSolverOptions{})
+        : TSolverGP(X, D, y, options) {
             algo_type_ = SolverTypeOMPBased::TACGP;
           }
 
     /**
      * @brief Default constructor for serialization or deferred initialization.
      */
-    TACGP_Solver() : TGP_Solver(SolverTypeOMPBased::TACGP) {}
+    TSolverACGP() : TSolverGP(SolverTypeOMPBased::TACGP) {}
 
     /** @brief Deleted copy constructor to avoid raw pointer ownership problems. */
-    TACGP_Solver(const TACGP_Solver&) = delete;
+    TSolverACGP(const TSolverACGP&) = delete;
 
     /** @brief Deleted copy assignment operator to avoid raw pointer ownership problems. */
-    TACGP_Solver& operator=(const TACGP_Solver&) = delete;
+    TSolverACGP& operator=(const TSolverACGP&) = delete;
 
     /** @brief Move constructor (default implementation). */
-    TACGP_Solver(TACGP_Solver&&) = default;
+    TSolverACGP(TSolverACGP&&) = default;
 
     /** @brief Deleted move assignment operator to avoid raw pointer ownership problems. */
-    TACGP_Solver& operator=(TACGP_Solver&&) = delete;
+    TSolverACGP& operator=(TSolverACGP&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TACGP_Solver() override = default;
+    ~TSolverACGP() override = default;
 
 
     // ==================================================================================
@@ -168,11 +168,11 @@ public:
      *       and d^{n-1} / p^{n-1} are available for the next iteration's
      *       computeGradientDirection() without any dependency hazard.
      *
-     * @note Overrides TGP_Solver::executeStep().
+     * @note Overrides TSolverGP::executeStep().
      */
     void executeStep(std::size_t T_stop = 0, bool early_stop = true) override;
 
-    /** @brief TGP_Solver::memoryBytes() plus the previous direction and its
+    /** @brief TSolverGP::memoryBytes() plus the previous direction and its
      *  projection. */
     std::size_t memoryBytes() const noexcept override;
 
@@ -196,7 +196,7 @@ public:
     template <class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TGP_Solver>(this),
+            cereal::base_class<TSolverGP>(this),
             CEREAL_NVP(direction_prev_),
             CEREAL_NVP(projected_direction_prev_),
             CEREAL_NVP(b_1_)
@@ -223,9 +223,9 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TACGP_Solver object connected to X and D.
+     * @return Deserialized TSolverACGP object connected to X and D.
      */
-    static TACGP_Solver load(const std::string& filename,
+    static TSolverACGP load(const std::string& filename,
                             Eigen::Map<Eigen::MatrixXd>& X,
                             Eigen::Map<Eigen::MatrixXd>& D);
 protected:
@@ -243,7 +243,7 @@ protected:
      *   Falls back to pure gradient (d^n = c^n_A, b_1 = 0) on the first
      *   iteration or when the active set size changed since the last iteration.
      *
-     * @note Overrides TGP_Solver::computeGradientDirection().
+     * @note Overrides TSolverGP::computeGradientDirection().
      */
     void computeGradientDirection() override;
 
@@ -274,6 +274,10 @@ protected:
      */
     void storePreviousDirection();
 };
+
+/** @brief Old name of TSolverACGP.
+ *  @deprecated Use TSolverACGP. */
+using TACGP_Solver [[deprecated("Use TSolverACGP")]] = TSolverACGP;
 
 // ==================================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

@@ -71,7 +71,7 @@ inline constexpr double AUTO_ESTIMATE_CORRELATION = -2.0;
  *          and TIKNET. Every other solver
  *          counts as greedy: TSTEPWISE, TSTAGEWISE, TOMP, TGP, TACGP, TMP,
  *          TNCGMP, TOOLS and TAFS. Used to resolve the AUTO default of
- *          TRexControlParameter::tloop_stagnation_stop and for the
+ *          TRexControl::tloop_stagnation_stop and for the
  *          corresponding validation warning.
  */
 inline constexpr bool isGreedySolver(
@@ -123,7 +123,7 @@ enum class LLoopStrategy {
 /**
  * @brief Algorithmic control parameters for T-Rex Selector.
  */
-struct TRexControlParameter {
+struct TRexControl {
 
     // ====================================
     // Experiment Configuration
@@ -149,7 +149,7 @@ struct TRexControlParameter {
     // ===================================
 
     /** @brief Distribution for generating dummies (default: Normal). */
-    dummygen::Distribution dummy_distribution = dummygen::Distribution::Normal();
+    dummygen::DummyDistribution dummy_distribution = dummygen::DummyDistribution::Normal();
 
     // ===================================
     // L-Loop Strategy
@@ -207,7 +207,7 @@ struct TRexControlParameter {
     int max_outer_threads = 1;
 
     /** @brief Thread budget of the solvers' own regions, passed as
-     *  SolverOptions::n_threads (default: 1, serial; at least 1). Live when
+     *  TSolverOptions::n_threads (default: 1, serial; at least 1). Live when
      *  the experiments run in sequence; inside a parallel K-loop the solvers
      *  stay serial whatever the budget says. */
     int max_inner_threads = 1;
@@ -245,7 +245,7 @@ struct TRexControlParameter {
     disp::SolverTypeForTRex solver_type = disp::SolverTypeForTRex::TLARS;
 
     /** @brief Bundled hyperparameters for all solver algorithms. */
-    disp::SolverHyperparameters solver_params{};
+    disp::TSolverParams solver_params{};
 
     // ===================================
     // Data Scaling
@@ -272,10 +272,61 @@ struct TRexControlParameter {
 
 };
 
+/** @brief Old name of TRexControl.
+ *  @deprecated Use TRexControl. */
+using TRexControlParameter [[deprecated("Use TRexControl")]] = TRexControl;
+
 
 // ===================================================================================
 // TRexSelector
 // ===================================================================================
+
+/** @brief Result from variable selection. */
+struct TRexResult {
+
+    /** @brief Binary support vector (0/1, length p). */
+    Eigen::VectorXi selected_var;
+
+    /** @brief Voting threshold applied to Phi to obtain the selection. */
+    double v_thresh;
+
+    /** @brief Number of selected variables per stopping time (rows) and
+     *  voting level (columns), (T_stop - 1) × v_len. The stopping time
+     *  T_stop is not part of it. One row for T_stop = 1. */
+    Eigen::MatrixXd R_mat;
+
+    /** @brief Stopping time T_stop: the number of included dummies at
+     *  which the T-loop stopped, so the random experiments ran until
+     *  T_stop dummies were included. For T_stop > 1 it is not the
+     *  stopping time of the selection: the selection is taken from the
+     *  stopping times 1 to T_stop - 1, mostly from T_stop - 1 and
+     *  sometimes from an earlier one (see select()). */
+    std::size_t T_stop;
+
+    /** @brief Total number of dummy variables used (L · p). */
+    std::size_t num_dummies;
+
+    /** @brief Dummy multiplier L determined by the L-loop. */
+    std::size_t dummy_factor_L;
+
+    /** @brief Estimated FDP per stopping time (rows) and voting level
+     *  (columns), T_stop × v_len. */
+    Eigen::MatrixXd FDP_hat_mat;
+
+    /** @brief Relative occurrences of the variables over the K random
+     *  experiments per stopping time (rows), T_stop × p. */
+    Eigen::MatrixXd Phi_mat;
+
+    /** @brief Calibrated relative occurrences Phi' that enter the FDP
+     *  estimate (p × 1), at most 1 and possibly negative. */
+    Eigen::VectorXd Phi_prime;
+
+    /** @brief Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by
+     *  1 - eps. */
+    Eigen::VectorXd voting_grid;
+
+    virtual ~TRexResult() = default;
+};
 
 /**
  * @brief T-Rex Selector for FDR-controlled variable selection.
@@ -286,10 +337,10 @@ struct TRexControlParameter {
  *  Base class of the selectors
  *  - T-Rex+DA (TRexDASelector)
  *  - T-Rex+GVS (TRexGVSSelector)
- *  - T-Rex+Screening (ScreenTRexSelector)
+ *  - T-Rex+Screening (TRexScreeningSelector)
  *  - T-Rex+Tikhonov (TRexTikhonovSelector)
  *
- *  T-Rex+SPCA (TRexSPCA) and the biobank screening (BiobankScreenTRex) run
+ *  T-Rex+SPCA (TRexSPCASelector) and the biobank screening (TRexBiobankScreeningSelector) run
  *  selectors of these classes.
  *
  *  Key design:
@@ -297,7 +348,7 @@ struct TRexControlParameter {
  *    - Normalizes X in-place and restores it, copies y and centers the copy.
  *    - Delegates dummy generation, solver dispatch, warm-start management,
  *      memory mapping, and experiment coordination to helper modules.
- *    - select() returns SelectionResult with all key outputs.
+ *    - select() returns TRexResult with all key outputs.
  *
  *  References:
  *  -----------
@@ -332,7 +383,7 @@ protected:
     const double tFDR_;
 
     /** @brief Algorithmic control parameters. */
-    const TRexControlParameter trex_ctrl_;
+    const TRexControl trex_ctrl_;
 
     /** @brief Random seed. */
     const int seed_;
@@ -410,7 +461,7 @@ protected:
     /** @brief Indices of selected variables. */
     std::vector<std::size_t> selected_indices_;
 
-    /** @brief Stopping time at which the T-loop stopped (SelectionResult::T_stop). */
+    /** @brief Stopping time at which the T-loop stopped (TRexResult::T_stop). */
     std::size_t T_stop_{0};
 
     /** @brief Number of dummy variables used. */
@@ -428,7 +479,7 @@ protected:
     /** @brief Relative occurrence matrix. */
     Eigen::MatrixXd Phi_mat_;
 
-    /** @brief Numbers of selected variables (see SelectionResult::R_mat). */
+    /** @brief Numbers of selected variables (see TRexResult::R_mat). */
     Eigen::MatrixXd R_mat_;
 
     /** @brief Adjusted relative occurrences (p x 1). */
@@ -481,52 +532,9 @@ public:
     // Result Structure
     // ============================================================
 
-    /** @brief Result from variable selection. */
-    struct SelectionResult {
-
-        /** @brief Binary support vector (0/1, length p). */
-        Eigen::VectorXi selected_var;
-
-        /** @brief Voting threshold applied to Phi to obtain the selection. */
-        double v_thresh;
-
-        /** @brief Number of selected variables per stopping time (rows) and
-         *  voting level (columns), (T_stop - 1) × v_len. The stopping time
-         *  T_stop is not part of it. One row for T_stop = 1. */
-        Eigen::MatrixXd R_mat;
-
-        /** @brief Stopping time T_stop: the number of included dummies at
-         *  which the T-loop stopped, so the random experiments ran until
-         *  T_stop dummies were included. For T_stop > 1 it is not the
-         *  stopping time of the selection: the selection is taken from the
-         *  stopping times 1 to T_stop - 1, mostly from T_stop - 1 and
-         *  sometimes from an earlier one (see select()). */
-        std::size_t T_stop;
-
-        /** @brief Total number of dummy variables used (L · p). */
-        std::size_t num_dummies;
-
-        /** @brief Dummy multiplier L determined by the L-loop. */
-        std::size_t dummy_factor_L;
-
-        /** @brief Estimated FDP per stopping time (rows) and voting level
-         *  (columns), T_stop × v_len. */
-        Eigen::MatrixXd FDP_hat_mat;
-
-        /** @brief Relative occurrences of the variables over the K random
-         *  experiments per stopping time (rows), T_stop × p. */
-        Eigen::MatrixXd Phi_mat;
-
-        /** @brief Calibrated relative occurrences Phi' that enter the FDP
-         *  estimate (p × 1), at most 1 and possibly negative. */
-        Eigen::VectorXd Phi_prime;
-
-        /** @brief Voting levels 0.5, 0.5 + 1/K, ... below 1, closed by
-         *  1 - eps. */
-        Eigen::VectorXd voting_grid;
-
-        virtual ~SelectionResult() = default;
-    };
+    /** @brief Old name of TRexResult.
+     *  @deprecated Use TRexResult. */
+    using SelectionResult [[deprecated("Use TRexResult")]] = TRexResult;
 
 
     // ============================================================
@@ -555,7 +563,7 @@ public:
     TRexSelector(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::VectorXd>& y,
                  double tFDR = 0.1,
-                 TRexControlParameter trex_control = TRexControlParameter(),
+                 TRexControl trex_control = TRexControl(),
                  int seed = -1,
                  bool verbose = true);
 
@@ -600,10 +608,10 @@ public:
      *  A select() that ends with an exception gives X back at once (original
      *  scale, claim released) and retires the selector as well.
      *
-     * @return SelectionResult containing selected variables and
+     * @return TRexResult containing selected variables and
      *         diagnostics.
      */
-    virtual SelectionResult select();
+    virtual TRexResult select();
 
     /**
      * @brief Give X back before select(): undo the in-place normalization
@@ -679,7 +687,7 @@ public:
     std::size_t getNumDummies() const noexcept { return num_dummies_; }
 
     /** @brief Get the stopping time T_stop at which the T-loop stopped. The
-     *  selection is taken from an earlier one (SelectionResult::T_stop). */
+     *  selection is taken from an earlier one (TRexResult::T_stop). */
     std::size_t getTStop() const noexcept { return T_stop_; }
 
     /** @brief Get voting grid vector V = [0.5, 0.5+1/K, ..., 1-eps]. */
@@ -694,7 +702,7 @@ public:
     /** @brief Get Phi matrix. */
     const Eigen::MatrixXd& getPhiMat() const noexcept { return Phi_mat_; }
 
-    /** @brief Get the numbers of selected variables (SelectionResult::R_mat). */
+    /** @brief Get the numbers of selected variables (TRexResult::R_mat). */
     const Eigen::MatrixXd& getRMat() const noexcept { return R_mat_; }
 
     /** @brief Get Phi prime vector. */
@@ -770,7 +778,7 @@ protected:
      *
      * @return Selection result containing selected variables and related information.
      */
-    SelectionResult selectedVariables(
+    TRexResult selectedVariables(
         const Eigen::MatrixXd& FDP_hat_mat,
         const Eigen::MatrixXd& Phi_mat,
         const Eigen::VectorXd& voting_grid,
@@ -794,7 +802,7 @@ protected:
      * @param voting_grid The voting grid matching the run's number of experiments.
      * @param drop_last_row Forwarded to selectedVariables().
      */
-    SelectionResult selectFromPhiT(
+    TRexResult selectFromPhiT(
         const Eigen::MatrixXd& phi_T_mat,
         std::size_t num_dummies,
         const Eigen::VectorXd& voting_grid,
@@ -873,10 +881,10 @@ protected:
      *
      *  Default base implementation: returns `base_result` unchanged.
      *
-     * @param base_result The base SelectionResult produced by the standard pipeline.
-     * @return The (possibly widened) SelectionResult to return from `select()`.
+     * @param base_result The base TRexResult produced by the standard pipeline.
+     * @return The (possibly widened) TRexResult to return from `select()`.
      */
-    virtual SelectionResult finalizeSelectionResult(SelectionResult&& base_result);
+    virtual TRexResult finalizeSelectionResult(TRexResult&& base_result);
 
     /**
      * @brief Bundle of per-step outputs shared by the L-loop and T-loop drivers.
@@ -1116,7 +1124,7 @@ protected:
      *
      * @param result Selection result to store.
      */
-    void storeResults(const SelectionResult& result);
+    void storeResults(const TRexResult& result);
 
     /**
      * @brief Build an ExperimentRunnerConfig from current TRex state.

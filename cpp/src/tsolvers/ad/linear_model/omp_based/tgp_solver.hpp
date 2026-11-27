@@ -9,10 +9,10 @@
  *
  * @brief Header file for the Terminating Gradient Pursuit (T-GP) solver.
  *
- * @details The TGP_Solver class implements the T-GP algorithm for variable selection
+ * @details The TSolverGP class implements the T-GP algorithm for variable selection
  * in linear regression, with support for dummy variable driven early stopping, as
  * necesary for the TRex framework and its FDR control.
- * It inherits state management, standardization, and diagnostics from the TOMP_Solver
+ * It inherits state management, standardization, and diagnostics from the TSolverOMP
  * class.
  */
 // ===================================================================================
@@ -27,7 +27,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 
 // ==================================================================================
 /**
-* @class TGP_Solver
+* @class TSolverGP
 *
 * @brief Terminating Gradient Pursuit (T-GP) solver with dummy variables for FDR control.
 *
@@ -63,7 +63,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 *       sufficiently orthogonal to previously selected atoms. This is by design and
 *       allows GP to auto-calibrate how many directional updates it needs per atom.
 *
-* @note The Cholesky factorization inherited from TOMP_Solver is intentionally unused.
+* @note The Cholesky factorization inherited from TSolverOMP is intentionally unused.
 *       Collinearity is handled implicitly: collinear variables produce ||p^n||^2 ≈ 0,
 *       which drives alpha^n ≈ 0 and terminates progress on that variable.
 *
@@ -74,7 +74,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
 *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
 */
-class TGP_Solver : public TOMP_Solver {
+class TSolverGP : public TSolverOMP {
 
 protected:
 
@@ -114,7 +114,7 @@ protected:
      *
      *  @param solver_type Type of the solver.
      */
-    explicit TGP_Solver(SolverTypeOMPBased solver_type);
+    explicit TSolverGP(SolverTypeOMPBased solver_type);
 
 public:
 
@@ -123,43 +123,43 @@ public:
     // ==================================================================================
 
     /**
-     * @brief Construct a new TGP_Solver object using data and configuration.
+     * @brief Construct a new TSolverGP object using data and configuration.
      *
      * @param X Map to the predictor matrix (n x p).
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (each column of X and D scaled to unit L2-norm),
      *        intercept (X, D and y centered, intercept fitted) and verbose
      *        (status and diagnostics during execution), the tolerance and the
      *        tie-breaking (exch_tie_alpha / exch_tie_floor, the
      *        exchangeable-tie band of the greedy solvers).
      */
-    TGP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverGP(Eigen::Map<Eigen::MatrixXd>& X,
                Eigen::Map<Eigen::MatrixXd>& D,
                Eigen::Map<Eigen::VectorXd>& y,
-               const SolverOptions& options = SolverOptions{})
-        : TOMP_Solver(X, D, y, options, SolverTypeOMPBased::TGP) {}
+               const TSolverOptions& options = TSolverOptions{})
+        : TSolverOMP(X, D, y, options, SolverTypeOMPBased::TGP) {}
 
     /**
      * @brief Default constructor for serialization or deferred initialization.
      */
-    TGP_Solver() : TOMP_Solver(SolverTypeOMPBased::TGP) {}
+    TSolverGP() : TSolverOMP(SolverTypeOMPBased::TGP) {}
 
     /** @brief Deleted copy constructor to avoid raw pointer ownership problems. */
-    TGP_Solver(const TGP_Solver&) = delete;
+    TSolverGP(const TSolverGP&) = delete;
 
     /** @brief Deleted copy assignment operator to avoid raw pointer ownership problems. */
-    TGP_Solver& operator=(const TGP_Solver&) = delete;
+    TSolverGP& operator=(const TSolverGP&) = delete;
 
     /** @brief Move constructor (default implementation). */
-    TGP_Solver(TGP_Solver&&) = default;
+    TSolverGP(TSolverGP&&) = default;
 
     /** @brief Deleted move assignment operator to avoid raw pointer ownership problems. */
-    TGP_Solver& operator=(TGP_Solver&&) = delete;
+    TSolverGP& operator=(TSolverGP&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TGP_Solver() override = default;
+    ~TSolverGP() override = default;
 
 
     // ==================================================================================
@@ -179,7 +179,7 @@ public:
      */
     void executeStep(std::size_t T_stop = 0, bool early_stop = true) override;
 
-    /** @brief TOMP_Solver::memoryBytes() plus the direction, its projection and
+    /** @brief TSolverOMP::memoryBytes() plus the direction, its projection and
      *  the active coefficients. */
     std::size_t memoryBytes() const noexcept override;
 
@@ -206,7 +206,7 @@ public:
     template <class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TOMP_Solver>(this),
+            cereal::base_class<TSolverOMP>(this),
             CEREAL_NVP(direction_),
             CEREAL_NVP(projected_direction_),
             CEREAL_NVP(step_size_),
@@ -234,9 +234,9 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TGP_Solver object connected to X.
+     * @return Deserialized TSolverGP object connected to X.
      */
-    static TGP_Solver load(const std::string& filename,
+    static TSolverGP load(const std::string& filename,
                            Eigen::Map<Eigen::MatrixXd>& X,
                            Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -249,7 +249,7 @@ protected:
     /**
      * @brief Compute gradient direction for active variables: d^{n} = c^{n}_A.
      *
-     * @note Overriden by descendant TACGP_Solver to add conjugate correction.
+     * @note Overriden by descendant TSolverACGP to add conjugate correction.
      */
     virtual void computeGradientDirection();
 
@@ -327,11 +327,15 @@ protected:
      * @brief Update correlations c^{n} = X^{T} r^{n} for ALL non-dropped variables.
      *
      * @note GP override: computes for all variables (not just inactives) to allow re-selection.
-     *       Base class TOMP_Solver only updates inactives.
+     *       Base class TSolverOMP only updates inactives.
      */
     void updateCorrelations() override;
 
 };
+
+/** @brief Old name of TSolverGP.
+ *  @deprecated Use TSolverGP. */
+using TGP_Solver [[deprecated("Use TSolverGP")]] = TSolverGP;
 
 // ==================================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

@@ -76,8 +76,8 @@ SyntheticData makeData(int n_threads = omp::get_num_threads()) {
                          dg::noisegen::noise_policy::Normal(), n_threads);
 }
 
-TRexControlParameter smallControl(int max_inner_threads = 1) {
-    TRexControlParameter ctrl;
+TRexControl smallControl(int max_inner_threads = 1) {
+    TRexControl ctrl;
     ctrl.K = 2;
     ctrl.max_dummy_multiplier = 1;
     ctrl.max_inner_threads = max_inner_threads;
@@ -201,7 +201,7 @@ TEST(ThreadBudget, SeedingDominatedGeneratorFormsATeam) {
     Eigen::MatrixXd D(n, p);
     {
         ProbeScope probe;
-        dg::generate_dummies(D, n, p, 11u, dg::Distribution::Normal(), 0, 4);
+        dg::generate_dummies(D, n, p, 11u, dg::DummyDistribution::Normal(), 0, 4);
         EXPECT_GE(omp::team_probe::max_team(), 2) << "the dummy columns";
     }
     {

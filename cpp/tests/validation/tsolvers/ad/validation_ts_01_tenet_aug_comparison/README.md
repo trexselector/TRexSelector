@@ -4,8 +4,8 @@
 
 Equivalence check across three elastic-net computations on the same data:
 
-- **`TENET_Solver`**: Gram-matrix-based elastic net
-- **`TENETAug_Solver`**: augmented-LASSO formulation of elastic net (data augmentation trick)
+- **`TSolverENET`**: Gram-matrix-based elastic net
+- **`TSolverENETAug`**: augmented-LASSO formulation of elastic net (data augmentation trick)
 - **manual `TLASSO` on hand-augmented matrices**: a literal replica of the R `lasso_star` reference (plain LASSO on the
   augmented `Xstar`/`ystar` system, then de-normalised by `1/d2`)
 

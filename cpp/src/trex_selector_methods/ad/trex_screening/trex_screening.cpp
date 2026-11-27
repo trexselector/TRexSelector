@@ -51,19 +51,19 @@ namespace dummygen = trex::utils::datageneration::dummygen;
 // sizes the memory-mapped D files at max_dummy_multiplier * p. Pin the
 // multiplier to 1 so biobank-scale memmap runs are not sized (and their
 // address space not reserved) at 10x the width screening can ever use.
-static tc::TRexControlParameter prepareScreenBaseCtrl(
-    const ScreenTRexControlParameter& s)
+static tc::TRexControl prepareScreenBaseCtrl(
+    const TRexScreeningControl& s)
 {
-    tc::TRexControlParameter ctrl = s.trex_ctrl;
+    tc::TRexControl ctrl = s.trex_ctrl;
     ctrl.max_dummy_multiplier = 1;
     return ctrl;
 }
 
 
-ScreenTRexSelector::ScreenTRexSelector(
+TRexScreeningSelector::TRexScreeningSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
-    ScreenTRexControlParameter   trex_screen_ctrl,
+    TRexScreeningControl   trex_screen_ctrl,
     int  seed,
     bool verbose
 ) : tc::TRexSelector(X, y,
@@ -83,7 +83,7 @@ ScreenTRexSelector::ScreenTRexSelector(
 // Validation
 // ===================================================================================
 
-void ScreenTRexSelector::validateScreenTRexStrategy() const {
+void TRexScreeningSelector::validateScreenTRexStrategy() const {
     // Screening is a SINGLE experiment pass at L = p, T = 1 (select() forces
     // num_dummies_ = p_, T_stop_ = 1). Supported:
     //   STANDARD           - K independent matrices, stored.
@@ -106,7 +106,7 @@ void ScreenTRexSelector::validateScreenTRexStrategy() const {
             break;  // Supported
         default:
             throw std::invalid_argument(
-                "ScreenTRexSelector: only the STANDARD, SEEDED, "
+                "TRexScreeningSelector: only the STANDARD, SEEDED, "
                 "PERMUTATION, and PERMUTATION_SEEDED dummy strategies are "
                 "supported (HCONCAT / SKIPL describe L-loop growth, which "
                 "screening does not have: it runs a single pass at L = p, "
@@ -116,13 +116,13 @@ void ScreenTRexSelector::validateScreenTRexStrategy() const {
 }
 
 
-void ScreenTRexSelector::validateScreenDAParameters() const {
+void TRexScreeningSelector::validateScreenDAParameters() const {
     const double rho_thr = trex_screen_ctrl_.rho_thr_DA;
 
     // Written so that a NaN fails the check as well.
     if (!(rho_thr >= 0.0 && rho_thr <= 1.0)) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: rho_thr_DA must be in [0, 1]. Got: " +
+            "TRexScreeningSelector: rho_thr_DA must be in [0, 1]. Got: " +
             std::to_string(rho_thr));
     }
 
@@ -132,7 +132,7 @@ void ScreenTRexSelector::validateScreenDAParameters() const {
         trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN;
     if (uses_window && rho_thr >= 1.0) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1 and "
+            "TRexScreeningSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1 and "
             "TREX_DA_NN. Got: " + std::to_string(rho_thr));
     }
 
@@ -141,17 +141,17 @@ void ScreenTRexSelector::validateScreenDAParameters() const {
     if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_BLOCK_EQUI &&
         (n_blocks < 1 || n_blocks > p_)) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: n_blocks must be in [1, p] for TREX_DA_BLOCK_EQUI. Got: " +
+            "TRexScreeningSelector: n_blocks must be in [1, p] for TREX_DA_BLOCK_EQUI. Got: " +
             std::to_string(n_blocks) + " with p = " + std::to_string(p_));
     }
 }
 
 
-void ScreenTRexSelector::validateBootstrapParameters() const {
+void TRexScreeningSelector::validateBootstrapParameters() const {
     // The standard error of the bootstrap needs two resamples.
     if (trex_screen_ctrl_.R_boot < 2) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: R_boot must be at least 2. Got: " +
+            "TRexScreeningSelector: R_boot must be at least 2. Got: " +
             std::to_string(trex_screen_ctrl_.R_boot));
     }
 
@@ -160,7 +160,7 @@ void ScreenTRexSelector::validateBootstrapParameters() const {
     const double step = trex_screen_ctrl_.ci_grid_step;
     if (!(step > 0.0 && step <= 1.0)) {
         throw std::invalid_argument(
-            "ScreenTRexSelector: ci_grid_step must be in (0, 1]. Got: " +
+            "TRexScreeningSelector: ci_grid_step must be in (0, 1]. Got: " +
             std::to_string(step));
     }
 }
@@ -170,7 +170,7 @@ void ScreenTRexSelector::validateBootstrapParameters() const {
 // Main method: select()
 // ===================================================================================
 
-tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
+tc::TRexResult TRexScreeningSelector::select() {
 
     beginRun();
     const GiveXBackOnError give_x_back(*this);
@@ -230,7 +230,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
             static_cast<Eigen::Index>(collected_dummy_betas_.size()));
     }
 
-    // 7. Populate SelectionResult fields
+    // 7. Populate TRexResult fields
     screen_result_.T_stop         = 1;
     screen_result_.num_dummies    = p_;
     screen_result_.dummy_factor_L = 1;
@@ -276,7 +276,7 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
     // 11. Restore X to original scale (and release the shared-buffer claim)
     denormalizeAndReleaseX();
 
-    return static_cast<tc::TRexSelector::SelectionResult>(screen_result_);
+    return static_cast<tc::TRexResult>(screen_result_);
 }
 
 
@@ -284,13 +284,13 @@ tc::TRexSelector::SelectionResult ScreenTRexSelector::select() {
 // Public getter
 // ===================================================================================
 
-const ScreenTRexSelectionResult& ScreenTRexSelector::getScreenResult() const {
+const TRexScreeningResult& TRexScreeningSelector::getScreenResult() const {
     return screen_result_;
 }
 
 
-ScreenTRexSelectionResult ScreenTRexSelector::applyBootstrapToOrdinaryResult(
-    const ScreenTRexSelectionResult& ordinary_result
+TRexScreeningResult TRexScreeningSelector::applyBootstrapToOrdinaryResult(
+    const TRexScreeningResult& ordinary_result
 ) {
     // Restore collected_dummy_betas_ from the ordinary result
     const Eigen::VectorXd& db = ordinary_result.dummy_betas;
@@ -301,7 +301,7 @@ ScreenTRexSelectionResult ScreenTRexSelector::applyBootstrapToOrdinaryResult(
     const Eigen::VectorXd& beta_means = ordinary_result.beta_mat;
 
     // Perform bootstrap selection using the shared experiment data
-    ScreenTRexSelectionResult bootstrap_result;
+    TRexScreeningResult bootstrap_result;
     performBootstrapSelection(Phi, beta_means, bootstrap_result);
     computeEstimatedFDR(bootstrap_result);
 
@@ -327,7 +327,7 @@ ScreenTRexSelectionResult ScreenTRexSelector::applyBootstrapToOrdinaryResult(
 // Core: runScreenExperiments
 // ===================================================================================
 
-er::ExperimentResults ScreenTRexSelector::runScreenExperiments() {
+er::ExperimentResults TRexScreeningSelector::runScreenExperiments() {
 
     // Reset storage
     accumulated_beta_mat_.resize(static_cast<Eigen::Index>(p_), 1);
@@ -389,7 +389,7 @@ er::ExperimentResults ScreenTRexSelector::runScreenExperiments() {
         default:
             // validateScreenTRexStrategy() in constructor prevents reaching here
             throw std::logic_error(
-                "ScreenTRexSelector::runScreenExperiments: unreachable strategy branch.");
+                "TRexScreeningSelector::runScreenExperiments: unreachable strategy branch.");
     }
 
     // Build ExperimentRunnerConfig: T=1, L=p, no warm-start, beta collection on
@@ -417,9 +417,9 @@ er::ExperimentResults ScreenTRexSelector::runScreenExperiments() {
 // Selection Logic
 // ===================================================================================
 
-void ScreenTRexSelector::performOrdinarySelection(
+void TRexScreeningSelector::performOrdinarySelection(
     const Eigen::VectorXd&    Phi,
-    ScreenTRexSelectionResult& result_out
+    TRexScreeningResult& result_out
 ) const {
     result_out.used_bootstrap   = false;
     result_out.confidence_level = 0.0;
@@ -427,8 +427,8 @@ void ScreenTRexSelector::performOrdinarySelection(
 }
 
 
-void ScreenTRexSelector::computeEstimatedFDR(
-    ScreenTRexSelectionResult& result_out
+void TRexScreeningSelector::computeEstimatedFDR(
+    TRexScreeningResult& result_out
 ) const {
     // One over the number of selected variables, and 1 for an empty selection.
     const double R = static_cast<double>(result_out.selected_var.sum());
@@ -440,16 +440,16 @@ void ScreenTRexSelector::computeEstimatedFDR(
 // Bootstrap Helpers
 // ===================================================================================
 
-double ScreenTRexSelector::probit(double p) const {
+double TRexScreeningSelector::probit(double p) const {
     if (p <= 0.0 || p >= 1.0) { return 0.0; }
     return std::sqrt(2.0) * boost::math::erf_inv(2.0 * p - 1.0);
 }
 
 
-void ScreenTRexSelector::performBootstrapSelection(
+void TRexScreeningSelector::performBootstrapSelection(
     const Eigen::VectorXd&    Phi,
     const Eigen::VectorXd&    beta_means,
-    ScreenTRexSelectionResult& result
+    TRexScreeningResult& result
 ) {
     result.used_bootstrap = true;
 
@@ -535,7 +535,7 @@ void ScreenTRexSelector::performBootstrapSelection(
 }
 
 
-std::pair<double, double> ScreenTRexSelector::calculateBootstrapCI(
+std::pair<double, double> TRexScreeningSelector::calculateBootstrapCI(
     const std::vector<double>& boot_means,
     double t0,
     double confidence_level
@@ -571,14 +571,14 @@ std::pair<double, double> ScreenTRexSelector::calculateBootstrapCI(
 // Dependency-Aware Adjustment
 // ===================================================================================
 
-void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
+void TRexScreeningSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
 
     // Use the supplied correlation, or estimate it when the sentinel is set
     // or the supplied value is not a correlation coefficient.
     double rho = trex_screen_ctrl_.cor_coef;
     bool estimate = (rho == tc::AUTO_ESTIMATE_CORRELATION);
     if (!estimate && !dw::isCorrelationCoefficient(rho)) {
-        TREX_WARN("[ScreenTRexSelector Warning] cor_coef = " << rho
+        TREX_WARN("[TRexScreeningSelector Warning] cor_coef = " << rho
             << " is not a correlation coefficient in [-1, 1]. The coefficient is "
                "estimated from the data instead (set cor_coef to -2 to request the "
                "estimate).");
@@ -598,7 +598,7 @@ void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
                 break;
             default:
                 throw std::runtime_error(
-                    "ScreenTRexSelector: invalid method for DA adjustment.");
+                    "TRexScreeningSelector: invalid method for DA adjustment.");
         }
     }
     screen_result_.estimated_correlation = rho;
@@ -620,7 +620,7 @@ void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
                 return computeDA_NN_Delta(Phi, rho);
             default:
                 throw std::runtime_error(
-                    "ScreenTRexSelector: unreachable DA variant.");
+                    "TRexScreeningSelector: unreachable DA variant.");
         }
     }();
 
@@ -637,7 +637,7 @@ void ScreenTRexSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi) {
 // Correlation Estimation
 // ===================================================================================
 
-double ScreenTRexSelector::estimateAR1Correlation() const {
+double TRexScreeningSelector::estimateAR1Correlation() const {
     /*
         AR(1) Yule-Walker estimator per row, averaged over n rows:
             ρ̂ = Σ(x_t · x_{t-1}) / Σ(x_t²)
@@ -674,7 +674,7 @@ double ScreenTRexSelector::estimateAR1Correlation() const {
 }
 
 
-double ScreenTRexSelector::estimateEquiCorrelation() const {
+double TRexScreeningSelector::estimateEquiCorrelation() const {
     /*
         Let u_j = x_j / ‖x_j‖ be the unit-norm version of each (already
         centered) column. Then corr_jk = u_j · u_k, the full sum of the
@@ -710,7 +710,7 @@ double ScreenTRexSelector::estimateEquiCorrelation() const {
 // DA Delta Computation
 // ===================================================================================
 
-Eigen::VectorXd ScreenTRexSelector::computeDA_AR1_Delta(
+Eigen::VectorXd TRexScreeningSelector::computeDA_AR1_Delta(
     const Eigen::VectorXd& Phi,
     double rho
 ) const {
@@ -752,7 +752,7 @@ Eigen::VectorXd ScreenTRexSelector::computeDA_AR1_Delta(
 }
 
 
-Eigen::VectorXd ScreenTRexSelector::computeDA_NN_Delta(
+Eigen::VectorXd TRexScreeningSelector::computeDA_NN_Delta(
     const Eigen::VectorXd& Phi,
     double rho
 ) const {
@@ -803,7 +803,7 @@ Eigen::VectorXd ScreenTRexSelector::computeDA_NN_Delta(
 }
 
 
-Eigen::VectorXd ScreenTRexSelector::computeDA_EQUI_Delta(
+Eigen::VectorXd TRexScreeningSelector::computeDA_EQUI_Delta(
     const Eigen::VectorXd& Phi,
     double rho
 ) const {
@@ -846,7 +846,7 @@ Eigen::VectorXd ScreenTRexSelector::computeDA_EQUI_Delta(
 // Block-Equicorrelation Estimation and Delta
 // ===================================================================================
 
-double ScreenTRexSelector::estimateBlockEquiCorrelation() const {
+double TRexScreeningSelector::estimateBlockEquiCorrelation() const {
     /*
         Average within-block equi-correlation.
         Partition p columns into n_blocks contiguous blocks.
@@ -892,7 +892,7 @@ double ScreenTRexSelector::estimateBlockEquiCorrelation() const {
 }
 
 
-Eigen::VectorXd ScreenTRexSelector::computeDA_BLOCK_EQUI_Delta(
+Eigen::VectorXd TRexScreeningSelector::computeDA_BLOCK_EQUI_Delta(
     const Eigen::VectorXd& Phi,
     double rho
 ) const {

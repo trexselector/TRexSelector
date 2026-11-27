@@ -19,13 +19,13 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructor Implementation
 // ==================================================================================
 
-TNCGMP_Solver::TNCGMP_Solver(
+TSolverNCGMP::TSolverNCGMP(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options)
+    const TSolverOptions& options)
 
-    : TSolver_Base(X, D, y, options),
+    : TSolverBase(X, D, y, options),
       variant_(options.ncgmp_variant) {
 
     dropped_indices_.clear();
@@ -60,13 +60,13 @@ TNCGMP_Solver::TNCGMP_Solver(
     initializeCorrelations();
 }
 
-TNCGMP_Solver::TNCGMP_Solver() : TSolver_Base() {}
+TSolverNCGMP::TSolverNCGMP() : TSolverBase() {}
 
 // ============================================================================
 // Core Algorithm Implementation
 // ============================================================================
 
-void TNCGMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverNCGMP::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -163,7 +163,7 @@ void TNCGMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Math Helpers
 // ==================================================================================
 
-void TNCGMP_Solver::updateCorrelations() {
+void TSolverNCGMP::updateCorrelations() {
     if (variant_ == NCGMPVariant::LineSearch) {
         // MP re-selection: refresh ALL non-dropped variables (actives included)
         refreshAllCorrelations();
@@ -175,15 +175,15 @@ void TNCGMP_Solver::updateCorrelations() {
 
 
 std::pair<double, std::vector<std::size_t>>
-TNCGMP_Solver::findTiedMaxCorrelations() const {
+TSolverNCGMP::findTiedMaxCorrelations() const {
     // Line Search (MP) allows re-selection: scan all non-dropped variables.
     // Fully Corrective (OMP) uses the base inactive-only scan.
     return (variant_ == NCGMPVariant::LineSearch)
                ? findTiedMaxCorrelationsAllNonDropped()
-               : TSolver_Base::findTiedMaxCorrelations();
+               : TSolverBase::findTiedMaxCorrelations();
 }
 
-void TNCGMP_Solver::updateBetaPathAndResiduals() {
+void TSolverNCGMP::updateBetaPathAndResiduals() {
     std::size_t k = actives_.size();
     Eigen::VectorXd b(k);
     for (std::size_t i = 0; i < k; ++i) {
@@ -207,12 +207,12 @@ void TNCGMP_Solver::updateBetaPathAndResiduals() {
 // Serialization
 // ==================================================================================
 
-void TNCGMP_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverNCGMP::save(const std::string& filename) const { saveImpl(*this, filename); }
 
-TNCGMP_Solver TNCGMP_Solver::load(const std::string& filename,
+TSolverNCGMP TSolverNCGMP::load(const std::string& filename,
                                   Eigen::Map<Eigen::MatrixXd>& X,
                                   Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TNCGMP_Solver>(filename, X, D);
+    return loadImpl<TSolverNCGMP>(filename, X, D);
 }
 
 // ==================================================================================

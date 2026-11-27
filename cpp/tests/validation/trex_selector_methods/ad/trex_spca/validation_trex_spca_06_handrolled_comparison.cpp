@@ -5,7 +5,7 @@
  * @file validation_trex_spca_06_handrolled_comparison.cpp
  *
  * @brief Hand-rolled per-PC T-Rex SPCA pipeline (legacy R recipe) vs. the
- *        TRexSPCA class, on identical centered data.
+ *        TRexSPCASelector class, on identical centered data.
  *
  * @details
  *  Background: the legacy CRAN R reference
@@ -29,11 +29,11 @@
  *           Thresholded assembly: top-|A| entries of V_ord[,m], normalized;
  *        4. scores Z_est = X V_est; PC1 FDR/TPR + QR-adjusted cumulative PEV.
  *
- *    Method B — the TRexSPCA class with identical control parameters
+ *    Method B — the TRexSPCASelector class with identical control parameters
  *      (EN/TENET, lambda_2 = -1, CV_1SE_CCD, default L2 selector scaling),
  *      both SPCAMode::ActiveSet and SPCAMode::Thresholded.
  *
- *  If class and hand-rolled agree, the TRexSPCA class is a faithful
+ *  If class and hand-rolled agree, the TRexSPCASelector class is a faithful
  *  implementation of the legacy recipe and any FDR discrepancy seen in the
  *  demos comes from the demo preprocessing, not from the class.
  *
@@ -82,9 +82,9 @@ namespace {
 /** @brief GVS control mirroring the legacy trex(..., method="trex+GVS",
  *         GVS_type="EN") call: EN/TENET, corr_max 0.5, Single linkage,
  *         lambda_2 auto via internal 10-fold CV (CV_1SE_CCD). */
-tg::TRexGVSControlParameter make_legacy_gvs_ctrl()
+tg::TRexGVSControl make_legacy_gvs_ctrl()
 {
-    tg::TRexGVSControlParameter ctrl;
+    tg::TRexGVSControl ctrl;
     ctrl.gvs_type              = tg::GVSType::EN;
     ctrl.en_solver             = tg::ENSolverType::TENET;
     ctrl.lambda_2              = -1.0;
@@ -174,7 +174,7 @@ HandRolledResult run_handrolled(Eigen::MatrixXd& Xc,
             evaluate_spca(Xc, V_thr, Z_thr, V_true)};
 }
 
-/** @brief Run the TRexSPCA class on (a copy of) centered X. */
+/** @brief Run the TRexSPCASelector class on (a copy of) centered X. */
 SPCASingleResult run_class(const Eigen::MatrixXd& Xc,
                            const Eigen::MatrixXd& V_true,
                            Eigen::Index M,
@@ -183,7 +183,7 @@ SPCASingleResult run_class(const Eigen::MatrixXd& Xc,
 {
     Eigen::MatrixXd X_work = Xc;  // class centers (no-op) and restores
 
-    TRexSPCAControlParameter ctrl;
+    TRexSPCAControl ctrl;
     ctrl.mode                    = mode;
     ctrl.en_solver               = ENSolverType::TENET;
     ctrl.gvs_ctrl.lambda_2       = -1.0;
@@ -192,7 +192,7 @@ SPCASingleResult run_class(const Eigen::MatrixXd& Xc,
     // column centering + L2 normalization. NO demo-level z-scoring anywhere.
 
     Eigen::Map<Eigen::MatrixXd> X_map(X_work.data(), X_work.rows(), X_work.cols());
-    TRexSPCA       spca(X_map, M, tFDR, ctrl, -1);
+    TRexSPCASelector       spca(X_map, M, tFDR, ctrl, -1);
     TRexSPCAResult res = spca.select();
 
     return evaluate_spca(Xc, res.V, res.Z, V_true);
@@ -234,7 +234,7 @@ int main(int argc, char** argv)
     const double tFDR = 0.10;
 
     std::cout << "================================================================\n"
-              << "  T-Rex SPCA: hand-rolled legacy pipeline vs. TRexSPCA class\n"
+              << "  T-Rex SPCA: hand-rolled legacy pipeline vs. TRexSPCASelector class\n"
               << "================================================================\n"
               << "  n=" << n << "  p=" << p << "  p1=" << p1 << "  M=" << M
               << "  tFDR=" << tFDR << "  SNR=" << snr_db << " dB"

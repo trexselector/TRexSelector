@@ -51,7 +51,7 @@ protected:
 /** @brief Construct a new test f object to validate constructor constraints. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnSolverMismatch) {
 
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
 
     // EN requires TENET. Giving it TLASSO should throw.
     gvs_params.gvs_type = GVSType::EN;
@@ -87,7 +87,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 
     // en_solver alone selects each variant (solver_type left at default).
     for (auto en : {ENSolverType::TENET, ENSolverType::TENET_AUG}) {
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = en;
         EXPECT_NO_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl));
@@ -95,7 +95,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 
     // Consistent explicit solver_type is tolerated.
     {
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = ENSolverType::TENET_AUG;
         ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
@@ -104,7 +104,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 
     // Conflict: solver_type = TENET_AUG with en_solver = TENET throws.
     {
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = ENSolverType::TENET;
         ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
@@ -116,7 +116,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 
 /** @brief Construct a new test f object to validate permutation L-Loop constraints. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnPermutationLLoop) {
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
     gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
 
     // Permutation is mechanically invalid for GVS MVN dummies
@@ -132,7 +132,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnPermutationLLoop) {
 
 /** @brief Construct a new test f object to validate GVS-specific controls. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnInvalidGVSParameters) {
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
     gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET; // Default to valid
 
     // Invalid corr_max
@@ -161,7 +161,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnInvalidGVSParameters) {
 
 /** @brief Test that unsupported solver types (e.g., TLARS) are rejected. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnUnsupportedSolver_TLARS) {
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
     gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TLARS; // TLARS is illegal for GVS
 
     // Test rejection for EN
@@ -178,13 +178,13 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnUnsupportedSolver_TLARS) {
 }
 
 
-/** @brief A fully-defaulted TRexGVSControlParameter (no field overrides) must
+/** @brief A fully-defaulted TRexGVSControl (no field overrides) must
  *  construct without throwing: the nested trex_ctrl's smart default
  *  (solver_type = TENET) matches the default gvs_type = EN / en_solver =
  *  TENET, unlike the base class's own default (TLARS). */
 TEST_F(TRexGVSTest, Construction_DefaultParametersDoNotThrow) {
     EXPECT_NO_THROW({
-        TRexGVSSelector selector(X_map, y_map, 0.1, TRexGVSControlParameter(),
+        TRexGVSSelector selector(X_map, y_map, 0.1, TRexGVSControl(),
                                  42, false);
     });
 }
@@ -198,7 +198,7 @@ TEST_F(TRexGVSTest, Construction_DefaultParametersDoNotThrow) {
 TEST_F(TRexGVSTest, DataIntegrity_XRestoredAfterSelect) {
     Eigen::MatrixXd X_copy = X;
 
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
     gvs_params.gvs_type = GVSType::EN;
     gvs_params.trex_ctrl.K = 3;
     gvs_params.trex_ctrl.max_dummy_multiplier = 2;
@@ -217,7 +217,7 @@ TEST_F(TRexGVSTest, DataIntegrity_XRestoredAfterSelect) {
 TEST_F(TRexGVSTest, DataIntegrity_XRestoredOnDestruction) {
     Eigen::MatrixXd X_copy = X;
 
-    TRexGVSControlParameter gvs_params;
+    TRexGVSControl gvs_params;
     gvs_params.gvs_type = GVSType::EN;
     gvs_params.trex_ctrl.K = 3;
     gvs_params.trex_ctrl.max_dummy_multiplier = 2;
@@ -291,7 +291,7 @@ void run_gvs_select_e2e(GVSType gvs_type,
     Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(d.y.data(), d.y.size());
 
-    TRexGVSControlParameter ctrl;
+    TRexGVSControl ctrl;
     ctrl.gvs_type  = gvs_type;
     ctrl.en_solver = en_solver;
     ctrl.tenet_aug_use_lars = use_lars_inner;
@@ -390,7 +390,7 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = gvs_type;
         ctrl.lambda_2  = fixed_lambda2;
         ctrl.trex_ctrl.solver_type = solver_type;
@@ -453,7 +453,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnIenLambdaMethodForEN) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexGVSControlParameter ctrl;
+    TRexGVSControl ctrl;
     ctrl.gvs_type = GVSType::EN;
     ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
     ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
@@ -474,7 +474,7 @@ TEST_F(TRexGVSTest, EndToEnd_TIENETMatchesTIENETAug) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::IEN;
         ctrl.lambda_2  = 1.0;                    // FIXED, > 0
         ctrl.trex_ctrl.solver_type = st;
@@ -504,7 +504,7 @@ TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = en_solver;
         ctrl.trex_ctrl.solver_type = st;
@@ -547,7 +547,7 @@ TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET_FixedLambda2) {
     auto run_variant = [&](ENSolverType en_solver, SolverTypeForTRex st) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xd.data(), Xd.rows(), Xd.cols());
         Eigen::Map<Eigen::VectorXd> ym(yd.data(), yd.size());
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = en_solver;
         ctrl.lambda_2  = 0.1;                    // FIXED, > 0
@@ -591,7 +591,7 @@ Eigen::VectorXi run_gvs_with_mode(
     Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
     Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
 
-    TRexGVSControlParameter ctrl;
+    TRexGVSControl ctrl;
     ctrl.gvs_type  = GVSType::EN;
     ctrl.en_solver = en_solver;
     ctrl.lambda_2  = -1.0;  // auto (ridge CV)
@@ -674,7 +674,7 @@ TEST_F(TRexGVSTest, ScalingModeParity_IEN_FixedLambda2) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type = GVSType::IEN;
         ctrl.lambda_2 = lambda2;                 // FIXED, working-scale units
         ctrl.trex_ctrl.solver_type = st;
@@ -706,7 +706,7 @@ TEST_F(TRexGVSTest, ScalingModeParity_IEN_FixedLambda2) {
 TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
     namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
     const Eigen::Index n = 150, p = 40;
-    auto run = [&](TRexGVSControlParameter ctrl) {
+    auto run = [&](TRexGVSControl ctrl) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -719,7 +719,7 @@ TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
     };
 
     // Supplied groups: eight groups of five, numbered 0 to 7
-    TRexGVSControlParameter prior;
+    TRexGVSControl prior;
     for (Eigen::Index j = 0; j < p; ++j) { prior.prior_groups.push_back(j / 5); }
     prior.group_labels = {"a", "b", "c", "d", "e", "f", "g", "h"};
     const auto with_prior = run(prior);
@@ -737,7 +737,7 @@ TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
         {hac::LinkageMethod::WPGMA, "wpgma"},
     };
     for (const auto& [linkage, name] : linkages) {
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.hc_linkage = linkage;
         const auto res = run(ctrl);
         EXPECT_EQ(res.hc_method_used, name);
@@ -758,7 +758,7 @@ TEST(TRexGVSLambda2Rule, DefaultResolvesByTrack) {
         Eigen::VectorXd y = d.y;
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type = GVSType::IEN;
         ctrl.lambda2_method = method;
         ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;
@@ -777,7 +777,7 @@ TEST(TRexGVSLambda2Rule, DefaultResolvesByTrack) {
     Eigen::VectorXd y = d.y;
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-    TRexGVSControlParameter en;
+    TRexGVSControl en;
     en.gvs_type = GVSType::EN;
     en.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
     EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.2, en, 42, false), std::invalid_argument);

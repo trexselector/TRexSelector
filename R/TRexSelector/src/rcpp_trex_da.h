@@ -35,8 +35,8 @@ public:
         Eigen::Map<Eigen::MatrixXd> X, // NOLINT (performance-unnecessary-value-param)
         Eigen::Map<Eigen::VectorXd> y, // NOLINT (performance-unnecessary-value-param)
         double tFDR,
-        const TRexDAControlParameter& da_control,
-        const TRexControlParameter& trex_control,
+        const TRexDAControl& da_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) {
@@ -44,7 +44,7 @@ public:
         this->y_map_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y);
 
         // The DA control nests the base T-Rex control (single source of truth)
-        TRexDAControlParameter da_ctrl = da_control;
+        TRexDAControl da_ctrl = da_control;
         da_ctrl.trex_ctrl = trex_control;
 
         this->selector_ = std::make_unique<TRexDASelector>(

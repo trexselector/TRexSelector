@@ -52,7 +52,7 @@ namespace model_selection {
  * specific to the 2D IEN-geometry tuner (`ienet_cv_ccd`); every CV method
  * fills `ran`, `seconds` and the grid-pick fields.
  */
-struct lambda2_cv_diagnostics {
+struct Lambda2CVDiagnostics {
 
     /** @brief A CV tuner ran (false: lambda_2 came from the caller). */
     bool ran = false;
@@ -115,6 +115,10 @@ struct lambda2_cv_diagnostics {
     bool boundary_pick = false;
 };
 
+/** @brief Old name of Lambda2CVDiagnostics.
+ *  @deprecated Use Lambda2CVDiagnostics. */
+using lambda2_cv_diagnostics [[deprecated("Use Lambda2CVDiagnostics")]] = Lambda2CVDiagnostics;
+
 
 /**
  * @brief Record the chosen grid position in @p d and derive the grid-edge
@@ -127,7 +131,7 @@ struct lambda2_cv_diagnostics {
  *        a grid edge (EN CCD tuner: the deviance rules truncated the path,
  *        so the CV was indifferent over a tail it never needed).
  */
-inline void record_grid_pick(lambda2_cv_diagnostics& d,
+inline void record_grid_pick(Lambda2CVDiagnostics& d,
                              Eigen::Index idx,
                              Eigen::Index grid_size,
                              bool upper_edge_benign = false) {
@@ -149,7 +153,7 @@ inline void record_grid_pick(lambda2_cv_diagnostics& d,
  * @param method    Name of the lambda_2 method that ran.
  * @param lambda2   The value returned (working scale, as the caller sees it).
  */
-inline std::string boundary_pick_message(const lambda2_cv_diagnostics& d,
+inline std::string boundary_pick_message(const Lambda2CVDiagnostics& d,
                                          std::string_view class_tag,
                                          std::string_view method,
                                          double lambda2) {

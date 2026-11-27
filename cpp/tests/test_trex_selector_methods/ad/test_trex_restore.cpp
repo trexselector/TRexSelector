@@ -37,9 +37,9 @@ namespace trex::test::trex_selector_methods::restore {
 namespace datagen = trex::utils::datageneration::datagen;
 namespace bufreg = trex::tsolvers::ad::solver_utils::buffer_registry;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
-using trex::trex_selector_methods::ad::trex_screening::ScreenTRexSelector;
-using trex::trex_selector_methods::ad::trex_screening::ScreenTRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
+using trex::trex_selector_methods::ad::trex_screening::TRexScreeningSelector;
+using trex::trex_selector_methods::ad::trex_screening::TRexScreeningControl;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 
 namespace {
@@ -59,8 +59,8 @@ struct Data {
     }
 };
 
-TRexControlParameter smallControl() {
-    TRexControlParameter ctrl;
+TRexControl smallControl() {
+    TRexControl ctrl;
     ctrl.K = 5;
     ctrl.max_dummy_multiplier = 2;
     ctrl.solver_type = SolverTypeForTRex::TLARS;
@@ -124,8 +124,8 @@ TEST(TRexRestore, ScreeningSelectorHonoursRestore) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    ScreenTRexControlParameter sctrl;
-    ScreenTRexSelector sel(Xm, ym, sctrl, /*seed=*/7);
+    TRexScreeningControl sctrl;
+    TRexScreeningSelector sel(Xm, ym, sctrl, /*seed=*/7);
     sel.restore();
     EXPECT_TRUE(d.X.isApprox(X0, 1e-12));
     EXPECT_THROW(sel.select(), std::runtime_error);
@@ -170,7 +170,7 @@ TEST(TRexRestore, SecondSelectThrowsUnderScalingNone) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexControlParameter ctrl = smallControl();
+    TRexControl ctrl = smallControl();
     ctrl.scaling_mode = trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode::NONE;
     TRexSelector sel(Xm, ym, 0.2, ctrl, 3, false);
     EXPECT_NO_THROW(sel.select());
@@ -185,8 +185,8 @@ TEST(TRexRestore, ScreeningSelectorRunsOnce) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    ScreenTRexControlParameter sctrl;
-    ScreenTRexSelector sel(Xm, ym, sctrl, /*seed=*/7);
+    TRexScreeningControl sctrl;
+    TRexScreeningSelector sel(Xm, ym, sctrl, /*seed=*/7);
     EXPECT_NO_THROW(sel.select());
     EXPECT_THROW(sel.select(), std::runtime_error);
     EXPECT_TRUE(d.X.isApprox(X0, 1e-12));
@@ -204,7 +204,7 @@ TEST(TRexRestore, SelectEndingWithAnErrorGivesXBack) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexControlParameter ctrl = smallControl();
+    TRexControl ctrl = smallControl();
     ctrl.solver_type = SolverTypeForTRex::TIENET;
     TRexSelector sel(Xm, ym, /*tFDR=*/0.2, ctrl, /*seed=*/3, /*verbose=*/false);
     EXPECT_FALSE(d.X.isApprox(X0, 1e-12));                   // normalized in place

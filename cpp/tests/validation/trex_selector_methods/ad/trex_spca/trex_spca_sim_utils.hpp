@@ -41,7 +41,7 @@
  *   - Each trial owns its data (returned by-value from the DGP factory).
  *   - DataGenerator::generate_sparse_factor_model() seeds its own RNG from the
  *     trial seed — no shared mutable state.
- *   - PCA and TRexSPCA objects are created per thread (stack-local).
+ *   - PCA and TRexSPCASelector objects are created per thread (stack-local).
  *   - DGP factory lambdas must capture all parameters by value.
  *
  * @note Demo-internal header — not part of the TRexSelector library interface.
@@ -93,8 +93,8 @@ namespace pca_ns = trex::ml_methods::pca;
 using trex::trex_selector_methods::ad::trex_gvs::LambdaSelectionMethod;
 using trex::trex_selector_methods::ad::trex_gvs::ENSolverType;
 using trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
-using trex::trex_selector_methods::ad::trex_spca::TRexSPCA;
-using trex::trex_selector_methods::ad::trex_spca::TRexSPCAControlParameter;
+using trex::trex_selector_methods::ad::trex_spca::TRexSPCASelector;
+using trex::trex_selector_methods::ad::trex_spca::TRexSPCAControl;
 using trex::trex_selector_methods::ad::trex_spca::TRexSPCAResult;
 using trex::trex_selector_methods::ad::trex_spca::SPCAMode;
 
@@ -379,7 +379,7 @@ inline SPCASingleResult evaluate_spca(
  * @brief Center columns of X in place (mean subtraction only, NO scaling).
  *
  * @details Covariance-PCA footing, shared by every method (matching the legacy
- *          R reference pipeline and TRexSPCA's own internal convention). The
+ *          R reference pipeline and TRexSPCASelector's own internal convention). The
  *          column scales must NOT be normalized: in the sparse factor model
  *          the factor amplitude signal lives in the column variances, and
  *          z-scoring the columns (correlation PCA) destroys it — measured
@@ -452,7 +452,7 @@ inline SPCAGridPointResult aggregate_mc(
  *          - make_data() returns raw FactorModelData (X = Z V^T + E, uncentered).
  *          - The pipeline centers X once (covariance-PCA convention); this same
  *            centered X is shared by the selector and by evaluate_spca().
- *          - TRexSPCA re-centers internally (a no-op on already-centered X) and
+ *          - TRexSPCASelector re-centers internally (a no-op on already-centered X) and
  *            restores X before returning, so dat.X stays centered for evaluation.
  *
  * @param num_MC            Number of Monte Carlo trials.
@@ -502,10 +502,10 @@ inline SPCAGridPointResult run_mc_trials_trex_spca(
         // convention). All methods and metrics share this same centered X.
         center_columns(dat.X);
 
-        TRexSPCAControlParameter ctrl;
+        TRexSPCAControl ctrl;
         ctrl.mode                    = mode;
         ctrl.en_solver               = en_solver;
-        // TRexSPCAControlParameter has no top-level trex_ctrl of its own --
+        // TRexSPCAControl has no top-level trex_ctrl of its own --
         // the base control parameters live under gvs_ctrl.trex_ctrl (GVS
         // sub-selector), avoiding a duplicate/out-of-sync copy.
         ctrl.gvs_ctrl.trex_ctrl.scaling_mode = scaling_mode;
@@ -516,7 +516,7 @@ inline SPCAGridPointResult run_mc_trials_trex_spca(
         // Selector seed -1: hardware entropy per trial, so the computer-generated
         // dummies are independent across trials (required for valid MC FDR
         // estimates). The data DGP above is what the deterministic seed controls.
-        TRexSPCA       spca(X_map, dat.V.cols(), tFDR, ctrl, -1);
+        TRexSPCASelector       spca(X_map, dat.V.cols(), tFDR, ctrl, -1);
         TRexSPCAResult res = spca.select();
 
         const auto m   = evaluate_spca(dat.X, res.V, res.Z, dat.V);

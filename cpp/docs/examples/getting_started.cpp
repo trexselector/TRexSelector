@@ -13,7 +13,7 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
@@ -52,7 +52,7 @@ int main() {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
 
-    TRexSelector sel(X_map, y_map, /*tFDR=*/0.1, TRexControlParameter{},
+    TRexSelector sel(X_map, y_map, /*tFDR=*/0.1, TRexControl{},
                      /*seed=*/1234, /*verbose=*/false);
     sel.select();
     print_indices("selected:", sel.getSelectedIndices());
@@ -85,7 +85,7 @@ int main() {
 
     doc.begin("solver");
     //! [solver]
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.solver_type = SolverTypeForTRex::TLASSO;
     ctrl.K = 10;
 

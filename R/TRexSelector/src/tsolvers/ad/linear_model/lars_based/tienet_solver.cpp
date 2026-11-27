@@ -32,36 +32,36 @@ namespace fpc = trex::utils::fp_classify;
 // Constructors
 // ============================================================================
 
-TIENET_Solver::TIENET_Solver(
+TSolverIENET::TSolverIENET(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
     const Eigen::VectorXi& groups,
-    const SolverOptions& options
+    const TSolverOptions& options
 )
-    : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TIENET),
+    : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TIENET),
       lambda2_(options.lambda2),
       groups_(groups) {
 
     if (lambda2_ < 0.0) {
         throw std::invalid_argument(
-            "TIENET_Solver: group-ridge penalty lambda2 must be non-negative.");
+            "TSolverIENET: group-ridge penalty lambda2 must be non-negative.");
     }
 
     const std::size_t p = p_original_;
     const std::size_t L = num_dummies_;
 
-    // ---- Validate the group structure (mirrors TIENETAug_Solver) ----------
+    // ---- Validate the group structure (mirrors TSolverIENETAug) ----------
     if (static_cast<std::size_t>(groups_.size()) != p) {
         throw std::invalid_argument(
-            "TIENET_Solver: groups length must equal the number of "
+            "TSolverIENET: groups length must equal the number of "
             "predictors p.");
     }
     Eigen::Index max_id = -1;
     for (Eigen::Index j = 0; j < groups_.size(); ++j) {
         if (groups_(j) < 0) {
             throw std::invalid_argument(
-                "TIENET_Solver: groups must be 0-based non-negative ids.");
+                "TSolverIENET: groups must be 0-based non-negative ids.");
         }
         if (groups_(j) > max_id) { max_id = groups_(j); }
     }
@@ -74,14 +74,14 @@ TIENET_Solver::TIENET_Solver(
         for (std::size_t m = 0; m < M_; ++m) {
             if (!seen[m]) {
                 throw std::invalid_argument(
-                    "TIENET_Solver: group ids are non-contiguous (id " +
+                    "TSolverIENET: group ids are non-contiguous (id " +
                     std::to_string(m) + " is missing).");
             }
         }
     }
     if (lambda2_ > 0.0 && L > 0 && L % p != 0) {
         throw std::invalid_argument(
-            "TIENET_Solver: D.cols() must be a multiple of X.cols() "
+            "TSolverIENET: D.cols() must be a multiple of X.cols() "
             "(one group-aligned dummy layer per p columns).");
     }
 
@@ -122,7 +122,7 @@ TIENET_Solver::TIENET_Solver(
 // Core executeStep()
 // ============================================================================
 
-void TIENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverIENET::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
 
     // Set openMP dominance for the entire algorithm
@@ -135,7 +135,7 @@ void TIENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 
         // ========================================================
         // STEP 0: Drop-recovery step (R-lars drop-breakpoint
-        // semantics; see TLASSO_Solver::executeStep).
+        // semantics; see TSolverLASSO::executeStep).
         // The previous step ended in a drop, so NO variable joins:
         // the path moves along the REDUCED active set with the
         // IEN-modified correlation level until an inactive genuinely
@@ -323,7 +323,7 @@ void TIENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // IEN-specific path machinery
 // ============================================================================
 
-std::vector<int> TIENET_Solver::updateActiveSetIEN(
+std::vector<int> TSolverIENET::updateActiveSetIEN(
     const std::vector<std::size_t>& new_vars) {
 
     std::vector<int> actions_this_step;
@@ -331,7 +331,7 @@ std::vector<int> TIENET_Solver::updateActiveSetIEN(
 
     for (auto j_new : new_vars) {
         // updateRIEN never mutates R_, so only the rank needs restoring on
-        // rejection (mirror of TLARS_Solver::updateActiveSet).
+        // rejection (mirror of TSolverLARS::updateActiveSet).
         int rankR_backup = last_updateR_rank_;
         std::size_t active_size_backup = actives_.size();
 
@@ -352,7 +352,7 @@ std::vector<int> TIENET_Solver::updateActiveSetIEN(
             num_additions_++;
             std::erase(inactives_, j_new);
 
-            // Counted while active or frozen nonzero (see TLARS_Solver::updateActiveSet)
+            // Counted while active or frozen nonzero (see TSolverLARS::updateActiveSet)
             if (j_new >= dummy_start_idx_ && runningBeta(j_new) == 0.0) count_active_dummies_++;
         }
     }
@@ -360,7 +360,7 @@ std::vector<int> TIENET_Solver::updateActiveSetIEN(
 }
 
 
-Eigen::MatrixXd TIENET_Solver::updateRIEN(std::size_t j_new, double eps) {
+Eigen::MatrixXd TSolverIENET::updateRIEN(std::size_t j_new, double eps) {
     std::size_t m = actives_.size();
     const int g_new = group_of_unified_[j_new];
     const double coupling = l2_over_pm_(g_new);
@@ -410,7 +410,7 @@ Eigen::MatrixXd TIENET_Solver::updateRIEN(std::size_t j_new, double eps) {
 }
 
 
-void TIENET_Solver::computeGroupDirSums(
+void TSolverIENET::computeGroupDirSums(
     const Eigen::Ref<const Eigen::VectorXd>& w_A) {
 
     group_dir_sums_.setZero();
@@ -421,7 +421,7 @@ void TIENET_Solver::computeGroupDirSums(
 }
 
 
-std::pair<double, Eigen::VectorXd> TIENET_Solver::computeStepSizeIEN(
+std::pair<double, Eigen::VectorXd> TSolverIENET::computeStepSizeIEN(
     double Cmax,
     const Eigen::Ref<const Eigen::VectorXd>& u) const {
 
@@ -495,7 +495,7 @@ std::pair<double, Eigen::VectorXd> TIENET_Solver::computeStepSizeIEN(
 }
 
 
-void TIENET_Solver::updateCorrelationsIEN(
+void TSolverIENET::updateCorrelationsIEN(
     double gamma,
     const Eigen::Ref<const Eigen::VectorXd>& a) {
 
@@ -535,7 +535,7 @@ void TIENET_Solver::updateCorrelationsIEN(
 }
 
 
-void TIENET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
+void TSolverIENET::refreshDroppedCorrelation(std::size_t dropped_var) {
     const int g_j = group_of_unified_[dropped_var];
     Eigen::Index j = static_cast<Eigen::Index>(dropped_var);
     correlations_(j) = getColumn(dropped_var).dot(r_) -
@@ -548,9 +548,9 @@ void TIENET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
 // Memory report
 // ============================================================================
 
-std::size_t TIENET_Solver::memoryBytes() const noexcept {
+std::size_t TSolverIENET::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
-    return TLARS_Solver::memoryBytes() + bytesOf(groups_) + bytesOf(group_of_unified_) +
+    return TSolverLARS::memoryBytes() + bytesOf(groups_) + bytesOf(group_of_unified_) +
            bytesOf(group_size_) + bytesOf(l2_over_pm_) + bytesOf(group_sums_) +
            bytesOf(group_dir_sums_);
 }
@@ -560,13 +560,13 @@ std::size_t TIENET_Solver::memoryBytes() const noexcept {
 // Serialization
 // ============================================================================
 
-void TIENET_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverIENET::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TIENET_Solver TIENET_Solver::load(const std::string& filename,
+TSolverIENET TSolverIENET::load(const std::string& filename,
                                   Eigen::Map<Eigen::MatrixXd>& X,
                                   Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TIENET_Solver>(filename, X, D);
+    return loadImpl<TSolverIENET>(filename, X, D);
 }
 
 // ============================================================================
@@ -579,4 +579,6 @@ TIENET_Solver TIENET_Solver::load(const std::string& filename,
 // the header would otherwise compile the serialization code again. The
 // bindings cover the archives included above, binary and portable binary.
 CEREAL_REGISTER_DYNAMIC_INIT(trex_tienet_solver)
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TIENET_Solver)
+// The name is the key of this class in saved files and stays as it was written.
+CEREAL_REGISTER_TYPE_WITH_NAME(trex::tsolvers::ad::linear_model::lars_based::TSolverIENET,
+                               "trex::tsolvers::ad::linear_model::lars_based::TIENET_Solver")

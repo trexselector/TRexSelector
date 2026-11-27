@@ -28,7 +28,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 // Core executeStep()
 // ============================================================================
 
-void TLASSO_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverLASSO::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
 
     // Set openMP dominance for the entire algorithm
@@ -237,13 +237,13 @@ void TLASSO_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Serialization
 // ============================================================================
 
-void TLASSO_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverLASSO::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TLASSO_Solver TLASSO_Solver::load(const std::string& filename,
+TSolverLASSO TSolverLASSO::load(const std::string& filename,
                                 Eigen::Map<Eigen::MatrixXd>& X,
                                 Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TLASSO_Solver>(filename, X, D);
+    return loadImpl<TSolverLASSO>(filename, X, D);
 }
 
 // ============================================================================
@@ -258,4 +258,6 @@ TLASSO_Solver TLASSO_Solver::load(const std::string& filename,
 // The base relation is registered automatically via cereal::base_class in
 // serialize().
 CEREAL_REGISTER_DYNAMIC_INIT(trex_tlasso_solver)
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TLASSO_Solver)
+// The name is the key of this class in saved files and stays as it was written.
+CEREAL_REGISTER_TYPE_WITH_NAME(trex::tsolvers::ad::linear_model::lars_based::TSolverLASSO,
+                               "trex::tsolvers::ad::linear_model::lars_based::TLASSO_Solver")

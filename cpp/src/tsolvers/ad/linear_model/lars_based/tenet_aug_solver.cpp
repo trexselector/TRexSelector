@@ -4,7 +4,7 @@
 /**
  * @file tenet_aug_solver.cpp
  *
- * @brief Implementation of TENETAug_Solver: thin wrapper around TLASSO_Solver
+ * @brief Implementation of TSolverENETAug: thin wrapper around TSolverLASSO
  * on a data-augmented system encoding the EN ridge penalty.
  */
 // ============================================================================
@@ -34,7 +34,7 @@ using MapVecXd = Eigen::Map<Eigen::VectorXd>;
 // Static helpers
 // ============================================================================
 
-Eigen::MatrixXd TENETAug_Solver::buildXAug(
+Eigen::MatrixXd TSolverENETAug::buildXAug(
     const MapMatXd& X,
     std::size_t p,
     std::size_t L,
@@ -65,7 +65,7 @@ Eigen::MatrixXd TENETAug_Solver::buildXAug(
 
 // ----------------------------------------------------------------------------
 
-Eigen::MatrixXd TENETAug_Solver::buildDAug(
+Eigen::MatrixXd TSolverENETAug::buildDAug(
     const MapMatXd& D,
     std::size_t p,
     std::size_t L,
@@ -91,7 +91,7 @@ Eigen::MatrixXd TENETAug_Solver::buildDAug(
 
 // ----------------------------------------------------------------------------
 
-Eigen::VectorXd TENETAug_Solver::buildYAug(
+Eigen::VectorXd TSolverENETAug::buildYAug(
     const MapVecXd& y,
     std::size_t pL)
 {
@@ -105,7 +105,7 @@ Eigen::VectorXd TENETAug_Solver::buildYAug(
 
 // ----------------------------------------------------------------------------
 
-void TENETAug_Solver::buildMaps() {
+void TSolverENETAug::buildMaps() {
     X_aug_map_ = std::make_unique<MapMatXd>(
         X_aug_owned_.data(), X_aug_owned_.rows(), X_aug_owned_.cols());
     D_aug_map_ = std::make_unique<MapMatXd>(
@@ -114,10 +114,10 @@ void TENETAug_Solver::buildMaps() {
         y_aug_owned_.data(), y_aug_owned_.size());
 }
 
-void TENETAug_Solver::buildInnerSolver(bool normalize, bool intercept, bool precentered,
+void TSolverENETAug::buildInnerSolver(bool normalize, bool intercept, bool precentered,
                                        bool verbose, ScalingMode scaling_mode,
                                        long long tie_seed, int n_threads) {
-    SolverOptions inner;
+    TSolverOptions inner;
     inner.normalize    = normalize;
     inner.intercept    = intercept;
     inner.precentered  = precentered;
@@ -128,11 +128,11 @@ void TENETAug_Solver::buildInnerSolver(bool normalize, bool intercept, bool prec
     inner.n_threads    = n_threads;
     if (use_lars_inner_) {
         // Pure-LARS inner solver: never drops variables (matches R type="lar").
-        inner_ = std::make_unique<TLARS_Solver>(
+        inner_ = std::make_unique<TSolverLARS>(
             *X_aug_map_, *D_aug_map_, *y_aug_map_, inner);
     } else {
         // Default LARS-LASSO inner solver: can drop variables on sign change.
-        inner_ = std::make_unique<TLASSO_Solver>(
+        inner_ = std::make_unique<TSolverLASSO>(
             *X_aug_map_, *D_aug_map_, *y_aug_map_, inner);
     }
 }
@@ -141,13 +141,13 @@ void TENETAug_Solver::buildInnerSolver(bool normalize, bool intercept, bool prec
 // Constructor
 // ============================================================================
 
-TENETAug_Solver::TENETAug_Solver(
+TSolverENETAug::TSolverENETAug(
     MapMatXd& X,
     MapMatXd& D,
     MapVecXd& y,
-    const SolverOptions& options
+    const TSolverOptions& options
 ) {
-    // SolverOptions fields consumed here.
+    // TSolverOptions fields consumed here.
     const double      lambda2        = options.lambda2;
     const bool        normalize      = options.normalize;
     const bool        intercept      = options.intercept;
@@ -159,7 +159,7 @@ TENETAug_Solver::TENETAug_Solver(
     // The wrapper builds its base by hand: the budget is set here and on the inner solver
     n_threads_ = resolveThreadBudget(options.n_threads);
     if (lambda2 < 0.0) {
-        throw std::invalid_argument("TENETAug_Solver: lambda2 must be non-negative.");
+        throw std::invalid_argument("TSolverENETAug: lambda2 must be non-negative.");
     }
     lambda2_ = lambda2;
     use_lars_inner_ = use_lars_inner;
@@ -209,7 +209,7 @@ TENETAug_Solver::TENETAug_Solver(
         //     beta  = lasso_star$beta / d2
         // => normalize=false, intercept=false.  This was VERIFIED in
         // demo_ts_13_tenet_aug_comparison: a plain TLASSO on these augmented
-        // matrices (normalize=false) matches the Gram-based TENET_Solver to
+        // matrices (normalize=false) matches the Gram-based TSolverENET to
         // machine precision (max L2 < 1e-13) under BOTH L2 and z-score scaling,
         // whereas inner re-normalisation (normalize=true) makes the path diverge
         // from the reference. The augmented columns must be fed to the LASSO
@@ -233,13 +233,13 @@ TENETAug_Solver::TENETAug_Solver(
 // Core interface delegation
 // ============================================================================
 
-void TENETAug_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverENETAug::executeStep(std::size_t T_stop, bool early_stop) {
     inner_->executeStep(T_stop, early_stop);
     syncDiagnosticsFromInner();
 }
 
 
-void TENETAug_Solver::syncDiagnosticsFromInner() {
+void TSolverENETAug::syncDiagnosticsFromInner() {
     if (!inner_) { return; }
 
     RSS_             = inner_->getRSS();
@@ -263,11 +263,11 @@ void TENETAug_Solver::syncDiagnosticsFromInner() {
 }
 
 
-double TENETAug_Solver::getIntercept(int step) const {
+double TSolverENETAug::getIntercept(int step) const {
     return inner_->getIntercept(step);
 }
 
-SparseBetaPath TENETAug_Solver::getBetaPathSparse() const {
+SparseBetaPath TSolverENETAug::getBetaPathSparse() const {
     // Inner LASSO betas are in the augmented space (scaled by d2).
     // Divide by d2 (= multiply by 1/d2 = sqrt(1+lambda2)) to recover
     // original-scale coefficients, matching Demo_06b_enet_comparison.R:
@@ -279,7 +279,7 @@ SparseBetaPath TENETAug_Solver::getBetaPathSparse() const {
     return sp;
 }
 
-Eigen::VectorXd TENETAug_Solver::getBeta(int step) const {
+Eigen::VectorXd TSolverENETAug::getBeta(int step) const {
     return inner_->getBeta(step) / d2_;
 }
 
@@ -287,11 +287,11 @@ Eigen::VectorXd TENETAug_Solver::getBeta(int step) const {
 // Memory report
 // ============================================================================
 
-std::size_t TENETAug_Solver::memoryBytes() const noexcept {
+std::size_t TSolverENETAug::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
 
     // Base part: the diagnostic mirror (X_, D_ are never connected here)
-    std::size_t bytes = TSolver_Base::memoryBytes() + bytesOf(X_aug_owned_) +
+    std::size_t bytes = TSolverBase::memoryBytes() + bytesOf(X_aug_owned_) +
                         bytesOf(D_aug_owned_) + bytesOf(y_aug_owned_);
 
     // View objects and the inner solver: heap allocations of the wrapper
@@ -299,7 +299,7 @@ std::size_t TENETAug_Solver::memoryBytes() const noexcept {
     if (D_aug_map_) { bytes += sizeof(MapMatXd); }
     if (y_aug_map_) { bytes += sizeof(MapVecXd); }
     if (inner_) {
-        bytes += (use_lars_inner_ ? sizeof(TLARS_Solver) : sizeof(TLASSO_Solver)) +
+        bytes += (use_lars_inner_ ? sizeof(TSolverLARS) : sizeof(TSolverLASSO)) +
                  inner_->memoryBytes();
     }
     return bytes;
@@ -309,15 +309,15 @@ std::size_t TENETAug_Solver::memoryBytes() const noexcept {
 // De-/Serialization
 // ============================================================================
 
-void TENETAug_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverENETAug::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TENETAug_Solver TENETAug_Solver::load(
+TSolverENETAug TSolverENETAug::load(
     const std::string& filename,
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D
 ) {
-    TENETAug_Solver solver;
+    TSolverENETAug solver;
     std::ifstream is(filename, std::ios::binary);
     if (!is.is_open()) {
         throw std::runtime_error(
@@ -351,6 +351,8 @@ TENETAug_Solver TENETAug_Solver::load(
 // the header would otherwise compile the serialization code again. The
 // bindings cover the archives included above, binary and portable binary.
 CEREAL_REGISTER_DYNAMIC_INIT(trex_tenet_aug_solver)
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TENETAug_Solver)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(trex::tsolvers::ad::TSolver_Base,
-                                     trex::tsolvers::ad::linear_model::lars_based::TENETAug_Solver)
+// The name is the key of this class in saved files and stays as it was written.
+CEREAL_REGISTER_TYPE_WITH_NAME(trex::tsolvers::ad::linear_model::lars_based::TSolverENETAug,
+                               "trex::tsolvers::ad::linear_model::lars_based::TENETAug_Solver")
+CEREAL_REGISTER_POLYMORPHIC_RELATION(trex::tsolvers::ad::TSolverBase,
+                                     trex::tsolvers::ad::linear_model::lars_based::TSolverENETAug)

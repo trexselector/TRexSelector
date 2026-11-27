@@ -32,8 +32,8 @@
 #include <utils/logging/logger.hpp>
 
 // Ridge lambda-selection (header-only): four retained k-fold CV variants.
-//   SVD      -> ridge_cv_svd    (JacobiSVD direct ridge)
-//   CCD      -> enet_cv_ccd     (glmnet-faithful coordinate descent, alpha=0)
+//   SVD      -> RidgeCV    (JacobiSVD direct ridge)
+//   CCD      -> ElasticNetCV     (glmnet-faithful coordinate descent, alpha=0)
 //   IEN_CCD  -> ienet_cv_ccd    (IEN geometry, lambda1 profiled out)
 //   TIK_SVD  -> tikhonov_cv_svd (IEN geometry, analytic lambda1 = 0 backbone)
 #include <ml_methods/model_selection/ridge_cv_svd.hpp>
@@ -90,10 +90,10 @@ namespace rerr = trex::trex_selector_methods::ad::utils::region_error;
 //      request is never silently downgraded. Non-EN-family
 //      values are left for the constructor's IEN/EN family check to reject
 //      with the appropriate message.
-static tc::TRexControlParameter prepareBaseCtrl(
-    const TRexGVSControlParameter& g)
+static tc::TRexControl prepareBaseCtrl(
+    const TRexGVSControl& g)
 {
-    tc::TRexControlParameter q = g.trex_ctrl;
+    tc::TRexControl q = g.trex_ctrl;
     q.use_memory_mapping = false;
 
     if (g.gvs_type == GVSType::EN) {
@@ -125,7 +125,7 @@ TRexGVSSelector::TRexGVSSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
     double                       tFDR,
-    TRexGVSControlParameter      trex_gvs_ctrl,
+    TRexGVSControl      trex_gvs_ctrl,
     int                          seed,
     bool                         verbose
 ) :
@@ -162,7 +162,7 @@ TRexGVSSelector::TRexGVSSelector(
     } else { // IEN
         // IEN drives its concrete solver from solver_type directly:
         // TIENET (native pathwise LARS-IEN) or TIENET_AUG (group penalty
-        // absorbed into the row-augmented system built by TIENETAug_Solver).
+        // absorbed into the row-augmented system built by TSolverIENETAug).
         // Both solve the same IEN problem family.
         if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET &&
             trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET_AUG) {
@@ -425,7 +425,7 @@ void TRexGVSSelector::finalizeSetup() {
 
 // ===================================================================================
 // lambda_2 (LARS units) -- user supplied or auto-computed via the rule
-// selected in TRexGVSControlParameter::lambda2_method.
+// selected in TRexGVSControl::lambda2_method.
 // ===================================================================================
 
 namespace {
@@ -436,7 +436,7 @@ namespace {
  *  The pick is returned unchanged; getLambda2CVDiagnostics() carries the
  *  flags. Not gated on verbose: a boundary pick is a result-quality
  *  condition the caller must see. */
-void warnIfBoundaryPick(const ms::lambda2_cv_diagnostics& d,
+void warnIfBoundaryPick(const ms::Lambda2CVDiagnostics& d,
                         const char* method, double lambda2) {
     const std::string msg =
         ms::boundary_pick_message(d, "TRexGVSSelector", method, lambda2);
@@ -448,7 +448,7 @@ void warnIfBoundaryPick(const ms::lambda2_cv_diagnostics& d,
 
 double TRexGVSSelector::computeLambda2() const {
 
-    lambda2_cv_diag_ = ms::lambda2_cv_diagnostics{};
+    lambda2_cv_diag_ = ms::Lambda2CVDiagnostics{};
 
     if (trex_gvs_ctrl_.lambda_2 >= 0.0) {
         // Fixed user value (>= 0). lambda_2 == 0 -> degenerate TLASSO (no ridge).
@@ -480,10 +480,10 @@ double TRexGVSSelector::computeLambda2() const {
     // identical to the L2 run (pinned by the ScalingModeParity GVS tests).
     //
     // Two retained variants (selected by lambda2_method):
-    //   * CV_*_SVD (ridge_cv_svd, JacobiSVD): normalises each fold column to unit
+    //   * CV_*_SVD (RidgeCV, JacobiSVD): normalises each fold column to unit
     //     L2-norm; the grid is anchored at c_max = max_j|x_j^T y_c|, so lambda_cv is on
     //     the unit-L2 scale.
-    //   * CV_*_CCD (enet_cv_ccd, alpha=0, coordinate descent): glmnet-faithful;
+    //   * CV_*_CCD (ElasticNetCV, alpha=0, coordinate descent): glmnet-faithful;
     //     standardises X/y internally (overwriting the base-class L2-normalisation),
     //     anchors at glmnet's alpha=0 lambda_max and applies fdev/devmax early-termination.
     //     Returns lambda on glmnet's reported scale (matches cv.glmnet(alpha=0)); the p/2
@@ -605,9 +605,9 @@ double TRexGVSSelector::computeLambda2() const {
     double lambda_cv = 0.0;
     const char* method_name = "";
     switch (trex_gvs_ctrl_.lambda2_method) {
-        // == SVD-based CV (ridge_cv_svd, JacobiSVD direct ridge) =====================
+        // == SVD-based CV (RidgeCV, JacobiSVD direct ridge) =====================
         case LambdaSelectionMethod::CV_MIN_SVD: {
-            ms::ridge_cv_svd cv;
+            ms::RidgeCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
                    trex_gvs_ctrl_.cv_n_folds,
@@ -621,7 +621,7 @@ double TRexGVSSelector::computeLambda2() const {
         }
         case LambdaSelectionMethod::CV_1SE_SVD: {
             // Largest lambda within 1 SE of the CV minimum (SVD path).
-            ms::ridge_cv_svd cv;
+            ms::RidgeCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
                    trex_gvs_ctrl_.cv_n_folds,
@@ -634,9 +634,9 @@ double TRexGVSSelector::computeLambda2() const {
             break;
         }
 
-        // == CCD-based CV (enet_cv_ccd, alpha=0, glmnet-faithful) ===========
+        // == CCD-based CV (ElasticNetCV, alpha=0, glmnet-faithful) ===========
         case LambdaSelectionMethod::CV_MIN_CCD: {
-            ms::enet_cv_ccd cv;
+            ms::ElasticNetCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
                    /*alpha=*/0.0,
@@ -646,7 +646,7 @@ double TRexGVSSelector::computeLambda2() const {
                    resolved_cv_seed_);
             lambda_cv = cv.cv_min();
             // A last-point pick on a deviance-truncated path is benign
-            // (see enet_cv_ccd::grid_truncated()).
+            // (see ElasticNetCV::grid_truncated()).
             ms::record_grid_pick(lambda2_cv_diag_, cv.index_min(), cv.lambdas().size(),
                                  /*upper_edge_benign=*/cv.grid_truncated());
             method_name = "CV_MIN_CCD";
@@ -654,7 +654,7 @@ double TRexGVSSelector::computeLambda2() const {
         }
         case LambdaSelectionMethod::CV_1SE_CCD: {
             // glmnet-faithful 1SE rule via coordinate descent (default). See CV_MIN_CCD.
-            ms::enet_cv_ccd cv;
+            ms::ElasticNetCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
                    /*alpha=*/0.0,
@@ -694,8 +694,8 @@ double TRexGVSSelector::computeLambda2() const {
 // ===================================================================================
 //
 // All row augmentation lives inside the solvers:
-//   - TENETAug_Solver  (EN, Zou-Hastie ridge blocks; R lm_dummy.R GVS_type "EN"),
-//   - TIENETAug_Solver (IEN, group-indicator block;  R lm_dummy.R GVS_type "IEN").
+//   - TSolverENETAug  (EN, Zou-Hastie ridge blocks; R lm_dummy.R GVS_type "EN"),
+//   - TSolverIENETAug (IEN, group-indicator block;  R lm_dummy.R GVS_type "IEN").
 // GVS only assembles the plain (n x L) MVN dummy blocks below.
 
 
@@ -718,7 +718,7 @@ Eigen::MatrixXd TRexGVSSelector::drawClusterDummyLayer(std::mt19937& rng) const 
 // ===================================================================================
 //
 // dst is (n x L) = horzcat of `dummy_layers_[k]`. All augmentation (ridge /
-// group-indicator rows) is built inside TENETAug_Solver / TIENETAug_Solver.
+// group-indicator rows) is built inside TSolverENETAug / TSolverIENETAug.
 // Column scaling: caller (EN variants center + rescale; IEN passes raw).
 
 template <typename Derived>
@@ -893,11 +893,11 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                 //    the base-normalized X_ and centered y_ for ALL variants;
                 //    the augmented solvers build and own their augmented
                 //    systems internally.
-                std::unique_ptr<tsolvers::ad::TSolver_Base> solver;
+                std::unique_ptr<tsolvers::ad::TSolverBase> solver;
                 // Construction-time options shared by every variant below:
                 // the K-loop runs the solvers AS CONSTRUCTED on
                 // the pre-normalized X_ / centered y_ (normalize = false).
-                tsolvers::ad::SolverOptions opts;
+                tsolvers::ad::TSolverOptions opts;
                 opts.lambda2            = lambda2_;
                 opts.normalize          = false;
                 opts.intercept          = false;
@@ -931,7 +931,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                     // the shared X across the parallel K loop is forbidden).
                     // The group penalty is absorbed into the Gram /
                     // correlation updates via lambda2 / p_m.
-                    solver = std::make_unique<lars::TIENET_Solver>(
+                    solver = std::make_unique<lars::TSolverIENET>(
                         *X_solver_map_,
                         *D_solver_maps_[k],
                         *y_solver_map_,
@@ -940,7 +940,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                     );
                 } else if (ien) {
                     // IEN aug: group-informed row augmentation inside
-                    // TIENETAug_Solver. D_k is RAW; with normalize=false,
+                    // TSolverIENETAug. D_k is RAW; with normalize=false,
                     // intercept=true the wrapper CENTERS its OWNED copies of
                     // the data blocks (no per-column rescaling — the
                     // realized dummy norms are part of the null, the
@@ -949,9 +949,9 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                     // rows. The same flags govern the degenerate
                     // lambda2 == 0 collapse (inner solver centers, does not
                     // rescale).
-                    tsolvers::ad::SolverOptions ien_aug_opts = opts;
+                    tsolvers::ad::TSolverOptions ien_aug_opts = opts;
                     ien_aug_opts.intercept = true;
-                    solver = std::make_unique<lars::TIENETAug_Solver>(
+                    solver = std::make_unique<lars::TSolverIENETAug>(
                         *X_solver_map_,
                         *D_solver_maps_[k],
                         *y_solver_map_,
@@ -959,7 +959,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                         ien_aug_opts
                     );
                 } else if (en_aug) {
-                    // EN-aug: Zou-Hastie augmentation inside TENETAug_Solver,
+                    // EN-aug: Zou-Hastie augmentation inside TSolverENETAug,
                     // run AS CONSTRUCTED (inner normalize=false for
                     // lambda2 > 0): with the pre-normalized unit-scale X and
                     // D_k columns the d1/d2 algebra keeps the augmented
@@ -967,7 +967,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                     // path to machine precision. normalize/intercept=false
                     // also cover the lambda2 == 0 collapse (data already
                     // externally scaled).
-                    solver = std::make_unique<lars::TENETAug_Solver>(
+                    solver = std::make_unique<lars::TSolverENETAug>(
                         *X_solver_map_,
                         *D_solver_maps_[k],
                         *y_solver_map_,
@@ -977,7 +977,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
                 // Plain EN (TENET): LARS-EN path algorithm with Gram-matrix
                 // ridge modification (augmentation handled inside the solver).
                 else {
-                    solver = std::make_unique<lars::TENET_Solver>(
+                    solver = std::make_unique<lars::TSolverENET>(
                         *X_solver_map_,
                         *D_solver_maps_[k],
                         *y_solver_map_,
@@ -1304,11 +1304,11 @@ void TRexGVSSelector::onSelectBegin() {
 
 
 // ===================================================================================
-// finalizeSelectionResult -- widen into GVSSelectionResult + GVS-side cleanup
+// finalizeSelectionResult -- widen into TRexGVSResult + GVS-side cleanup
 // ===================================================================================
 
-TRexGVSSelector::SelectionResult TRexGVSSelector::finalizeSelectionResult(
-    SelectionResult&& base_result)
+tc::TRexResult TRexGVSSelector::finalizeSelectionResult(
+    tc::TRexResult&& base_result)
 {
     // Copy base fields into the persistent GVS result.
     gvs_result_.selected_var   = base_result.selected_var;
@@ -1348,7 +1348,7 @@ TRexGVSSelector::SelectionResult TRexGVSSelector::finalizeSelectionResult(
 
     // Return the (also-updated) base-sliced result.  We propagate the
     // dummy_factor_L the GVS hook has just resolved so any base consumer
-    // that inspects the SelectionResult sees the correct value.
+    // that inspects the TRexResult sees the correct value.
     base_result.dummy_factor_L = dummy_multiplier_LL_;
     return base_result;
 }

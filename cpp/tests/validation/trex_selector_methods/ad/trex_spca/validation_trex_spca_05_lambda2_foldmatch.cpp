@@ -154,7 +154,7 @@ int main() {
             y_te(k) = y(te[static_cast<std::size_t>(k)]);
         }
 
-        ms::enet_gaussian en;
+        ms::ElasticNet en;
         en.fit(X_tr, y_tr, lam, /*alpha=*/0.0,
                /*standardize=*/true, /*intercept=*/false,
                /*use_strong_rule=*/false, kMaxIter, kTol);

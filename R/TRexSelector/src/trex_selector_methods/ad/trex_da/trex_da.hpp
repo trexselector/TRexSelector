@@ -130,7 +130,7 @@ inline constexpr double DA_EXCH_TIE_ALPHA = 0.25;
 /**
  * @brief DA-specific control parameters.
  */
-struct TRexDAControlParameter {
+struct TRexDAControl {
 
     /** @brief Dependency-aware method (default: BT). Ignored when prior_groups is non-empty. */
     DAMethod method = DAMethod::BT;
@@ -205,8 +205,12 @@ struct TRexDAControlParameter {
      *  (solver_params.exch_tie_alpha = -1, the default) runs with
      *  DA_EXCH_TIE_ALPHA.
      */
-    tc::TRexControlParameter trex_ctrl;
+    tc::TRexControl trex_ctrl;
 };
+
+/** @brief Old name of TRexDAControl.
+ *  @deprecated Use TRexDAControl. */
+using TRexDAControlParameter [[deprecated("Use TRexDAControl")]] = TRexDAControl;
 
 // ===================================================================================
 // DA Setup Result (internal)
@@ -270,6 +274,60 @@ struct DACorrectionResult {
 // ===================================================================================
 // TRexDASelector
 // ===================================================================================
+
+/**
+ * @brief Extended result of T-Rex+DA, adding the record of the dependency
+ *        estimation.
+ */
+struct TRexDAResult : public tc::TRexResult {
+    /** @brief Correlation threshold of the selected cell of the calibration
+     *  grid (BT, NN and PRIOR_GROUPS). -2 (AUTO_ESTIMATE_CORRELATION) for
+     *  AR1 and EQUI and when no cell meets the target.
+     */
+    double rho_thresh = tc::AUTO_ESTIMATE_CORRELATION;
+
+    /** @brief Grid of correlation thresholds of BT, NN and PRIOR_GROUPS:
+     *  hc_grid_length ascending values. BT and PRIOR_GROUPS take them from
+     *  the merge heights of the dendrogram (1 - height) and end at 1, NN
+     *  spaces them equally on [0, 1]. Empty for AR1 and EQUI.
+     */
+    Eigen::VectorXd rho_grid;
+
+    /** @brief Dependency-aware method of the run. PRIOR_GROUPS when prior
+     *  groups were supplied.
+     */
+    DAMethod method = DAMethod::BT;
+
+    /** @brief Correlation coefficient of the methods AR1 and EQUI: the
+     *  supplied value, or the estimate from the data when -2 requested it.
+     *  The other methods do not use it and return the value of the control.
+     */
+    double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
+
+    /** @brief FDP estimates of the methods BT, NN and PRIOR_GROUPS: one
+     *  matrix per correlation threshold (rho_grid), with one row per
+     *  stopping time (T_stop) and one column per voting level
+     *  (voting_grid). Empty for AR1 and EQUI.
+     */
+    std::vector<Eigen::MatrixXd> FDP_hat_array_BT;
+
+    /** @brief Dependency-aware relative occurrences of the methods BT, NN
+     *  and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid),
+     *  with one row per stopping time (T_stop) and one column per variable.
+     *  Empty for AR1 and EQUI.
+     */
+    std::vector<Eigen::MatrixXd> Phi_array_BT;
+
+    /** @brief Numbers of selected variables of the methods BT, NN and
+     *  PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with
+     *  one row per stopping time that can be selected (T_stop - 1) and one
+     *  column per voting level (voting_grid). Empty for AR1 and EQUI.
+     */
+    std::vector<Eigen::MatrixXd> R_array_BT;
+
+    /** @brief Virtual destructor. */
+    ~TRexDAResult() override = default;
+};
 
 /**
  * @brief Dependency-aware T-Rex selector (T-Rex+DA): FDR-controlled variable
@@ -380,59 +438,9 @@ public:
     // Result Structure
     // ============================================================
 
-    /**
-     * @brief Extended result of T-Rex+DA, adding the record of the dependency
-     *        estimation.
-     */
-    struct DASelectionResult : public SelectionResult {
-        /** @brief Correlation threshold of the selected cell of the calibration
-         *  grid (BT, NN and PRIOR_GROUPS). -2 (AUTO_ESTIMATE_CORRELATION) for
-         *  AR1 and EQUI and when no cell meets the target.
-         */
-        double rho_thresh = tc::AUTO_ESTIMATE_CORRELATION;
-
-        /** @brief Grid of correlation thresholds of BT, NN and PRIOR_GROUPS:
-         *  hc_grid_length ascending values. BT and PRIOR_GROUPS take them from
-         *  the merge heights of the dendrogram (1 - height) and end at 1, NN
-         *  spaces them equally on [0, 1]. Empty for AR1 and EQUI.
-         */
-        Eigen::VectorXd rho_grid;
-
-        /** @brief Dependency-aware method of the run. PRIOR_GROUPS when prior
-         *  groups were supplied.
-         */
-        DAMethod method = DAMethod::BT;
-
-        /** @brief Correlation coefficient of the methods AR1 and EQUI: the
-         *  supplied value, or the estimate from the data when -2 requested it.
-         *  The other methods do not use it and return the value of the control.
-         */
-        double cor_coef = tc::AUTO_ESTIMATE_CORRELATION;
-
-        /** @brief FDP estimates of the methods BT, NN and PRIOR_GROUPS: one
-         *  matrix per correlation threshold (rho_grid), with one row per
-         *  stopping time (T_stop) and one column per voting level
-         *  (voting_grid). Empty for AR1 and EQUI.
-         */
-        std::vector<Eigen::MatrixXd> FDP_hat_array_BT;
-
-        /** @brief Dependency-aware relative occurrences of the methods BT, NN
-         *  and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid),
-         *  with one row per stopping time (T_stop) and one column per variable.
-         *  Empty for AR1 and EQUI.
-         */
-        std::vector<Eigen::MatrixXd> Phi_array_BT;
-
-        /** @brief Numbers of selected variables of the methods BT, NN and
-         *  PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with
-         *  one row per stopping time that can be selected (T_stop - 1) and one
-         *  column per voting level (voting_grid). Empty for AR1 and EQUI.
-         */
-        std::vector<Eigen::MatrixXd> R_array_BT;
-
-        /** @brief Virtual destructor. */
-        ~DASelectionResult() override = default;
-    };
+    /** @brief Old name of TRexDAResult.
+     *  @deprecated Use TRexDAResult. */
+    using DASelectionResult [[deprecated("Use TRexDAResult")]] = TRexDAResult;
 
 
     // ============================================================
@@ -456,7 +464,7 @@ public:
         Eigen::Map<Eigen::MatrixXd>& X,
         Eigen::Map<Eigen::VectorXd>& y,
         double tFDR = 0.1,
-        TRexDAControlParameter trex_da_ctrl = TRexDAControlParameter(),
+        TRexDAControl trex_da_ctrl = TRexDAControl(),
         int  seed    = -1,
         bool verbose = true
     );
@@ -489,9 +497,9 @@ public:
      * setup), `evaluateStep()` (deflation), the accumulator overrides, and
      * `finalizeSelectionResult()` (DA selection + result widening).
      *
-     * @return Const reference to DASelectionResult.
+     * @return Const reference to TRexDAResult.
      */
-    const DASelectionResult& getDAResult() const noexcept { return da_result_; }
+    const TRexDAResult& getDAResult() const noexcept { return da_result_; }
 
 
 protected:
@@ -501,13 +509,13 @@ protected:
     // ============================================================
 
     /** @brief DA-specific control parameters (nests the base trex_ctrl). */
-    TRexDAControlParameter trex_da_ctrl_;
+    TRexDAControl trex_da_ctrl_;
 
     /** @brief Precomputed neighborhood / correlation structure. */
     DASetupResult da_setup_;
 
     /** @brief Full DA result from the last select() call. */
-    DASelectionResult da_result_;
+    TRexDAResult da_result_;
 
 
     // ============================================================
@@ -576,7 +584,7 @@ protected:
      *  and returns the base-sliced result; cleanup and X denormalization
      *  remain with the inherited `select()`.
      */
-    SelectionResult finalizeSelectionResult(SelectionResult&& base_result) override;
+    tc::TRexResult finalizeSelectionResult(tc::TRexResult&& base_result) override;
 
     /**
      * @brief Override: run experiment, apply DA deflation, compute FDP.
@@ -705,9 +713,9 @@ protected:
      * @param rho_grid          Correlation-level grid.
      * @param T_stop            Stopping time.
      *
-     * @return DASelectionResult with selected variables, thresholds, and R_array.
+     * @return TRexDAResult with selected variables, thresholds, and R_array.
      */
-    DASelectionResult selectVariables_BT(
+    TRexDAResult selectVariables_BT(
         const std::vector<Eigen::MatrixXd>& FDP_hat_array_BT,
         const std::vector<Eigen::MatrixXd>& Phi_array_BT,
         const Eigen::VectorXd& voting_grid,

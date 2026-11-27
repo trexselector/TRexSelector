@@ -13,7 +13,7 @@
  *   - GVSSimConfig              — simulation parameter struct
  *   - GVSSingleRunResult        — single-run diagnostics (FDP, TPP, T_stop, …)
  *   - GVSGridPointResult        — MC-aggregated (mean/sd FDP, TPP) per grid point
- *   - make_gvs_trex_control()   — default TRexControlParameter factory
+ *   - make_gvs_trex_control()   — default TRexControl factory
  *   - run_gvs_single()          — single selector run, returns GVSSingleRunResult
  *   - print_single_run_result() — R-style formatted output block
  *   - GVSDGPFactory             — type alias for DGP closure
@@ -90,15 +90,15 @@ namespace cdiag       = trex::utils::eval::cdiagnostics;
 namespace hac         = trex::ml_methods::clustering::hierarchical::agglomerative;
 
 using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
-using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControlParameter;
+using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl;
 using trex::trex_selector_methods::ad::trex_gvs::GVSType;
 using trex::trex_selector_methods::ad::trex_gvs::ENSolverType;
 using trex::trex_selector_methods::ad::trex_gvs::LambdaSelectionMethod;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverHyperparameters;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverParams;
 
 
 // ==============================================================================
@@ -194,12 +194,12 @@ struct GVSGridPointResult {
 // ==============================================================================
 
 /**
- * @brief Build a TRexControlParameter with sensible GVS defaults.
+ * @brief Build a TRexControl with sensible GVS defaults.
  *
  * @param K Number of random experiments (default: 20).
  */
-inline TRexControlParameter make_gvs_trex_control(std::size_t K = 20) {
-    TRexControlParameter ctrl;
+inline TRexControl make_gvs_trex_control(std::size_t K = 20) {
+    TRexControl ctrl;
     ctrl.K                        = K;
     ctrl.max_dummy_multiplier     = 10;
     ctrl.use_max_T_stop           = true;
@@ -233,16 +233,16 @@ inline GVSSingleRunResult run_gvs_single(
     Eigen::Map<Eigen::VectorXd>&        y_map,
     const std::vector<std::size_t>&     true_sup,
     double                              tFDR,
-    const TRexGVSControlParameter&      gvs_ctrl,
-    const TRexControlParameter&         trex_ctrl,
+    const TRexGVSControl&      gvs_ctrl,
+    const TRexControl&         trex_ctrl,
     int                                 seed)
 {
     const auto t0 = std::chrono::steady_clock::now();
 
     // IEN requires TLASSO (augmented system absorbs the L2 penalty).
     // EN solver variant is controlled by gvs_ctrl.en_solver (default: TENET_AUG).
-    // TRexGVSControlParameter nests its own trex_ctrl member.
-    TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+    // TRexGVSControl nests its own trex_ctrl member.
+    TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
     trex_gvs_ctrl.trex_ctrl = trex_ctrl;
     if (trex_gvs_ctrl.gvs_type != GVSType::EN)
         trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
@@ -361,8 +361,8 @@ inline GVSGridPointResult run_gvs_mc_trials(
     std::size_t                    num_MC,
     const std::string&             progress_label,
     double                         tFDR,
-    const TRexGVSControlParameter& gvs_ctrl,
-    const TRexControlParameter&    trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    const TRexControl&    trex_ctrl,
     unsigned                       base_seed)
 {
     const int iMC = static_cast<int>(num_MC);
@@ -386,8 +386,8 @@ inline GVSGridPointResult run_gvs_mc_trials(
         // Derive solver_type from gvs_ctrl to satisfy the TRexGVSSelector
         // compatibility check (EN→TENET/TENET_AUG, IEN→TLASSO).
         // Per-trial cv_seed ensures unique fold assignments.
-        // TRexGVSControlParameter nests its own trex_ctrl member.
-        TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+        // TRexGVSControl nests its own trex_ctrl member.
+        TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
         trex_gvs_ctrl.trex_ctrl = trex_ctrl;
         trex_gvs_ctrl.cv_seed = trial_seed;
         if (trex_gvs_ctrl.gvs_type == GVSType::EN)
@@ -460,8 +460,8 @@ inline std::vector<GVSGridPointResult> run_gvs_snr_sweep(
     const GVSDGPFactory&           dgp_fn,
     const std::vector<double>&     snr_grid,
     const GVSSimConfig&            cfg,
-    const TRexGVSControlParameter& gvs_ctrl,
-    const TRexControlParameter&    trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    const TRexControl&    trex_ctrl,
     const std::string&             label)
 {
     std::vector<GVSGridPointResult> results;
@@ -652,8 +652,8 @@ inline std::vector<GVSGridPointResult> run_gvs_rho_sweep(
     const GVSRhoDGPFactory&        dgp_fn,
     const std::vector<double>&     rho_grid,
     const GVSSimConfig&            cfg,
-    const TRexGVSControlParameter& gvs_ctrl,
-    const TRexControlParameter&    trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    const TRexControl&    trex_ctrl,
     const std::string&             label)
 {
     std::vector<GVSGridPointResult> results;
@@ -794,8 +794,8 @@ inline std::vector<std::vector<GVSGridPointResult>> run_gvs_2d_sweep(
     const std::vector<double>&     snr_grid,
     const std::vector<double>&     rho_grid,
     const GVSSimConfig&            cfg,
-    const TRexGVSControlParameter& gvs_ctrl,
-    const TRexControlParameter&    trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    const TRexControl&    trex_ctrl,
     const std::string&             label)
 {
     const std::size_t n_snr = snr_grid.size();
@@ -833,8 +833,8 @@ inline std::vector<std::vector<GVSGridPointResult>> run_gvs_2d_sweep(
 
                 // Derive solver_type from gvs_ctrl (EN→TENET/TENET_AUG, IEN→TLASSO).
                 // Per-trial cv_seed ensures unique fold assignments.
-                // TRexGVSControlParameter nests its own trex_ctrl member.
-                TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+                // TRexGVSControl nests its own trex_ctrl member.
+                TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
                 trex_gvs_ctrl.trex_ctrl = trex_ctrl;
                 trex_gvs_ctrl.cv_seed = trial_seed;
                 if (trex_gvs_ctrl.gvs_type == GVSType::EN)
@@ -1414,7 +1414,7 @@ inline double compute_null_block_activation(
  * A block is "pure" if groups_vec(base) == groups_vec(base+1) == … == groups_vec(base+block_size-1).
  * This is always 1.0 for oracle runs (prior_groups supplied).
  *
- * @param groups_vec  Cluster assignment per variable (length p, from GVSSelectionResult).
+ * @param groups_vec  Cluster assignment per variable (length p, from TRexGVSResult).
  * @param G           Total number of blocks.
  * @param block_size  Variables per block.
  * @return block_purity_rate in [0, 1].
@@ -1481,15 +1481,15 @@ inline BlockMethodResult run_block_method(
     int                            G,
     int                            block_size,
     double                         tFDR,
-    const TRexGVSControlParameter& gvs_ctrl,
-    const TRexControlParameter&    trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    const TRexControl&    trex_ctrl,
     int                            seed)
 {
     const auto t0 = std::chrono::steady_clock::now();
 
     // Derive solver_type from gvs_ctrl (EN→TENET/TENET_AUG, IEN→TLASSO).
-    // TRexGVSControlParameter nests its own trex_ctrl member.
-    TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+    // TRexGVSControl nests its own trex_ctrl member.
+    TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
     trex_gvs_ctrl.trex_ctrl = trex_ctrl;
     if (trex_gvs_ctrl.gvs_type == GVSType::EN)
         trex_gvs_ctrl.trex_ctrl.solver_type =
@@ -1560,7 +1560,7 @@ inline BlockTrialResult run_block_single(
     int                         G,
     int                         block_size,
     double                      tFDR,
-    const TRexControlParameter& trex_ctrl,
+    const TRexControl& trex_ctrl,
     double                      corr_max,
     int                         seed,
     ENSolverType                en_solver = ENSolverType::TENET_AUG)
@@ -1571,22 +1571,22 @@ inline BlockTrialResult run_block_single(
         const_cast<double*>(dat.y.data()), dat.y.rows());
 
     // --- Base GVS control parameters ---
-    TRexGVSControlParameter gvs_en;
+    TRexGVSControl gvs_en;
     gvs_en.gvs_type       = GVSType::EN;
     gvs_en.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
     gvs_en.corr_max       = corr_max;
     gvs_en.hc_linkage     = hac::LinkageMethod::Single;
     gvs_en.en_solver      = en_solver;
 
-    TRexGVSControlParameter gvs_ien;
+    TRexGVSControl gvs_ien;
     gvs_ien.gvs_type       = GVSType::IEN;
     gvs_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
     gvs_ien.corr_max       = corr_max;
     gvs_ien.hc_linkage     = hac::LinkageMethod::Single;
 
     // Oracle variants carry the true prior_groups
-    TRexGVSControlParameter gvs_en_oracle  = gvs_en;
-    TRexGVSControlParameter gvs_ien_oracle = gvs_ien;
+    TRexGVSControl gvs_en_oracle  = gvs_en;
+    TRexGVSControl gvs_ien_oracle = gvs_ien;
     gvs_en_oracle.prior_groups  = dat.prior_groups;
     gvs_ien_oracle.prior_groups = dat.prior_groups;
 
@@ -1642,7 +1642,7 @@ inline void mean_sd(const std::vector<double>& v, double& mean, double& sd)
 inline BlockGridResult run_block_mc(
     const std::function<GVSDGPResult(unsigned)>& dgp_fn,
     const BlockBenchConfig&                      cfg,
-    const TRexControlParameter&                  trex_ctrl,
+    const TRexControl&                  trex_ctrl,
     const std::string&                           label)
 {
     const int iMC = static_cast<int>(cfg.num_MC);

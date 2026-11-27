@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        tg::TRexGVSControlParameter ctrl;
+        tg::TRexGVSControl ctrl;
         ctrl.gvs_type              = tg::GVSType::EN;
         const bool use_aug = std::getenv("USE_AUG") != nullptr;
         ctrl.en_solver             = use_aug ? tg::ENSolverType::TENET_AUG

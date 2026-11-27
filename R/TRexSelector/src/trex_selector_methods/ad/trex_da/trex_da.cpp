@@ -46,7 +46,7 @@ namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
 namespace {
 
 /** @brief Base control of a T-Rex+DA run: a band left to the selector gets the DA width. */
-tc::TRexControlParameter withDependencyAwareBand(tc::TRexControlParameter ctrl) {
+tc::TRexControl withDependencyAwareBand(tc::TRexControl ctrl) {
     if (ctrl.solver_params.exch_tie_alpha < 0.0) {
         ctrl.solver_params.exch_tie_alpha = DA_EXCH_TIE_ALPHA;
     }
@@ -59,7 +59,7 @@ TRexDASelector::TRexDASelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
     double tFDR,
-    TRexDAControlParameter trex_da_ctrl,
+    TRexDAControl trex_da_ctrl,
     int seed,
     bool verbose
 ) :
@@ -301,8 +301,8 @@ void TRexDASelector::trimTAccumulators(Eigen::Index n_rows) {
 // and the 3D (T, v, rho) selection for BT-style methods. Cleanup and X
 // denormalization remain with the inherited select().
 
-TRexDASelector::SelectionResult TRexDASelector::finalizeSelectionResult(
-    SelectionResult&& base_result)
+tc::TRexResult TRexDASelector::finalizeSelectionResult(
+    tc::TRexResult&& base_result)
 {
     const bool use_BT = da_setup_.use_BT_style;
 
@@ -1106,7 +1106,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> TRexDASelector::computeFDP_BT(
 // Variable Selection for BT-style
 // ===================================================================================
 
-TRexDASelector::DASelectionResult TRexDASelector::selectVariables_BT(
+TRexDAResult TRexDASelector::selectVariables_BT(
     const std::vector<Eigen::MatrixXd>& FDP_hat_array_BT,
     const std::vector<Eigen::MatrixXd>& Phi_array_BT,
     const Eigen::VectorXd& voting_grid,
@@ -1163,7 +1163,7 @@ TRexDASelector::DASelectionResult TRexDASelector::selectVariables_BT(
         }
     }
 
-    DASelectionResult result;
+    TRexDAResult result;
     result.R_array_BT = R_array;
 
     if (!any_feasible) {

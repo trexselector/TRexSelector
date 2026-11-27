@@ -4,7 +4,7 @@
 /**
  * @file tstagewise_solver.cpp
  *
- * @brief Implementation of TSTAGEWISE_Solver, a T-LARS-based stagewise
+ * @brief Implementation of TSolverStagewise, a T-LARS-based stagewise
  * regression solver.
  * It can become mathematically equivalent to LARS.
  */
@@ -23,20 +23,20 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 // Constructors
 // ============================================================================
 
-TSTAGEWISE_Solver::TSTAGEWISE_Solver(
+TSolverStagewise::TSolverStagewise(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options
+    const TSolverOptions& options
 )
-    : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TSTAGEWISE) {
+    : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TSTAGEWISE) {
 }
 
 // ============================================================================
 // Core executeStep()
 // ============================================================================
 
-void TSTAGEWISE_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverStagewise::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -156,7 +156,7 @@ void TSTAGEWISE_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Stagewise Direction Computation
 // ============================================================================
 
-Eigen::VectorXd TSTAGEWISE_Solver::computeStagewiseDirection() {
+Eigen::VectorXd TSolverStagewise::computeStagewiseDirection() {
     bool directions_valid = false;
     Eigen::VectorXd w_A;
 
@@ -195,7 +195,7 @@ Eigen::VectorXd TSTAGEWISE_Solver::computeStagewiseDirection() {
 // NNLS Subroutine
 // ============================================================================
 
-void TSTAGEWISE_Solver::processStagewiseNNLS(const Eigen::Ref<const Eigen::VectorXd>& directions) {
+void TSolverStagewise::processStagewiseNNLS(const Eigen::Ref<const Eigen::VectorXd>& directions) {
 
     // 1. Find most violating variable (minimum direction <= 0)
     Eigen::Index drop_idx = 0;
@@ -249,13 +249,13 @@ void TSTAGEWISE_Solver::processStagewiseNNLS(const Eigen::Ref<const Eigen::Vecto
 // De-/Serialization
 // ============================================================================
 
-void TSTAGEWISE_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverStagewise::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TSTAGEWISE_Solver TSTAGEWISE_Solver::load(const std::string& filename,
+TSolverStagewise TSolverStagewise::load(const std::string& filename,
                                           Eigen::Map<Eigen::MatrixXd>& X,
                                           Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TSTAGEWISE_Solver>(filename, X, D);
+    return loadImpl<TSolverStagewise>(filename, X, D);
 }
 
 // ============================================================================

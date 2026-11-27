@@ -96,7 +96,7 @@ TRexSelector::TRexSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
     double tFDR,
-    TRexControlParameter trex_control,
+    TRexControl trex_control,
     int seed,
     bool verbose
 ) :
@@ -372,7 +372,7 @@ void TRexSelector::validateTRexParameters() const {
 // Main T-Rex algorithm: select() method
 // ===================================================================================
 
-TRexSelector::SelectionResult TRexSelector::select() {
+TRexResult TRexSelector::select() {
 
     beginRun();
     const GiveXBackOnError give_x_back(*this);
@@ -412,7 +412,7 @@ TRexSelector::SelectionResult TRexSelector::select() {
 
     // 5. Variable selection & Store results
     // -----------------------------------------------------
-    SelectionResult result = selectedVariables(
+    TRexResult result = selectedVariables(
         FDP_hat_mat_,
         Phi_mat_,
         voting_grid_,
@@ -676,7 +676,7 @@ Eigen::VectorXd TRexSelector::computePhiPrime(
 // Variable Selection
 // ===================================================================================
 
-TRexSelector::SelectionResult TRexSelector::selectedVariables(
+TRexResult TRexSelector::selectedVariables(
     const Eigen::MatrixXd& FDP_hat_mat,
     const Eigen::MatrixXd& Phi_mat,
     const Eigen::VectorXd& voting_grid,
@@ -689,7 +689,7 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
                 "Warning: No valid T-steps recorded. Returning empty selection."
             );
         }
-        SelectionResult result;
+        TRexResult result;
         result.selected_var = Eigen::VectorXi::Zero(static_cast<Eigen::Index>(p_));
         result.v_thresh = 1.0;
         result.R_mat = Eigen::MatrixXd::Zero(0, 0);
@@ -698,7 +698,7 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
 
     std::size_t safe_T = std::min(T_stop, static_cast<std::size_t>(FDP_hat_mat.rows()));
     if (safe_T == 0) {
-        SelectionResult result;
+        TRexResult result;
         result.selected_var = Eigen::VectorXi::Zero(static_cast<Eigen::Index>(p_));
         result.v_thresh = 1.0;
         result.R_mat = Eigen::MatrixXd::Zero(0, 0);
@@ -747,7 +747,7 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
     // val_max < 0 means no cell satisfied FDP_hat <= tFDR (it keeps its
     // -1.0 initialisation): return an empty selection.
     if (val_max < 0) {
-        SelectionResult result;
+        TRexResult result;
         result.selected_var = Eigen::VectorXi::Zero(static_cast<Eigen::Index>(p_));
         result.v_thresh = 1.0;
         result.R_mat = R_mat;
@@ -762,7 +762,7 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
         }
     }
 
-    SelectionResult result;
+    TRexResult result;
     result.selected_var = selected_var;
     result.v_thresh = best_threshold;
     result.R_mat = R_mat;
@@ -770,7 +770,7 @@ TRexSelector::SelectionResult TRexSelector::selectedVariables(
 }
 
 
-TRexSelector::SelectionResult TRexSelector::selectFromPhiT(
+TRexResult TRexSelector::selectFromPhiT(
     const Eigen::MatrixXd& phi_T_mat,
     std::size_t num_dummies,
     const Eigen::VectorXd& voting_grid,
@@ -949,8 +949,8 @@ void TRexSelector::prepareDummiesForLStep(LStepContext& ctx) {
 }
 
 
-TRexSelector::SelectionResult TRexSelector::finalizeSelectionResult(
-    SelectionResult&& base_result)
+TRexResult TRexSelector::finalizeSelectionResult(
+    TRexResult&& base_result)
 {
     // Default: pass-through. Subclasses (e.g. GVS) may override to widen
     // into a derived result struct and to release variant-specific
@@ -1443,7 +1443,7 @@ void TRexSelector::runTLoop(
 // Utility methods
 // ===================================================================================
 
-void TRexSelector::storeResults(const SelectionResult& result) {
+void TRexSelector::storeResults(const TRexResult& result) {
     selected_var_ = result.selected_var;
     voting_threshold_ = result.v_thresh;
     R_mat_ = result.R_mat;

@@ -209,13 +209,13 @@ control struct, which carries the T-solver choice, the dummy settings and the th
 
 | Selector               | Task                                                             | Control                        |
 | ---------------------- | ---------------------------------------------------------------- | ------------------------------ |
-| `TRexSelector`         | FDR-controlled variable selection, the T-Rex selector            | `TRexControlParameter`         |
-| `TRexDASelector`       | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `TRexDAControlParameter`       |
-| `TRexGVSSelector`      | group variable selection (GVS), T-Rex+GVS                        | `TRexGVSControlParameter`      |
-| `ScreenTRexSelector`   | FDR-controlled screening of many variables, T-Rex+Screening      | `ScreenTRexControlParameter`   |
-| `BiobankScreenTRex`    | phenotype screening of genomic biobank designs                   | `BiobankScreenTRexControl`     |
-| `TRexSPCA`             | sparse principal component analysis (SPCA) under FDR control     | `TRexSPCAControlParameter`     |
-| `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix                 | `TRexTikhonovControlParameter` |
+| `TRexSelector`         | FDR-controlled variable selection, the T-Rex selector            | `TRexControl`         |
+| `TRexDASelector`       | dependency-aware (DA) selection of dependent variables, T-Rex+DA | `TRexDAControl`       |
+| `TRexGVSSelector`      | group variable selection (GVS), T-Rex+GVS                        | `TRexGVSControl`      |
+| `TRexScreeningSelector`   | FDR-controlled screening of many variables, T-Rex+Screening      | `TRexScreeningControl`   |
+| `TRexBiobankScreeningSelector`    | phenotype screening of genomic biobank designs                   | `TRexBiobankScreeningControl`     |
+| `TRexSPCASelector`             | sparse principal component analysis (SPCA) under FDR control     | `TRexSPCAControl`     |
+| `TRexTikhonovSelector` | selection with a general Tikhonov penalty matrix                 | `TRexTikhonovControl` |
 
 Two further families live next to it and are not bound in R or Python yet. The virtual-dummy family,
 `vd/`, holds `TRexVD` with its own solvers (`VD_LARS`, `VD_OMP`, `VD_AFS`, `VD_AFS_Logistic` under
@@ -227,22 +227,22 @@ and is future work, as its notes in `trex_sd.md` say.
 ### T-solvers (`src/tsolvers/ad/`)
 
 Each random experiment runs a terminating solver, a T-solver, which stops once a given number of
-dummies has entered its path. Sixteen T-solvers derive from `TSolver_Base` in three families,
-`SolverOptions` holds their options, and `TRexControlParameter::solver_type` picks the one a selector
+dummies has entered its path. Sixteen T-solvers derive from `TSolverBase` in three families,
+`TSolverOptions` holds their options, and `TRexControl::solver_type` picks the one a selector
 uses.
 
-* Least angle regression (LARS) based: `TLARS_Solver`, `TLASSO_Solver`, `TSTEPWISE_Solver`,
-  `TSTAGEWISE_Solver`, `TENET_Solver`, `TENETAug_Solver`, `TIENET_Solver`, `TIENETAug_Solver` and
-  `TIKNET_Solver`.
-* Matching pursuit based: `TOMP_Solver`, `TGP_Solver`, `TACGP_Solver`, `TMP_Solver`, `TOOLS_Solver`
-  and `TNCGMP_Solver`.
-* Adaptive forward stepwise: `TAFS_Solver`.
+* Least angle regression (LARS) based: `TSolverLARS`, `TSolverLASSO`, `TSolverStepwise`,
+  `TSolverStagewise`, `TSolverENET`, `TSolverENETAug`, `TSolverIENET`, `TSolverIENETAug` and
+  `TSolverTIKNET`.
+* Matching pursuit based: `TSolverOMP`, `TSolverGP`, `TSolverACGP`, `TSolverMP`, `TSolverOOLS`
+  and `TSolverNCGMP`.
+* Adaptive forward stepwise: `TSolverAFS`.
 
 ### ML methods (`src/ml_methods/`)
 
 The machine learning (ML) building blocks the selectors share: the scalers `ZScoreScaler` and
-`LpNormScaler` (`scaler_methods/`), the decompositions `SVDSolver` (`svd/`) and `PCA` (`pca/`), the
-`RidgeSolver` (`ridge_regression/`), the cross-validated model selection of ridge, elastic-net,
+`LpNormScaler` (`scaler_methods/`), the decompositions `SVD` (`svd/`) and `PCA` (`pca/`), the
+`Ridge` (`ridge_regression/`), the cross-validated model selection of ridge, elastic-net,
 informed elastic-net and Tikhonov penalties (`model_selection/`), and `AgglomerativeClustering`
 (`clustering/`).
 
@@ -263,7 +263,7 @@ informed elastic-net and Tikhonov penalties (`model_selection/`), and `Agglomera
 ## Dummy Strategies
 
 The T-Rex selector calibrates the number of dummies in its L-loop. `lloop_strategy` of
-`TRexControlParameter` says how the dummies of that loop are produced, in every selector that
+`TRexControl` says how the dummies of that loop are produced, in every selector that
 carries the control.
 
 | Strategy             | Dummies                                                         | Storage    |
@@ -291,9 +291,9 @@ keys the seeded strategies derive their draws from.
 
 ## Threads
 
-The library runs serially by default: `TRexControlParameter` has
+The library runs serially by default: `TRexControl` has
 `parallel_rnd_experiments = false`, `max_outer_threads = 1` and `max_inner_threads = 1`, and
-`SolverOptions` has `n_threads = 1`. The random experiments of a selector run one after the
+`TSolverOptions` has `n_threads = 1`. The random experiments of a selector run one after the
 other, every T-solver on one thread. Parallel work is opt-in, and one layer owns the cores at a
 time.
 
@@ -303,13 +303,13 @@ time.
   their passes over the design. The budget is live when the experiments run in sequence, which
   the lean L-loop strategies (SEEDED, PERMUTATION, PERMUTATION_SEEDED) always do. A pass is
   split only when it touches at least a million entries of the design
-  (`TSolver_Base::kParallelWorkThreshold`), because the cost of forming a team of threads
+  (`TSolverBase::kParallelWorkThreshold`), because the cost of forming a team of threads
   exceeds the gain below that. Two to four threads carry the gain, since the passes are
   memory-bandwidth bound. The seeded generators (the dummies, the synthetic designs) count
   their work in the same unit with the measured cost of a random draw (about 80 entries) and
   of seeding an engine (up to 32,000), so they split from a few thousand entries.
-* `SolverOptions::n_threads = m` is the same budget for a T-solver used on its own, and
-  `TSolver_Base::setNumThreads()` changes it on a live solver.
+* `TSolverOptions::n_threads = m` is the same budget for a T-solver used on its own, and
+  `TSolverBase::setNumThreads()` changes it on a live solver.
 * Every other kernel (the scalers, the clustering, the ML regressions, the data normalizer, the
   dummy and data generators) runs on the library's default budget, which starts at 1, so the
   library is single-threaded by default on every machine. `trex::utils::openmp::set_num_threads(m)`

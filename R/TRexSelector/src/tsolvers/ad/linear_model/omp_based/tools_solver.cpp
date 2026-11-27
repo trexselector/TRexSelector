@@ -23,12 +23,12 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructor Implementation
 // ==================================================================================
 
-TOOLS_Solver::TOOLS_Solver(
+TSolverOOLS::TSolverOOLS(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options)
-    : TOMP_Solver(X, D, y, options, SolverTypeOMPBased::TOOLS)
+    const TSolverOptions& options)
+    : TSolverOMP(X, D, y, options, SolverTypeOMPBased::TOOLS)
 {
     // Empty active set: the projected norms are the column norms (after the
     // base constructor's preprocessing).
@@ -42,13 +42,13 @@ TOOLS_Solver::TOOLS_Solver(
     proj_rank_ = 0;
 }
 
-TOOLS_Solver::TOOLS_Solver() : TOMP_Solver() {}
+TSolverOOLS::TSolverOOLS() : TSolverOMP() {}
 
 // ============================================================================
 // Core Algorithm Implementation
 // ============================================================================
 
-void TOOLS_Solver::updateCorrelations() {
+void TSolverOOLS::updateCorrelations() {
     const std::size_t m = actives_.size();
     const auto n = static_cast<Eigen::Index>(r_.size());
     const auto n_inactive = static_cast<Eigen::Index>(inactives_.size());
@@ -89,7 +89,7 @@ void TOOLS_Solver::updateCorrelations() {
 }
 
 
-std::pair<double, std::vector<std::size_t>> TOOLS_Solver::findTiedMaxCorrelations() const {
+std::pair<double, std::vector<std::size_t>> TSolverOOLS::findTiedMaxCorrelations() const {
     double Cmax = 0.0;
     std::vector<std::size_t> tied;
 
@@ -138,20 +138,20 @@ std::pair<double, std::vector<std::size_t>> TOOLS_Solver::findTiedMaxCorrelation
 // Memory report
 // ==================================================================================
 
-std::size_t TOOLS_Solver::memoryBytes() const noexcept {
-    return TOMP_Solver::memoryBytes() + solver_utils::memory_bytes::bytesOf(proj_sq_);
+std::size_t TSolverOOLS::memoryBytes() const noexcept {
+    return TSolverOMP::memoryBytes() + solver_utils::memory_bytes::bytesOf(proj_sq_);
 }
 
 // ==================================================================================
 // Serialization
 // ==================================================================================
 
-void TOOLS_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverOOLS::save(const std::string& filename) const { saveImpl(*this, filename); }
 
-TOOLS_Solver TOOLS_Solver::load(const std::string& filename,
+TSolverOOLS TSolverOOLS::load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TOOLS_Solver>(filename, X, D);
+    return loadImpl<TSolverOOLS>(filename, X, D);
 }
 
 // ==================================================================================

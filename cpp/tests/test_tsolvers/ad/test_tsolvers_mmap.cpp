@@ -48,7 +48,7 @@ TEST(TSolverMmapTest, ValidateMapMutation) {
         {5.0, 2.0},
         1.0, 42, -1, -1,
         predictor_policy::Normal(),
-        dummygen::Distribution::Normal(),
+        dummygen::DummyDistribution::Normal(),
         noisegen::noise_policy::Normal()
     );
 
@@ -65,7 +65,7 @@ TEST(TSolverMmapTest, ValidateMapMutation) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // Initialization changes the original X memory (via Map) because of centering/scaling
     EXPECT_FALSE(X.isApprox(X_copy, 1e-10));
@@ -102,7 +102,7 @@ TEST(TSolverMmapTest, ValidateDiskMappedDataExecution) {
         Eigen::Map<Eigen::VectorXd> y_map(data.getY().data(), data.rows());
 
         // 3. Feed the memory-mapped views to the solver
-        TLARS_Solver solver(X_map, D_map, y_map);
+        TSolverLARS solver(X_map, D_map, y_map);
         solver.executeStep(5, true);
 
         // 4. Verify that execution over mapped memory succeeds correctly
@@ -133,7 +133,7 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
         {5.0, 2.0},
         1.0, 42, -1, -1,
         predictor_policy::Normal(),
-        dummygen::Distribution::Normal(),
+        dummygen::DummyDistribution::Normal(),
         noisegen::noise_policy::Normal()
     );
     // Centered columns of unit norm: the state a reader expects.
@@ -158,10 +158,10 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
         D_writer.getMap() = D;
     }
 
-    trex::tsolvers::ad::SolverOptions reader;
+    trex::tsolvers::ad::TSolverOptions reader;
     reader.normalize = false;
     reader.intercept = false;
-    trex::tsolvers::ad::SolverOptions writer;  // normalize and intercept on
+    trex::tsolvers::ad::TSolverOptions writer;  // normalize and intercept on
     EXPECT_FALSE(reader.writesDesign());
     EXPECT_TRUE(writer.writesDesign());
 
@@ -172,7 +172,7 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
     Eigen::Map<Eigen::MatrixXd> X_memory_map(X_memory.data(), X_memory.rows(), X_memory.cols());
     Eigen::Map<Eigen::MatrixXd> D_memory_map(D_memory.data(), D_memory.rows(), D_memory.cols());
     Eigen::Map<Eigen::VectorXd> y_memory_map(y_memory.data(), y_memory.size());
-    TLASSO_Solver reference(X_memory_map, D_memory_map, y_memory_map, reader);
+    TSolverLASSO reference(X_memory_map, D_memory_map, y_memory_map, reader);
     reference.executeStep(5, true);
 
     {
@@ -186,7 +186,7 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
         Eigen::VectorXd y_run = y;
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
         {
-            TLASSO_Solver solver(X_map, D_map, y_map, reader);
+            TSolverLASSO solver(X_map, D_map, y_map, reader);
             solver.executeStep(5, true);
             EXPECT_EQ(solver.getActions(), reference.getActions());
             EXPECT_TRUE(solver.getBeta(-1).isApprox(reference.getBeta(-1)));

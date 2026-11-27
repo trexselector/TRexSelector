@@ -395,7 +395,7 @@ Readings:
 studies above ran with a *non-classic parametrization*: fixed $L = 2p$
 (no L-loop), the dummy-burn stagnation guard applied to **all** algorithms
 with window 3, and an L-loop ceiling of 50p. Classic T-Rex
-(`trex_core::TRexControlParameter`) instead runs the adaptive L-loop
+(`trex_core::TRexControl`) instead runs the adaptive L-loop
 ($L = p, 2p, \dots \le 10p$, smallest valid $L$ = power-optimal), disables
 the stagnation guard for LARS-path solvers (R-reference/paper parity;
 enabled only for greedy solvers, window 5), and caps at $10p$. TRexSD now

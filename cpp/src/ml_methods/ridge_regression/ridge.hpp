@@ -40,13 +40,13 @@ namespace ridge {
  *     Technometrics, vol. 42, no. 1, pp. 80-86, 2000 (Reprint of the 1970 article in the Special 40th
  *     Anniversary Issue).
  */
-class RidgeSolver {
+class Ridge {
 public:
     /** @brief Default constructor */
-    RidgeSolver() = default;
+    Ridge() = default;
 
     /** @brief Default destructor */
-    ~RidgeSolver() = default;
+    ~Ridge() = default;
 
     /**
      * @brief Solves the Ridge Regression problem:
@@ -67,7 +67,7 @@ public:
                                  int n_threads = ::trex::utils::openmp::get_num_threads()) {
 
         if (n_threads < 1) {
-            throw std::invalid_argument("RidgeSolver::solve: n_threads must be >= 1.");
+            throw std::invalid_argument("Ridge::solve: n_threads must be >= 1.");
         }
         // Eigen's products run on the budget for the scope of the solve
         ::trex::utils::openmp::EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads);
@@ -76,10 +76,10 @@ public:
         Eigen::Index p = X.cols();
 
         if (n != y.size()) {
-            throw std::invalid_argument("RidgeSolver::solve: X.rows() must match y.size().");
+            throw std::invalid_argument("Ridge::solve: X.rows() must match y.size().");
         }
         if (lambda < 0.0) {
-            throw std::invalid_argument("RidgeSolver::solve: lambda must be >= 0.");
+            throw std::invalid_argument("Ridge::solve: lambda must be >= 0.");
         }
 
         // Dispatch based on dimensionality
@@ -142,7 +142,7 @@ private:
         }
 
         throw std::runtime_error(
-            "RidgeSolver::solve_primal: Both LLT and LDLT factorizations failed."
+            "Ridge::solve_primal: Both LLT and LDLT factorizations failed."
         );
     }
 
@@ -193,7 +193,7 @@ private:
                 alpha = ldlt.solve(y);
             } else {
                 throw std::runtime_error(
-                    "RidgeSolver::solve_dual: Both LLT and LDLT factorizations failed."
+                    "Ridge::solve_dual: Both LLT and LDLT factorizations failed."
                 );
             }
         }
@@ -203,6 +203,10 @@ private:
     }
 
 };
+
+/** @brief Old name of Ridge.
+ *  @deprecated Use Ridge. */
+using RidgeSolver [[deprecated("Use Ridge")]] = Ridge;
 
 
 // ===================================================================================

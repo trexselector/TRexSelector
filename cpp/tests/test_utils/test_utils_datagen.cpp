@@ -138,7 +138,7 @@ TEST(DataGenTest, SyntheticDataValidation) {
         0, 10, 0, {0, 1},
         {1.0, 1.0}, 1.0, 42, -1, -1,
         pred_policy,
-        trex::utils::datageneration::dummygen::Distribution::Normal(), noise_policy)),
+        trex::utils::datageneration::dummygen::DummyDistribution::Normal(), noise_policy)),
         std::exception);
 
     // p=0 should throw
@@ -146,7 +146,7 @@ TEST(DataGenTest, SyntheticDataValidation) {
         10, 0, 0, {0, 1},
         {1.0, 1.0}, 1.0, 42, -1, -1,
         pred_policy,
-        trex::utils::datageneration::dummygen::Distribution::Normal(), noise_policy)),
+        trex::utils::datageneration::dummygen::DummyDistribution::Normal(), noise_policy)),
         std::exception);
 }
 
@@ -167,7 +167,7 @@ TEST(DataGenTest, AR1CorrelationTest) {
             {0, 1}, {1.0, 1.0}, snr, seed,
             -1, -1,
             pred_policy,
-            trex::utils::datageneration::dummygen::Distribution::Normal(),
+            trex::utils::datageneration::dummygen::DummyDistribution::Normal(),
             noise_policy);
 
     const auto& X = data.getX();

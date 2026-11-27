@@ -16,7 +16,7 @@ chain and asks neighbouring coefficients to be equal (smoothness), a graph Lapla
 \cite smola2003graphkernels and \cite chung1997spectral couples the variables along the edges of a
 graph, a group-mean matrix reproduces the penalty of the informed elastic net, and a block-diagonal
 centering matrix asks the members of a group to share a coefficient. The Tikhonov T-Rex selector
-runs the terminating Tikhonov-net solver TIKNET_Solver, a pathwise homotopy algorithm, with such a
+runs the terminating Tikhonov-net solver TSolverTIKNET, a pathwise homotopy algorithm, with such a
 matrix inside the random experiments.
 
 The headers and names of this page:
@@ -113,5 +113,5 @@ vanishes and the path is the lasso on per-variable cluster dummies.
 
 The selector runs `SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. It is
 the solver of the base control nested in the Tikhonov control, `trex_ctrl`. A fresh
-`TRexControlParameter` names `TLARS`, which the constructor refuses as every other solver, so a base
+`TRexControl` names `TLARS`, which the constructor refuses as every other solver, so a base
 control that is assigned to `trex_ctrl` has to set `solver_type` to `TIKNET`.

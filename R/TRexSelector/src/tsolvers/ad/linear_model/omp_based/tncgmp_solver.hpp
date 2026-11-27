@@ -61,7 +61,7 @@ using trex::tsolvers::ad::NCGMPVariant;
  *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
  *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
  */
-class TNCGMP_Solver : public TSolver_Base {
+class TSolverNCGMP : public TSolverBase {
 protected:
 
     /** @brief Variant of the Norm-Corrective GMP solver. */
@@ -78,32 +78,32 @@ public:
      * @param X Map to the predictor matrix (n x p).
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
-     * @param options Every other input (SolverOptions); this solver reads
+     * @param options Every other input (TSolverOptions); this solver reads
      *        ncgmp_variant (Line Search or Fully Corrective) and
      *        exch_tie_alpha / exch_tie_floor.
      */
-    TNCGMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverNCGMP(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,
                   Eigen::Map<Eigen::VectorXd>& y,
-                  const SolverOptions& options = SolverOptions{});
+                  const TSolverOptions& options = TSolverOptions{});
 
     /** @brief Default constructor for serialization. */
-    TNCGMP_Solver();
+    TSolverNCGMP();
 
     /** @brief Virtual destructor. */
-    ~TNCGMP_Solver() override = default;
+    ~TSolverNCGMP() override = default;
 
     /** @brief Deleted copy constructor. */
-    TNCGMP_Solver(const TNCGMP_Solver&) = delete;
+    TSolverNCGMP(const TSolverNCGMP&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TNCGMP_Solver& operator=(const TNCGMP_Solver&) = delete;
+    TSolverNCGMP& operator=(const TSolverNCGMP&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TNCGMP_Solver(TNCGMP_Solver&&) = default;
+    TSolverNCGMP(TSolverNCGMP&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TNCGMP_Solver& operator=(TNCGMP_Solver&&) = delete;
+    TSolverNCGMP& operator=(TSolverNCGMP&&) = delete;
 
     // ==========================================================================
     // Main algorithm
@@ -131,7 +131,7 @@ public:
     friend class cereal::access;
 
     /**
-     * @brief Serialize the TNCGMP_Solver object.
+     * @brief Serialize the TSolverNCGMP object.
      *
      * @tparam Archive The type of the archive.
      * @param archive The archive object.
@@ -143,28 +143,28 @@ public:
         // no-op round-trip on save.
         int variant = static_cast<int>(variant_);
         archive(
-            cereal::base_class<TSolver_Base>(this),
+            cereal::base_class<TSolverBase>(this),
             cereal::make_nvp("variant", variant)
         );
         variant_ = static_cast<NCGMPVariant>(variant);
     }
 
     /**
-     * @brief Save the current TNCGMP_Solver object to a file (binary serialization).
+     * @brief Save the current TSolverNCGMP object to a file (binary serialization).
      *
      * @param filename The name of the file to save the object to.
      */
     virtual void save(const std::string& filename) const;
 
     /**
-     * @brief Load a TNCGMP_Solver object from a file (binary deserialization).
+     * @brief Load a TSolverNCGMP object from a file (binary deserialization).
      *
      * @param filename The name of the file to load the object from.
      * @param X Map to the predictor matrix (required for reconstruction).
      * @param D Map to the dummy predictor matrix (required for reconstruction).
-     * @return TNCGMP_Solver The deserialized TNCGMP_Solver object.
+     * @return TSolverNCGMP The deserialized TSolverNCGMP object.
      */
-    static TNCGMP_Solver load(const std::string& filename,
+    static TSolverNCGMP load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -186,6 +186,10 @@ protected:
     std::pair<double, std::vector<std::size_t>>
         findTiedMaxCorrelations() const override;
 };
+
+/** @brief Old name of TSolverNCGMP.
+ *  @deprecated Use TSolverNCGMP. */
+using TNCGMP_Solver [[deprecated("Use TSolverNCGMP")]] = TSolverNCGMP;
 
 // ===================================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

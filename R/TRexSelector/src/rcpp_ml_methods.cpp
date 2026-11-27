@@ -20,12 +20,12 @@ using namespace Rcpp;
 
 // The exported ridge_cv_* endpoints keep their names; the backing class is the
 // SVD-path implementation (the former ridge_cv and the GCV variant were removed).
-using ridge_cv = trex::ml_methods::model_selection::ridge_cv_svd;
+using ridge_cv = trex::ml_methods::model_selection::RidgeCV;
 
-// Elastic-net (coordinate-descent) backing classes: enet_gaussian is the path
-// fit (glmnet-equivalent), enet_cv_ccd its K-fold CV lambda selector.
-using enet_path = trex::ml_methods::model_selection::enet_gaussian;
-using enet_cv   = trex::ml_methods::model_selection::enet_cv_ccd;
+// Elastic-net (coordinate-descent) backing classes: ElasticNet is the path
+// fit (glmnet-equivalent), ElasticNetCV its K-fold CV lambda selector.
+using enet_path = trex::ml_methods::model_selection::ElasticNet;
+using enet_cv   = trex::ml_methods::model_selection::ElasticNetCV;
 
 // Memory-mapped matrix handle type shared with the mmap_matrix() utilities in
 // rcpp_utils.cpp. The *_mmap endpoints below bind the mapped buffer zero-copy
@@ -538,7 +538,7 @@ void lpnorm_scaler_inverse_transform_inplace_mmap(
 //' @noRd
 // [[Rcpp::export]]
 XPtr<ridge_cv> ridge_cv_create(bool low_memory, int n_threads) {
-    // low_memory: the kernel (dual) fold engine, see ridge_cv_svd(bool).
+    // low_memory: the kernel (dual) fold engine, see RidgeCV(bool).
     // n_threads: the budget of the Eigen products of fit().
     auto* cv = new ridge_cv(low_memory);
     cv->set_num_threads(n_threads);
@@ -705,7 +705,7 @@ bool ridge_cv_selection_at_grid_edge(
 }
 
 // =================================================================================
-// Elastic Net — coordinate-descent path (enet_gaussian)
+// Elastic Net — coordinate-descent path (ElasticNet)
 // =================================================================================
 
 //' @title Create Elastic Net path
@@ -714,7 +714,7 @@ bool ridge_cv_selection_at_grid_edge(
 // [[Rcpp::export]]
 XPtr<enet_path> enet_create(bool low_memory, int n_threads) {
     // low_memory: the raw-X engine (no working copy of X; a memory-mapped X
-    // is read in place), see enet_gaussian(bool).
+    // is read in place), see ElasticNet(bool).
     // n_threads: the budget of the Eigen products of fit().
     auto* path = new enet_path(low_memory);
     path->set_num_threads(n_threads);
@@ -877,7 +877,7 @@ Eigen::MatrixXd enet_predict_mmap(
 }
 
 // =================================================================================
-// Elastic Net CV — coordinate-descent per fold (enet_cv_ccd)
+// Elastic Net CV — coordinate-descent per fold (ElasticNetCV)
 // =================================================================================
 
 //' @title Create Elastic Net CV
@@ -1018,7 +1018,7 @@ Rcpp::List svd_compute(Rcpp::NumericMatrix X, int M,
     // Dispatch thresholds: a lower min_dim_thresh selects the
     // randomized, block-wise (no copy) path for smaller designs.
     // n_threads: the budget of the Eigen products.
-    SVDSolver solver{static_cast<Eigen::Index>(min_dim_thresh), static_cast<Eigen::Index>(block_size),
+    SVD solver{static_cast<Eigen::Index>(min_dim_thresh), static_cast<Eigen::Index>(block_size),
                      n_threads};
     SVDResult res = solver.compute(const_map(X), static_cast<Eigen::Index>(M));
     return Rcpp::List::create(
@@ -1039,7 +1039,7 @@ Rcpp::List svd_compute_mmap(
     int n_threads
 ) {
     const MmapMatrixD& mmap = *mmap_ptr;
-    SVDSolver solver{static_cast<Eigen::Index>(min_dim_thresh), static_cast<Eigen::Index>(block_size),
+    SVD solver{static_cast<Eigen::Index>(min_dim_thresh), static_cast<Eigen::Index>(block_size),
                      n_threads};
     SVDResult res = solver.compute(mmap.getMap(), static_cast<Eigen::Index>(M));
     return Rcpp::List::create(
@@ -1249,7 +1249,7 @@ Eigen::VectorXd ridge_solve(
     double lambda,
     int n_threads
 ) {
-    return RidgeSolver::solve(const_map(X), y, lambda, n_threads);
+    return Ridge::solve(const_map(X), y, lambda, n_threads);
 }
 
 //' @title Solve Ridge Regression on a MemoryMappedMatrix (zero-copy, readonly suffices)
@@ -1262,5 +1262,5 @@ Eigen::VectorXd ridge_solve_mmap(
     int n_threads
 ) {
     const MmapMatrixD& mmap = *mmap_ptr;
-    return RidgeSolver::solve(mmap.getMap(), y, lambda, n_threads);
+    return Ridge::solve(mmap.getMap(), y, lambda, n_threads);
 }

@@ -31,10 +31,10 @@ namespace ts = trex::trex_selector_methods::ad::trex_screening;
 // Constructors
 // ======================================================================
 
-BiobankScreenTRex::BiobankScreenTRex(
+TRexBiobankScreeningSelector::TRexBiobankScreeningSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
-    BiobankScreenTRexControl bio_ctrl,
+    TRexBiobankScreeningControl bio_ctrl,
     int seed,
     bool verbose
 ) : X_(&X),
@@ -51,10 +51,10 @@ BiobankScreenTRex::BiobankScreenTRex(
 }
 
 
-BiobankScreenTRex::BiobankScreenTRex(
+TRexBiobankScreeningSelector::TRexBiobankScreeningSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& Y,
-    BiobankScreenTRexControl bio_ctrl,
+    TRexBiobankScreeningControl bio_ctrl,
     int seed,
     bool verbose
 ) : X_(&X),
@@ -75,8 +75,8 @@ BiobankScreenTRex::BiobankScreenTRex(
 // Validation
 // ======================================================================
 
-void BiobankScreenTRex::validateBiobankStrategy() const {
-    // Mirror ScreenTRexSelector's gate HERE: the per-phenotype selectors are
+void TRexBiobankScreeningSelector::validateBiobankStrategy() const {
+    // Mirror TRexScreeningSelector's gate HERE: the per-phenotype selectors are
     // only constructed inside screenPhenotype()/screenAllPhenotypes(), so an
     // unsupported strategy would otherwise surface mid-loop — after
     // phenotype 0 has already been screened.
@@ -85,10 +85,10 @@ void BiobankScreenTRex::validateBiobankStrategy() const {
         case tc::LLoopStrategy::SEEDED:
         case tc::LLoopStrategy::PERMUTATION:
         case tc::LLoopStrategy::PERMUTATION_SEEDED:
-            break;  // Supported (see ScreenTRexSelector::validateScreenTRexStrategy)
+            break;  // Supported (see TRexScreeningSelector::validateScreenTRexStrategy)
         default:
             throw std::invalid_argument(
-                "BiobankScreenTRex: only the STANDARD, SEEDED, PERMUTATION, "
+                "TRexBiobankScreeningSelector: only the STANDARD, SEEDED, PERMUTATION, "
                 "and PERMUTATION_SEEDED dummy strategies are supported "
                 "(screening runs a single pass at L = p, T = 1; HCONCAT / "
                 "SKIPL describe L-loop growth). Got lloop_strategy = "
@@ -102,10 +102,10 @@ void BiobankScreenTRex::validateBiobankStrategy() const {
 // Main Screening Methods
 // ======================================================================
 
-BiobankScreenTRexResult BiobankScreenTRex::screenPhenotype() {
+TRexBiobankScreeningResult TRexBiobankScreeningSelector::screenPhenotype() {
     if (Y_ != nullptr) {
         throw std::runtime_error(
-            "BiobankScreenTRex::screenPhenotype() called without Y matrix. "
+            "TRexBiobankScreeningSelector::screenPhenotype() called without Y matrix. "
             "Use screenPhenotypes() instead."
         );
     }
@@ -114,16 +114,16 @@ BiobankScreenTRexResult BiobankScreenTRex::screenPhenotype() {
 }
 
 
-std::vector<BiobankScreenTRexResult> BiobankScreenTRex::screenPhenotypes() {
+std::vector<TRexBiobankScreeningResult> TRexBiobankScreeningSelector::screenPhenotypes() {
     if (Y_ == nullptr) {
         throw std::runtime_error(
-            "BiobankScreenTRex::screenPhenotypes() called without Y matrix. "
+            "TRexBiobankScreeningSelector::screenPhenotypes() called without Y matrix. "
             "Use screenPhenotype() for single phenotype."
         );
     }
 
     const std::size_t num_phenotypes = Y_->cols();
-    std::vector<BiobankScreenTRexResult> results;
+    std::vector<TRexBiobankScreeningResult> results;
     results.reserve(num_phenotypes);
 
     if (verbose_) {
@@ -164,7 +164,7 @@ std::vector<BiobankScreenTRexResult> BiobankScreenTRex::screenPhenotypes() {
 // Seed per phenotype
 // ======================================================================
 
-int BiobankScreenTRex::phenotypeSeed(std::size_t phenotype_index) const {
+int TRexBiobankScreeningSelector::phenotypeSeed(std::size_t phenotype_index) const {
     // A negative seed lets every selector draw its own entropy.
     if (seed_ < 0) { return seed_; }
 
@@ -179,7 +179,7 @@ int BiobankScreenTRex::phenotypeSeed(std::size_t phenotype_index) const {
 // Algorithm 1
 // ======================================================================
 
-BiobankScreenTRexResult BiobankScreenTRex::screenSinglePhenotype(
+TRexBiobankScreeningResult TRexBiobankScreeningSelector::screenSinglePhenotype(
     const Eigen::VectorXd& y,
     std::size_t phenotype_index
 ) {
@@ -202,7 +202,7 @@ BiobankScreenTRexResult BiobankScreenTRex::screenSinglePhenotype(
     // Run ordinary T-Rex+Screening (collects Phi, beta_mat, dummy_betas)
     bio_ctrl_.trex_screen_ctrl.use_bootstrap_CI = false;
 
-    ts::ScreenTRexSelector sctrex(
+    ts::TRexScreeningSelector sctrex(
         *X_,
         y_map,
         bio_ctrl_.trex_screen_ctrl,
@@ -235,7 +235,7 @@ BiobankScreenTRexResult BiobankScreenTRex::screenSinglePhenotype(
 }
 
 
-BiobankScreenTRexResult BiobankScreenTRex::runFallbackTRexSelector(
+TRexBiobankScreeningResult TRexBiobankScreeningSelector::runFallbackTRexSelector(
     const Eigen::VectorXd& y,
     std::size_t phenotype_index
 ) {
@@ -259,7 +259,7 @@ BiobankScreenTRexResult BiobankScreenTRex::runFallbackTRexSelector(
     trex_selector.select();
 
     // Prepare result structure
-    BiobankScreenTRexResult result;
+    TRexBiobankScreeningResult result;
     result.phenotype_index = phenotype_index;
     result.selected_indices = trex_selector.getSelectedIndices();
     result.estimated_FDR = bio_ctrl_.target_FDR_trex;
@@ -269,7 +269,7 @@ BiobankScreenTRexResult BiobankScreenTRex::runFallbackTRexSelector(
 }
 
 
-std::vector<std::size_t> BiobankScreenTRex::selectedVarsToIndices(
+std::vector<std::size_t> TRexBiobankScreeningSelector::selectedVarsToIndices(
     const Eigen::VectorXi& mask
 ) const {
     std::vector<std::size_t> indices;
@@ -284,14 +284,14 @@ std::vector<std::size_t> BiobankScreenTRex::selectedVarsToIndices(
 }
 
 
-BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
-    const ts::ScreenTRexSelectionResult& sctrex_result_bootstrap,
-    const ts::ScreenTRexSelectionResult& sctrex_result_ordinary,
+TRexBiobankScreeningResult TRexBiobankScreeningSelector::applyDecisionLogic(
+    const ts::TRexScreeningResult& sctrex_result_bootstrap,
+    const ts::TRexScreeningResult& sctrex_result_ordinary,
     const Eigen::VectorXd& y,
     std::size_t phenotype_index
 ) {
     // 1. Initialize result structure and store diagnostics
-    BiobankScreenTRexResult final_result;
+    TRexBiobankScreeningResult final_result;
     final_result.phenotype_index = phenotype_index;
     final_result.used_fallback_trex = false;
 
@@ -370,7 +370,7 @@ BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
     }
 
     // Run fallback
-    BiobankScreenTRexResult trex_res = runFallbackTRexSelector(y, phenotype_index);
+    TRexBiobankScreeningResult trex_res = runFallbackTRexSelector(y, phenotype_index);
 
     // Merge results into existing object to preserve diagnostics
     final_result.selected_indices = trex_res.selected_indices;
@@ -386,10 +386,10 @@ BiobankScreenTRexResult BiobankScreenTRex::applyDecisionLogic(
 // Statistics
 // ======================================================================
 
-BiobankScreenTRex::BiobankScreenTRexStatistics BiobankScreenTRex::getBiobankScreenTRexResult(
-    const std::vector<BiobankScreenTRexResult>& results
+TRexBiobankScreeningStatistics TRexBiobankScreeningSelector::getBiobankScreenTRexResult(
+    const std::vector<TRexBiobankScreeningResult>& results
 ) const {
-    BiobankScreenTRexStatistics stats;
+    TRexBiobankScreeningStatistics stats;
     stats.num_phenotypes = results.size();
 
     if (results.empty()) {
@@ -427,7 +427,7 @@ BiobankScreenTRex::BiobankScreenTRexStatistics BiobankScreenTRex::getBiobankScre
 // Utilities
 // ======================================================================
 
-void BiobankScreenTRex::printProgressMessage(const std::string& msg) const {
+void TRexBiobankScreeningSelector::printProgressMessage(const std::string& msg) const {
     if (verbose_) {
         TREX_INFO( msg << "\n");
     }

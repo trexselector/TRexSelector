@@ -68,12 +68,12 @@ namespace model_selection {
  *     Anniversary Issue).
  *   G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
  */
-class ridge_cv_svd {
+class RidgeCV {
 
 public:
 
     /** @brief Default constructor */
-    ridge_cv_svd() = default;
+    RidgeCV() = default;
 
     /**
      * @brief Choose the fold engine.
@@ -92,7 +92,7 @@ public:
      *        SVD route is the more accurate one). Memory O(n^2) instead of
      *        O(n p): the route for p >> n.
      */
-    explicit ridge_cv_svd(bool low_memory) : low_memory_(low_memory) {}
+    explicit RidgeCV(bool low_memory) : low_memory_(low_memory) {}
 
     /** @brief Switch the fold engine; takes effect at the next fit(). */
     void set_low_memory(bool low_memory) noexcept { low_memory_ = low_memory; }
@@ -101,7 +101,7 @@ public:
      *  the library's default budget unless set. */
     void set_num_threads(int n_threads) {
         if (n_threads < 1) {
-            throw std::invalid_argument("ridge_cv_svd::set_num_threads: n_threads must be >= 1.");
+            throw std::invalid_argument("RidgeCV::set_num_threads: n_threads must be >= 1.");
         }
         n_threads_ = n_threads;
     }
@@ -143,26 +143,26 @@ public:
 
         if (X.rows() != y.size()) {
             throw std::invalid_argument(
-                "ridge_cv_svd::fit: X.rows() != y.size()");
+                "RidgeCV::fit: X.rows() != y.size()");
         }
         const Eigen::Index n = X.rows();
         const Eigen::Index p = X.cols();
 
         if (n_folds < 2) {
             throw std::invalid_argument(
-                "ridge_cv_svd::fit: n_folds must be >= 2");
+                "RidgeCV::fit: n_folds must be >= 2");
         }
         if (static_cast<Eigen::Index>(n_folds) > n) {
             throw std::invalid_argument(
-                "ridge_cv_svd::fit: n_folds must be <= n_samples");
+                "RidgeCV::fit: n_folds must be <= n_samples");
         }
         if (n_lambda <= 0) {
             throw std::invalid_argument(
-                "ridge_cv_svd::fit: n_lambda must be positive");
+                "RidgeCV::fit: n_lambda must be positive");
         }
         if (lambda_ratio <= 0.0) {
             throw std::invalid_argument(
-                "ridge_cv_svd::fit: lambda_ratio must be positive");
+                "RidgeCV::fit: lambda_ratio must be positive");
         }
 
 
@@ -208,7 +208,7 @@ public:
 
         if (c_max <= 1e-12) {
             throw std::runtime_error(
-                "ridge_cv_svd::fit: y is (nearly) orthogonal to X; "
+                "RidgeCV::fit: y is (nearly) orthogonal to X; "
                 "lambda grid anchor c_max ≈ 0.");
         }
 
@@ -359,7 +359,7 @@ public:
             }
             if (r == 0) {
                 throw std::runtime_error(
-                    "ridge_cv_svd::fit: SVD rank is zero in training fold " +
+                    "RidgeCV::fit: SVD rank is zero in training fold " +
                     std::to_string(f));
             }
 
@@ -594,7 +594,7 @@ private:
         Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(K_tr);
         if (es.info() != Eigen::Success) {
             throw std::runtime_error(
-                "ridge_cv_svd::fit: eigen-decomposition of the training kernel failed in fold " +
+                "RidgeCV::fit: eigen-decomposition of the training kernel failed in fold " +
                 std::to_string(f));
         }
         const Eigen::VectorXd& ev = es.eigenvalues();      // ascending
@@ -607,7 +607,7 @@ private:
         }
         if (r == 0) {
             throw std::runtime_error(
-                "ridge_cv_svd::fit: SVD rank is zero in training fold " + std::to_string(f));
+                "RidgeCV::fit: SVD rank is zero in training fold " + std::to_string(f));
         }
         const auto U_r  = es.eigenvectors().rightCols(r);   // the r largest
         const auto ev_r = ev.tail(r);
@@ -634,7 +634,7 @@ private:
     void check_fitted() const {
         if (!fitted_) {
             throw std::runtime_error(
-                "ridge_cv_svd: call fit() before using this method");
+                "RidgeCV: call fit() before using this method");
         }
     }
 
@@ -661,6 +661,10 @@ private:
     bool         interpolates_ = false;
     bool         low_memory_   = false;   ///< kernel fold engine
 };
+
+/** @brief Old name of RidgeCV.
+ *  @deprecated Use RidgeCV. */
+using ridge_cv_svd [[deprecated("Use RidgeCV")]] = RidgeCV;
 
 // ===================================================================================
 } /* End of namespace model_selection */

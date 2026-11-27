@@ -4,7 +4,7 @@
 /**
  * @file tstagewise_solver.hpp
  *
- * @brief Declaration of TSTAGEWISE_Solver, a T-LARS-based stagewise regression
+ * @brief Declaration of TSolverStagewise, a T-LARS-based stagewise regression
  * solver.
  */
 // ============================================================================
@@ -67,7 +67,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TSTAGEWISE_Solver : public TLARS_Solver {
+class TSolverStagewise : public TSolverLARS {
 
 protected:
     // ========================================================================
@@ -89,34 +89,34 @@ public:
      * @param X Original design matrix (n x p).
      * @param D Dummy design matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (each column of X scaled to unit L2-norm), intercept
      *        (X and y centered, intercept fitted), verbose (status and
      *        diagnostics during execution) and scaling_mode (L2 or z-score,
      *        default L2), the tolerance and the tie-breaking.
      */
-    TSTAGEWISE_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverStagewise(Eigen::Map<Eigen::MatrixXd>& X,
                       Eigen::Map<Eigen::MatrixXd>& D,
                       Eigen::Map<Eigen::VectorXd>& y,
-                      const SolverOptions& options = SolverOptions{});
+                      const TSolverOptions& options = TSolverOptions{});
 
     /** @brief Default constructor for serialization or deferred initialization. */
-    TSTAGEWISE_Solver() : TLARS_Solver(SolverTypeLarsBased::TSTAGEWISE) {}
+    TSolverStagewise() : TSolverLARS(SolverTypeLarsBased::TSTAGEWISE) {}
 
     /** @brief Deleted copy constructor and assignment. */
-    TSTAGEWISE_Solver(const TSTAGEWISE_Solver&) = delete;
+    TSolverStagewise(const TSolverStagewise&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TSTAGEWISE_Solver& operator=(const TSTAGEWISE_Solver&) = delete;
+    TSolverStagewise& operator=(const TSolverStagewise&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TSTAGEWISE_Solver(TSTAGEWISE_Solver&&) = default;
+    TSolverStagewise(TSolverStagewise&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TSTAGEWISE_Solver& operator=(TSTAGEWISE_Solver&&) = delete;
+    TSolverStagewise& operator=(TSolverStagewise&&) = delete;
 
     /** @brief Virtual destructor override. */
-    ~TSTAGEWISE_Solver() override = default;
+    ~TSolverStagewise() override = default;
 
     // ========================================================================
     // Main Algorithm (Overrides Pure Virtual)
@@ -154,7 +154,7 @@ public:
     template<class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TLARS_Solver>(this)
+            cereal::base_class<TSolverLARS>(this)
         );
     }
 
@@ -177,9 +177,9 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TSTAGEWISE_Solver object connected to X and D.
+     * @return Deserialized TSolverStagewise object connected to X and D.
      */
-    static TSTAGEWISE_Solver load(const std::string& filename,
+    static TSolverStagewise load(const std::string& filename,
                                   Eigen::Map<Eigen::MatrixXd>& X,
                                   Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -213,6 +213,10 @@ protected:
      */
     void processStagewiseNNLS(const Eigen::Ref<const Eigen::VectorXd>& directions);
 };
+
+/** @brief Old name of TSolverStagewise.
+ *  @deprecated Use TSolverStagewise. */
+using TSTAGEWISE_Solver [[deprecated("Use TSolverStagewise")]] = TSolverStagewise;
 
 // ============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::lars_based  */

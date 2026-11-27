@@ -10,9 +10,9 @@
  * @brief K-fold cross-validated generalized-Tikhonov (anisotropic) ridge with
  *        `lambda.min` / `lambda.1se` selection over a DIRECT lambda2 grid,
  *        implemented analytically via per-fold SVDs.  Companion of
- *        `ridge_cv_svd` for the Informed Elastic Net geometry: the selected
+ *        `RidgeCV` for the Informed Elastic Net geometry: the selected
  *        lambda2 is on the solver scale and is consumable AS-IS by the
- *        `TIENET_Solver` constructor (no p/2 conversion).
+ *        `TSolverIENET` constructor (no p/2 conversion).
  *
  * @details
  *   **Estimator.**  For a PSD penalty matrix K (p x p) the per-fold model is
@@ -38,7 +38,7 @@
  *     Tikhonov matrix K = Gamma^T Gamma; one dense symmetric
  *     eigendecomposition of K (O(p^3), fold-independent) splits the
  *     penalized range from the null space.  All-singleton groups (K = I)
- *     reproduce `ridge_cv_svd` exactly.
+ *     reproduce `RidgeCV` exactly.
  *
  *   **Well-posedness (p > n regime) — read this before trusting the curve.**
  *   The pure Tikhonov backbone (eps = 0) is well-posed iff
@@ -62,9 +62,9 @@
  *   = 1/2 z^T (I - H_eps) z ; then the profiled a-problem is an isotropic
  *   ridge in dimension r solved by one small SVD for the whole grid.
  *   `Eigen::JacobiSVD` is used throughout (BDCSVD is unsafe under -O3
- *   -march=native with some Eigen versions; see ridge_cv_svd).
+ *   -march=native with some Eigen versions; see RidgeCV).
  *
- *   **Public interface** (parity with `ridge_cv_svd` / `enet_cv_ccd`):
+ *   **Public interface** (parity with `RidgeCV` / `ElasticNetCV`):
  *   `fit()`, `cv_min()`, `cv_1se()`, `lambdas()`, `cv_mse()`, `cv_sem()`,
  *   `index_min()`, `index_1se()`.
  */
@@ -213,7 +213,7 @@ public:
     const Eigen::VectorXd& cv_sem() const noexcept { return cv_sem_; }
 
     /** @brief Lambda2 minimising the mean CV-MSE (`lambda.min`), directly
-     *         consumable by TIENET_Solver. */
+     *         consumable by TSolverIENET. */
     double cv_min() const { check_fitted(); return lambdas_(idx_min_); }
 
     /** @brief Largest lambda2 within one SE of the CV-min (`lambda.1se`). */
@@ -399,7 +399,7 @@ private:
         standardize_and_project(X, y, XA_f, XC_f, yc_f, y_mean_f);
 
         // Anchor c_max on the PROFILED group-block problem, i.e. after the
-        // eps-hat projection of the contrast block (mirrors ridge_cv_svd's
+        // eps-hat projection of the contrast block (mirrors RidgeCV's
         // c_max = max |X_s^T y_c| which is the singleton special case).
         {
             Eigen::MatrixXd G;
@@ -422,7 +422,7 @@ private:
         }
         const Eigen::Index K = lambdas_.size();
 
-        // ---- deterministic folds (identical scheme to ridge_cv_svd) --------
+        // ---- deterministic folds (identical scheme to RidgeCV) --------
         std::vector<Eigen::Index> perm(static_cast<std::size_t>(n));
         std::iota(perm.begin(), perm.end(), Eigen::Index{0});
         std::mt19937 rng(seed);
@@ -526,7 +526,7 @@ private:
 
     /**
      * @brief Standardize and project operation for the penalized and free blocks.
-     *        Center + column L2-normalization, ridge_cv_svd conventionns.
+     *        Center + column L2-normalization, RidgeCV conventionns.
      *        Map into the penalized/free blocks: XA = X_s TA_, XC = X_s TC_.
      *        If X_te is given, the SAME training stats are applied to it.
      *

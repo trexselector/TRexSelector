@@ -30,13 +30,13 @@ namespace fpc = trex::utils::fp_classify;
 // Constructors
 // ============================================================================
 
-TENET_Solver::TENET_Solver(
+TSolverENET::TSolverENET(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options
+    const TSolverOptions& options
 )
-    : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TENET),
+    : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TENET),
       lambda2_(validateLambda2(options.lambda2)),
       d1_(std::sqrt(options.lambda2)),
       d2_(1.0 / std::sqrt(1.0 + options.lambda2)),
@@ -69,7 +69,7 @@ TENET_Solver::TENET_Solver(
     correlations_ *= d2_;
 }
 
-double TENET_Solver::validateLambda2(double x) {
+double TSolverENET::validateLambda2(double x) {
     if (x < 0.0) {
         throw std::invalid_argument("Ridge penalty lambda2 must be non-negative");
     }
@@ -81,7 +81,7 @@ double TENET_Solver::validateLambda2(double x) {
 // Core executeStep()
 // ============================================================================
 
-void TENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverENET::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -94,7 +94,7 @@ void TENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 
         // ========================================================
         // STEP 0: Drop-recovery step (R-lars drop-breakpoint
-        // semantics; see TLASSO_Solver::executeStep).
+        // semantics; see TSolverLASSO::executeStep).
         // The previous step ended in a drop, so NO variable joins:
         // the path moves along the REDUCED active set with the
         // EN-modified correlation level until an inactive genuinely
@@ -321,7 +321,7 @@ void TENET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 
 
 
-void TENET_Solver::updateCorrelationsENET() {
+void TSolverENET::updateCorrelationsENET() {
     // EN-specific correlation formula (Zou & Hastie 2005)
     // Cvec <- (drop(t(residuals[1:n]) %*% x) + d1 * residuals[-(1:n)]) * d2
     // where residuals is augmented (n + p) vector: [y_residuals; coefficient_penalties]
@@ -344,7 +344,7 @@ void TENET_Solver::updateCorrelationsENET() {
 }
 
 
-Eigen::MatrixXd TENET_Solver::updateR(const Eigen::Ref<const Eigen::VectorXd>& xnew, double eps) {
+Eigen::MatrixXd TSolverENET::updateR(const Eigen::Ref<const Eigen::VectorXd>& xnew, double eps) {
 
     std::size_t m = actives_.size();
 
@@ -401,7 +401,7 @@ Eigen::MatrixXd TENET_Solver::updateR(const Eigen::Ref<const Eigen::VectorXd>& x
 }
 
 
-Eigen::VectorXd TENET_Solver::equiangularVectorU1(
+Eigen::VectorXd TSolverENET::equiangularVectorU1(
     const Eigen::Ref<const Eigen::VectorXd>& w_A
 ) const {
 
@@ -413,7 +413,7 @@ Eigen::VectorXd TENET_Solver::equiangularVectorU1(
 }
 
 
-Eigen::VectorXd TENET_Solver::equiangularVectorU2(
+Eigen::VectorXd TSolverENET::equiangularVectorU2(
     const Eigen::Ref<const Eigen::VectorXd>& w_A
 ) const {
 
@@ -427,7 +427,7 @@ Eigen::VectorXd TENET_Solver::equiangularVectorU2(
 }
 
 
-double TENET_Solver::computeStepSizeEN(double Cmax,
+double TSolverENET::computeStepSizeEN(double Cmax,
                                        const Eigen::Ref<const Eigen::VectorXd>& u1,
                                        const Eigen::Ref<const Eigen::VectorXd>& u2) const {
 
@@ -471,7 +471,7 @@ double TENET_Solver::computeStepSizeEN(double Cmax,
 
 
 
-void TENET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
+void TSolverENET::refreshDroppedCorrelation(std::size_t dropped_var) {
     // EN-specific correlation for potential re-entry (Zou & Hastie 2005):
     // C_j = (x_j^T r_obs + d1 * r_coef[j]) * d2 over the augmented residual
     Eigen::Index n = X_->rows();
@@ -484,7 +484,7 @@ void TENET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
 
 
 
-std::vector<double> TENET_Solver::getCp() const {
+std::vector<double> TSolverENET::getCp() const {
     std::vector<double> cp_out;
 
     // If no RSS or DoF information, return empty
@@ -531,7 +531,7 @@ std::vector<double> TENET_Solver::getCp() const {
 // Coefficient Accessors with EN Scaling
 // ============================================================================
 
-Eigen::VectorXd TENET_Solver::getBeta(int step) const {
+Eigen::VectorXd TSolverENET::getBeta(int step) const {
     if (betaPathSparse_.empty()) throw std::runtime_error("No path available.");
     std::size_t use_step = (step < 0) ? betaPathSparse_.size() - 1
                                       : static_cast<std::size_t>(step);
@@ -560,7 +560,7 @@ Eigen::VectorXd TENET_Solver::getBeta(int step) const {
 }
 
 
-SparseBetaPath TENET_Solver::getBetaPathSparse() const {
+SparseBetaPath TSolverENET::getBetaPathSparse() const {
     // EN-specific: Divide by d₂ = 1/√(1+λ₂), i.e., multiply by √(1+λ₂),
     // then de-normalize by the column norms. This matches R enet
     // post-processing: beta.pure <- beta.pure / d2
@@ -568,7 +568,7 @@ SparseBetaPath TENET_Solver::getBetaPathSparse() const {
 }
 
 
-double TENET_Solver::getAlpha() const {
+double TSolverENET::getAlpha() const {
     // Compute mixing parameter α = λ₁/(λ₁ + λ₂)
     if (lambda_.empty()) { return 1.0; }
 
@@ -588,18 +588,18 @@ double TENET_Solver::getAlpha() const {
 // Serialization
 // ============================================================================
 
-void TENET_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverENET::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TENET_Solver TENET_Solver::load(const std::string& filename,
+TSolverENET TSolverENET::load(const std::string& filename,
                                 Eigen::Map<Eigen::MatrixXd>& X,
                                 Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TENET_Solver>(filename, X, D);
+    return loadImpl<TSolverENET>(filename, X, D);
 }
 
 
-void TENET_Solver::reconnect(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::MatrixXd>& D) {
-    TSolver_Base::reconnect(X, D);
+void TSolverENET::reconnect(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::MatrixXd>& D) {
+    TSolverBase::reconnect(X, D);
 
     std::size_t p_total = p_original_ + num_dummies_;
     std::size_t expected_r_size = X.rows() + p_total;

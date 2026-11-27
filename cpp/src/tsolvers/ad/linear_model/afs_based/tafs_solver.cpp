@@ -23,15 +23,15 @@ namespace trex::tsolvers::ad::linear_model::afs_based {
 // Constructor Implementation
 // ==================================================================================
 
-TAFS_Solver::TAFS_Solver(
+TSolverAFS::TSolverAFS(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options)
-    : TSolver_Base(X, D, y, options), rho_(options.rho_afs) {
+    const TSolverOptions& options)
+    : TSolverBase(X, D, y, options), rho_(options.rho_afs) {
 
     if (rho_ <= 0.0 || rho_ > 1.0) {
-        throw std::invalid_argument("TAFS_Solver: rho must be in the range (0, 1].");
+        throw std::invalid_argument("TSolverAFS: rho must be in the range (0, 1].");
     }
 
     dropped_indices_.clear();
@@ -67,13 +67,13 @@ TAFS_Solver::TAFS_Solver(
     initializeCorrelations();
 }
 
-TAFS_Solver::TAFS_Solver() : TSolver_Base() {}
+TSolverAFS::TSolverAFS() : TSolverBase() {}
 
 // ============================================================================
 // Core Algorithm Implementation
 // ============================================================================
 
-void TAFS_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverAFS::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -186,7 +186,7 @@ void TAFS_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Math Helpers
 // ==================================================================================
 
-void TAFS_Solver::updateCorrelations() {
+void TSolverAFS::updateCorrelations() {
     refreshInactiveCorrelations();
 }
 
@@ -194,12 +194,12 @@ void TAFS_Solver::updateCorrelations() {
 // Serialization
 // ==================================================================================
 
-void TAFS_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverAFS::save(const std::string& filename) const { saveImpl(*this, filename); }
 
-TAFS_Solver TAFS_Solver::load(const std::string& filename,
+TSolverAFS TSolverAFS::load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TAFS_Solver>(filename, X, D);
+    return loadImpl<TSolverAFS>(filename, X, D);
 }
 
 // ==================================================================================

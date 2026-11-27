@@ -4,7 +4,7 @@
 /**
  * @file solver_options.hpp
  *
- * @brief SolverOptions — every T-solver input except the data X, D and y.
+ * @brief TSolverOptions — every T-solver input except the data X, D and y.
  *
  * @details One structure carries the preprocessing flags, the numerical
  *  tolerance, the tie-breaking configuration and every family
@@ -14,7 +14,7 @@
  *  the sparse-K solvers). Each family reads the fields it needs and ignores
  *  the rest; the per-field comments say which solvers consume a field. The
  *  defaults are the solver-level defaults (what a direct C++ caller got
- *  before); the T-Rex layer maps its own `SolverHyperparameters` onto this
+ *  before); the T-Rex layer maps its own `TSolverParams` onto this
  *  structure in the dispatch (trex_solver_dispatch.hpp) and keeps its own
  *  defaults there.
  */
@@ -55,7 +55,7 @@ enum class NCGMPVariant : int {
  *  early_stop) belong to executeStep(); serialization keeps its own record
  *  of the fields it needs.
  */
-struct SolverOptions {
+struct TSolverOptions {
 
     // --- Preprocessing (every solver) -------------------------------------
 
@@ -95,7 +95,7 @@ struct SolverOptions {
      *  T-OLS downdate, the standardization and its restore). 1 (default):
      *  serial; at least 1. A region runs in parallel only when the budget
      *  is above 1, the work of the pass exceeds
-     *  TSolver_Base::kParallelWorkThreshold entries and the solver is not
+     *  TSolverBase::kParallelWorkThreshold entries and the solver is not
      *  inside a parallel region of the caller. Not serialized: a loaded
      *  solver starts serial, setNumThreads() gives it a budget. */
     int n_threads = 1;
@@ -150,6 +150,10 @@ struct SolverOptions {
      *  the T-Rex selector does. Default false. */
     bool tikhonov_validated = false;
 };
+
+/** @brief Old name of TSolverOptions.
+ *  @deprecated Use TSolverOptions. */
+using SolverOptions [[deprecated("Use TSolverOptions")]] = TSolverOptions;
 
 // ===================================================================================
 } /* End of namespace trex::tsolvers::ad */

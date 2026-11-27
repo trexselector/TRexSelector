@@ -49,8 +49,8 @@ public:
         Eigen::Ref<Eigen::MatrixXd> X,
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
-        const TRexDAControlParameter& da_control,
-        const TRexControlParameter& trex_control,
+        const TRexDAControl& da_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) {
@@ -68,7 +68,7 @@ public:
         // The refactored C++ constructor takes a single DA control struct that
         // nests the base algorithmic parameters as `trex_ctrl`. Merge the
         // separately-supplied `trex_control` into that nested field.
-        TRexDAControlParameter da_ctrl = da_control;
+        TRexDAControl da_ctrl = da_control;
         da_ctrl.trex_ctrl = trex_control;
 
         this->selector_ = std::make_unique<TRexDASelector>(
@@ -88,8 +88,8 @@ public:
         const DesignArray& X,
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
-        const TRexDAControlParameter& da_control,
-        const TRexControlParameter& trex_control,
+        const TRexDAControl& da_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) : PyTRexDASelector(selector_design_ref(X, trex_control), y, tFDR, da_control, trex_control, seed,
@@ -98,7 +98,7 @@ public:
     /**
      * @brief Get the complete DA selection result.
      */
-    const TRexDASelector::DASelectionResult& getDAResult() const {
+    const TRexDAResult& getDAResult() const {
         return static_cast<TRexDASelector*>(this->selector_.get())->getDAResult();
     }
 };
@@ -134,55 +134,55 @@ inline void bind_trex_da(py::module& m) {
             "and lowers the power, most with NN at low correlation, where it exceeds the target.")
         .export_values();
 
-    py::class_<TRexDAControlParameter>(m, "TRexDAControlParameter", "Control parameters for TRexDASelector.")
+    py::class_<TRexDAControl>(m, "TRexDAControlParameter", "Control parameters for TRexDASelector.")
         .def(py::init<>())
-        .def_readwrite("method", &TRexDAControlParameter::method, "Dependency-aware method (default: BT). Ignored\n"
+        .def_readwrite("method", &TRexDAControl::method, "Dependency-aware method (default: BT). Ignored\n"
             "when prior_groups is set.")
-        .def_readwrite("cor_coef", &TRexDAControlParameter::cor_coef, "Correlation coefficient of the AR1 and EQUI "
+        .def_readwrite("cor_coef", &TRexDAControl::cor_coef, "Correlation coefficient of the AR1 and EQUI "
             "methods; setting the parameter to -2 estimates it from the data. The estimate is the mean lag-1 "
             "autocorrelation of the rows for AR1 and the mean pairwise correlation of the variables for EQUI. Both "
             "methods use the magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning "
             "and is replaced by the estimate.")
-        .def_readwrite("rho_thr_DA", &TRexDAControlParameter::rho_thr_DA, "Correlation threshold of the AR1 and "
+        .def_readwrite("rho_thr_DA", &TRexDAControl::rho_thr_DA, "Correlation threshold of the AR1 and "
             "EQUI methods (default 0.02). AR1: the window around a variable reaches "
             "ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation "
             "abs(cor_coef)**lag has fallen to the threshold, range [0, 1). EQUI: the correction is skipped when "
             "abs(cor_coef) does not exceed the threshold, range [0, 1].")
-        .def_readwrite("hc_linkage", &TRexDAControlParameter::hc_linkage,
+        .def_readwrite("hc_linkage", &TRexDAControl::hc_linkage,
             "Linkage of the hierarchical clustering: Single (default), Complete, Average or WPGMA. Used by BT\n"
             "and by prior groups. Ward is rejected, because the correlation distance 1 - |cor| is not Euclidean.")
-        .def_readwrite("hc_grid_length", &TRexDAControlParameter::hc_grid_length, "Number of correlation "
+        .def_readwrite("hc_grid_length", &TRexDAControl::hc_grid_length, "Number of correlation "
             "thresholds on the calibration grid of BT, NN and prior groups. 0 (default) takes min(20, p).")
-        .def_readwrite("bt_selection_mode", &TRexDAControlParameter::bt_selection_mode, "Deprecated. Which cells "
+        .def_readwrite("bt_selection_mode", &TRexDAControl::bt_selection_mode, "Deprecated. Which cells "
             "of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly "
             "(default) or RFaithful, which is deprecated and raises a FutureWarning in TRexDASelector. Ignored by "
             "AR1 and EQUI.")
-        .def_readwrite("prior_groups", &TRexDAControlParameter::prior_groups, "Prior grouping constraints (label "
+        .def_readwrite("prior_groups", &TRexDAControl::prior_groups, "Prior grouping constraints (label "
             "vectors of length p); sub-clustering runs within their finest common refinement.")
-        .def_readwrite("trex_ctrl", &TRexDAControlParameter::trex_ctrl, "Nested base T-Rex algorithmic control "
+        .def_readwrite("trex_ctrl", &TRexDAControl::trex_ctrl, "Nested base T-Rex algorithmic control "
             "parameters (overridden by the separate trex_control argument to TRexDASelector).");
 
-    py::class_<TRexDASelector::DASelectionResult, TRexSelector::SelectionResult>(m, "DASelectionResult", "Result of "
+    py::class_<TRexDAResult, TRexResult>(m, "DASelectionResult", "Result of "
         "T-Rex+DA: the SelectionResult with the record of the dependency estimation.")
-        .def_readonly("rho_thresh", &TRexDASelector::DASelectionResult::rho_thresh, "Correlation threshold of the "
+        .def_readonly("rho_thresh", &TRexDAResult::rho_thresh, "Correlation threshold of the "
             "selected cell of the calibration grid (BT, NN and PRIOR_GROUPS). -2 for AR1 and EQUI and when no cell "
             "meets the target.")
-        .def_readonly("rho_grid", &TRexDASelector::DASelectionResult::rho_grid, "Grid of correlation thresholds of "
+        .def_readonly("rho_grid", &TRexDAResult::rho_grid, "Grid of correlation thresholds of "
             "BT, NN and PRIOR_GROUPS: hc_grid_length ascending values. BT and PRIOR_GROUPS take them from the merge "
             "heights of the dendrogram (1 - height) and end at 1, NN spaces them equally on [0, 1]. Empty for AR1 "
             "and EQUI.")
-        .def_readonly("method", &TRexDASelector::DASelectionResult::method, "Dependency-aware method of the run. "
+        .def_readonly("method", &TRexDAResult::method, "Dependency-aware method of the run. "
             "PRIOR_GROUPS when prior groups were supplied.")
-        .def_readonly("cor_coef", &TRexDASelector::DASelectionResult::cor_coef, "Correlation coefficient of the "
+        .def_readonly("cor_coef", &TRexDAResult::cor_coef, "Correlation coefficient of the "
             "methods AR1 and EQUI: the supplied value, or the estimate from the data when -2 requested it. The "
             "other methods do not use it and return the value of the control.")
-        .def_readonly("fdp_hat_array_bt", &TRexDASelector::DASelectionResult::FDP_hat_array_BT, "FDP estimates of "
+        .def_readonly("fdp_hat_array_bt", &TRexDAResult::FDP_hat_array_BT, "FDP estimates of "
             "the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with one row per "
             "stopping time (T_stop) and one column per voting level (voting_grid). Empty for AR1 and EQUI.")
-        .def_readonly("phi_array_bt", &TRexDASelector::DASelectionResult::Phi_array_BT, "Dependency-aware relative "
+        .def_readonly("phi_array_bt", &TRexDAResult::Phi_array_BT, "Dependency-aware relative "
             "occurrences of the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), "
             "with one row per stopping time (T_stop) and one column per variable. Empty for AR1 and EQUI.")
-        .def_readonly("r_array_bt", &TRexDASelector::DASelectionResult::R_array_BT, "Numbers of selected variables "
+        .def_readonly("r_array_bt", &TRexDAResult::R_array_BT, "Numbers of selected variables "
             "of the methods BT, NN and PRIOR_GROUPS: one matrix per correlation threshold (rho_grid), with one row "
             "per stopping time that can be selected (T_stop - 1) and one column per voting level (voting_grid). "
             "Empty for AR1 and EQUI.");
@@ -272,20 +272,20 @@ inline void bind_trex_da(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
-        .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, double, const TRexDAControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+        .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, double, const TRexDAControl&,
+            const TRexControl&, int, bool>(),
              py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
-             py::arg("da_control") = TRexDAControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("da_control") = TRexDAControl(),
+             py::arg("trex_control") = TRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the DA selector. X and y are accessed zero-copy via Eigen::Map. A negative seed\n"
              "(default: -1) gives a run that is not reproducible.")
-        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexDAControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double, const TRexDAControl&,
+            const TRexControl&, int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
-             py::arg("da_control") = TRexDAControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("da_control") = TRexDAControl(),
+             py::arg("trex_control") = TRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              kReaderSelectorDoc.c_str())

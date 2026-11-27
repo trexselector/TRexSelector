@@ -57,7 +57,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TENET_Solver: public TLARS_Solver {
+class TSolverENET: public TSolverLARS {
 
 protected:
     // ============================================================================
@@ -75,8 +75,8 @@ protected:
      * @brief Protected constructor for derived classes.
      * @param solver_type Algorithm variant as SolverTypeLarsBased enum.
      */
-    explicit TENET_Solver(SolverTypeLarsBased solver_type) :
-                          TLARS_Solver(solver_type) {}
+    explicit TSolverENET(SolverTypeLarsBased solver_type) :
+                          TSolverLARS(solver_type) {}
 
 public:
     // ============================================================================
@@ -89,37 +89,37 @@ public:
      * @param X         Predictor matrix (n x p).
      * @param D         Dummy matrix (n x num_dummies).
      * @param y         Response vector (size n).
-     * @param options   Every other input (SolverOptions); this solver reads
+     * @param options   Every other input (TSolverOptions); this solver reads
      *                  lambda2, the ridge (L2) regularization parameter
      *                  (>= 0), and the preprocessing flags normalize (unit
      *                  L2-norm columns, default true), intercept (centering,
      *                  default true), verbose (detailed status, default
      *                  false) and scaling_mode (L2 or z-score, default L2).
      */
-    TENET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverENET(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options = SolverOptions{});
+                 const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for Cereal deserialization.
      */
-    TENET_Solver() : TLARS_Solver(SolverTypeLarsBased::TENET) {}
+    TSolverENET() : TSolverLARS(SolverTypeLarsBased::TENET) {}
 
     /** @brief Deleted copy constructor. */
-    TENET_Solver(const TENET_Solver&) = delete;
+    TSolverENET(const TSolverENET&) = delete;
 
     /** @brief Deleted copy assignment. */
-    TENET_Solver& operator=(const TENET_Solver&) = delete;
+    TSolverENET& operator=(const TSolverENET&) = delete;
 
     /** @brief Default move constructor. */
-    TENET_Solver(TENET_Solver&&) = default;
+    TSolverENET(TSolverENET&&) = default;
 
     /** @brief Deleted move assignment. */
-    TENET_Solver& operator=(TENET_Solver&&) = delete;
+    TSolverENET& operator=(TSolverENET&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TENET_Solver() override = default;
+    ~TSolverENET() override = default;
 
     // ============================================================================
     // Core Algorithm Execution
@@ -176,7 +176,7 @@ public:
     template<class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TLARS_Solver>(this),
+            cereal::base_class<TSolverLARS>(this),
             CEREAL_NVP(lambda2_),
             CEREAL_NVP(d1_),
             CEREAL_NVP(d2_),
@@ -195,9 +195,9 @@ public:
      * @param filename Path to input file.
      * @param X        Map to feature matrix.
      * @param D        Map to dummy matrix.
-     * @return Deserialized TENET_Solver connected to X and D.
+     * @return Deserialized TSolverENET connected to X and D.
      */
-    static TENET_Solver load(const std::string& filename,
+    static TSolverENET load(const std::string& filename,
                              Eigen::Map<Eigen::MatrixXd>& X,
                              Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -276,7 +276,11 @@ private:
     void refreshDroppedCorrelation(std::size_t dropped_var) override;
 
 // ============================================================================
-}; /* End of class TENET_Solver */
+};
+
+/** @brief Old name of TSolverENET.
+ *  @deprecated Use TSolverENET. */
+using TENET_Solver [[deprecated("Use TSolverENET")]] = TSolverENET; /* End of class TSolverENET */
 
 // ============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::lars_based */

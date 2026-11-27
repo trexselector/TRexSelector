@@ -56,7 +56,7 @@ struct PCAResult {
  * @brief Stateful Principal Component Analysis with optional in-place centering
  *        and L2-norm column normalisation.
  *
- * @details Fits a truncated PCA model via the dimensionality-aware SVDSolver.
+ * @details Fits a truncated PCA model via the dimensionality-aware SVD.
  *          Preprocessing (centering, normalisation) is applied in-place to X
  *          immediately in the constructor via preprocess_(). fit() then runs a
  *          truncated SVD on the already-preprocessed data. The caller is
@@ -243,7 +243,7 @@ public:
         Eigen::Map<const Eigen::MatrixXd, 0, Eigen::OuterStride<>> X_map(
             data_ptr_, n_, p_, Eigen::OuterStride<>(outer_stride_));
 
-        svd::SVDResult svd_res = svd::SVDSolver{}.compute(X_map, M_);
+        svd::SVDResult svd_res = svd::SVD{}.compute(X_map, M_);
 
         loadings_           = svd_res.V;
         explained_variance_ = svd_res.S.array().square() / static_cast<double>(n_ - 1);

@@ -223,7 +223,7 @@ enum class TikPenaltyStructure {
 /**
  * @brief Tikhonov-specific control parameters.
  */
-struct TRexTikhonovControlParameter {
+struct TRexTikhonovControl {
 
     /** @brief Structural form of the penalty (see TikPenaltyStructure).
      *  Default SPARSE_GENERAL (matrix-passing). GROUP_CENTERING requires
@@ -384,12 +384,16 @@ struct TRexTikhonovControlParameter {
      *  class's own default is TLARS. Every other solver is refused at
      *  construction. All other base knobs (K, L-loop strategy, warm
      *  starts, memory mapping, ...) apply unchanged. */
-    tc::TRexControlParameter trex_ctrl = [] {
-        tc::TRexControlParameter t;
+    tc::TRexControl trex_ctrl = [] {
+        tc::TRexControl t;
         t.solver_type = disp::SolverTypeForTRex::TIKNET;
         return t;
     }();
 };
+
+/** @brief Old name of TRexTikhonovControl.
+ *  @deprecated Use TRexTikhonovControl. */
+using TRexTikhonovControlParameter [[deprecated("Use TRexTikhonovControl")]] = TRexTikhonovControl;
 
 
 // ===================================================================================
@@ -528,8 +532,8 @@ public:
     TRexTikhonovSelector(Eigen::Map<Eigen::MatrixXd>& X,
                          Eigen::Map<Eigen::VectorXd>& y,
                          double tFDR = 0.1,
-                         TRexTikhonovControlParameter trex_tik_ctrl =
-                             TRexTikhonovControlParameter(),
+                         TRexTikhonovControl trex_tik_ctrl =
+                             TRexTikhonovControl(),
                          int seed = -1,
                          bool verbose = true);
 
@@ -554,7 +558,7 @@ public:
 
     /** @brief Health record of the lambda_2 resolution of the last
      *  `select()` call (`ran == false`: the value came from the caller). */
-    const ms::lambda2_cv_diagnostics& getLambda2CVDiagnostics() const noexcept {
+    const ms::Lambda2CVDiagnostics& getLambda2CVDiagnostics() const noexcept {
         return lambda2_cv_diag_;
     }
 
@@ -645,7 +649,7 @@ private:
 
     /** @brief Tikhonov control parameters (owns the K matrix the runner
      *  configs point into). */
-    TRexTikhonovControlParameter trex_tik_ctrl_;
+    TRexTikhonovControl trex_tik_ctrl_;
 
     /** @brief Resolved CV fold-permutation seed. */
     unsigned int resolved_cv_seed_{0};
@@ -656,7 +660,7 @@ private:
     /** @brief Health record of the last `computeLambda2()` call. Mutable
      *  because `computeLambda2()` is const — it reports what it did
      *  alongside the value it returns. */
-    mutable ms::lambda2_cv_diagnostics lambda2_cv_diag_;
+    mutable ms::Lambda2CVDiagnostics lambda2_cv_diag_;
 
     /** @brief What the last pilot did (`ran == false` when none ran). */
     Lambda2PilotResult lambda2_pilot_;

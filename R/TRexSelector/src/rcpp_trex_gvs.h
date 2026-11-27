@@ -27,10 +27,10 @@ using namespace trex::trex_selector_methods::ad::trex_core;
  *        is passed replaces the nested one as it is, and the C++ constructor
  *        derives or refuses the solver.
  */
-inline TRexGVSControlParameter merge_gvs_control(
-    const TRexGVSControlParameter& gvs_control,
-    const std::optional<tc::TRexControlParameter>& trex_control) {
-    TRexGVSControlParameter gvs_ctrl = gvs_control;
+inline TRexGVSControl merge_gvs_control(
+    const TRexGVSControl& gvs_control,
+    const std::optional<tc::TRexControl>& trex_control) {
+    TRexGVSControl gvs_ctrl = gvs_control;
     if (trex_control) {
         gvs_ctrl.trex_ctrl = *trex_control;
     }
@@ -50,7 +50,7 @@ public:
         Eigen::Map<Eigen::MatrixXd> X,
         Eigen::Map<Eigen::VectorXd> y,
         double tFDR,
-        const TRexGVSControlParameter& gvs_ctrl,
+        const TRexGVSControl& gvs_ctrl,
         int seed,
         bool verbose
     ) {

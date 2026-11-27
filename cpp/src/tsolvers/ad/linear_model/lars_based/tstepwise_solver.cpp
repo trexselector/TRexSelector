@@ -3,7 +3,7 @@
 // =============================================================================
 /**
  * @file tstepwise_solver.cpp
- * @brief Implementation of TSTEPWISE_Solver, a T-LARS-based stepwise
+ * @brief Implementation of TSolverStepwise, a T-LARS-based stepwise
  * regression solver. It is mathematically equivalent to OMP.
  * The method performs no variable removals.
  */
@@ -26,7 +26,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 // Core Algorithm Implementation: executeStep()
 // ============================================================================
 
-void TSTEPWISE_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverStepwise::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
 
     // Set openMP dominance for the entire algorithm
@@ -119,13 +119,13 @@ void TSTEPWISE_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Internal Helper
 // ============================================================================
 
-void TSTEPWISE_Solver::zeroAllSigns() {
+void TSolverStepwise::zeroAllSigns() {
     // Reset signs to zero for orthogonal (axis-aligned) steps.
     // This ensures each new variable enters with fresh correlation sign.
     Sign_.assign(Sign_.size(), 0);
 }
 
-void TSTEPWISE_Solver::recomputeCorrelations() {
+void TSolverStepwise::recomputeCorrelations() {
     // Full recomputation X^T r over inactives (shared base helper)
     refreshInactiveCorrelations();
 }
@@ -135,13 +135,13 @@ void TSTEPWISE_Solver::recomputeCorrelations() {
 // Serialization Implementation
 // ============================================================================
 
-void TSTEPWISE_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverStepwise::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TSTEPWISE_Solver TSTEPWISE_Solver::load(const std::string& filename,
+TSolverStepwise TSolverStepwise::load(const std::string& filename,
                                         Eigen::Map<Eigen::MatrixXd>& X,
                                         Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TSTEPWISE_Solver>(filename, X, D);
+    return loadImpl<TSolverStepwise>(filename, X, D);
 }
 
 // ============================================================================

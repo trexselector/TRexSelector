@@ -4,7 +4,7 @@
 /**
  * @file validation_ts_01_tenet_aug_comparison.cpp
  *
- * @brief Equivalence check: TENET_Solver (Gram-based EN) vs. TENETAug_Solver
+ * @brief Equivalence check: TSolverENET (Gram-based EN) vs. TSolverENETAug
  *        (augmented-LASSO EN) under two preprocessing scenarios.
  *
  * @details Reproduces an R elastic-net comparison workflow in C++.
@@ -150,21 +150,21 @@ void run_comparison(
     y_map.array() -= y_map.mean();
 
     // ------------------------------------------------------------------
-    // TENET_Solver — Gram-based elastic net
+    // TSolverENET — Gram-based elastic net
     // normalize=false / intercept=false: data already scaled above.
     // ------------------------------------------------------------------
-    std::cout << "Running TENET_Solver   (Gram-based EN)...\n";
-    tsolvers::TENET_Solver tenet(X_map, D_map, y_map,
-        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .lambda2 = lambda2});
+    std::cout << "Running TSolverENET   (Gram-based EN)...\n";
+    tsolvers::TSolverENET tenet(X_map, D_map, y_map,
+        trex::tsolvers::ad::TSolverOptions{.normalize = false, .intercept = false, .lambda2 = lambda2});
     tenet.executeStep(T_stop, /*early_stop=*/false);
 
     // ------------------------------------------------------------------
-    // TENETAug_Solver — augmented-LASSO elastic net
+    // TSolverENETAug — augmented-LASSO elastic net
     // normalize=false / intercept=false: same pre-scaled maps as TENET.
     // ------------------------------------------------------------------
-    std::cout << "Running TENETAug_Solver (augmented LASSO)...\n";
-    tsolvers::TENETAug_Solver tenet_aug(X_map, D_map, y_map,
-        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false, .lambda2 = lambda2});
+    std::cout << "Running TSolverENETAug (augmented LASSO)...\n";
+    tsolvers::TSolverENETAug tenet_aug(X_map, D_map, y_map,
+        trex::tsolvers::ad::TSolverOptions{.normalize = false, .intercept = false, .lambda2 = lambda2});
     tenet_aug.executeStep(T_stop, /*early_stop=*/false);
 
     // ------------------------------------------------------------------
@@ -208,8 +208,8 @@ void run_comparison(
     Eigen::Map<Eigen::MatrixXd> Da_map(D_aug.data(), D_aug.rows(), D_aug.cols());
     Eigen::Map<Eigen::VectorXd> ya_map(y_aug.data(), y_aug.size());
 
-    tsolvers::TLASSO_Solver tlasso_aug(Xa_map, Da_map, ya_map,
-        trex::tsolvers::ad::SolverOptions{.normalize = false, .intercept = false});
+    tsolvers::TSolverLASSO tlasso_aug(Xa_map, Da_map, ya_map,
+        trex::tsolvers::ad::TSolverOptions{.normalize = false, .intercept = false});
     tlasso_aug.executeStep(T_stop, /*early_stop=*/false);
 
     // ------------------------------------------------------------------
@@ -388,7 +388,7 @@ int main() {
         /*X_seed=*/-1,
         /*dummy_seed=*/-1,
         datagen::predictor_policy::Normal(),
-        datagen::dummygen::Distribution::Normal(),
+        datagen::dummygen::DummyDistribution::Normal(),
         datagen::noisegen::noise_policy::Normal()
     );
 

@@ -123,7 +123,7 @@ selector applied, and `getNumDummies()` is the number of dummies of the last run
 
 ## The L-loop strategies
 
-`lloop_strategy` of TRexControlParameter says how the dummies of the L-loop are produced, with the
+`lloop_strategy` of TRexControl says how the dummies of the L-loop are produced, with the
 LLoopStrategy enum.
 
 | Strategy | Dummies | Storage |
@@ -171,11 +171,11 @@ calibrates a larger \f$L\f$ and runs longer T-loops. The table lists the cells b
 
 ## Dummy distributions
 
-The dummies are standard Normal by default. The `Distribution` struct of the namespace
+The dummies are standard Normal by default. The `DummyDistribution` struct of the namespace
 `trex::utils::datageneration::dummygen` offers the uniform, Rademacher, Student t, Laplace, Gumbel,
 triangle, uniform sphere, Mammen \cite mammen1993bootstrap, constrained sparse Rademacher and
-logistic distributions through its named constructors, `Distribution::Normal()`,
-`Distribution::StudentT(df)` and so on. The FDR guarantee rests on the exchangeability of dummies and
+logistic distributions through its named constructors, `DummyDistribution::Normal()`,
+`DummyDistribution::StudentT(df)` and so on. The FDR guarantee rests on the exchangeability of dummies and
 null variables along the path, which the standard Normal provides for the centered and scaled working
 design.
 

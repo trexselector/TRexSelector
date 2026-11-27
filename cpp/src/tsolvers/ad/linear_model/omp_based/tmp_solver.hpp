@@ -27,7 +27,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 
 // ==================================================================================
 /**
-* @class TMP_Solver
+* @class TSolverMP
 *
 * @brief Terminating Matching Pursuit (T-MP) solver with dummy variables for FDR control.
 *
@@ -61,7 +61,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 *       algorithmic design: each step greedily reduces the projection of the
 *       residual onto the most correlated direction.
 *
-* @note The Cholesky factorization inherited from TOMP_Solver is intentionally
+* @note The Cholesky factorization inherited from TSolverOMP is intentionally
 *       unused. MP requires no matrix factorization — collinearity is handled
 *       implicitly via |alpha^n| < eps_ in the outer loop.
 *
@@ -72,7 +72,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
 *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
 */
-class TMP_Solver : public TOMP_Solver {
+class TSolverMP : public TSolverOMP {
 
 protected:
 
@@ -106,7 +106,7 @@ protected:
     *
     * @param solver_type Type of the solver.
     */
-    explicit TMP_Solver(SolverTypeOMPBased solver_type);
+    explicit TSolverMP(SolverTypeOMPBased solver_type);
 
 public:
 
@@ -115,43 +115,43 @@ public:
     // ==================================================================================
 
     /**
-    * @brief Construct a TMP_Solver object using data and configuration.
+    * @brief Construct a TSolverMP object using data and configuration.
     *
     * @param X Map to the predictor matrix (n x p).
     * @param D Map to the dummy predictor matrix (n x num_dummies).
     * @param y Map to the response vector (n x 1).
-    * @param options Every other input (SolverOptions): the preprocessing flags
+    * @param options Every other input (TSolverOptions): the preprocessing flags
     *        normalize (each column of X and D scaled to unit L2-norm),
     *        intercept (X, D and y centered, intercept fitted) and verbose
     *        (status and diagnostics during execution), the tolerance and the
     *        tie-breaking (exch_tie_alpha / exch_tie_floor, the
     *        exchangeable-tie band of the greedy solvers).
     */
-    TMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverMP(Eigen::Map<Eigen::MatrixXd>& X,
             Eigen::Map<Eigen::MatrixXd>& D,
             Eigen::Map<Eigen::VectorXd>& y,
-            const SolverOptions& options = SolverOptions{})
-        : TOMP_Solver(X, D, y, options, SolverTypeOMPBased::TMP) {}
+            const TSolverOptions& options = TSolverOptions{})
+        : TSolverOMP(X, D, y, options, SolverTypeOMPBased::TMP) {}
 
     /**
     * @brief Default constructor for serialization or deferred initialization.
     */
-    TMP_Solver() : TOMP_Solver(SolverTypeOMPBased::TMP) {}
+    TSolverMP() : TSolverOMP(SolverTypeOMPBased::TMP) {}
 
     /** @brief Deleted copy constructor to avoid raw pointer ownership problems. */
-    TMP_Solver(const TMP_Solver&) = delete;
+    TSolverMP(const TSolverMP&) = delete;
 
     /** @brief Deleted copy assignment operator to avoid raw pointer ownership problems. */
-    TMP_Solver& operator=(const TMP_Solver&) = delete;
+    TSolverMP& operator=(const TSolverMP&) = delete;
 
     /** @brief Move constructor (default implementation). */
-    TMP_Solver(TMP_Solver&&) = default;
+    TSolverMP(TSolverMP&&) = default;
 
     /** @brief Deleted move assignment operator to avoid raw pointer ownership problems. */
-    TMP_Solver& operator=(TMP_Solver&&) = delete;
+    TSolverMP& operator=(TSolverMP&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TMP_Solver() override = default;
+    ~TSolverMP() override = default;
 
     // ==================================================================================
     // Main algorithm
@@ -165,11 +165,11 @@ public:
     *                  (0 = full solution path).
     * @param early_stop  If true, stop when count_active_dummies_ >= T_stop.
     *
-    * @note Overrides TOMP_Solver::executeStep() with T-MP from Blumensath & Davies (2008).
+    * @note Overrides TSolverOMP::executeStep() with T-MP from Blumensath & Davies (2008).
     */
     void executeStep(std::size_t T_stop = 0, bool early_stop = true) override;
 
-    /** @brief TOMP_Solver::memoryBytes() plus the active coefficients. */
+    /** @brief TSolverOMP::memoryBytes() plus the active coefficients. */
     std::size_t memoryBytes() const noexcept override;
 
     // ==================================================================================
@@ -190,7 +190,7 @@ public:
     template <class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TOMP_Solver>(this),
+            cereal::base_class<TSolverOMP>(this),
             CEREAL_NVP(step_size_),
             CEREAL_NVP(active_coefficients_)
         );
@@ -215,9 +215,9 @@ public:
     * @param X         Map to feature matrix.
     * @param D         Map to dummy matrix.
     *
-    * @return Deserialized TMP_Solver object reconnected to X and D.
+    * @return Deserialized TSolverMP object reconnected to X and D.
     */
-    static TMP_Solver load(const std::string& filename,
+    static TSolverMP load(const std::string& filename,
                             Eigen::Map<Eigen::MatrixXd>& X,
                             Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -277,6 +277,10 @@ protected:
     void updateCorrelations() override;
 
 };
+
+/** @brief Old name of TSolverMP.
+ *  @deprecated Use TSolverMP. */
+using TMP_Solver [[deprecated("Use TSolverMP")]] = TSolverMP;
 
 // ==================================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

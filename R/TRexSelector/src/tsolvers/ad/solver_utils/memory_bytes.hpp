@@ -7,7 +7,7 @@
 /**
  * @file memory_bytes.hpp
  * @brief Heap bytes of the containers a T-solver holds, the parts of
- *        TSolver_Base::memoryBytes(): vectors by capacity, dense Eigen objects
+ *        TSolverBase::memoryBytes(): vectors by capacity, dense Eigen objects
  *        by size, sparse matrices by their arrays, a hash map as an estimate.
  */
 // ============================================================================

@@ -224,7 +224,7 @@ namespace trex::test::tsolvers::ad::memory_peak {
 using namespace trex::tsolvers::ad::linear_model::lars_based;
 using namespace trex::tsolvers::ad::linear_model::omp_based;
 using namespace trex::tsolvers::ad::linear_model::afs_based;
-using trex::tsolvers::ad::SolverOptions;
+using trex::tsolvers::ad::TSolverOptions;
 namespace datagen = trex::utils::datageneration::datagen;
 
 /** @brief Peak and held bytes of one solver run, relative to the heap in use
@@ -247,7 +247,7 @@ Problem makeProblem(Eigen::Index n, Eigen::Index p, Eigen::Index L) {
     datagen::SyntheticData data(
         n, p, L, {0, 1, 2, 3, 4}, {3.0, -2.0, 2.5, 1.5, -1.5}, 1.0, 11, -1, -1,
         datagen::predictor_policy::Normal(),
-        datagen::dummygen::Distribution::Normal(),
+        datagen::dummygen::DummyDistribution::Normal(),
         datagen::noisegen::noise_policy::Normal());
     Problem prob{data.getX(), data.getD(), data.getY()};
     for (Eigen::MatrixXd* M : {&prob.X, &prob.D}) {
@@ -261,18 +261,18 @@ Problem makeProblem(Eigen::Index n, Eigen::Index p, Eigen::Index L) {
 template <typename T>
 std::unique_ptr<T> makeSolver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::MatrixXd>& D,
                               Eigen::Map<Eigen::VectorXd>& y) {
-    SolverOptions o;
+    TSolverOptions o;
     o.normalize = false;
     o.intercept = false;
     o.precentered = true;
     o.lambda2 = 0.5;
     const Eigen::Index p = X.cols();
-    if constexpr (std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>) {
+    if constexpr (std::is_same_v<T, TSolverIENET> || std::is_same_v<T, TSolverIENETAug>) {
         // groups of five neighbouring variables
         Eigen::VectorXi groups(p);
         for (Eigen::Index j = 0; j < p; ++j) { groups(j) = static_cast<int>(j / 5); }
         return std::make_unique<T>(X, D, y, groups, o);
-    } else if constexpr (std::is_same_v<T, TIKNET_Solver>) {
+    } else if constexpr (std::is_same_v<T, TSolverTIKNET>) {
         Eigen::SparseMatrix<double> K(p, p);
         K.setIdentity();
         return std::make_unique<T>(X, D, y, K, o);
@@ -289,8 +289,8 @@ std::unique_ptr<T> makeSolver(Eigen::Map<Eigen::MatrixXd>& X, Eigen::Map<Eigen::
  *  measured values above for other platforms, allocators and data. */
 template <typename T>
 constexpr double peakBound() {
-    if constexpr (std::is_base_of_v<TLARS_Solver, T> || std::is_same_v<T, TENETAug_Solver> ||
-                  std::is_same_v<T, TIENETAug_Solver>) {
+    if constexpr (std::is_base_of_v<TSolverLARS, T> || std::is_same_v<T, TSolverENETAug> ||
+                  std::is_same_v<T, TSolverIENETAug>) {
         return 2.0;
     } else {
         return 1.5;
@@ -307,10 +307,10 @@ template <typename T>
 class TSolverMemoryPeak : public ::testing::Test {};
 
 typedef ::testing::Types<
-    TLARS_Solver, TLASSO_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver, TENET_Solver,
-    TENETAug_Solver, TIENET_Solver, TIENETAug_Solver, TIKNET_Solver,
-    TOMP_Solver, TGP_Solver, TACGP_Solver, TMP_Solver, TNCGMP_Solver, TOOLS_Solver,
-    TAFS_Solver
+    TSolverLARS, TSolverLASSO, TSolverStepwise, TSolverStagewise, TSolverENET,
+    TSolverENETAug, TSolverIENET, TSolverIENETAug, TSolverTIKNET,
+    TSolverOMP, TSolverGP, TSolverACGP, TSolverMP, TSolverNCGMP, TSolverOOLS,
+    TSolverAFS
 > AllSolvers;
 
 TYPED_TEST_SUITE(TSolverMemoryPeak, AllSolvers);

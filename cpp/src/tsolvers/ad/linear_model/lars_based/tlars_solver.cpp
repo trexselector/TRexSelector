@@ -41,23 +41,23 @@ namespace fpc = trex::utils::fp_classify;
 // Constructors
 // ============================================================================
 
-TLARS_Solver::TLARS_Solver(
+TSolverLARS::TSolverLARS(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options
+    const TSolverOptions& options
     )
-    : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TLARS) {}
+    : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TLARS) {}
 
 
-TLARS_Solver::TLARS_Solver(
+TSolverLARS::TSolverLARS(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options,
+    const TSolverOptions& options,
     SolverTypeLarsBased algorithm_type
     )
-    : TSolver_Base(X, D, y, options),
+    : TSolverBase(X, D, y, options),
       algo_type_(algorithm_type) {
 
     // 1. Inherited proprocessing handles X, D, y centering and normalization
@@ -97,15 +97,15 @@ TLARS_Solver::TLARS_Solver(
 }
 
 
-TLARS_Solver::TLARS_Solver(SolverTypeLarsBased type) : TSolver_Base(), algo_type_(type) {}
-TLARS_Solver::TLARS_Solver() : TSolver_Base(), algo_type_(SolverTypeLarsBased::TLARS) {}
+TSolverLARS::TSolverLARS(SolverTypeLarsBased type) : TSolverBase(), algo_type_(type) {}
+TSolverLARS::TSolverLARS() : TSolverBase(), algo_type_(SolverTypeLarsBased::TLARS) {}
 
 
 // ============================================================================
 // Core Algorithm Implementation
 // ============================================================================
 
-void TLARS_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverLARS::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
 
     // Set openMP dominance for the entire algorithm
@@ -185,7 +185,7 @@ void TLARS_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Helper Implementations
 // ============================================================================
 
-void TLARS_Solver::updateCorrelations(
+void TSolverLARS::updateCorrelations(
     double gamma,
     const Eigen::Ref<const Eigen::VectorXd>& a
 ) {
@@ -214,7 +214,7 @@ void TLARS_Solver::updateCorrelations(
 }
 
 
-std::vector<int> TLARS_Solver::updateActiveSet (const std::vector<std::size_t>& new_vars) {
+std::vector<int> TSolverLARS::updateActiveSet (const std::vector<std::size_t>& new_vars) {
     std::vector<int> actions_this_step;
     any_dropped_ = false;
 
@@ -249,7 +249,7 @@ std::vector<int> TLARS_Solver::updateActiveSet (const std::vector<std::size_t>& 
 }
 
 
-void TLARS_Solver::updateBetaPath(const Eigen::Ref<const Eigen::VectorXd>& w_A, double gamma) {
+void TSolverLARS::updateBetaPath(const Eigen::Ref<const Eigen::VectorXd>& w_A, double gamma) {
     // Advance the running sparse coefficients in place; the caller records
     // the step snapshot (after any same-step LASSO drops) via recordBetaStep().
     for (std::size_t k = 0; k < actives_.size(); ++k) {
@@ -258,7 +258,7 @@ void TLARS_Solver::updateBetaPath(const Eigen::Ref<const Eigen::VectorXd>& w_A, 
 }
 
 
-Eigen::VectorXd TLARS_Solver::signVector() const {
+Eigen::VectorXd TSolverLARS::signVector() const {
     Eigen::VectorXd sign_vec(static_cast<Eigen::Index>(Sign_.size()));
     for (std::size_t i = 0; i < Sign_.size(); ++i) {
         sign_vec(static_cast<Eigen::Index>(i)) = static_cast<double>(Sign_[i]);
@@ -267,7 +267,7 @@ Eigen::VectorXd TLARS_Solver::signVector() const {
 }
 
 
-Eigen::VectorXd TLARS_Solver::equiangularDirection(const Eigen::Ref<const Eigen::VectorXd>& sign) {
+Eigen::VectorXd TSolverLARS::equiangularDirection(const Eigen::Ref<const Eigen::VectorXd>& sign) {
 
     std::size_t m = R_.rows();
     if (m == 1) {
@@ -284,7 +284,7 @@ Eigen::VectorXd TLARS_Solver::equiangularDirection(const Eigen::Ref<const Eigen:
 }
 
 
-Eigen::VectorXd TLARS_Solver::equiangularVector(const Eigen::Ref<const Eigen::VectorXd>& w_A) const {
+Eigen::VectorXd TSolverLARS::equiangularVector(const Eigen::Ref<const Eigen::VectorXd>& w_A) const {
     Eigen::VectorXd u = Eigen::VectorXd::Zero(X_->rows());
 
     for (std::size_t k = 0; k < static_cast<std::size_t>(actives_.size()); ++k) {
@@ -295,7 +295,7 @@ Eigen::VectorXd TLARS_Solver::equiangularVector(const Eigen::Ref<const Eigen::Ve
 }
 
 
-std::pair<double, Eigen::VectorXd> TLARS_Solver::computeStepSize(
+std::pair<double, Eigen::VectorXd> TSolverLARS::computeStepSize(
     double Cmax,
     const Eigen::Ref<const Eigen::VectorXd>& u) const
 {
@@ -361,7 +361,7 @@ std::pair<double, Eigen::VectorXd> TLARS_Solver::computeStepSize(
 // Shared LASSO-style drop machinery
 // ============================================================================
 
-double TLARS_Solver::computeGammaSignChange(
+double TSolverLARS::computeGammaSignChange(
     double gamhat,
     std::vector<bool>& drops,
     const Eigen::Ref<const Eigen::VectorXd>& w_A) const
@@ -397,7 +397,7 @@ double TLARS_Solver::computeGammaSignChange(
 }
 
 
-void TLARS_Solver::processLassoDrops(std::vector<bool>& drops) {
+void TSolverLARS::processLassoDrops(std::vector<bool>& drops) {
     // Track this call's drops for the recovery-step candidate exclusion
     last_dropped_vars_.clear();
 
@@ -435,7 +435,7 @@ void TLARS_Solver::processLassoDrops(std::vector<bool>& drops) {
 }
 
 
-double TLARS_Solver::capGammaByExcluded(
+double TSolverLARS::capGammaByExcluded(
     double gamma, double Cmax,
     const std::vector<std::pair<double, double>>& ac,
     double floor_rel) const {
@@ -460,7 +460,7 @@ double TLARS_Solver::capGammaByExcluded(
 }
 
 
-void TLARS_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
+void TSolverLARS::refreshDroppedCorrelation(std::size_t dropped_var) {
     Eigen::Index j = static_cast<Eigen::Index>(dropped_var);
     correlations_(j) = getColumn(dropped_var).dot(r_);
     correlation_compensation_(j) = 0.0;
@@ -471,7 +471,7 @@ void TLARS_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
 // Setter
 // ============================================================================
 
-void TLARS_Solver::setKahanRefreshInterval(std::size_t interval) {
+void TSolverLARS::setKahanRefreshInterval(std::size_t interval) {
     if (interval < 1) {
         logWarning(concatMsg(
             "Kahan refresh interval must be at least 1; keeping current value (",
@@ -495,9 +495,9 @@ void TLARS_Solver::setKahanRefreshInterval(std::size_t interval) {
 // Memory report
 // ============================================================================
 
-std::size_t TLARS_Solver::memoryBytes() const noexcept {
+std::size_t TSolverLARS::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
-    return TSolver_Base::memoryBytes() + bytesOf(lambda_) +
+    return TSolverBase::memoryBytes() + bytesOf(lambda_) +
            bytesOf(correlation_compensation_) + bytesOf(Sign_) +
            bytesOf(last_dropped_vars_);
 }
@@ -507,13 +507,13 @@ std::size_t TLARS_Solver::memoryBytes() const noexcept {
 // Serialization Implementation
 // ============================================================================
 
-void TLARS_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverLARS::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TLARS_Solver TLARS_Solver::load(const std::string& filename,
+TSolverLARS TSolverLARS::load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TLARS_Solver>(filename, X, D);
+    return loadImpl<TSolverLARS>(filename, X, D);
 }
 
 // ==========================================================================

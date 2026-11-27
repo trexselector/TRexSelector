@@ -35,7 +35,7 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 /**
  * @brief Terminating Orthogonal Least Squares (T-OLS) solver.
  *
- * @details Inherits the execution flow and state management from TOMP_Solver, but
+ * @details Inherits the execution flow and state management from TSolverOMP, but
  * overrides the variable selection step to project candidate columns onto
  * the orthogonal complement of the active set prior to correlation calculation.
  *
@@ -59,53 +59,53 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
  *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
  *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
  */
-class TOOLS_Solver : public tsolvers::ad::linear_model::omp_based::TOMP_Solver {
+class TSolverOOLS : public tsolvers::ad::linear_model::omp_based::TSolverOMP {
 public:
     // ==========================================================================
     // Constructor/Destructor
     // ==========================================================================
 
     /**
-     * @brief Construct a new TOOLS_Solver object.
+     * @brief Construct a new TSolverOOLS object.
      *
      * @param X Map to the predictor matrix (n x p).
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (normalize the predictors), intercept (include an
      *        intercept term) and verbose (verbose output), the tolerance and
      *        the tie-breaking (exch_tie_alpha / exch_tie_floor, the
      *        exchangeable-tie band of the greedy solvers).
      */
-    TOOLS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverOOLS(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options = SolverOptions{});
+                 const TSolverOptions& options = TSolverOptions{});
 
     /** @brief Default constructor for serialization. */
-    TOOLS_Solver();
+    TSolverOOLS();
 
     /** @brief Virtual destructor. */
-    ~TOOLS_Solver() override = default;
+    ~TSolverOOLS() override = default;
 
     /** @brief Deleted copy operations. */
-    TOOLS_Solver(const TOOLS_Solver&) = delete;
+    TSolverOOLS(const TSolverOOLS&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TOOLS_Solver& operator=(const TOOLS_Solver&) = delete;
+    TSolverOOLS& operator=(const TSolverOOLS&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TOOLS_Solver(TOOLS_Solver&&) = default;
+    TSolverOOLS(TSolverOOLS&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TOOLS_Solver& operator=(TOOLS_Solver&&) = delete;
+    TSolverOOLS& operator=(TSolverOOLS&&) = delete;
 
     /** @brief Get the string representation of the solver type. */
     std::string solverTypeToString() const override {
         return "TOOLS";
     }
 
-    /** @brief TOMP_Solver::memoryBytes() plus the projected norms of all columns. */
+    /** @brief TSolverOMP::memoryBytes() plus the projected norms of all columns. */
     std::size_t memoryBytes() const noexcept override;
 
     // ==========================================================================
@@ -116,7 +116,7 @@ public:
     friend class cereal::access;
 
     /**
-     * @brief Serialize the TOOLS_Solver object.
+     * @brief Serialize the TSolverOOLS object.
      *
      * @tparam Archive The type of the archive.
      * @param archive The archive object.
@@ -124,27 +124,27 @@ public:
     template <class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<trex::tsolvers::ad::linear_model::omp_based::TOMP_Solver>(this),
+            cereal::base_class<trex::tsolvers::ad::linear_model::omp_based::TSolverOMP>(this),
             CEREAL_NVP(proj_sq_), CEREAL_NVP(proj_rank_)
         );
     }
 
     /**
-     * @brief Save the current TOOLS_Solver object to a file (binary serialization).
+     * @brief Save the current TSolverOOLS object to a file (binary serialization).
      *
      * @param filename The name of the file to save the object to.
      */
     virtual void save(const std::string& filename) const override;
 
     /**
-     * @brief Load a TOOLS_Solver object from a file (binary deserialization).
+     * @brief Load a TSolverOOLS object from a file (binary deserialization).
      *
      * @param filename The name of the file to load the object from.
      * @param X Map to the predictor matrix (used for reconnecting after loading).
      * @param D Map to the dummy predictor matrix (used for reconnecting after loading).
-     * @return A TOOLS_Solver object loaded from the specified file.
+     * @return A TSolverOOLS object loaded from the specified file.
      */
-    static TOOLS_Solver load(const std::string& filename,
+    static TSolverOOLS load(const std::string& filename,
                              Eigen::Map<Eigen::MatrixXd>& X,
                              Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -178,6 +178,10 @@ protected:
      */
     void updateCorrelations() override;
 };
+
+/** @brief Old name of TSolverOOLS.
+ *  @deprecated Use TSolverOOLS. */
+using TOOLS_Solver [[deprecated("Use TSolverOOLS")]] = TSolverOOLS;
 
 // ==================================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

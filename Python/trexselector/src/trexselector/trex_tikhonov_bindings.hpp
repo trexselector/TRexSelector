@@ -39,7 +39,7 @@
 namespace py = pybind11;
 namespace tik    = trex::trex_selector_methods::ad::trex_tikhonov;
 namespace tik_sd = trex::trex_selector_methods::ad::utils::solver_dispatch;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 
 // =====================================================================================
 
@@ -50,11 +50,11 @@ using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
  *        one, as it is. Without it the nested control applies. Nothing is
  *        changed in either, and the C++ constructor validates the result.
  */
-inline tik::TRexTikhonovControlParameter merge_tikhonov_control(
-    const tik::TRexTikhonovControlParameter& tik_control,
-    const std::optional<TRexControlParameter>& trex_control)
+inline tik::TRexTikhonovControl merge_tikhonov_control(
+    const tik::TRexTikhonovControl& tik_control,
+    const std::optional<TRexControl>& trex_control)
 {
-    tik::TRexTikhonovControlParameter tik_ctrl = tik_control;
+    tik::TRexTikhonovControl tik_ctrl = tik_control;
     if (trex_control) { tik_ctrl.trex_ctrl = *trex_control; }
     return tik_ctrl;
 }
@@ -80,8 +80,8 @@ public:
         Eigen::Ref<Eigen::MatrixXd> X,
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
-        const tik::TRexTikhonovControlParameter& tik_control,
-        const std::optional<TRexControlParameter>& trex_control,
+        const tik::TRexTikhonovControl& tik_control,
+        const std::optional<TRexControl>& trex_control,
         int seed,
         bool verbose
     ) {
@@ -90,7 +90,7 @@ public:
                                                                   X.cols());
         this->y_map_ = std::make_unique<Eigen::Map<Eigen::VectorXd>>(y.data(),
                                                                   y.size());
-        const tik::TRexTikhonovControlParameter tik_ctrl =
+        const tik::TRexTikhonovControl tik_ctrl =
             merge_tikhonov_control(tik_control, trex_control);
         this->selector_ = std::make_unique<tik::TRexTikhonovSelector>(
             *(this->X_map_), *(this->y_map_), tFDR, tik_ctrl, seed, verbose
@@ -109,8 +109,8 @@ public:
         const DesignArray& X,
         Eigen::Ref<Eigen::VectorXd> y,
         double tFDR,
-        const tik::TRexTikhonovControlParameter& tik_control,
-        const std::optional<TRexControlParameter>& trex_control,
+        const tik::TRexTikhonovControl& tik_control,
+        const std::optional<TRexControl>& trex_control,
         int seed,
         bool verbose
     ) : PyTRexTikhonovSelector(
@@ -124,7 +124,7 @@ public:
     }
 
     /** @brief The lambda_2 tuner health record of the last select(). */
-    const trex::ml_methods::model_selection::lambda2_cv_diagnostics&
+    const trex::ml_methods::model_selection::Lambda2CVDiagnostics&
     getLambda2CVDiagnostics() const {
         return static_cast<tik::TRexTikhonovSelector*>(this->selector_.get())
             ->getLambda2CVDiagnostics();
@@ -294,16 +294,16 @@ inline void bind_trex_tikhonov(py::module& m) {
             "when prior_groups was supplied, else the linkage of the clustering, \"single\", \"complete\", "
             "\"average\" or \"wpgma\". Empty when there are no clusters.");
 
-    py::class_<tik::TRexTikhonovControlParameter>(m, "TRexTikhonovControlParameter",
+    py::class_<tik::TRexTikhonovControl>(m, "TRexTikhonovControlParameter",
         "Control parameters of the Tikhonov selector: the penalty (a p x p PSD matrix tikhonov_K, sparse or dense, "
             "or GROUP_CENTERING built from groups), the rule for lambda_2, and the dummies.")
         .def(py::init<>())
-        .def_readwrite("penalty_structure", &tik::TRexTikhonovControlParameter::penalty_structure, "Structural form "
+        .def_readwrite("penalty_structure", &tik::TRexTikhonovControl::penalty_structure, "Structural form "
             "of the penalty: SPARSE_GENERAL (default, tikhonov_K is the penalty) or GROUP_CENTERING (K from "
             "prior_groups, which it requires).")
         .def_property("tikhonov_K",
-            [](const tik::TRexTikhonovControlParameter& c) { return c.tikhonov_K; },
-            [](tik::TRexTikhonovControlParameter& c, const Eigen::SparseMatrix<double>& K) {
+            [](const tik::TRexTikhonovControl& c) { return c.tikhonov_K; },
+            [](tik::TRexTikhonovControl& c, const Eigen::SparseMatrix<double>& K) {
                 c.tikhonov_K = K;
             },
             "The p x p PSD penalty matrix K. It is held sparse: assign a scipy.sparse matrix of any format, or a "
@@ -312,73 +312,73 @@ inline void bind_trex_tikhonov(py::module& m) {
                 "entries, symmetry, positive semi-definiteness). Optional under GROUP_CENTERING, where the "
                 "selector builds the centering matrix from prior_groups when it is left out. A supplied matrix "
                 "is compared with that matrix, and another matrix raises ValueError.")
-        .def_readwrite("lambda_2",        &tik::TRexTikhonovControlParameter::lambda_2,        "Weight of the "
+        .def_readwrite("lambda_2",        &tik::TRexTikhonovControl::lambda_2,        "Weight of the "
             "penalty. A negative value (default -1) lets lambda2_method choose it, 0 is no penalty (the lasso path "
             "of the solver), and a positive value is used as it is. It must be finite. A supplied value refers to "
             "the scale of the standardized columns: under ScalingMode.ZSCORE the columns have the squared norm "
             "n - 1, so the same shrinkage needs the value times n - 1. The rules report their pick on this scale.")
-        .def_readwrite("lambda2_method",  &tik::TRexTikhonovControlParameter::lambda2_method,  "Rule that chooses "
+        .def_readwrite("lambda2_method",  &tik::TRexTikhonovControl::lambda2_method,  "Rule that chooses "
             "lambda_2 when lambda_2 < 0 (default PILOT_KNEE, the pilot rule; the cross-validation rules are the "
             "alternatives).")
-        .def_readwrite("cv_n_folds",      &tik::TRexTikhonovControlParameter::cv_n_folds,      "Folds of the "
+        .def_readwrite("cv_n_folds",      &tik::TRexTikhonovControl::cv_n_folds,      "Folds of the "
             "cross-validation rules, 2 to n (default 10).")
-        .def_readwrite("cv_n_lambda",     &tik::TRexTikhonovControlParameter::cv_n_lambda,     "CV_*_TIK_SVD: points "
+        .def_readwrite("cv_n_lambda",     &tik::TRexTikhonovControl::cv_n_lambda,     "CV_*_TIK_SVD: points "
             "on the lambda_2 grid (default 100).")
-        .def_readwrite("cv_n_lambda1",    &tik::TRexTikhonovControlParameter::cv_n_lambda1,    "CV_*_IEN_CCD: points "
+        .def_readwrite("cv_n_lambda1",    &tik::TRexTikhonovControl::cv_n_lambda1,    "CV_*_IEN_CCD: points "
             "on the profiled lambda_1 path per lambda_2 value (default 40).")
-        .def_readwrite("cv_dfmax_ratio",  &tik::TRexTikhonovControlParameter::cv_dfmax_ratio,  "CV_*_IEN_CCD: support "
+        .def_readwrite("cv_dfmax_ratio",  &tik::TRexTikhonovControl::cv_dfmax_ratio,  "CV_*_IEN_CCD: support "
             "cap as a fraction of the smallest fold's training size (default 0.8). A value <= 0 disables the cap, "
             "larger values allow larger supports at a higher cost. It must be finite.")
-        .def_readwrite("cv_n_lambda2",    &tik::TRexTikhonovControlParameter::cv_n_lambda2,    "CV_*_IEN_CCD: points "
+        .def_readwrite("cv_n_lambda2",    &tik::TRexTikhonovControl::cv_n_lambda2,    "CV_*_IEN_CCD: points "
             "on the lambda_2 grid (default 100).")
-        .def_readwrite("cv_seed",         &tik::TRexTikhonovControlParameter::cv_seed,         "Seed of the fold "
+        .def_readwrite("cv_seed",         &tik::TRexTikhonovControl::cv_seed,         "Seed of the fold "
             "permutation of the cross-validation rules. -1 (default) derives it from the seed of the selector, a "
             "value >= 0 replaces it for the folds only.")
-        .def_readwrite("pilot_grid",      &tik::TRexTikhonovControlParameter::pilot_grid,      "lambda_2 grid of the "
+        .def_readwrite("pilot_grid",      &tik::TRexTikhonovControl::pilot_grid,      "lambda_2 grid of the "
             "pilot rule, stated for columns of unit norm. Under ScalingMode.ZSCORE the pilot runs at these values "
             "times n - 1, as the CV tuners return their pick, so one grid means the same shrinkage under every "
             "scaling mode. The pick is reported on the working scale and can be supplied as lambda_2. Keep 0 on "
             "the grid so that no penalty is an admissible answer. Default: default_lambda2_grid().")
-        .def_readwrite("pilot_K",         &tik::TRexTikhonovControlParameter::pilot_K,         "Pilot experiments per "
+        .def_readwrite("pilot_K",         &tik::TRexTikhonovControl::pilot_K,         "Pilot experiments per "
             "grid value (default 10; at least 2, capped at K of the base control).")
-        .def_readwrite("pilot_T",         &tik::TRexTikhonovControlParameter::pilot_T,         "Stopping time of the "
+        .def_readwrite("pilot_T",         &tik::TRexTikhonovControl::pilot_T,         "Stopping time of the "
             "pilot paths (default 5; at least 1, capped at min(L_0, ceil(n / 2))).")
-        .def_readwrite("pilot_L_multiplier", &tik::TRexTikhonovControlParameter::pilot_L_multiplier, "Pilot "
+        .def_readwrite("pilot_L_multiplier", &tik::TRexTikhonovControl::pilot_L_multiplier, "Pilot "
             "dummies L_0 = pilot_L_multiplier times p (default 1; in [1, max_dummy_multiplier] of the base "
             "control).")
-        .def_readwrite("pilot_knee_tolerance", &tik::TRexTikhonovControlParameter::pilot_knee_tolerance, "Pilot "
+        .def_readwrite("pilot_knee_tolerance", &tik::TRexTikhonovControl::pilot_knee_tolerance, "Pilot "
             "rule: selections below the largest count that still count as on the plateau (default 1; 0 reads the "
             "largest count).")
-        .def_readwrite("pilot_statistic", &tik::TRexTikhonovControlParameter::pilot_statistic, "The count the pilot "
+        .def_readwrite("pilot_statistic", &tik::TRexTikhonovControl::pilot_statistic, "The count the pilot "
             "rule picks on: MAJORITY (default), CALIBRATED or GROUP_MAJORITY.")
-        .def_readwrite("pilot_group_fraction", &tik::TRexTikhonovControlParameter::pilot_group_fraction,
+        .def_readwrite("pilot_group_fraction", &tik::TRexTikhonovControl::pilot_group_fraction,
             "GROUP_MAJORITY: the share of a group's members that must be ahead for the group to count, in (0, 1] "
             "(default 0.5).")
-        .def_readwrite("pilot_shared_dummies", &tik::TRexTikhonovControlParameter::pilot_shared_dummies, "False "
+        .def_readwrite("pilot_shared_dummies", &tik::TRexTikhonovControl::pilot_shared_dummies, "False "
             "(default): the pilot draws its dummies from a seed stream of its own, so the dummies of the main run "
             "do not depend on the pick. True: the pilot uses the first dummy block of the main strategy (not with "
             "the PERMUTATION strategies).")
-        .def_readwrite("cluster_dummies", &tik::TRexTikhonovControlParameter::cluster_dummies, "Draw the dummies per "
+        .def_readwrite("cluster_dummies", &tik::TRexTikhonovControl::cluster_dummies, "Draw the dummies per "
             "cluster of correlated variables, as in TRexGVSSelector (default True). False gives i.i.d. dummies, "
             "for validation runs only: with an informed K they deform the exchangeability of dummies and null "
             "variables that the FDR calibration relies on.")
-        .def_readwrite("prior_groups",    &tik::TRexTikhonovControlParameter::prior_groups,    "Groups of the "
+        .def_readwrite("prior_groups",    &tik::TRexTikhonovControl::prior_groups,    "Groups of the "
             "variables: a 0-based group ID per variable (length p, IDs without gaps). They define the clusters of "
             "the dummies (with cluster_dummies), the penalty under GROUP_CENTERING and the count GROUP_MAJORITY of "
             "the pilot rule. Empty (default): the clusters of the dummies are found by clustering the "
             "correlations with corr_max and hc_linkage.")
-        .def_readwrite("corr_max",        &tik::TRexTikhonovControlParameter::corr_max,        "Correlation threshold "
+        .def_readwrite("corr_max",        &tik::TRexTikhonovControl::corr_max,        "Correlation threshold "
             "of the automatic clustering (default 0.5, in [0, 1]). The dendrogram is cut at the height "
             "1 - corr_max. With Single linkage (default) no two variables of different clusters correlate above "
             "corr_max. With Complete linkage every two variables of one cluster correlate at least at corr_max, "
             "and variables of different clusters can exceed it. Ignored when prior_groups is set or "
             "cluster_dummies is False.")
-        .def_readwrite("hc_linkage",      &tik::TRexTikhonovControlParameter::hc_linkage,      "Linkage of the "
+        .def_readwrite("hc_linkage",      &tik::TRexTikhonovControl::hc_linkage,      "Linkage of the "
             "hierarchical clustering (ml_methods.clustering.LinkageMethod, default Single). Supported: Single, "
             "Complete, Average, WPGMA. Ward is rejected, because its update is valid for squared Euclidean "
             "distances only and the correlation distance 1 - abs(cor) is not Euclidean. Ignored when prior_groups "
             "is set or cluster_dummies is False.")
-        .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControlParameter::trex_ctrl,       "Nested base T-Rex "
+        .def_readwrite("trex_ctrl",       &tik::TRexTikhonovControl::trex_ctrl,       "Nested base T-Rex "
             "control, whose solver is TIKNET, the one solver of the selector. It applies when TRexTikhonovSelector "
             "gets no trex_control argument, and that argument replaces it otherwise.");
 
@@ -404,8 +404,8 @@ inline void bind_trex_tikhonov(py::module& m) {
 
     m.def("gvs_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
-             const TRexGVSControlParameter& gvs_control,
-             const std::optional<TRexControlParameter>& trex_control,
+             const TRexGVSControl& gvs_control,
+             const std::optional<TRexControl>& trex_control,
              int seed, const std::vector<double>& grid, double knee_tolerance, bool verbose) {
               // Every probe normalizes X in place and hands it back on return,
               // so X and y are read through maps and never copied.
@@ -418,7 +418,7 @@ inline void bind_trex_tikhonov(py::module& m) {
                                                  seed, cfg, verbose);
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
-          py::arg("gvs_control") = TRexGVSControlParameter(),
+          py::arg("gvs_control") = TRexGVSControl(),
           py::arg("trex_control") = py::none(),
           py::arg("seed") = 0,
           py::arg("grid") = tik::default_lambda2_grid(),
@@ -435,8 +435,8 @@ inline void bind_trex_tikhonov(py::module& m) {
 
     m.def("tikhonov_lambda2_power_rule",
           [](Eigen::Ref<Eigen::MatrixXd> X, Eigen::Ref<Eigen::VectorXd> y, double tFDR,
-             const tik::TRexTikhonovControlParameter& tik_control,
-             const std::optional<TRexControlParameter>& trex_control,
+             const tik::TRexTikhonovControl& tik_control,
+             const std::optional<TRexControl>& trex_control,
              int seed, const std::vector<double>& grid, double knee_tolerance, bool verbose) {
               // Every probe normalizes X in place and hands it back on return,
               // so X and y are read through maps and never copied.
@@ -445,12 +445,12 @@ inline void bind_trex_tikhonov(py::module& m) {
               tik::Lambda2PowerRuleConfig cfg;
               cfg.grid           = grid;
               cfg.knee_tolerance = knee_tolerance;
-              const tik::TRexTikhonovControlParameter tik_ctrl =
+              const tik::TRexTikhonovControl tik_ctrl =
                   merge_tikhonov_control(tik_control, trex_control);
               return tik::tikhonov_lambda2_power_rule(X_map, y_map, tFDR, tik_ctrl, seed, cfg, verbose);
           },
           py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
-          py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
+          py::arg("tik_control") = tik::TRexTikhonovControl(),
           py::arg("trex_control") = py::none(),
           py::arg("seed") = 0,
           py::arg("grid") = tik::default_lambda2_grid(),
@@ -533,10 +533,10 @@ inline void bind_trex_tikhonov(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
         .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, double,
-                      const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
+                      const tik::TRexTikhonovControl&, const std::optional<TRexControl>&,
                       int, bool>(),
              py::arg("X"), py::arg("y"), py::arg("tFDR") = 0.1,
-             py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
+             py::arg("tik_control") = tik::TRexTikhonovControl(),
              py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
@@ -545,10 +545,10 @@ inline void bind_trex_tikhonov(py::module& m) {
              "trex_control replaces it as it is, and its solver_type must be TIKNET: any other solver, "
              "TLARS included, raises ValueError.")
         .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, double,
-                      const tik::TRexTikhonovControlParameter&, const std::optional<TRexControlParameter>&,
+                      const tik::TRexTikhonovControl&, const std::optional<TRexControl>&,
                       int, bool>(),
              py::arg("X").noconvert(), py::arg("y"), py::arg("tFDR") = 0.1,
-             py::arg("tik_control") = tik::TRexTikhonovControlParameter(),
+             py::arg("tik_control") = tik::TRexTikhonovControl(),
              py::arg("trex_control") = py::none(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),

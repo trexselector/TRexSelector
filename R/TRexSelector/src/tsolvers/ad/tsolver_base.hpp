@@ -7,7 +7,7 @@
 /**
  * @file tsolver_base.hpp
  *
- * @brief Abstract base class TSolver_Base as template for all terminating variable
+ * @brief Abstract base class TSolverBase as template for all terminating variable
  * selection solvers.
  */
 // ===================================================================================
@@ -116,7 +116,7 @@ struct SparseBetaPath {
  * unified index space. memoryBytes() reports the heap bytes a solver holds,
  * without the borrowed X and D.
  */
-class TSolver_Base {
+class TSolverBase {
 protected:
     // ==========================================================================
     // Data Members
@@ -206,7 +206,7 @@ protected:
     /** @brief Flag indicating if an intercept should be included. Default is true. */
     bool intercept_{true};
 
-    /** @brief The caller centered X, D and y (SolverOptions::precentered).
+    /** @brief The caller centered X, D and y (TSolverOptions::precentered).
      *  Default is false. */
     bool precentered_{false};
 
@@ -303,15 +303,15 @@ protected:
     // Constructors
     // ==========================================================================
     /** @brief Default constructor. */
-    TSolver_Base() = default;
+    TSolverBase() = default;
 
     /**
-     * @brief Constructor of a TSolver_Base object using data and options.
+     * @brief Constructor of a TSolverBase object using data and options.
      *
      * @param X Design matrix (n x p).
      * @param D Dummy design matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param options Every other input (SolverOptions): the base applies the
+     * @param options Every other input (TSolverOptions): the base applies the
      *        preprocessing flags (normalize, intercept, scaling_mode,
      *        verbose), the tolerance, the tie-break seed and the
      *        exchangeable-tie configuration; the family hyperparameters are
@@ -323,10 +323,10 @@ protected:
      * active if normalize is true. Otherwise ensure that you exclude collinear columns a priori
      * before passing X or use an external preprocessing step for centering and l2-normalization.
      */
-    TSolver_Base(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverBase(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options);
+                 const TSolverOptions& options);
 
 public:
     /** @brief Virtual default destructor. (X_, D_ are non-owning views). */
@@ -335,16 +335,16 @@ public:
      *  derived constructor that threw after the base preprocessed), then
      *  releases the claims. The caller's buffers must still be alive: the
      *  bindings pin them (keep_alive / the XPtr protection slot). */
-    virtual ~TSolver_Base();
+    virtual ~TSolverBase();
 
     /** @brief Deleted copy constructor. */
-    TSolver_Base(const TSolver_Base&) = delete;
+    TSolverBase(const TSolverBase&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TSolver_Base& operator=(const TSolver_Base&) = delete;
+    TSolverBase& operator=(const TSolverBase&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TSolver_Base(TSolver_Base&&) = default;
+    TSolverBase(TSolverBase&&) = default;
 
     /** @brief Sets numerical tolerance for numeric comparisons internally.
      *  Virtual: the augmented wrappers forward it to their inner solver. */
@@ -355,7 +355,7 @@ public:
      *
      * @details Virtual: the augmented wrappers (TENETAug, TIENETAug) forward
      *          the seed to their inner solver, so a call through a
-     *          TSolver_Base pointer reaches the engine that breaks the ties.
+     *          TSolverBase pointer reaches the engine that breaks the ties.
      *
      * @param seed The seed value to initialize the random engine.
      */
@@ -365,7 +365,7 @@ public:
      * @brief Set the thread budget of the solver's own OpenMP regions.
      *
      * @details Virtual: the augmented wrappers forward it to their inner
-     *          solver. 1: serial; at least 1 (SolverOptions::n_threads).
+     *          solver. 1: serial; at least 1 (TSolverOptions::n_threads).
      *
      * @param n_threads The budget; a negative value throws.
      */
@@ -831,7 +831,7 @@ protected:
 
     /** @brief Exchangeable-tie band width in pairwise-noise sd units
      *  (0 = off; see setExchangeableTie()). Not serialized: the dispatcher
-     *  re-applies it from SolverHyperparameters on every lifecycle path. */
+     *  re-applies it from TSolverParams on every lifecycle path. */
     double exch_tie_alpha_{0.0};
 
     /** @brief Minimum |correlation| for exchangeable-tie candidates. */
@@ -1057,6 +1057,10 @@ protected:
         }
     }
 };
+
+/** @brief Old name of TSolverBase.
+ *  @deprecated Use TSolverBase. */
+using TSolver_Base [[deprecated("Use TSolverBase")]] = TSolverBase;
 
 // ============================================================================
 } // namespace trex::tsolvers::ad

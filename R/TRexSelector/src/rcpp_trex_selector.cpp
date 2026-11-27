@@ -27,17 +27,17 @@ using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex
 // =========================================================================================
 
 /**
- * @brief Parses an R list into a TRexControlParameter C++ struct.
+ * @brief Parses an R list into a TRexControl C++ struct.
  *
  * Maps general parameters for the TRex framework, such as the L-loop strategy,
  * solver type, parallel execution settings, and specific solver hyperparameters.
  *
  * @param control List of parameters passed from R.
  *
- * @return Populated TRexControlParameter instance.
+ * @return Populated TRexControl instance.
  */
-TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
-    TRexControlParameter params;
+TRexControl parse_control_parameter(const Rcpp::List& control) {
+    TRexControl params;
 
     // Experiment Configuration
     if (control.containsElementNamed("K")) {
@@ -181,54 +181,54 @@ TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
         std::string type_str = dd["type"];
 
         if (type_str == "Normal") {
-            params.dummy_distribution = Distribution::Normal();
+            params.dummy_distribution = DummyDistribution::Normal();
         } else if (type_str == "Uniform") {
             double a = dd.containsElementNamed("a") ?
                             (double)dd["a"] : std::sqrt(3.0);
-            params.dummy_distribution = Distribution::Uniform(a);
+            params.dummy_distribution = DummyDistribution::Uniform(a);
         } else if (type_str == "Rademacher") {
-            params.dummy_distribution = Distribution::Rademacher();
+            params.dummy_distribution = DummyDistribution::Rademacher();
         } else if (type_str == "StudentT") {
             double df = dd.containsElementNamed("df") ?
                             (double)dd["df"] : 5.0;
-            params.dummy_distribution = Distribution::StudentT(df);
+            params.dummy_distribution = DummyDistribution::StudentT(df);
         } else if (type_str == "Laplace") {
             double loc   = dd.containsElementNamed("location") ?
                             (double)dd["location"] : 0.0;
             double scale = dd.containsElementNamed("scale")    ?
                             (double)dd["scale"]    : 1.0 / std::sqrt(2.0);
-            params.dummy_distribution = Distribution::Laplace(loc, scale);
+            params.dummy_distribution = DummyDistribution::Laplace(loc, scale);
         } else if (type_str == "Gumbel") {
             double loc   = dd.containsElementNamed("location") ?
                             (double)dd["location"] : 0.0;
             double scale = dd.containsElementNamed("scale")    ?
                             (double)dd["scale"]    : 1.0;
-            params.dummy_distribution = Distribution::Gumbel(loc, scale);
+            params.dummy_distribution = DummyDistribution::Gumbel(loc, scale);
         } else if (type_str == "Triangle") {
             double a = dd.containsElementNamed("a") ? (double)dd["a"] : -std::sqrt(6.0);
             double b = dd.containsElementNamed("b") ? (double)dd["b"] : 0.0;
             double c = dd.containsElementNamed("c") ? (double)dd["c"] : std::sqrt(6.0);
-            params.dummy_distribution = Distribution::Triangle(a, b, c);
+            params.dummy_distribution = DummyDistribution::Triangle(a, b, c);
         } else if (type_str == "UniformSphere") {
             int dim = dd.containsElementNamed("dim") ? (int)dd["dim"] : 3;
-            params.dummy_distribution = Distribution::UniformSphere(dim);
+            params.dummy_distribution = DummyDistribution::UniformSphere(dim);
         } else if (type_str == "Mammen") {
             // the two probabilities keep the defaults of the core unless given
-            const Distribution def = Distribution::Mammen();
+            const DummyDistribution def = DummyDistribution::Mammen();
             double p1 = dd.containsElementNamed("p1") ? (double)dd["p1"] : def.mammen_param_p1;
             double p2 = dd.containsElementNamed("p2") ? (double)dd["p2"] : def.mammen_param_p2;
-            params.dummy_distribution = Distribution::Mammen(p1, p2);
+            params.dummy_distribution = DummyDistribution::Mammen(p1, p2);
         } else if (type_str == "ConstrainedSparseRademacher") {
             // the default of s is the one of the core
             params.dummy_distribution = dd.containsElementNamed("s")
-                ? Distribution::ConstrainedSparseRademacher((double)dd["s"])
-                : Distribution::ConstrainedSparseRademacher();
+                ? DummyDistribution::ConstrainedSparseRademacher((double)dd["s"])
+                : DummyDistribution::ConstrainedSparseRademacher();
         } else if (type_str == "Logistic") {
             double loc   = dd.containsElementNamed("location") ?
                             (double)dd["location"] : 0.0;
             double scale = dd.containsElementNamed("scale")    ?
                             (double)dd["scale"]    : std::sqrt(3.0) / std::numbers::pi;
-            params.dummy_distribution = Distribution::Logistic(loc, scale);
+            params.dummy_distribution = DummyDistribution::Logistic(loc, scale);
         } else {
             Rcpp::stop("Unknown dummy distribution type: " + type_str);
         }
@@ -258,7 +258,7 @@ TRexControlParameter parse_control_parameter(const Rcpp::List& control) {
  * Shared by the plain/DA/screening/biobank glue; the GVS glue deliberately
  * bypasses it (these types are exactly its vocabulary).
  */
-void validate_core_solver_type(const TRexControlParameter& params) {
+void validate_core_solver_type(const TRexControl& params) {
     switch (params.solver_type) {
         case SolverTypeForTRex::TIENET:
             Rcpp::stop("solver = \"TIENET\" is a GVS-only solver (needs a "
@@ -288,7 +288,7 @@ XPtr<RTRexSelector> trex_selector_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexControlParameter control = parse_control_parameter(control_list);
+    TRexControl control = parse_control_parameter(control_list);
     validate_core_solver_type(control);
     // The prot slot pins X and y until the finalizer has run: the selector's
     // destructor writes the de-normalized X back through the stored map, so
@@ -319,7 +319,7 @@ XPtr<RTRexSelector> trex_selector_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexControlParameter control = parse_control_parameter(control_list);
+    TRexControl control = parse_control_parameter(control_list);
     validate_core_solver_type(control);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexSelector>(new RTRexSelector(mapped_design_for(*X_ptr, control), y_map, tFDR,

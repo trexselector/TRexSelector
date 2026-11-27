@@ -129,7 +129,7 @@ inline void print_vector(
  *
  * @details Each step prints a line with all additions (+k) or drops (-k)
  * performed, shown as 0-based variable indices. Entries are stored as
- * 1-based signed indices (R lars convention, see TSolver_Base::getActions()).
+ * 1-based signed indices (R lars convention, see TSolverBase::getActions()).
  *
  * @param actions Vector of per-step action lists (positive = add, negative = drop).
  */
@@ -308,7 +308,7 @@ inline void print_selection(
 
     // 3. Full selection path (with dummies colored)
     // Actions are stored as 1-based signed indices (R lars convention,
-    // see TSolver_Base::getActions()); decode with |a| - 1.
+    // see TSolverBase::getActions()); decode with |a| - 1.
     auto actions = solver.getActions();
     std::size_t dummy_start = solver.getDummyStartIndex();
     std::cout << "\n  Path: [";

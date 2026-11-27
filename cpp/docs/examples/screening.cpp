@@ -14,11 +14,11 @@
 #include <trex_selector_methods/ad/trex_screening/trex_biobank_screening.hpp>
 #include <trex_selector_methods/ad/trex_screening/trex_screening.hpp>
 
-using trex::trex_selector_methods::ad::trex_biobank_screening::BiobankScreenTRex;
-using trex::trex_selector_methods::ad::trex_biobank_screening::BiobankScreenTRexControl;
-using trex::trex_selector_methods::ad::trex_screening::ScreenTRexControlParameter;
+using trex::trex_selector_methods::ad::trex_biobank_screening::TRexBiobankScreeningSelector;
+using trex::trex_selector_methods::ad::trex_biobank_screening::TRexBiobankScreeningControl;
+using trex::trex_selector_methods::ad::trex_screening::TRexScreeningControl;
 using trex::trex_selector_methods::ad::trex_screening::ScreenTRexMethod;
-using trex::trex_selector_methods::ad::trex_screening::ScreenTRexSelector;
+using trex::trex_selector_methods::ad::trex_screening::TRexScreeningSelector;
 //! [includes]
 
 //! [helpers]
@@ -51,10 +51,10 @@ int main() {
 
     doc.begin("screen");
     //! [screen]
-    ScreenTRexControlParameter ctrl;
+    TRexScreeningControl ctrl;
     ctrl.trex_ctrl.K = 20;
 
-    ScreenTRexSelector scr(X_map, y_map, ctrl, /*seed=*/3, /*verbose=*/false);
+    TRexScreeningSelector scr(X_map, y_map, ctrl, /*seed=*/3, /*verbose=*/false);
     scr.select();
     const auto& res = scr.getScreenResult();
     print_indices("selected:     ", scr.getSelectedIndices());
@@ -69,11 +69,11 @@ int main() {
 
     doc.begin("boot");
     //! [boot]
-    ScreenTRexControlParameter boot_ctrl = ctrl;
+    TRexScreeningControl boot_ctrl = ctrl;
     boot_ctrl.use_bootstrap_CI = true;
     boot_ctrl.R_boot = 200;
 
-    ScreenTRexSelector boot(X_map, y_map, boot_ctrl, 3, false);
+    TRexScreeningSelector boot(X_map, y_map, boot_ctrl, 3, false);
     boot.select();
     const auto& boot_res = boot.getScreenResult();
     std::cout << std::boolalpha;
@@ -85,10 +85,10 @@ int main() {
 
     doc.begin("da");
     //! [da]
-    ScreenTRexControlParameter ar_ctrl = ctrl;
+    TRexScreeningControl ar_ctrl = ctrl;
     ar_ctrl.trex_method = ScreenTRexMethod::TREX_DA_AR1;
 
-    ScreenTRexSelector ar(X_map, y_map, ar_ctrl, 3, false);
+    TRexScreeningSelector ar(X_map, y_map, ar_ctrl, 3, false);
     ar.select();
     std::cout << std::fixed << std::setprecision(3) << "estimated correlation: "
               << ar.getScreenResult().estimated_correlation << '\n';
@@ -104,13 +104,13 @@ int main() {
     const std::vector<std::string> phenotypes = {"strong", "weak", "null"};
     Eigen::Map<Eigen::MatrixXd> Y_map(Y.data(), n, 3);
 
-    BiobankScreenTRexControl bio_ctrl;
+    TRexBiobankScreeningControl bio_ctrl;
     bio_ctrl.lower_bound_FDR = 0.05;
     bio_ctrl.upper_bound_FDR = 0.15;
     bio_ctrl.target_FDR_trex = 0.1;
     bio_ctrl.trex_screen_ctrl = ctrl;
 
-    BiobankScreenTRex bio(X_map, Y_map, bio_ctrl, 3, false);
+    TRexBiobankScreeningSelector bio(X_map, Y_map, bio_ctrl, 3, false);
     const std::vector records = bio.screenPhenotypes();
     std::cout << "records: " << records.size() << '\n';
     //! [biobank]

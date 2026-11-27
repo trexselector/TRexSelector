@@ -7,7 +7,7 @@
 /**
  * @file tenet_aug_solver.hpp
  *
- * @brief T-ElasticNet (Augmented) solver: thin wrapper around TLASSO_Solver
+ * @brief T-ElasticNet (Augmented) solver: thin wrapper around TSolverLASSO
  * running on a data-augmented system that encodes the EN ridge penalty.
  *
  * @details
@@ -31,7 +31,7 @@
  *  TLASSO, consistent with TENET collapsing to TLASSO at lambda2 = 0).
  *
  *  All preprocessing (centering, L2-normalisation) and the LARS path are
- *  delegated to the inner TLASSO_Solver via the normalize / intercept flags.
+ *  delegated to the inner TSolverLASSO via the normalize / intercept flags.
  *
  *  Coefficient recovery:
  *    getBetaPathSparse() returns the inner path with values / d2
@@ -65,7 +65,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
 /**
  * @brief T-ElasticNet solver via data augmentation.
  *
- * @details Delegates all LARS logic to an inner TLASSO_Solver running on
+ * @details Delegates all LARS logic to an inner TSolverLASSO running on
  * the augmented (n+p+L)-row system.  The augmentation encodes the ridge
  * penalty in the data itself, yielding the same Gram structure as the
  * T-Rex+GVS selector of the 1.x versions (trex(method = "trex+GVS")).
@@ -88,7 +88,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TENETAug_Solver : public TSolver_Base {
+class TSolverENETAug : public TSolverBase {
 
     // ========================================================================
     // Owned augmented data
@@ -110,13 +110,13 @@ class TENETAug_Solver : public TSolver_Base {
     // Inner forward-selection solver
     // ========================================================================
     /** @brief Inner solver run on the augmented system. Held by base pointer so
-     *  it can be either a TLASSO_Solver (LARS-LASSO; can drop variables — the
-     *  default, matching the augmented-Lasso EN recipe) or a plain TLARS_Solver
+     *  it can be either a TSolverLASSO (LARS-LASSO; can drop variables — the
+     *  default, matching the augmented-Lasso EN recipe) or a plain TSolverLARS
      *  (pure LARS; never drops — matches R's trex(type="lar")). */
-    std::unique_ptr<TLARS_Solver> inner_;
+    std::unique_ptr<TSolverLARS> inner_;
 
-    /** @brief If true, the inner solver is a pure-LARS TLARS_Solver instead of
-     *  the default TLASSO_Solver. Diagnostic / R-parity option. */
+    /** @brief If true, the inner solver is a pure-LARS TSolverLARS instead of
+     *  the default TSolverLASSO. Diagnostic / R-parity option. */
     bool use_lars_inner_{false};
 
     // ========================================================================
@@ -127,7 +127,7 @@ class TENETAug_Solver : public TSolver_Base {
      * @brief Build the raw augmented X matrix (no normalisation).
      *
      * Constructs d2 · [X ; d1·Ip ; 0_L].  Centering and L2-normalisation
-     * are delegated to the inner TLASSO_Solver.
+     * are delegated to the inner TSolverLASSO.
      *
      * @param X   Predictor matrix (n × p).
      * @param p   Number of original predictors.
@@ -147,7 +147,7 @@ class TENETAug_Solver : public TSolver_Base {
      * @brief Build the raw augmented D matrix (no normalisation).
      *
      * Constructs d2 · [D ; 0_p ; d1·IL].  Centering and L2-normalisation
-     * are delegated to the inner TLASSO_Solver.
+     * are delegated to the inner TSolverLASSO.
      *
      * @param D   Dummy matrix (n × L).
      * @param p   Number of original predictors (X-ridge block rows).
@@ -166,7 +166,7 @@ class TENETAug_Solver : public TSolver_Base {
     /**
      * @brief Build the augmented response vector: y_aug = [y ; 0_{p+L}].
      *
-     * Centering is delegated to the inner TLASSO_Solver (intercept flag).
+     * Centering is delegated to the inner TSolverLASSO (intercept flag).
      *
      * @param y   Response vector (n).
      * @param pL  Number of augmentation rows (p + L).
@@ -181,7 +181,7 @@ class TENETAug_Solver : public TSolver_Base {
 
     /**
      * @brief Copy the inner solver's diagnostic state into the inherited
-     * TSolver_Base members so all base getters (getRSS, getActives,
+     * TSolverBase members so all base getters (getRSS, getActives,
      * getNumSteps, ...) report the inner solver's progress.
      *
      * Called after construction, after every executeStep(), and after
@@ -190,15 +190,15 @@ class TENETAug_Solver : public TSolver_Base {
     void syncDiagnosticsFromInner();
 
     /**
-     * @brief Create the inner TLASSO_Solver, forwarding preprocessing flags.
-     * @param normalize  Passed to TLASSO_Solver (L2-normalise columns).
-     * @param intercept  Passed to TLASSO_Solver (centre columns and y).
-     * @param precentered Passed to TLASSO_Solver (caller-centered data;
+     * @brief Create the inner TSolverLASSO, forwarding preprocessing flags.
+     * @param normalize  Passed to TSolverLASSO (L2-normalise columns).
+     * @param intercept  Passed to TSolverLASSO (centre columns and y).
+     * @param precentered Passed to TSolverLASSO (caller-centered data;
      *        false on the augmented system).
-     * @param verbose    Passed to TLASSO_Solver.
-     * @param scaling_mode Passed to TLASSO_Solver (L2 or z-score scaling).
-     * @param tie_seed   Seed of the inner tie-break engine (SolverOptions::tie_seed).
-     * @param n_threads  Thread budget of the inner solver (SolverOptions::n_threads).
+     * @param verbose    Passed to TSolverLASSO.
+     * @param scaling_mode Passed to TSolverLASSO (L2 or z-score scaling).
+     * @param tie_seed   Seed of the inner tie-break engine (TSolverOptions::tie_seed).
+     * @param n_threads  Thread budget of the inner solver (TSolverOptions::n_threads).
      */
     void buildInnerSolver(bool normalize, bool intercept, bool precentered,
                           bool verbose, ScalingMode scaling_mode, long long tie_seed,
@@ -210,31 +210,31 @@ public:
     // ========================================================================
 
     /**
-     * @brief Construct a TENETAug_Solver.
+     * @brief Construct a TSolverENETAug.
      *
      * Builds the augmented system (d1/d2 formula), then creates an inner
-     * TLASSO_Solver that handles all centering and L2-normalisation.
+     * TSolverLASSO that handles all centering and L2-normalisation.
      *
      * @param X          Predictor matrix (n × p).
      * @param D          Dummy matrix (n × L).
      * @param y          Response vector (n).
-     * @param options    Every other input (SolverOptions); this solver reads
+     * @param options    Every other input (TSolverOptions); this solver reads
      *                   lambda2, the ridge (L2) regularisation parameter
      *                   (≥ 0), the preprocessing flags forwarded to the inner
-     *                   TLASSO_Solver — normalize (columns of the augmented
+     *                   TSolverLASSO — normalize (columns of the augmented
      *                   matrices L2-normalised to unit norm, default true),
      *                   intercept (columns and response centred, default
      *                   true), verbose (default false) and scaling_mode (L2
      *                   or z-score column scaling, default L2) — and
      *                   tenet_aug_use_lars: if true, the inner
-     *                   forward-selection solver is a pure-LARS TLARS_Solver
+     *                   forward-selection solver is a pure-LARS TSolverLARS
      *                   (never drops variables) instead of the default
-     *                   TLASSO_Solver. Diagnostic / R-parity option.
+     *                   TSolverLASSO. Diagnostic / R-parity option.
      */
-    TENETAug_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverENETAug(Eigen::Map<Eigen::MatrixXd>& X,
                     Eigen::Map<Eigen::MatrixXd>& D,
                     Eigen::Map<Eigen::VectorXd>& y,
-                    const SolverOptions& options = SolverOptions{});
+                    const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for Cereal deserialization.
@@ -243,31 +243,31 @@ public:
      * automatically by the serialize() template (via buildMaps() +
      * buildInnerSolver()).
      */
-    TENETAug_Solver() = default;
+    TSolverENETAug() = default;
 
     /** @brief Deleted copy constructor. */
-    TENETAug_Solver(const TENETAug_Solver&) = delete;
+    TSolverENETAug(const TSolverENETAug&) = delete;
 
     /** @brief Deleted copy assignment. */
-    TENETAug_Solver& operator=(const TENETAug_Solver&) = delete;
+    TSolverENETAug& operator=(const TSolverENETAug&) = delete;
 
     /** @brief Default move constructor. */
-    TENETAug_Solver(TENETAug_Solver&&) = default;
+    TSolverENETAug(TSolverENETAug&&) = default;
 
     /** @brief Deleted move assignment. */
-    TENETAug_Solver& operator=(TENETAug_Solver&&) = delete;
+    TSolverENETAug& operator=(TSolverENETAug&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TENETAug_Solver() override = default;
+    ~TSolverENETAug() override = default;
 
     // ========================================================================
-    // Core solver interface (TSolver_Base pure virtuals)
+    // Core solver interface (TSolverBase pure virtuals)
     // ========================================================================
 
     /**
      * @brief Execute the T-LASSO solution path on the augmented system.
      *
-     * Delegates to the inner TLASSO_Solver; warm-starting is supported
+     * Delegates to the inner TSolverLASSO; warm-starting is supported
      * (calling again with a larger T_stop continues the path).
      *
      * @param T_stop    Maximum number of dummy entries allowed in the active set.
@@ -310,7 +310,7 @@ public:
     /** @brief Set the thread budget on the wrapper and on the inner solver
      *  (the inner solver owns every region). */
     void setNumThreads(int n_threads) override {
-        TSolver_Base::setNumThreads(n_threads);
+        TSolverBase::setNumThreads(n_threads);
         inner_->setNumThreads(n_threads);
     }
 
@@ -333,7 +333,7 @@ public:
     /**
      * @brief Serialize owned buffers, wrapper metadata, and inner solver state.
      *
-     * @note X_ and D_ (non-owned TSolver_Base pointers) are NOT serialized.
+     * @note X_ and D_ (non-owned TSolverBase pointers) are NOT serialized.
      * On load, the Maps are rebuilt from the owned buffers, the inner solver
      * is reconnected to them, and the wrapper's diagnostic mirror is refreshed.
      */
@@ -385,12 +385,16 @@ public:
      * @param filename Path to input file.
      * @param X Map to the original feature matrix (dimension check only).
      * @param D Map to the original dummy matrix (dimension check only).
-     * @return Deserialized TENETAug_Solver.
+     * @return Deserialized TSolverENETAug.
      */
-    static TENETAug_Solver load(const std::string& filename,
+    static TSolverENETAug load(const std::string& filename,
                                 Eigen::Map<Eigen::MatrixXd>& X,
                                 Eigen::Map<Eigen::MatrixXd>& D);
 };
+
+/** @brief Old name of TSolverENETAug.
+ *  @deprecated Use TSolverENETAug. */
+using TENETAug_Solver [[deprecated("Use TSolverENETAug")]] = TSolverENETAug;
 
 // ============================================================================
 } // namespace trex::tsolvers::ad::linear_model::lars_based

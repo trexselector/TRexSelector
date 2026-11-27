@@ -38,18 +38,18 @@
  *  - Coefficients are in the natural parameterization (no back-transform);
  *    lambda_ records Cmax per step, which equals lambda1 at the breakpoints.
  *
- *  Dummy handling (T-Rex+GVS convention, identical to TIENETAug_Solver):
+ *  Dummy handling (T-Rex+GVS convention, identical to TSolverIENETAug):
  *  D consists of w = L/p layers of p columns; dummy column j of every layer
  *  belongs to the same group as original variable j and contributes to the
  *  same group sum; the group size p_m remains the REAL group size.
  *
  *  Degenerate cases: lambda2 == 0 reduces exactly to T-LASSO; all-singleton
  *  groups give the isotropic elastic net penalty (per-variable ridge)
- *  WITHOUT the Zou-Hastie augmented scaling of TENET_Solver.
+ *  WITHOUT the Zou-Hastie augmented scaling of TSolverENET.
  *
  *  Equivalence: the path coincides with T-LASSO run on the pure Theorem-1
  *  augmented system [X; B], [y; 0_M] WITHOUT re-normalization of the
- *  augmented columns — exactly what TIENETAug_Solver builds (both solvers
+ *  augmented columns — exactly what TSolverIENETAug builds (both solvers
  *  standardize the DATA blocks before augmentation and leave the penalty
  *  rows raw), so the two produce identical solution paths.
  */
@@ -92,7 +92,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TIENET_Solver: public TLARS_Solver {
+class TSolverIENET: public TSolverLARS {
 
 protected:
     // ============================================================================
@@ -132,8 +132,8 @@ protected:
      * @brief Protected constructor for derived classes.
      * @param solver_type Algorithm variant as SolverTypeLarsBased enum.
      */
-    explicit TIENET_Solver(SolverTypeLarsBased solver_type) :
-                           TLARS_Solver(solver_type) {}
+    explicit TSolverIENET(SolverTypeLarsBased solver_type) :
+                           TSolverLARS(solver_type) {}
 
 public:
     // ============================================================================
@@ -150,38 +150,38 @@ public:
      *                  original variable j's group.
      * @param y         Response vector (size n).
      * @param groups    0-based contiguous group ids in [0, M-1], length p.
-     * @param options   Every other input (SolverOptions); this solver reads
+     * @param options   Every other input (TSolverOptions); this solver reads
      *                  lambda2, the group-ridge (L2) regularization parameter
      *                  (>= 0), and the preprocessing flags normalize (unit
      *                  L2-norm columns, default true), intercept (centering,
      *                  default true), verbose (detailed status, default
      *                  false) and scaling_mode (L2 or z-score, default L2).
      */
-    TIENET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverIENET(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,
                   Eigen::Map<Eigen::VectorXd>& y,
                   const Eigen::VectorXi& groups,
-                  const SolverOptions& options = SolverOptions{});
+                  const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for Cereal deserialization.
      */
-    TIENET_Solver() : TLARS_Solver(SolverTypeLarsBased::TIENET) {}
+    TSolverIENET() : TSolverLARS(SolverTypeLarsBased::TIENET) {}
 
     /** @brief Deleted copy constructor. */
-    TIENET_Solver(const TIENET_Solver&) = delete;
+    TSolverIENET(const TSolverIENET&) = delete;
 
     /** @brief Deleted copy assignment. */
-    TIENET_Solver& operator=(const TIENET_Solver&) = delete;
+    TSolverIENET& operator=(const TSolverIENET&) = delete;
 
     /** @brief Default move constructor. */
-    TIENET_Solver(TIENET_Solver&&) = default;
+    TSolverIENET(TSolverIENET&&) = default;
 
     /** @brief Deleted move assignment. */
-    TIENET_Solver& operator=(TIENET_Solver&&) = delete;
+    TSolverIENET& operator=(TSolverIENET&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TIENET_Solver() override = default;
+    ~TSolverIENET() override = default;
 
     // ============================================================================
     // Core Algorithm Execution
@@ -213,7 +213,7 @@ public:
     /** @brief Current group sums sigma_m (valid after executeStep()). */
     const Eigen::VectorXd& getGroupSums() const noexcept { return group_sums_; }
 
-    /** @brief TLARS_Solver::memoryBytes() plus the group map and the per-group
+    /** @brief TSolverLARS::memoryBytes() plus the group map and the per-group
      *  sizes, penalty weights and sums. */
     std::size_t memoryBytes() const noexcept override;
 
@@ -233,7 +233,7 @@ public:
     template<class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TLARS_Solver>(this),
+            cereal::base_class<TSolverLARS>(this),
             CEREAL_NVP(lambda2_),
             CEREAL_NVP(groups_),
             CEREAL_NVP(M_),
@@ -256,9 +256,9 @@ public:
      * @param filename Path to input file.
      * @param X        Map to feature matrix.
      * @param D        Map to dummy matrix.
-     * @return Deserialized TIENET_Solver connected to X and D.
+     * @return Deserialized TSolverIENET connected to X and D.
      */
-    static TIENET_Solver load(const std::string& filename,
+    static TSolverIENET load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -271,7 +271,7 @@ protected:
      * @brief Active set update with the IEN Cholesky rank-1 update: the
      * cross-products of same-group active members and the new diagonal entry
      * receive the within-group coupling lambda2 / p_m. Mirrors
-     * TLARS_Solver::updateActiveSet otherwise (collinear rejection via the
+     * TSolverLARS::updateActiveSet otherwise (collinear rejection via the
      * pivot guard, sign tracking, dummy counting).
      *
      * @param new_vars Candidate indices for addition.
@@ -324,6 +324,10 @@ protected:
      */
     void refreshDroppedCorrelation(std::size_t dropped_var) override;
 };
+
+/** @brief Old name of TSolverIENET.
+ *  @deprecated Use TSolverIENET. */
+using TIENET_Solver [[deprecated("Use TSolverIENET")]] = TSolverIENET;
 
 // ============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::lars_based */

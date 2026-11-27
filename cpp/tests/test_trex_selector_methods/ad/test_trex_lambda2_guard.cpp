@@ -119,8 +119,8 @@ std::size_t countOf(const std::string& hay, const std::string& needle) {
     return n;
 }
 
-TRexGVSControlParameter gvsIenControl(LambdaSelectionMethod method) {
-    TRexGVSControlParameter ctrl;
+TRexGVSControl gvsIenControl(LambdaSelectionMethod method) {
+    TRexGVSControl ctrl;
     ctrl.gvs_type       = GVSType::IEN;
     ctrl.lambda_2       = -1.0;
     ctrl.lambda2_method = method;
@@ -133,13 +133,13 @@ TRexGVSControlParameter gvsIenControl(LambdaSelectionMethod method) {
 }
 
 struct GvsRun {
-    ms::lambda2_cv_diagnostics diag;
-    ms::lambda2_cv_diagnostics result_diag;
+    ms::Lambda2CVDiagnostics diag;
+    ms::Lambda2CVDiagnostics result_diag;
     double lambda2_used;
     std::string stderr_text;
 };
 
-GvsRun runGvs(Design& d, const TRexGVSControlParameter& ctrl) {
+GvsRun runGvs(Design& d, const TRexGVSControl& ctrl) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
     testing::internal::CaptureStderr();
@@ -206,7 +206,7 @@ TEST(Lambda2Guard, GvsEnTrackRecordsTheGridPickAndWarnsIffAtEdge) {
     for (auto method : {LambdaSelectionMethod::CV_1SE_CCD, LambdaSelectionMethod::CV_MIN_CCD,
                         LambdaSelectionMethod::CV_1SE_SVD, LambdaSelectionMethod::CV_MIN_SVD}) {
         Design d(150, 40, 0.75, /*signal=*/true, 7);
-        TRexGVSControlParameter ctrl;
+        TRexGVSControl ctrl;
         ctrl.gvs_type       = GVSType::EN;
         ctrl.lambda_2       = -1.0;
         ctrl.lambda2_method = method;
@@ -254,7 +254,7 @@ TEST(Lambda2Guard, TikhonovIenPureNoiseIsABoundaryPickAndWarnsOnce) {
     std::vector<Eigen::Index> groups(static_cast<std::size_t>(p));
     for (Eigen::Index j = 0; j < p; ++j) { groups[static_cast<std::size_t>(j)] = j / 5; }
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;
@@ -363,7 +363,7 @@ TEST(Lambda2Guard, TikhonovDfmaxRatioReachesTheTunerAndNonFiniteThrows) {
     std::vector<Eigen::Index> groups(static_cast<std::size_t>(p));
     for (Eigen::Index j = 0; j < p; ++j) { groups[static_cast<std::size_t>(j)] = j / 5; }
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;

@@ -32,13 +32,13 @@ a copy.
 \snippet{trimleft} trex_da.cpp data
 
 The plain selector and the dependency-aware selector on the same data and the same seed. The
-dependency-aware control TRexDAControlParameter nests the base control as `trex_ctrl`.
+dependency-aware control TRexDAControl nests the base control as `trex_ctrl`.
 
 \snippet{trimleft} trex_da.cpp compare
 \output{trex_da.compare.txt}
 
 TRexDASelector inherits the getters of TRexSelector (`getSelectedIndices()`, `getFDPHatMat()`,
-`getTStop()`, `getDummyMultiplierL()`, ...), and `getDAResult()` returns the `DASelectionResult` with
+`getTStop()`, `getDummyMultiplierL()`, ...), and `getDAResult()` returns the `TRexDAResult` with
 the record of the dependency estimation.
 
 \snippet{trimleft} trex_da.cpp da-result
@@ -46,7 +46,7 @@ the record of the dependency estimation.
 
 ## The dependency methods
 
-`method` of TRexDAControlParameter chooses how the dependency is handled, with the DAMethod enum.
+`method` of TRexDAControl chooses how the dependency is handled, with the DAMethod enum.
 
 | Method | Dependency model | Parameters |
 | --- | --- | --- |
@@ -145,7 +145,7 @@ solver (TOMP, TOOLS, TGP, TACGP, TMP, TNCGMP and TAFS) picks the top candidate o
 deterministically and removes that spread. The exchangeable-tie band restores it, since statistically
 indistinguishable top candidates within a correlated cluster are then picked uniformly at random per
 step. T-Rex+DA therefore runs a greedy solver with a band of 0.25 unless the control sets it.
-`exch_tie_alpha` of the solver hyperparameters, `solver_params` of TRexControlParameter, takes another
+`exch_tie_alpha` of the solver hyperparameters, `solver_params` of TRexControl, takes another
 width, and 0 switches the band off. The path solvers ignore the option.
 
 Without the band the greedy solvers can exceed the target FDR at a high correlation. In a Monte Carlo

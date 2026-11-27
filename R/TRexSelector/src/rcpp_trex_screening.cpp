@@ -1,5 +1,5 @@
 // =============================================================================
-// rcpp_trex_screening.cpp - Rcpp bindings for ScreenTRexSelector
+// rcpp_trex_screening.cpp - Rcpp bindings for TRexScreeningSelector
 // =============================================================================
 
 // [[Rcpp::depends(RcppEigen)]]
@@ -10,21 +10,21 @@ using namespace Rcpp;
 using namespace trex::trex_selector_methods::ad::trex_screening;
 using namespace trex::trex_selector_methods::ad::trex_core;
 
-extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
-extern void validate_core_solver_type(const TRexControlParameter& params);
+extern TRexControl parse_control_parameter(const Rcpp::List& control);
+extern void validate_core_solver_type(const TRexControl& params);
 
 /**
- * @brief Parses an R list into a ScreenTRexControlParameter C++ struct.
+ * @brief Parses an R list into a TRexScreeningControl C++ struct.
  *
  * Configures bootstrap iterations, confidence thresholds, the base T-Rex
  * methodology mapped to the T-Rex+Screening variant and the parameters of the
  * dependency-aware variants.
  *
  * @param control List of parameters passed from R.
- * @return Populated ScreenTRexControlParameter instance.
+ * @return Populated TRexScreeningControl instance.
  */
-ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control) {
-    ScreenTRexControlParameter params;
+TRexScreeningControl parse_screen_parameter(const Rcpp::List& control) {
+    TRexScreeningControl params;
 
     if (control.containsElementNamed("use_bootstrap_CI")) {
         params.use_bootstrap_CI = control["use_bootstrap_CI"];
@@ -104,8 +104,8 @@ XPtr<RTRexScreeningSelector> trex_screening_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    ScreenTRexControlParameter screen_control = parse_screen_parameter(screen_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    TRexScreeningControl screen_control = parse_screen_parameter(screen_control_list);
+    TRexControl trex_control = parse_control_parameter(trex_control_list);
     validate_core_solver_type(trex_control);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
@@ -139,8 +139,8 @@ XPtr<RTRexScreeningSelector> trex_screening_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    ScreenTRexControlParameter screen_control = parse_screen_parameter(screen_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    TRexScreeningControl screen_control = parse_screen_parameter(screen_control_list);
+    TRexControl trex_control = parse_control_parameter(trex_control_list);
     validate_core_solver_type(trex_control);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexScreeningSelector>(new RTRexScreeningSelector(mapped_design_for(*X_ptr, trex_control),

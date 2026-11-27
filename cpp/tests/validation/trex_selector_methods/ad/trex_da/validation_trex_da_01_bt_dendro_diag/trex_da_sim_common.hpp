@@ -14,7 +14,7 @@
  *   - SolverInfo                    — solver descriptor
  *   - Support policies              — Random, CappedSpread, Clustered, OnePerBlock
  *   - make_support()                — support generator factory
- *   - make_trex_control()           — default TRexControlParameter
+ *   - make_trex_control()           — default TRexControl
  *   - make_da_bt_control()          — default DA binary tree (BT) control
  *   - run_mc_trials()               — inner MC loop
  *   - run_snr_sweep()               — full solver × SNR MC sweep
@@ -67,13 +67,13 @@ namespace dummygen    = trex::utils::datageneration::dummygen;
 namespace hac         = trex::ml_methods::clustering::hierarchical::agglomerative;
 
 using trex::trex_selector_methods::ad::trex_da::TRexDASelector;
-using trex::trex_selector_methods::ad::trex_da::TRexDAControlParameter;
+using trex::trex_selector_methods::ad::trex_da::TRexDAControl;
 using trex::trex_selector_methods::ad::trex_da::DAMethod;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverHyperparameters;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverParams;
 
 
 // ==============================================================================
@@ -371,12 +371,12 @@ inline std::vector<std::size_t> make_support(SupportPolicy policy,
 // ==============================================================================
 
 /** @brief T-Rex control parameters. */
-inline TRexControlParameter make_trex_control(std::size_t K = 20) {
-    TRexControlParameter ctrl;
+inline TRexControl make_trex_control(std::size_t K = 20) {
+    TRexControl ctrl;
     ctrl.K                        = K;
     ctrl.max_dummy_multiplier     = 10;
     ctrl.use_max_T_stop           = true;
-    ctrl.dummy_distribution       = dummygen::Distribution::Normal();
+    ctrl.dummy_distribution       = dummygen::DummyDistribution::Normal();
     ctrl.lloop_strategy           = LLoopStrategy::STANDARD;
     ctrl.tloop_stagnation_stop    = true;
     ctrl.tloop_max_stagnant_steps = 7;
@@ -385,8 +385,8 @@ inline TRexControlParameter make_trex_control(std::size_t K = 20) {
 }
 
 /** @brief DA binary tree (BT) control parameters. */
-inline TRexDAControlParameter make_da_bt_control() {
-    TRexDAControlParameter da;
+inline TRexDAControl make_da_bt_control() {
+    TRexDAControl da;
     da.method     = DAMethod::BT;
     da.hc_linkage = hac::LinkageMethod::Average;
     return da;
@@ -416,8 +416,8 @@ using DGPFactory = std::function<DGPData(unsigned seed)>;
  * @param progress_label    Label printed in the progress line.
  * @param make_data         Lambda (seed) -> DGPData for generating data.
  * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         TRexControlParameter for the selector.
- * @param da_ctrl           TRexDAControlParameter for the selector.
+ * @param trex_ctrl         TRexControl for the selector.
+ * @param da_ctrl           TRexDAControl for the selector.
  * @param base_seed_offset  Base offset for RNG seeds (each trial uses base_seed_offset + mc).
  * @param verbose           If true, enable selector verbose output (default: false).
  *
@@ -428,8 +428,8 @@ inline GridPointResult run_mc_trials(
     const std::string& progress_label,
     const DGPFactory& make_data,
     double tFDR,
-    const TRexControlParameter& trex_ctrl,
-    const TRexDAControlParameter& da_ctrl,
+    const TRexControl& trex_ctrl,
+    const TRexDAControl& da_ctrl,
     unsigned base_seed_offset,
     bool verbose = false)
 {
@@ -457,8 +457,8 @@ inline GridPointResult run_mc_trials(
                                              dat.X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(dat.y.data(), dat.y.rows());
 
-        // TRexDAControlParameter nests its own trex_ctrl member.
-        TRexDAControlParameter trex_da_ctrl = da_ctrl;
+        // TRexDAControl nests its own trex_ctrl member.
+        TRexDAControl trex_da_ctrl = da_ctrl;
         trex_da_ctrl.trex_ctrl = trex_ctrl;
 
         TRexDASelector selector(X_map,
@@ -522,7 +522,7 @@ inline GridPointResult run_mc_trials(
  * @param progress_label    Label printed in the progress line.
  * @param make_data         Lambda (seed) -> DGPData for generating data.
  * @param tFDR              Target FDR for the selector.
- * @param trex_ctrl         TRexControlParameter for the selector.
+ * @param trex_ctrl         TRexControl for the selector.
  * @param base_seed_offset  Base offset for RNG seeds.
  * @param verbose           If true, enable selector verbose output (default: false).
  *
@@ -533,7 +533,7 @@ inline GridPointResult run_mc_trials_base(
     const std::string& progress_label,
     const DGPFactory& make_data,
     double tFDR,
-    const TRexControlParameter& trex_ctrl,
+    const TRexControl& trex_ctrl,
     unsigned base_seed_offset,
     bool verbose = false)
 {
@@ -774,8 +774,8 @@ void run_param_sweep(
     int base_seed,
     const std::vector<SolverInfo>& solvers,
     MakeDGP make_dgp,
-    const TRexDAControlParameter& da_ctrl,
-    const TRexControlParameter& trex_ctrl_base,
+    const TRexDAControl& da_ctrl,
+    const TRexControl& trex_ctrl_base,
     const std::string& header_extra = "",
     bool include_base_trex = false,
     bool verbose = false)
@@ -927,8 +927,8 @@ void run_snr_sweep(
     int base_seed,
     const std::vector<SolverInfo>& solvers,
     MakeDGP make_dgp,
-    const TRexDAControlParameter& da_ctrl,
-    const TRexControlParameter& trex_ctrl_base,
+    const TRexDAControl& da_ctrl,
+    const TRexControl& trex_ctrl_base,
     const std::string& header_extra = "",
     bool include_base_trex = false,
     bool verbose = false)
@@ -946,7 +946,7 @@ void run_snr_sweep(
 /** @brief Default solver configurations for T-Rex DA.
  *
  *  The trailing bool is the per-solver stagnation-stop toggle, mapped onto
- *  TRexControlParameter::tloop_stagnation_stop by run_param_sweep(). LARS-based
+ *  TRexControl::tloop_stagnation_stop by run_param_sweep(). LARS-based
  *  solvers (TLARS/TLASSO/TENET/TENET_Aug) have monotone solution paths and can
  *  safely run with stagnation control OFF; greedy solvers (TAFS/TOMP) default
  *  it ON. Flip any flag on demand to compare with/without stagnation control.

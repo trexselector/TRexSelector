@@ -133,7 +133,7 @@ protected:
 TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
 
     // Default control: K is empty.
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl),
                  std::invalid_argument);
 
@@ -149,7 +149,7 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
                  std::invalid_argument);
 
     // Correct K: the default solver, TIKNET, constructs.
-    EXPECT_EQ(TRexTikhonovControlParameter().trex_ctrl.solver_type, disp::SolverTypeForTRex::TIKNET);
+    EXPECT_EQ(TRexTikhonovControl().trex_ctrl.solver_type, disp::SolverTypeForTRex::TIKNET);
     ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
 
@@ -171,7 +171,7 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
  *  the selector: finite entries, symmetry, positive semi-definiteness. */
 TEST_F(TRexTikhonovTest, Validation_ContentOfKIsCheckedAtConstruction) {
     const auto expect_refused = [&](const Eigen::SparseMatrix<double>& K) {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = K;
         ctrl.lambda_2   = 1.0;
         try {
@@ -195,7 +195,7 @@ TEST_F(TRexTikhonovTest, Validation_ContentOfKIsCheckedAtConstruction) {
     const std::vector<Eigen::Index> halves = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
     for (const Eigen::SparseMatrix<double>& good :
          {identityK(10), groupMeanK(10, 5), TRexTikhonovSelector::buildGroupCenteringK(halves)}) {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = good;
         ctrl.lambda_2   = 1.0;
         EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false));
@@ -209,14 +209,14 @@ TEST_F(TRexTikhonovTest, Validation_Lambda2MustBeFinite) {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     const double inf = std::numeric_limits<double>::infinity();
     for (const double bad : {nan, inf, -inf}) {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = identityK(10);
         ctrl.lambda_2   = bad;
         EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false), std::invalid_argument)
             << "lambda_2 = " << bad;
     }
     for (const double good : {-1.0, 0.0, 2.5}) {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = identityK(10);
         ctrl.lambda_2   = good;
         EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false)) << "lambda_2 = " << good;
@@ -229,15 +229,15 @@ TEST_F(TRexTikhonovTest, Validation_Lambda2MustBeFinite) {
 TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
     namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
     const auto base = [] {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = identityK(10);
         ctrl.lambda_2   = 1.0;
         return ctrl;
     };
-    const auto refused = [&](const TRexTikhonovControlParameter& ctrl) {
+    const auto refused = [&](const TRexTikhonovControl& ctrl) {
         EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false), std::invalid_argument);
     };
-    const auto accepted = [&](const TRexTikhonovControlParameter& ctrl) {
+    const auto accepted = [&](const TRexTikhonovControl& ctrl) {
         EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl, 1, false));
     };
 
@@ -295,7 +295,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) 
     const std::vector<Eigen::Index> groups = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1};
     const std::vector<Eigen::Index> other  = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
     const auto control = [&](const Eigen::SparseMatrix<double>& K) {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
         ctrl.prior_groups      = groups;
         ctrl.tikhonov_K        = K;
@@ -312,7 +312,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) 
                  std::invalid_argument);
 
     // The right matrix and no matrix give the same run.
-    const auto run = [&](const TRexTikhonovControlParameter& ctrl) {
+    const auto run = [&](const TRexTikhonovControl& ctrl) {
         Eigen::MatrixXd Xc = X;
         Eigen::VectorXd yc = y;
         Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
@@ -335,7 +335,7 @@ TEST_F(TRexTikhonovTest, LLoopStrategies_WithAndWithoutClusterDummies) {
         Eigen::VectorXd yc = d.y;
         Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
         Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K      = identityK(Xc.cols());
         ctrl.lambda_2        = 1.0;
         ctrl.cluster_dummies = cluster_dummies;
@@ -366,13 +366,13 @@ TEST_F(TRexTikhonovTest, DummyClusters_AreReported) {
     const GroupedData d(/*n=*/80, /*p=*/20, /*rho=*/0.9, /*sigma=*/1.0, /*seed=*/5);
     const Eigen::Index p = d.X.cols();
     const auto control = [&] {
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K  = identityK(p);
         ctrl.lambda_2    = 1.0;
         ctrl.trex_ctrl.K = 5;
         return ctrl;
     };
-    const auto run = [&](const TRexTikhonovControlParameter& ctrl, bool select) {
+    const auto run = [&](const TRexTikhonovControl& ctrl, bool select) {
         Eigen::MatrixXd X = d.X;
         Eigen::VectorXd y = d.y;
         Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
@@ -485,7 +485,7 @@ TEST_F(TRexTikhonovTest, Equivalence_ZeroLambda2MatchesLassoBaseRun) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xd.data(), Xd.rows(), Xd.cols());
         Eigen::Map<Eigen::VectorXd> ym(yd.data(), yd.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = identityK(40);
         ctrl.lambda_2   = 0.0;
         ctrl.cluster_dummies = false;   // i.i.d. dummies, as the base selector draws them
@@ -502,7 +502,7 @@ TEST_F(TRexTikhonovTest, Equivalence_ZeroLambda2MatchesLassoBaseRun) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xd.data(), Xd.rows(), Xd.cols());
         Eigen::Map<Eigen::VectorXd> ym(yd.data(), yd.size());
 
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.solver_type = disp::SolverTypeForTRex::TLASSO;
         ctrl.K = 20;
         ctrl.max_dummy_multiplier = 2;
@@ -557,7 +557,7 @@ TEST_F(TRexTikhonovTest, DefaultRun_ChainLaplacianSelectsThePlantedBlock) {
 
     Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
-    TRexTikhonovControlParameter ctrl;                 // lambda_2 < 0: the pilot rule
+    TRexTikhonovControl ctrl;                 // lambda_2 < 0: the pilot rule
     ctrl.tikhonov_K = TRexTikhonovSelector::gammaToK(gamma);
     ctrl.trex_ctrl.K = 10;
     TRexTikhonovSelector trex(Xm, ym, 0.1, ctrl, 4, false);
@@ -585,7 +585,7 @@ TEST_F(TRexTikhonovTest, EndToEnd_GroupMeanKRecoversPlanted) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.tikhonov_K = groupMeanK(p, 5);
     ctrl.lambda_2   = 1.0;
     ctrl.trex_ctrl.K = 5;
@@ -625,7 +625,7 @@ TEST_F(TRexTikhonovTest, AutoLambda2_TikSvdResolvesAndRuns) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.tikhonov_K     = groupMeanK(p, 5);
     ctrl.lambda_2       = -1.0;   // sentinel -> CV
     ctrl.lambda2_method = TikLambda2Method::CV_1SE_TIK_SVD;
@@ -654,7 +654,7 @@ TEST_F(TRexTikhonovTest, AutoLambda2_TikSvdResolvesAndRuns) {
  *  natively by the DummyGenerator cluster mode. */
 TEST_F(TRexTikhonovTest, ClusterDummies_GateThrowsOnUnsupportedConfig) {
 
-    TRexTikhonovControlParameter base;
+    TRexTikhonovControl base;
     base.tikhonov_K = identityK(10);
 
     {   // PERMUTATION cannot carry cluster-MVN dummies.
@@ -764,7 +764,7 @@ TEST_F(TRexTikhonovTest, ClusterDummies_SeededMatchesStandard) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = groupMeanK(p, 5);
         ctrl.lambda_2   = 1.0;
         ctrl.prior_groups.resize(static_cast<std::size_t>(p));
@@ -802,7 +802,7 @@ TEST_F(TRexTikhonovTest, ClusterDummies_MemmapMatchesInMemory) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K = groupMeanK(p, 5);
         ctrl.lambda_2   = 1.0;
         ctrl.prior_groups.resize(static_cast<std::size_t>(p));
@@ -855,7 +855,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K   = groupMeanK(p, 5);
         ctrl.lambda_2     = 1.0;
         ctrl.prior_groups = prior_groups;
@@ -871,7 +871,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        gvs::TRexGVSControlParameter ctrl;
+        gvs::TRexGVSControl ctrl;
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 1.0;
@@ -928,7 +928,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_Singletons) {
         GroupedData d(n, p, 0.75, 1.0, 11);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.tikhonov_K   = K;
         ctrl.lambda_2     = 10.0;
         ctrl.prior_groups = prior_groups;
@@ -941,7 +941,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_Singletons) {
         GroupedData d(n, p, 0.75, 1.0, 11);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        gvs::TRexGVSControlParameter ctrl;
+        gvs::TRexGVSControl ctrl;
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 10.0;
@@ -993,7 +993,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_DemoControl_Lcapp
         K.setFromTriplets(trip.begin(), trip.end());
     }
 
-    auto demo_control = [](TRexControlParameter& t, std::size_t multiplier) {
+    auto demo_control = [](TRexControl& t, std::size_t multiplier) {
         t.K                        = 20;
         t.max_dummy_multiplier     = multiplier;
         t.use_max_T_stop           = true;
@@ -1010,7 +1010,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_DemoControl_Lcapp
                 GroupedData d(n, p, 0.75, 2.0, seed);
                 Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
                 Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-                TRexTikhonovControlParameter ctrl;
+                TRexTikhonovControl ctrl;
                 ctrl.tikhonov_K   = K;
                 ctrl.lambda_2     = lambda2;
                 ctrl.prior_groups = prior_groups;
@@ -1022,7 +1022,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_DemoControl_Lcapp
                 GroupedData d(n, p, 0.75, 2.0, seed);
                 Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
                 Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-                gvs::TRexGVSControlParameter ctrl;
+                gvs::TRexGVSControl ctrl;
                 ctrl.gvs_type     = gvs::GVSType::IEN;
                 ctrl.prior_groups = prior_groups;
                 ctrl.lambda_2     = lambda2;
@@ -1076,7 +1076,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         }
         K.setFromTriplets(trip.begin(), trip.end());
     }
-    auto demo_control = [](TRexControlParameter& t) {
+    auto demo_control = [](TRexControl& t) {
         t.K                        = 20;
         t.max_dummy_multiplier     = 10;
         t.use_max_T_stop           = true;
@@ -1097,12 +1097,12 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         Eigen::Map<Eigen::MatrixXd> Xm2(X2.data(), X2.rows(), X2.cols());
         Eigen::Map<Eigen::VectorXd> ym2(y2.data(), y2.size());
 
-        TRexTikhonovControlParameter tc;
+        TRexTikhonovControl tc;
         tc.tikhonov_K = K; tc.lambda_2 = c.lambda2; tc.prior_groups = prior_groups;
         demo_control(tc.trex_ctrl);
         TRexTikhonovSelector tik(Xm1, ym1, 0.1, tc, 42, false);
 
-        gvs::TRexGVSControlParameter gc;
+        gvs::TRexGVSControl gc;
         gc.gvs_type = gvs::GVSType::IEN; gc.prior_groups = prior_groups;
         gc.lambda_2 = c.lambda2;
         gc.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
@@ -1139,7 +1139,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_AllSingletonGroupsIsZeroKLasso) {
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
         ctrl.prior_groups      = singletons;
         ctrl.lambda_2          = lambda2;
@@ -1170,7 +1170,7 @@ TEST_F(TRexTikhonovTest, ClusterDummies_PriorGroupsEndToEndRecovers) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.tikhonov_K = groupMeanK(p, 5);
     ctrl.lambda_2   = 1.0;
     ctrl.prior_groups.resize(static_cast<std::size_t>(p));
@@ -1206,7 +1206,7 @@ TEST_F(TRexTikhonovTest, AutoLambda2_IenCcdResolvesAndRuns) {
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.tikhonov_K     = groupMeanK(p, 5);
     ctrl.lambda_2       = -1.0;
     ctrl.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
@@ -1238,7 +1238,7 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringMatchesSparseCenteringMatrix)
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
-        TRexTikhonovControlParameter ctrl;
+        TRexTikhonovControl ctrl;
         ctrl.penalty_structure = structure;
         if (structure == TikPenaltyStructure::SPARSE_GENERAL) {
             ctrl.tikhonov_K =
@@ -1284,7 +1284,7 @@ TEST_F(TRexTikhonovTest, EndToEnd_TiknetKgcRecoversPlanted) {
         prior_groups[static_cast<std::size_t>(j)] = j / 5;
     }
 
-    TRexTikhonovControlParameter ctrl;
+    TRexTikhonovControl ctrl;
     ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
     ctrl.prior_groups      = prior_groups;   // defines K_GC + cluster dummies
     ctrl.lambda_2          = 2.0;

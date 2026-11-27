@@ -1,7 +1,7 @@
 // ========================================================================================
 /**
  * @file test_ml_methods_svd.cpp
- * @brief Unit tests for the SVDSolver class.
+ * @brief Unit tests for the SVD class.
  */
 // ========================================================================================
 
@@ -50,7 +50,7 @@ TEST(SVDSolverTest, Dimensions_TallMatrix) {
     const Eigen::Index n = 50, p = 20, M = 5;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     EXPECT_EQ(res.U.rows(), n);
     EXPECT_EQ(res.U.cols(), M);
@@ -65,7 +65,7 @@ TEST(SVDSolverTest, Dimensions_WideMatrix) {
     const Eigen::Index n = 20, p = 80, M = 4;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     EXPECT_EQ(res.U.rows(), n);
     EXPECT_EQ(res.U.cols(), M);
@@ -84,7 +84,7 @@ TEST(SVDSolverTest, Orthogonality_UOrthonormal) {
     const Eigen::Index n = 60, p = 30, M = 5;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     Eigen::MatrixXd UtU = res.U.transpose() * res.U;
     EXPECT_TRUE(UtU.isApprox(Eigen::MatrixXd::Identity(M, M), 1e-10))
@@ -97,7 +97,7 @@ TEST(SVDSolverTest, Orthogonality_VOrthonormal) {
     const Eigen::Index n = 60, p = 30, M = 5;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     Eigen::MatrixXd VtV = res.V.transpose() * res.V;
     EXPECT_TRUE(VtV.isApprox(Eigen::MatrixXd::Identity(M, M), 1e-10))
@@ -110,7 +110,7 @@ TEST(SVDSolverTest, Orthogonality_GramPathVOrthonormal) {
     const Eigen::Index n = 15, p = 60, M = 4;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     Eigen::MatrixXd VtV = res.V.transpose() * res.V;
     EXPECT_TRUE(VtV.isApprox(Eigen::MatrixXd::Identity(M, M), 1e-10))
@@ -127,7 +127,7 @@ TEST(SVDSolverTest, SingularValues_NonNegative) {
     const Eigen::Index n = 40, p = 25, M = 6;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     for (Eigen::Index k = 0; k < M; ++k) {
         EXPECT_GE(res.S(k), 0.0);
@@ -140,7 +140,7 @@ TEST(SVDSolverTest, SingularValues_NonIncreasing) {
     const Eigen::Index n = 50, p = 30, M = 5;
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     for (Eigen::Index k = 1; k < M; ++k) {
         EXPECT_GE(res.S(k - 1), res.S(k) - 1e-12);
@@ -161,7 +161,7 @@ TEST(SVDSolverTest, Reconstruction_FullRank) {
     Eigen::Index M = std::min(n, p);
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     Eigen::MatrixXd X_approx = res.U * res.S.asDiagonal() * res.V.transpose();
     EXPECT_TRUE(X_approx.isApprox(X, 1e-9))
@@ -182,7 +182,7 @@ TEST(SVDSolverTest, Reconstruction_LowRankResidual) {
         Eigen::ComputeThinU | Eigen::ComputeThinV);
     double sigma_next = full_svd.singularValues()(M);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
     Eigen::MatrixXd residual = X - res.U * res.S.asDiagonal() * res.V.transpose();
 
     // ||X - X_M||_2 ≈ sigma_{M+1}
@@ -206,7 +206,7 @@ TEST(SVDSolverTest, Dispatch_RandomizedPathShapesAndOrthogonality) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
     // min_dim_thresh = 10 forces the randomized path for any matrix with min(n,p) > 10
-    SVDSolver solver(/*min_dim_thresh=*/10, /*block_size=*/32);
+    SVD solver(/*min_dim_thresh=*/10, /*block_size=*/32);
     SVDResult res = solver.compute(X, M);
 
     EXPECT_EQ(res.U.rows(), n);
@@ -227,7 +227,7 @@ TEST(SVDSolverTest, GramPathMatchesDirectSVD) {
     const Eigen::Index n = 15, p = 60, M = 6;  // p > 2n -> Gram/kernel path
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     Eigen::JacobiSVD<Eigen::MatrixXd> ref(X,
         Eigen::ComputeThinU | Eigen::ComputeThinV);
@@ -255,7 +255,7 @@ TEST(SVDSolverTest, RandomizedPathExactOnLowRank) {
     Eigen::MatrixXd X = make_rank_m_matrix(n, p, M);
 
     // min_dim_thresh = 10 forces the randomized path (M = 5 < 120/10)
-    SVDSolver solver(/*min_dim_thresh=*/10, /*block_size=*/64);
+    SVD solver(/*min_dim_thresh=*/10, /*block_size=*/64);
     SVDResult res = solver.compute(X, M);
 
     Eigen::VectorXd expected_S =
@@ -278,7 +278,7 @@ TEST(SVDSolverTest, GramPathRankDeficient) {
     const Eigen::Index n = 10, p = 30, rank = 3, M = 5;
     Eigen::MatrixXd X = make_rank_m_matrix(n, p, rank);  // singular values {3, 2, 1}
 
-    SVDResult res = SVDSolver{}.compute(X, M);
+    SVDResult res = SVD{}.compute(X, M);
 
     EXPECT_NEAR(res.S(0), 3.0, 1e-6);
     EXPECT_NEAR(res.S(1), 2.0, 1e-6);
@@ -301,15 +301,15 @@ TEST(SVDSolverTest, GramPathRankDeficient) {
 /** @brief M > min(n, p) throws std::invalid_argument. */
 TEST(SVDSolverTest, Exceptions_InvalidM) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(10, 15);
-    EXPECT_THROW(SVDSolver{}.compute(X, 11), std::invalid_argument);
+    EXPECT_THROW(SVD{}.compute(X, 11), std::invalid_argument);
 }
 
 
 /** @brief M < 1 throws std::invalid_argument (0 and negative). */
 TEST(SVDSolverTest, Exceptions_NonPositiveM) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(10, 15);
-    EXPECT_THROW(SVDSolver{}.compute(X, 0), std::invalid_argument);
-    EXPECT_THROW(SVDSolver{}.compute(X, -1), std::invalid_argument);
+    EXPECT_THROW(SVD{}.compute(X, 0), std::invalid_argument);
+    EXPECT_THROW(SVD{}.compute(X, -1), std::invalid_argument);
 }
 
 // ========================================================================================

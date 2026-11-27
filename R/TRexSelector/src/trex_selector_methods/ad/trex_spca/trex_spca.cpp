@@ -42,10 +42,10 @@ namespace disp = trex::trex_selector_methods::ad::utils::solver_dispatch;
 // Constructor
 // ==============================================================================
 
-TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
+TRexSPCASelector::TRexSPCASelector(Eigen::Map<Eigen::MatrixXd>& X,
                    Eigen::Index M,
                    double tFDR,
-                   TRexSPCAControlParameter spca_ctrl,
+                   TRexSPCAControl spca_ctrl,
                    int seed,
                    bool verbose)
     : X_(&X)
@@ -61,24 +61,24 @@ TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
 {
     if (M_ < 1) {
         throw std::invalid_argument(
-            "TRexSPCA: M must be at least 1. Got: " + std::to_string(M_));
+            "TRexSPCASelector: M must be at least 1. Got: " + std::to_string(M_));
     }
     if (M_ > std::min(X_->rows(), X_->cols())) {
         throw std::invalid_argument(
-            "TRexSPCA: M must not exceed min(n, p).");
+            "TRexSPCASelector: M must not exceed min(n, p).");
     }
 
     // The negated form refuses NaN as well.
     if (!(tFDR_ >= 0.0 && tFDR_ <= 1.0)) {
         throw std::invalid_argument(
-            "TRexSPCA: tFDR must be in [0, 1]. Got: " + std::to_string(tFDR_));
+            "TRexSPCASelector: tFDR must be in [0, 1]. Got: " + std::to_string(tFDR_));
     }
 
     // T-Rex+SPCA is defined on the elastic net. An IEN request would change the
     // algorithm, so it is rejected rather than silently run as EN.
     if (spca_ctrl_.gvs_ctrl.gvs_type != tg::GVSType::EN) {
         throw std::invalid_argument(
-            "TRexSPCA: gvs_ctrl.gvs_type must be EN. T-Rex+SPCA is defined on "
+            "TRexSPCASelector: gvs_ctrl.gvs_type must be EN. T-Rex+SPCA is defined on "
             "the elastic net, and the informed elastic net (IEN) is not supported.");
     }
 
@@ -91,7 +91,7 @@ TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
         rule == tg::LambdaSelectionMethod::CV_1SE_TIK_SVD ||
         rule == tg::LambdaSelectionMethod::CV_MIN_TIK_SVD) {
         throw std::invalid_argument(
-            "TRexSPCA: gvs_ctrl.lambda2_method is a rule of the informed elastic "
+            "TRexSPCASelector: gvs_ctrl.lambda2_method is a rule of the informed elastic "
             "net, which T-Rex+SPCA does not support. Use CV_1SE_CCD, CV_MIN_CCD, "
             "CV_1SE_SVD or CV_MIN_SVD.");
     }
@@ -100,7 +100,7 @@ TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
     if (strat == tc::LLoopStrategy::PERMUTATION ||
         strat == tc::LLoopStrategy::PERMUTATION_SEEDED) {
         throw std::invalid_argument(
-            "TRexSPCA: the PERMUTATION-family L-loop strategies are not "
+            "TRexSPCASelector: the PERMUTATION-family L-loop strategies are not "
             "supported (the per-PC TRexGVSSelector rejects them: row "
             "permutations of one base cannot carry the per-cluster MVN "
             "dummy convention).");
@@ -112,7 +112,7 @@ TRexSPCA::TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
 // Destructor
 // ==============================================================================
 
-TRexSPCA::~TRexSPCA() {
+TRexSPCASelector::~TRexSPCASelector() {
     // Safety net: if select() was interrupted by an exception after centering X
     // but before restoring it, restore X here so the caller's data is not corrupted.
     if (X_is_centered_) {
@@ -123,14 +123,14 @@ TRexSPCA::~TRexSPCA() {
 
 
 // ==============================================================================
-// TRexSPCA::select
+// TRexSPCASelector::select
 // ==============================================================================
 
-const TRexSPCAResult& TRexSPCA::select() {
+const TRexSPCAResult& TRexSPCASelector::select() {
 
     // An exception that leaves select() gives X back at once (uncentered).
     struct UncenterOnError {
-        TRexSPCA& self;
+        TRexSPCASelector& self;
         int pending = std::uncaught_exceptions();
         ~UncenterOnError() {
             if (std::uncaught_exceptions() > pending && self.X_is_centered_) {
@@ -168,7 +168,7 @@ const TRexSPCAResult& TRexSPCA::select() {
     for (Eigen::Index m = 0; m < M_; ++m) {
 
         if (verbose_) {
-            TREX_INFO("[TRexSPCA] Processing PC " << (m + 1) << " / " << M_);
+            TREX_INFO("[TRexSPCASelector] Processing PC " << (m + 1) << " / " << M_);
         }
 
         // 3. Run TRexGVSSelector on z_m ~ X.
@@ -180,7 +180,7 @@ const TRexSPCAResult& TRexSPCA::select() {
                 static_cast<std::uint32_t>(seed_), m) & 0x7FFFFFFFu)
             : -1;
 
-        tg::TRexGVSControlParameter gvs_ctrl = spca_ctrl_.gvs_ctrl;
+        tg::TRexGVSControl gvs_ctrl = spca_ctrl_.gvs_ctrl;
 
         // gvs_type is EN (checked in the constructor). The solver variant is
         // user-selectable via spca_ctrl_.en_solver (TENET / TENET_AUG,
@@ -246,10 +246,10 @@ const TRexSPCAResult& TRexSPCA::select() {
 
 
 // ==============================================================================
-// TRexSPCA::assembleActiveSetLoadings
+// TRexSPCASelector::assembleActiveSetLoadings
 // ==============================================================================
 
-void TRexSPCA::assembleActiveSetLoadings(
+void TRexSPCASelector::assembleActiveSetLoadings(
     const Eigen::Ref<const Eigen::MatrixXd>& X_ref,
     const Eigen::Ref<const Eigen::VectorXd>& z_m,
     const std::vector<Eigen::Index>& active_set,
@@ -265,7 +265,7 @@ void TRexSPCA::assembleActiveSetLoadings(
     }
 
     // Ridge regression on the active subset; normalize and scatter back.
-    Eigen::VectorXd beta_ridge = ridge::RidgeSolver::solve(
+    Eigen::VectorXd beta_ridge = ridge::Ridge::solve(
         X_active, z_m, spca_ctrl_.lambda2_ridge_loadings,
         spca_ctrl_.gvs_ctrl.trex_ctrl.max_inner_threads
     );
@@ -278,10 +278,10 @@ void TRexSPCA::assembleActiveSetLoadings(
 
 
 // ==============================================================================
-// TRexSPCA::assembleThresholdedLoadings
+// TRexSPCASelector::assembleThresholdedLoadings
 // ==============================================================================
 
-void TRexSPCA::assembleThresholdedLoadings(
+void TRexSPCASelector::assembleThresholdedLoadings(
     const Eigen::Ref<const Eigen::VectorXd>& ord_v,
     Eigen::Index active_size,
     Eigen::Ref<Eigen::VectorXd> v_out) const {
@@ -309,10 +309,10 @@ void TRexSPCA::assembleThresholdedLoadings(
 
 
 // ==============================================================================
-// TRexSPCA::adjustExplainedVariance
+// TRexSPCASelector::adjustExplainedVariance
 // ==============================================================================
 
-void TRexSPCA::adjustExplainedVariance(
+void TRexSPCASelector::adjustExplainedVariance(
     TRexSPCAResult& result,
     const Eigen::Ref<const Eigen::MatrixXd>& X_ref) const {
 

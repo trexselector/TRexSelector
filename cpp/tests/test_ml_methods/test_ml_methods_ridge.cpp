@@ -1,7 +1,7 @@
 // ========================================================================================
 /**
  * @file test_ml_methods_ridge.cpp
- * @brief Unit tests for the RidgeSolver class.
+ * @brief Unit tests for the Ridge class.
  */
 // ========================================================================================
 
@@ -34,7 +34,7 @@ TEST(RidgeSolverTest, Dimensions_PrimalPath) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
     Eigen::VectorXd y = Eigen::VectorXd::Random(n);
 
-    Eigen::VectorXd beta = RidgeSolver::solve(X, y, 1.0);
+    Eigen::VectorXd beta = Ridge::solve(X, y, 1.0);
 
     EXPECT_EQ(beta.size(), p);
 }
@@ -46,7 +46,7 @@ TEST(RidgeSolverTest, Dimensions_DualPath) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
     Eigen::VectorXd y = Eigen::VectorXd::Random(n);
 
-    Eigen::VectorXd beta = RidgeSolver::solve(X, y, 1.0);
+    Eigen::VectorXd beta = Ridge::solve(X, y, 1.0);
 
     EXPECT_EQ(beta.size(), p);
 }
@@ -74,7 +74,7 @@ TEST(RidgeSolverTest, Correctness_KKTConditionPrimal) {
 
     Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(n, -2.0, 3.0);
 
-    Eigen::VectorXd beta_hat = RidgeSolver::solve(X, y, lambda);
+    Eigen::VectorXd beta_hat = Ridge::solve(X, y, lambda);
 
     // KKT condition: X^T (y - X*beta) == lambda * beta
     Eigen::VectorXd kkt_residual = X.transpose() * (y - X * beta_hat) - lambda * beta_hat;
@@ -100,7 +100,7 @@ TEST(RidgeSolverTest, Correctness_KKTConditionDual) {
 
     Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(n, 1.0, 5.0);
 
-    Eigen::VectorXd beta_hat = RidgeSolver::solve(X, y, lambda);
+    Eigen::VectorXd beta_hat = Ridge::solve(X, y, lambda);
 
     // KKT condition: X^T (y - X*beta) == lambda * beta
     Eigen::VectorXd kkt_residual = X.transpose() * (y - X * beta_hat) - lambda * beta_hat;
@@ -119,7 +119,7 @@ TEST(RidgeSolverTest, Correctness_AnalyticalIdentityDesign) {
     y << 4.0, 6.0;
     double lambda = 2.0;
 
-    Eigen::VectorXd beta = RidgeSolver::solve(X, y, lambda);
+    Eigen::VectorXd beta = Ridge::solve(X, y, lambda);
 
     EXPECT_NEAR(beta(0), 4.0 / (1.0 + lambda), 1e-12);
     EXPECT_NEAR(beta(1), 6.0 / (1.0 + lambda), 1e-12);
@@ -138,8 +138,8 @@ TEST(RidgeSolverTest, Shrinkage_LargerLambdaReducesNorm) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
     Eigen::VectorXd y = Eigen::VectorXd::Random(n);
 
-    double norm_small = RidgeSolver::solve(X, y, 1e-3).norm();
-    double norm_large = RidgeSolver::solve(X, y, 1e3).norm();
+    double norm_small = Ridge::solve(X, y, 1e-3).norm();
+    double norm_large = Ridge::solve(X, y, 1e3).norm();
 
     EXPECT_LT(norm_large, norm_small)
         << "Larger lambda should produce a smaller coefficient norm.";
@@ -154,7 +154,7 @@ TEST(RidgeSolverTest, Shrinkage_VeryLargeLambdaApproachesZero) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(n, p);
     Eigen::VectorXd y = Eigen::VectorXd::Random(n);
 
-    Eigen::VectorXd beta = RidgeSolver::solve(X, y, 1e12);
+    Eigen::VectorXd beta = Ridge::solve(X, y, 1e12);
 
     EXPECT_NEAR(beta.norm(), 0.0, 1e-6);
 }
@@ -170,7 +170,7 @@ TEST(RidgeSolverTest, Shrinkage_VeryLargeLambdaApproachesZero) {
  *        well-posed for lambda > 0 regardless of the shape of X.
  */
 TEST(RidgeSolverTest, PrimalDualConsistency_ClosedFormMatch) {
-    const Eigen::Index n = 8, p = 20;  // n < p -> RidgeSolver dispatches to the dual path
+    const Eigen::Index n = 8, p = 20;  // n < p -> Ridge dispatches to the dual path
     const double lambda = 0.5;
 
     // Deterministic wide design matrix
@@ -181,7 +181,7 @@ TEST(RidgeSolverTest, PrimalDualConsistency_ClosedFormMatch) {
                              * static_cast<double>(j + 1) * 0.2);
     Eigen::VectorXd y = Eigen::VectorXd::LinSpaced(n, -1.0, 2.0);
 
-    Eigen::VectorXd beta_dual = RidgeSolver::solve(X, y, lambda);
+    Eigen::VectorXd beta_dual = Ridge::solve(X, y, lambda);
 
     // Primal closed form computed independently
     Eigen::MatrixXd A = X.transpose() * X
@@ -215,7 +215,7 @@ TEST(RidgeSolverTest, RankDeficient_TinyLambdaStaysSolvable) {
     Eigen::VectorXd y = X * w;
 
     const double lambda = 1e-8;
-    Eigen::VectorXd beta = RidgeSolver::solve(X, y, lambda);
+    Eigen::VectorXd beta = Ridge::solve(X, y, lambda);
 
     // KKT residual (tolerance reflects the ~1/lambda conditioning of the system)
     Eigen::VectorXd kkt = X.transpose() * (y - X * beta) - lambda * beta;
@@ -225,7 +225,7 @@ TEST(RidgeSolverTest, RankDeficient_TinyLambdaStaysSolvable) {
     // LDLT behavior the solver either reports failure or returns a valid solution
     // of the (consistent) normal equations. Both are acceptable; garbage is not.
     try {
-        Eigen::VectorXd beta0 = RidgeSolver::solve(X, y, 0.0);
+        Eigen::VectorXd beta0 = Ridge::solve(X, y, 0.0);
         EXPECT_NEAR((X.transpose() * (y - X * beta0)).norm(), 0.0, 1e-6);
     } catch (const std::runtime_error&) {
         SUCCEED() << "Factorizations rejected the exactly singular system.";
@@ -242,7 +242,7 @@ TEST(RidgeSolverTest, Exceptions_DimensionMismatch) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(10, 5);
     Eigen::VectorXd y = Eigen::VectorXd::Random(11); // wrong size
 
-    EXPECT_THROW(RidgeSolver::solve(X, y, 1.0), std::invalid_argument);
+    EXPECT_THROW(Ridge::solve(X, y, 1.0), std::invalid_argument);
 }
 
 
@@ -251,7 +251,7 @@ TEST(RidgeSolverTest, Exceptions_NegativeLambda) {
     Eigen::MatrixXd X = Eigen::MatrixXd::Random(10, 5);
     Eigen::VectorXd y = Eigen::VectorXd::Random(10);
 
-    EXPECT_THROW(RidgeSolver::solve(X, y, -0.1), std::invalid_argument);
+    EXPECT_THROW(Ridge::solve(X, y, -0.1), std::invalid_argument);
 }
 
 
@@ -261,7 +261,7 @@ TEST(RidgeSolverTest, Exceptions_ZeroLambdaIsValid) {
     Eigen::VectorXd y = Eigen::VectorXd::Random(15);
 
     EXPECT_NO_THROW({
-        Eigen::VectorXd beta = RidgeSolver::solve(X, y, 0.0);
+        Eigen::VectorXd beta = Ridge::solve(X, y, 0.0);
         EXPECT_EQ(beta.size(), 5);
     });
 }

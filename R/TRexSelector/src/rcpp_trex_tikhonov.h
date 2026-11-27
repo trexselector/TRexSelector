@@ -27,10 +27,10 @@ using namespace trex::trex_selector_methods::ad::trex_core;
  *        that is passed replaces the nested one as it is, and the C++
  *        constructor refuses a solver other than TIKNET.
  */
-inline TRexTikhonovControlParameter merge_tikhonov_control(
-    const TRexTikhonovControlParameter& tik_control,
-    const std::optional<tc::TRexControlParameter>& trex_control) {
-    TRexTikhonovControlParameter tik_ctrl = tik_control;
+inline TRexTikhonovControl merge_tikhonov_control(
+    const TRexTikhonovControl& tik_control,
+    const std::optional<tc::TRexControl>& trex_control) {
+    TRexTikhonovControl tik_ctrl = tik_control;
     if (trex_control) {
         tik_ctrl.trex_ctrl = *trex_control;
     }
@@ -50,7 +50,7 @@ public:
         Eigen::Map<Eigen::MatrixXd> X,
         Eigen::Map<Eigen::VectorXd> y,
         double tFDR,
-        const TRexTikhonovControlParameter& tik_ctrl,
+        const TRexTikhonovControl& tik_ctrl,
         int seed,
         bool verbose
     ) {

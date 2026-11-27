@@ -19,7 +19,7 @@
 #include <tsolvers/ad/linear_model/omp_based.hpp>
 
 using trex::ml_methods::scaler_methods::LpNormScaler;
-using trex::tsolvers::ad::SolverOptions;
+using trex::tsolvers::ad::TSolverOptions;
 namespace lars = trex::tsolvers::ad::linear_model::lars_based;
 namespace omp = trex::tsolvers::ad::linear_model::omp_based;
 namespace afs = trex::tsolvers::ad::linear_model::afs_based;
@@ -44,7 +44,7 @@ void run_reader(const char* name, Args&... args) {
 
 // Writes a snapshot of a path for the figure of the page: the dense coefficients, one row per
 // step with the all-zero start first, and the code of the variable that enters at each step.
-void write_snapshot(const lars::TLARS_Solver& solver, const std::string& tag) {
+void write_snapshot(const lars::TSolverLARS& solver, const std::string& tag) {
     const Eigen::MatrixXd path = solver.getBetaPathSparse().dense();   // (p + L) x (steps + 1)
     const std::string base = std::string(DOC_OUTPUT_DIR) + "/tsolvers.figure_" + tag;
     std::ofstream csv(base + ".csv");
@@ -84,7 +84,7 @@ int main() {
 
     doc.begin("path");
     //! [path]
-    lars::TLARS_Solver solver(X_map, D_map, y_map);
+    lars::TSolverLARS solver(X_map, D_map, y_map);
     solver.executeStep(/*T_stop=*/3);
     std::cout << "steps:             " << solver.getNumSteps() << '\n';
     print_indices("active predictors:", solver.getActivePredictorIndices());
@@ -132,7 +132,7 @@ int main() {
 
     doc.begin("figure");
     //! [figure]
-    lars::TLARS_Solver s(X_map, D_map, y_map);
+    lars::TSolverLARS s(X_map, D_map, y_map);
     s.executeStep(/*T_stop=*/1);
     write_snapshot(s, "T1");
     s.executeStep(/*T_stop=*/3);
@@ -147,7 +147,7 @@ int main() {
 
     doc.begin("options");
     //! [options]
-    lars::TENET_Solver en(X_map, D_map, y_map, SolverOptions{.lambda2 = 0.5});
+    lars::TSolverENET en(X_map, D_map, y_map, TSolverOptions{.lambda2 = 0.5});
     en.executeStep(3);
     print_indices("active predictors:", en.getActivePredictorIndices());
     en.restore(X_map, D_map, y_map);
@@ -158,7 +158,7 @@ int main() {
     const Eigen::MatrixXd X_before = X;
     const auto max_diff = [&] { return (X - X_before).cwiseAbs().maxCoeff(); };
 
-    lars::TLASSO_Solver w(X_map, D_map, y_map);
+    lars::TSolverLASSO w(X_map, D_map, y_map);
     std::cout << std::scientific << std::setprecision(2);
     std::cout << "the scaled columns:      " << max_diff() << '\n';
     w.restore(X_map, D_map, y_map);
@@ -174,26 +174,26 @@ int main() {
     Eigen::VectorXd y_c = y.array() - y.mean();
     Eigen::Map<Eigen::VectorXd> yc_map(y_c.data(), n);
 
-    SolverOptions reader_opts{.normalize = false, .intercept = false, .precentered = true};
+    TSolverOptions reader_opts{.normalize = false, .intercept = false, .precentered = true};
     //! [readers]
 
     doc.begin("families");
     //! [families]
     std::cout << std::left << std::setw(11) << "solver" << std::setw(6) << "steps"
               << "  predictors\n";
-    run_reader<lars::TLARS_Solver>("TLARS", X_map, D_map, yc_map, reader_opts);
-    run_reader<lars::TLASSO_Solver>("TLASSO", X_map, D_map, yc_map, reader_opts);
-    run_reader<lars::TSTEPWISE_Solver>("TSTEPWISE", X_map, D_map, yc_map, reader_opts);
-    run_reader<lars::TSTAGEWISE_Solver>("TSTAGEWISE", X_map, D_map, yc_map, reader_opts);
-    run_reader<lars::TENET_Solver>("TENET", X_map, D_map, yc_map, reader_opts);
-    run_reader<lars::TENETAug_Solver>("TENETAug", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TOMP_Solver>("TOMP", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TOOLS_Solver>("TOOLS", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TGP_Solver>("TGP", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TACGP_Solver>("TACGP", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TMP_Solver>("TMP", X_map, D_map, yc_map, reader_opts);
-    run_reader<omp::TNCGMP_Solver>("TNCGMP", X_map, D_map, yc_map, reader_opts);
-    run_reader<afs::TAFS_Solver>("TAFS", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverLARS>("TLARS", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverLASSO>("TLASSO", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverStepwise>("TSTEPWISE", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverStagewise>("TSTAGEWISE", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverENET>("TENET", X_map, D_map, yc_map, reader_opts);
+    run_reader<lars::TSolverENETAug>("TENETAug", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverOMP>("TOMP", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverOOLS>("TOOLS", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverGP>("TGP", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverACGP>("TACGP", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverMP>("TMP", X_map, D_map, yc_map, reader_opts);
+    run_reader<omp::TSolverNCGMP>("TNCGMP", X_map, D_map, yc_map, reader_opts);
+    run_reader<afs::TSolverAFS>("TAFS", X_map, D_map, yc_map, reader_opts);
     //! [families]
 
     doc.begin("structured");
@@ -202,11 +202,11 @@ int main() {
     for (Eigen::Index j = 0; j < p; ++j) groups[j] = static_cast<int>(j / 10);   // 5 groups
     Eigen::SparseMatrix<double> identity(p, p);
     identity.setIdentity();
-    SolverOptions structured_opts{.normalize = false, .intercept = false,
+    TSolverOptions structured_opts{.normalize = false, .intercept = false,
                                   .precentered = true, .lambda2 = 0.5};
 
-    run_reader<lars::TIENET_Solver>("TIENET", X_map, D_map, yc_map, groups, structured_opts);
-    run_reader<lars::TIKNET_Solver>("TIKNET", X_map, D_map, yc_map, identity, structured_opts);
+    run_reader<lars::TSolverIENET>("TIENET", X_map, D_map, yc_map, groups, structured_opts);
+    run_reader<lars::TSolverTIKNET>("TIKNET", X_map, D_map, yc_map, identity, structured_opts);
     //! [structured]
 
     doc.begin("save-load");
@@ -215,13 +215,13 @@ int main() {
     std::filesystem::create_directories(work_dir);
     const std::string state_file = (work_dir / "tlars_state.bin").string();
 
-    lars::TLARS_Solver a(X_map, D_map, yc_map, reader_opts);
+    lars::TSolverLARS a(X_map, D_map, yc_map, reader_opts);
     a.executeStep(2);
     a.save(state_file);
-    lars::TLARS_Solver b = lars::TLARS_Solver::load(state_file, X_map, D_map);
+    lars::TSolverLARS b = lars::TSolverLARS::load(state_file, X_map, D_map);
     std::cout << "steps after load: " << b.getNumSteps() << '\n';
     b.executeStep(4);
-    lars::TLARS_Solver c(X_map, D_map, yc_map, reader_opts);
+    lars::TSolverLARS c(X_map, D_map, yc_map, reader_opts);
     c.executeStep(4);
     std::cout << std::boolalpha << "same actives: " << (b.getActives() == c.getActives())
               << '\n';

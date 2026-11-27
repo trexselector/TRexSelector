@@ -84,7 +84,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TLASSO_Solver: public TLARS_Solver {
+class TSolverLASSO: public TSolverLARS {
 
 protected:
 
@@ -102,8 +102,8 @@ protected:
      * @param solver_type Algorithm variant as SolverTypeLarsBased enum
      *                   (e.g., SolverTypeLarsBased::TLASSO).
      */
-    explicit TLASSO_Solver(SolverTypeLarsBased solver_type) :
-                            TLARS_Solver(solver_type) {}
+    explicit TSolverLASSO(SolverTypeLarsBased solver_type) :
+                            TSolverLARS(solver_type) {}
 
 public:
     // ==========================================================================
@@ -116,45 +116,45 @@ public:
      * @param X Predictor matrix (n x p).
      * @param D Dummy matrix (n x num_dummies).
      * @param y Response vector (size n).
-     * @param options Every other input (SolverOptions): the preprocessing flags
+     * @param options Every other input (TSolverOptions): the preprocessing flags
      *        normalize (unit L2-norm columns, default true), intercept
      *        (centering, default true), verbose (detailed status and
      *        diagnostics, default false) and scaling_mode (L2 or z-score,
      *        default L2), the tolerance and the tie-breaking.
      */
-    TLASSO_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverLASSO(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,
                   Eigen::Map<Eigen::VectorXd>& y,
-                  const SolverOptions& options = SolverOptions{})
-        : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TLASSO) {}
+                  const TSolverOptions& options = TSolverOptions{})
+        : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TLASSO) {}
 
     /**
      * @brief Default constructor for serialization or deferred initialization.
      */
-    TLASSO_Solver() : TLARS_Solver(SolverTypeLarsBased::TLASSO) {}
+    TSolverLASSO() : TSolverLARS(SolverTypeLarsBased::TLASSO) {}
 
     /**
      * @brief Deleted copy constructor to avoid raw pointer ownership problems.
      */
-    TLASSO_Solver(const TLASSO_Solver&) = delete;
+    TSolverLASSO(const TSolverLASSO&) = delete;
 
     /**
      * @brief Deleted copy assignment operator to avoid raw pointer ownership problems.
      */
-    TLASSO_Solver& operator=(const TLASSO_Solver&) = delete;
+    TSolverLASSO& operator=(const TSolverLASSO&) = delete;
 
     /**
      * @brief Move constructor (defaulted).
      */
-    TLASSO_Solver(TLASSO_Solver&&) = default;
+    TSolverLASSO(TSolverLASSO&&) = default;
 
     /**
      * @brief Deleted move assignment operator to avoid raw pointer ownership problems.
      */
-    TLASSO_Solver& operator=(TLASSO_Solver&&) = delete;
+    TSolverLASSO& operator=(TSolverLASSO&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TLASSO_Solver() override = default;
+    ~TSolverLASSO() override = default;
 
 
     // ==========================================================================
@@ -194,7 +194,7 @@ public:
     template<class Archive>
     void serialize(Archive& archive) {
         archive(
-            cereal::base_class<TLARS_Solver>(this)
+            cereal::base_class<TSolverLARS>(this)
         );
     }
 
@@ -216,14 +216,18 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TLASSO_Solver object connected to X and ready for
+     * @return Deserialized TSolverLASSO object connected to X and ready for
      *         warm-start.
      */
-    static TLASSO_Solver load(const std::string& filename,
+    static TSolverLASSO load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D);
 
 };
+
+/** @brief Old name of TSolverLASSO.
+ *  @deprecated Use TSolverLASSO. */
+using TLASSO_Solver [[deprecated("Use TSolverLASSO")]] = TSolverLASSO;
 
 // =============================================================================
 } // End of namespace trex::tsolvers::ad::linear_model::lars_based
@@ -231,8 +235,8 @@ public:
 // =============================================================================
 // Cereal polymorphic registration
 // =============================================================================
-// Required to serialize a TLASSO_Solver held through a TLARS_Solver pointer
-// (e.g. TENETAug_Solver's inner solver). The type is registered in
+// Required to serialize a TSolverLASSO held through a TSolverLARS pointer
+// (e.g. TSolverENETAug's inner solver). The type is registered in
 // tlasso_solver.cpp, so its serialization code is compiled once. The macro
 // below links that source into every program that includes this header.
 #include <cereal/types/polymorphic.hpp>

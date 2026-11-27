@@ -77,7 +77,7 @@ struct GVSDGPResult {
     /**
      * @brief 0-based cluster (group) assignment per column (length p).
      *
-     * Suitable for passing directly to TRexGVSControlParameter::prior_groups.
+     * Suitable for passing directly to TRexGVSControl::prior_groups.
      * Background (i.i.d.) columns each receive a unique singleton group ID.
      */
     std::vector<Eigen::Index> prior_groups;
@@ -1029,7 +1029,7 @@ inline GVSDGPResult make_neg_traps_dgp(int n, int p, double snr,
  *  all other DGPs in this header).
  *
  *  prior_groups[j] = j / block_size (0-based, contiguous [0, G-1]) so that the
- *  result can be passed directly to TRexGVSControlParameter::prior_groups.
+ *  result can be passed directly to TRexGVSControl::prior_groups.
  *
  * @param n               Number of observations.
  * @param p               Number of predictors; must equal G * block_size.

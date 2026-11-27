@@ -19,7 +19,7 @@
  *
  *  for a user-supplied sparse PSD matrix K = Gamma^T Gamma (p x p) as a
  *  terminating LARS-type path algorithm (LARS-TIK). This generalizes the
- *  native LARS-IEN algorithm of TIENET_Solver from the group-mean penalty
+ *  native LARS-IEN algorithm of TSolverIENET from the group-mean penalty
  *  W = sum_m 1_m 1_m^T / p_m to arbitrary sparse K:
  *
  *  - FOLDED dummy convention (T-Rex+GVS layered): the penalty acts on the
@@ -47,7 +47,7 @@
  *
  *  Degenerate cases: lambda2 == 0 reduces exactly to T-LASSO. With
  *  K = sum_m 1_m 1_m^T / p_m the algorithm coincides with the native
- *  TIENET_Solver (the group solver becomes the special case; accumulation
+ *  TSolverIENET (the group solver becomes the special case; accumulation
  *  orders differ, so knife-edge designs can flip borderline selections at
  *  ULP margins — the anchor tests pin wide-margin designs). K = I gives
  *  the TIENET-with-singleton-groups behavior (each variable ridged jointly
@@ -103,7 +103,7 @@ namespace trex::tsolvers::ad::linear_model::lars_based {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TIKNET_Solver: public TLARS_Solver {
+class TSolverTIKNET: public TSolverLARS {
 
 protected:
     // ============================================================================
@@ -159,38 +159,38 @@ public:
      * @param tikhonov_matrix Sparse PSD Tikhonov matrix K = Gamma^T Gamma
      *                  (p x p) applied to the folded sums on the
      *                  standardized scale.
-     * @param options   Every other input (SolverOptions); this solver reads
+     * @param options   Every other input (TSolverOptions); this solver reads
      *                  lambda2, the quadratic penalty weight (>= 0), and the
      *                  preprocessing flags normalize (unit L2-norm columns,
      *                  default true), intercept (centering, default true),
      *                  verbose (detailed status, default false) and
      *                  scaling_mode (L2 or z-score, default L2).
      */
-    TIKNET_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverTIKNET(Eigen::Map<Eigen::MatrixXd>& X,
                   Eigen::Map<Eigen::MatrixXd>& D,
                   Eigen::Map<Eigen::VectorXd>& y,
                   const Eigen::SparseMatrix<double>& tikhonov_matrix,
-                  const SolverOptions& options = SolverOptions{});
+                  const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for Cereal deserialization.
      */
-    TIKNET_Solver() : TLARS_Solver(SolverTypeLarsBased::TIKNET) {}
+    TSolverTIKNET() : TSolverLARS(SolverTypeLarsBased::TIKNET) {}
 
     /** @brief Deleted copy constructor. */
-    TIKNET_Solver(const TIKNET_Solver&) = delete;
+    TSolverTIKNET(const TSolverTIKNET&) = delete;
 
     /** @brief Deleted copy assignment. */
-    TIKNET_Solver& operator=(const TIKNET_Solver&) = delete;
+    TSolverTIKNET& operator=(const TSolverTIKNET&) = delete;
 
     /** @brief Default move constructor. */
-    TIKNET_Solver(TIKNET_Solver&&) = default;
+    TSolverTIKNET(TSolverTIKNET&&) = default;
 
     /** @brief Deleted move assignment. */
-    TIKNET_Solver& operator=(TIKNET_Solver&&) = delete;
+    TSolverTIKNET& operator=(TSolverTIKNET&&) = delete;
 
     /** @brief Virtual destructor. */
-    ~TIKNET_Solver() override = default;
+    ~TSolverTIKNET() override = default;
 
     // ============================================================================
     // Core Algorithm Execution
@@ -221,7 +221,7 @@ public:
     /** @brief Current folded coefficient sums s (valid after executeStep()). */
     const Eigen::VectorXd& getFoldedSums() const noexcept { return folded_s_; }
 
-    /** @brief TLARS_Solver::memoryBytes() plus the copy of K, the folded sums,
+    /** @brief TSolverLARS::memoryBytes() plus the copy of K, the folded sums,
      *  the coupling state and the direction and gather workspaces. */
     std::size_t memoryBytes() const noexcept override;
 
@@ -255,7 +255,7 @@ public:
         std::size_t K_dim = static_cast<std::size_t>(tikhonov_K_.rows());
 
         archive(
-            cereal::base_class<TLARS_Solver>(this),
+            cereal::base_class<TSolverLARS>(this),
             CEREAL_NVP(lambda2_),
             cereal::make_nvp("K_dim", K_dim),
             cereal::make_nvp("K_rows", K_rows),
@@ -290,9 +290,9 @@ public:
      * @param filename Path to input file.
      * @param X        Map to feature matrix.
      * @param D        Map to dummy matrix.
-     * @return Deserialized TIKNET_Solver connected to X and D.
+     * @return Deserialized TSolverTIKNET connected to X and D.
      */
-    static TIKNET_Solver load(const std::string& filename,
+    static TSolverTIKNET load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -304,7 +304,7 @@ protected:
     /**
      * @brief Active set update with the TIK Cholesky rank-1 update: the
      * cross-products receive lambda2 * K_{b(t), b(u)} and the new diagonal
-     * entry lambda2 * K_{bb}. Mirrors TLARS_Solver::updateActiveSet
+     * entry lambda2 * K_{bb}. Mirrors TSolverLARS::updateActiveSet
      * otherwise (collinear rejection via the pivot guard, sign tracking,
      * dummy counting).
      *
@@ -362,6 +362,10 @@ protected:
      */
     void refreshDroppedCorrelation(std::size_t dropped_var) override;
 };
+
+/** @brief Old name of TSolverTIKNET.
+ *  @deprecated Use TSolverTIKNET. */
+using TIKNET_Solver [[deprecated("Use TSolverTIKNET")]] = TSolverTIKNET;
 
 // ============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::lars_based */

@@ -27,21 +27,21 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructor Implementation
 // ==================================================================================
 
-TOMP_Solver::TOMP_Solver(
+TSolverOMP::TSolverOMP(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options)
-    : TOMP_Solver(X, D, y, options, SolverTypeOMPBased::TOMP) {}
+    const TSolverOptions& options)
+    : TSolverOMP(X, D, y, options, SolverTypeOMPBased::TOMP) {}
 
 
-TOMP_Solver::TOMP_Solver(
+TSolverOMP::TSolverOMP(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
-    const SolverOptions& options,
+    const TSolverOptions& options,
     SolverTypeOMPBased algorithm_type)
-    : TSolver_Base(X, D, y, options),
+    : TSolverBase(X, D, y, options),
       algo_type_(algorithm_type) {
 
     // 1. Inherited Preprocessing
@@ -77,15 +77,15 @@ TOMP_Solver::TOMP_Solver(
 }
 
 // Delegator constructor for protected use
-TOMP_Solver::TOMP_Solver(SolverTypeOMPBased type) : TSolver_Base(), algo_type_(type) {}
-TOMP_Solver::TOMP_Solver() : TSolver_Base(), algo_type_(SolverTypeOMPBased::TOMP) {}
+TSolverOMP::TSolverOMP(SolverTypeOMPBased type) : TSolverBase(), algo_type_(type) {}
+TSolverOMP::TSolverOMP() : TSolverBase(), algo_type_(SolverTypeOMPBased::TOMP) {}
 
 
 // ============================================================================
 // Core Algorithm Implementation
 // ============================================================================
 
-void TOMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverOMP::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     // Set openMP dominance for the entire algorithm
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
@@ -139,12 +139,12 @@ void TOMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // Math Helpers (Routed via getColumn)
 // ==================================================================================
 
-void TOMP_Solver::updateCorrelations() {
+void TSolverOMP::updateCorrelations() {
     refreshInactiveCorrelations();
 }
 
 
-std::vector<int> TOMP_Solver::updateActiveSet(const std::vector<std::size_t>& new_vars) {
+std::vector<int> TSolverOMP::updateActiveSet(const std::vector<std::size_t>& new_vars) {
     std::vector<int> actions_this_step;
     any_dropped_ = false;
 
@@ -175,7 +175,7 @@ std::vector<int> TOMP_Solver::updateActiveSet(const std::vector<std::size_t>& ne
 }
 
 
-void TOMP_Solver::updateBetaPath() {
+void TSolverOMP::updateBetaPath() {
     std::size_t k = actives_.size();
 
     // X_A^T y in active-set order. The active set of this family only grows
@@ -196,7 +196,7 @@ void TOMP_Solver::updateBetaPath() {
 }
 
 
-void TOMP_Solver::updateResiduals() {
+void TSolverOMP::updateResiduals() {
     r_ = y_;
     std::size_t k = actives_.size();
 
@@ -211,8 +211,8 @@ void TOMP_Solver::updateResiduals() {
 // Memory report
 // ==================================================================================
 
-std::size_t TOMP_Solver::memoryBytes() const noexcept {
-    return TSolver_Base::memoryBytes() + solver_utils::memory_bytes::bytesOf(xty_active_);
+std::size_t TSolverOMP::memoryBytes() const noexcept {
+    return TSolverBase::memoryBytes() + solver_utils::memory_bytes::bytesOf(xty_active_);
 }
 
 
@@ -220,13 +220,13 @@ std::size_t TOMP_Solver::memoryBytes() const noexcept {
 // Serialization
 // ==================================================================================
 
-void TOMP_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverOMP::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TOMP_Solver TOMP_Solver::load(const std::string& filename,
+TSolverOMP TSolverOMP::load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TOMP_Solver>(filename, X, D);
+    return loadImpl<TSolverOMP>(filename, X, D);
 }
 
 // ==================================================================================

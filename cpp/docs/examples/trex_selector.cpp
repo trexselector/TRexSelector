@@ -16,7 +16,7 @@
 #include <utils/eval_metrics/utils_eval_rates.hpp>
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
 using trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
 namespace dummygen = trex::utils::datageneration::dummygen;
@@ -55,7 +55,7 @@ int main() {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
 
-    TRexSelector sel(X_map, y_map, /*tFDR=*/0.1, TRexControlParameter{},
+    TRexSelector sel(X_map, y_map, /*tFDR=*/0.1, TRexControl{},
                      /*seed=*/42, /*verbose=*/false);
     sel.select();
     print_indices("selected:", sel.getSelectedIndices());
@@ -117,7 +117,7 @@ int main() {
     for (Named s : {Named{LLoopStrategy::HCONCAT, "HCONCAT"},
                     Named{LLoopStrategy::STANDARD, "STANDARD"},
                     Named{LLoopStrategy::SEEDED, "SEEDED"}}) {
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.lloop_strategy = s.strategy;
         ctrl.K = 10;
 
@@ -133,8 +133,8 @@ int main() {
 
     doc.begin("dummies");
     //! [dummies]
-    TRexControlParameter t_ctrl;
-    t_ctrl.dummy_distribution = dummygen::Distribution::StudentT(3.0);
+    TRexControl t_ctrl;
+    t_ctrl.dummy_distribution = dummygen::DummyDistribution::StudentT(3.0);
     t_ctrl.K = 10;
 
     TRexSelector t_sel(X_map, y_map, 0.1, t_ctrl, 42, false);
@@ -151,7 +151,7 @@ int main() {
     Eigen::Map<Eigen::MatrixXd> Xn_map(Xn.data(), n, p);
     Eigen::Map<Eigen::VectorXd> yn_map(yn.data(), n);
 
-    TRexControlParameter n_ctrl;
+    TRexControl n_ctrl;
     n_ctrl.scaling_mode = ScalingMode::NONE;
     TRexSelector n_sel(Xn_map, yn_map, 0.1, n_ctrl, 42, false);
     n_sel.select();
@@ -164,7 +164,7 @@ int main() {
     const Eigen::MatrixXd X_before = X;
     const auto max_diff = [&] { return (X - X_before).cwiseAbs().maxCoeff(); };
 
-    TRexSelector r_sel(X_map, y_map, 0.1, TRexControlParameter{}, 42, false);
+    TRexSelector r_sel(X_map, y_map, 0.1, TRexControl{}, 42, false);
     std::cout << std::scientific << std::setprecision(2);
     std::cout << "max |X - X_before| after construction: " << max_diff() << '\n';
     r_sel.restore();
@@ -188,7 +188,7 @@ int main() {
             Eigen::Map<Eigen::MatrixXd> X_mc_map(X_mc.data(), n, p);
             Eigen::Map<Eigen::VectorXd> y_mc_map(y_mc.data(), n);
 
-            TRexControlParameter ctrl;
+            TRexControl ctrl;
             ctrl.K = 10;
             TRexSelector s(X_mc_map, y_mc_map, targets[t], ctrl, seed, false);
             s.select();

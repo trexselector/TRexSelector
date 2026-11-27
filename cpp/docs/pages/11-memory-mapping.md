@@ -53,8 +53,8 @@ the design in place and restores it when `select()` returns, so the file must be
 \snippet{trimleft} memory_mapping.cpp select
 \output{memory_mapping.select.txt}
 
-The same holds for TRexDASelector, TRexGVSSelector, ScreenTRexSelector, BiobankScreenTRex, TRexSPCA
-and TRexTikhonovSelector. `TRexControlParameter::use_memory_mapping = true` additionally keeps the
+The same holds for TRexDASelector, TRexGVSSelector, TRexScreeningSelector, TRexBiobankScreeningSelector,
+TRexSPCASelector and TRexTikhonovSelector. `TRexControl::use_memory_mapping = true` additionally keeps the
 dummy matrices of the random experiments in mapped files under the library's temporary directory
 (`trex::utils::get_global_temp_dir()`, which `set_global_temp_dir()` moves), for the case where
 \f$K \cdot L \cdot p\f$ dummy columns do not fit either.
@@ -81,7 +81,7 @@ none of them writes into it.
 \snippet{trimleft} memory_mapping.cpp readonly
 \output{memory_mapping.readonly.txt}
 
-TRexSPCA centers the design in every run, so it needs `AccessMode::ReadWrite` under every scaling
+TRexSPCASelector centers the design in every run, so it needs `AccessMode::ReadWrite` under every scaling
 mode.
 
 ## T-solvers and ML methods
@@ -92,7 +92,7 @@ the clustering accepts it as data. The access mode follows the same rule as for 
 T-solver with `normalize = true` or `intercept = true` and the scalers write into the file and need
 `AccessMode::ReadWrite`, while a T-solver with both options off and the fits of the regressions only
 read it and take a read-only file, for `X` and for `D`.
-`SolverOptions::writesDesign()` tells the two kinds of solver apart.
+`TSolverOptions::writesDesign()` tells the two kinds of solver apart.
 
 \snippet{trimleft} memory_mapping.cpp solver
 \output{memory_mapping.solver.txt}

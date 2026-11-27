@@ -52,16 +52,16 @@
 namespace trex::test::ml_methods::reference {
 
 namespace fs = std::filesystem;
-using trex::ml_methods::model_selection::enet_cv_ccd;
-using trex::ml_methods::model_selection::enet_gaussian;
-using trex::ml_methods::model_selection::ridge_cv_svd;
+using trex::ml_methods::model_selection::ElasticNetCV;
+using trex::ml_methods::model_selection::ElasticNet;
+using trex::ml_methods::model_selection::RidgeCV;
 using trex::ml_methods::pca::PCA;
 using trex::ml_methods::pca::PCAResult;
-using trex::ml_methods::ridge::RidgeSolver;
+using trex::ml_methods::ridge::Ridge;
 using trex::ml_methods::scaler_methods::LpNormScaler;
 using trex::ml_methods::scaler_methods::ZScoreScaler;
 using trex::ml_methods::svd::SVDResult;
-using trex::ml_methods::svd::SVDSolver;
+using trex::ml_methods::svd::SVD;
 
 // ==================================================================================
 // Fixed data
@@ -182,7 +182,7 @@ class MLReference : public ::testing::TestWithParam<Shape> {};
 
 TEST_P(MLReference, RidgeCV) {
     Eigen::MatrixXd X; Eigen::VectorXd y; make_data(GetParam(), X, y);
-    ridge_cv_svd cv;
+    RidgeCV cv;
     cv.fit(X, y, /*n_folds=*/5, /*n_lambda=*/60, /*lambda_ratio=*/1000.0, /*seed=*/11u);
     Stream s;
     s.add("lambdas", cv.lambdas()); s.add("cv_mse", cv.cv_mse()); s.add("cv_sem", cv.cv_sem());
@@ -196,7 +196,7 @@ TEST_P(MLReference, RidgeCV) {
 
 TEST_P(MLReference, ElasticNetPathAndGrid) {
     Eigen::MatrixXd X; Eigen::VectorXd y; make_data(GetParam(), X, y);
-    enet_gaussian en;
+    ElasticNet en;
     en.fit(X, y, /*alpha=*/0.7, /*n_lambda=*/40, /*lambda_min_ratio=*/-1.0,
            /*standardize=*/true, /*intercept=*/true, /*use_strong_rule=*/false,
            /*max_iter=*/100000, /*tol=*/1e-7);
@@ -209,14 +209,14 @@ TEST_P(MLReference, ElasticNetPathAndGrid) {
 
     // Explicit grid at a subset of the auto grid, no standardization, strong rule
     const Eigen::VectorXd grid = en.lambdas().segment(5, 10);
-    enet_gaussian en2;
+    ElasticNet en2;
     en2.fit(X, y, grid, /*alpha=*/0.7, /*standardize=*/false, /*intercept=*/true,
             /*use_strong_rule=*/true, /*max_iter=*/100000, /*tol=*/1e-7);
     s.add("grid_lambdas", en2.lambdas()); s.add("grid_coef", en2.coef());
     s.add("grid_intercepts", en2.intercepts());
 
     // No intercept
-    enet_gaussian en3;
+    ElasticNet en3;
     en3.fit(X, y, /*alpha=*/1.0, /*n_lambda=*/20, -1.0, true, /*intercept=*/false, false, 100000, 1e-7);
     s.add("noint_coef", en3.coef()); s.add("noint_intercepts", en3.intercepts());
     compare_or_record(std::string("enet_") + GetParam().name, s);
@@ -224,7 +224,7 @@ TEST_P(MLReference, ElasticNetPathAndGrid) {
 
 TEST_P(MLReference, ElasticNetCV) {
     Eigen::MatrixXd X; Eigen::VectorXd y; make_data(GetParam(), X, y);
-    enet_cv_ccd cv;
+    ElasticNetCV cv;
     cv.fit(X, y, /*alpha=*/0.5, /*n_folds=*/5, /*n_lambda=*/40, -1.0, /*seed=*/3u,
            true, true, 100000, 1e-7);
     Stream s;
@@ -240,10 +240,10 @@ TEST_P(MLReference, SVD) {
     Eigen::MatrixXd X; Eigen::VectorXd y; make_data(GetParam(), X, y);
     const Eigen::Index M = 5;
     Stream s;
-    const SVDResult r = SVDSolver{}.compute(X, M);          // default dispatch
+    const SVDResult r = SVD{}.compute(X, M);          // default dispatch
     s.add("U", r.U); s.add("S", r.S); s.add("V", r.V);
     // Force the randomized path (small threshold) on the same data
-    const SVDResult rr = SVDSolver{/*min_dim_thresh=*/16, /*block_size=*/64}.compute(X, M);
+    const SVDResult rr = SVD{/*min_dim_thresh=*/16, /*block_size=*/64}.compute(X, M);
     s.add("rand_U", rr.U); s.add("rand_S", rr.S); s.add("rand_V", rr.V);
     compare_or_record(std::string("svd_") + GetParam().name, s);
 }
@@ -275,9 +275,9 @@ TEST_P(MLReference, PCA) {
 TEST_P(MLReference, Ridge) {
     Eigen::MatrixXd X; Eigen::VectorXd y; make_data(GetParam(), X, y);
     Stream s;
-    s.add("beta_1e-2", RidgeSolver::solve(X, y, 1e-2));
-    s.add("beta_1", RidgeSolver::solve(X, y, 1.0));
-    s.add("beta_1e2", RidgeSolver::solve(X, y, 1e2));
+    s.add("beta_1e-2", Ridge::solve(X, y, 1e-2));
+    s.add("beta_1", Ridge::solve(X, y, 1.0));
+    s.add("beta_1e2", Ridge::solve(X, y, 1e2));
     compare_or_record(std::string("ridge_") + GetParam().name, s);
 }
 

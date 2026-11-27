@@ -54,29 +54,29 @@ protected:
 
 /** @brief Test of validation constraints */
 TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidLLoopStrategy) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
 
     // Supported: STANDARD, SEEDED, PERMUTATION, PERMUTATION_SEEDED.
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::SEEDED;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::PERMUTATION;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 
     screen_params.trex_ctrl.lloop_strategy =
         LLoopStrategy::PERMUTATION_SEEDED;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 
     // Unsupported: the L-loop growth strategies.
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::SKIPL;
-    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params),
+    EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params),
                                     std::invalid_argument);
 
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::HCONCAT;
-    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params),
+    EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params),
                  std::invalid_argument);
 }
 
@@ -84,47 +84,47 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidLLoopStrategy) {
 /** @brief `rho_thr_DA` is checked at construction: [0, 1], and [0, 1) for
  *  TREX_DA_AR1, whose window has no lag left at a threshold of 1. */
 TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidRhoThreshold) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
 
     for (const double bad : {-0.1, 1.5, std::numeric_limits<double>::quiet_NaN()}) {
         screen_params.rho_thr_DA = bad;
         for (const auto method : {ScreenTRexMethod::TREX, ScreenTRexMethod::TREX_DA_AR1,
                                   ScreenTRexMethod::TREX_DA_EQUI}) {
             screen_params.trex_method = method;
-            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+            EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
         }
     }
 
     screen_params.rho_thr_DA = 1.0;
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
-    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+    EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_NN;
-    EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+    EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 }
 
 
 /** @brief TREX_DA_BLOCK_EQUI takes between 1 and p blocks. The other
  *  variants do not read `n_blocks`. */
 TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
 
     for (const std::size_t bad : {std::size_t{0}, std::size_t{21}}) {  // p = 20
         screen_params.n_blocks = bad;
-        EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+        EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
     }
     for (const std::size_t good : {std::size_t{1}, std::size_t{20}}) {
         screen_params.n_blocks = good;
-        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+        EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
     }
 
     screen_params.n_blocks = 0;
     screen_params.trex_method = ScreenTRexMethod::TREX;
-    EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+    EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 }
 
 
@@ -134,22 +134,22 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
  *  advance the grid over the confidence level). */
 TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBootstrapParameters) {
     for (const bool use_bootstrap : {false, true}) {
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.use_bootstrap_CI = use_bootstrap;
 
         for (const std::size_t bad : {std::size_t{0}, std::size_t{1}}) {
             screen_params.R_boot = bad;
-            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+            EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
         }
         screen_params.R_boot = 2;
-        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+        EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 
         for (const double bad : {0.0, -0.001, 1.5, std::numeric_limits<double>::quiet_NaN()}) {
             screen_params.ci_grid_step = bad;
-            EXPECT_THROW(ScreenTRexSelector(X_map, y_map, screen_params), std::invalid_argument);
+            EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
         }
         screen_params.ci_grid_step = 1.0;
-        EXPECT_NO_THROW(ScreenTRexSelector(X_map, y_map, screen_params));
+        EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
     }
 }
 
@@ -182,11 +182,11 @@ TEST(TRexScreeningEstimateTest, Estimate_EmptySelectionReportsOne) {
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.use_bootstrap_CI = use_bootstrap;
         screen_params.R_boot = 100;
 
-        ScreenTRexSelector selector(X_map, y_map, screen_params, 5, false);
+        TRexScreeningSelector selector(X_map, y_map, screen_params, 5, false);
         selector.select();
         const auto& result = selector.getScreenResult();
 
@@ -199,7 +199,7 @@ TEST(TRexScreeningEstimateTest, Estimate_EmptySelectionReportsOne) {
     Eigen::VectorXd y_signal = 5.0 * X.col(1) - 5.0 * X.col(9) + 5.0 * X.col(20) + 0.1 * noise;
     Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y_signal.data(), y_signal.size());
-    ScreenTRexSelector selector(X_map, y_map, ScreenTRexControlParameter(), 5, false);
+    TRexScreeningSelector selector(X_map, y_map, TRexScreeningControl(), 5, false);
     selector.select();
     const auto& result = selector.getScreenResult();
     ASSERT_GT(result.selected_var.sum(), 0);
@@ -223,13 +223,13 @@ TEST(TRexScreeningWindowTest, Method_DA_AR1_WindowEdges) {
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
         screen_params.cor_coef = cor_coef;
         screen_params.rho_thr_DA = rho_thr_DA;
         screen_params.trex_ctrl.K = 10;
 
-        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        TRexScreeningSelector selector(X_map, y_map, screen_params, 7, false);
         return selector.select();
     };
 
@@ -265,13 +265,13 @@ TEST(TRexScreeningWindowTest, Method_DA_NN_GroupsAndEmptyGroup) {
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.trex_method = method;
         screen_params.cor_coef = cor_coef;
         screen_params.rho_thr_DA = rho_thr_DA;
         screen_params.trex_ctrl.K = 10;
 
-        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        TRexScreeningSelector selector(X_map, y_map, screen_params, 7, false);
         return selector.select();
     };
 
@@ -314,12 +314,12 @@ TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.trex_method = method;
         screen_params.cor_coef = cor_coef;
         screen_params.trex_ctrl.K = 5;
 
-        ScreenTRexSelector selector(X_map, y_map, screen_params, 7, false);
+        TRexScreeningSelector selector(X_map, y_map, screen_params, 7, false);
         testing::internal::CaptureStderr();
         selector.select();
         warning = testing::internal::GetCapturedStderr();
@@ -355,13 +355,13 @@ TEST_F(TRexScreeningTest, Equivalence_PermutationSeededMatchesPermutation) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
         Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.trex_method = ScreenTRexMethod::TREX;
         screen_params.use_bootstrap_CI = false;
         screen_params.trex_ctrl.K = 5;
         screen_params.trex_ctrl.lloop_strategy = strategy;
 
-        ScreenTRexSelector selector(Xm, ym, screen_params, /*seed=*/42);
+        TRexScreeningSelector selector(Xm, ym, screen_params, /*seed=*/42);
         return selector.select();
     };
 
@@ -389,13 +389,13 @@ TEST_F(TRexScreeningTest, Equivalence_SeededMatchesStandard) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xc.data(), Xc.rows(), Xc.cols());
         Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
 
-        ScreenTRexControlParameter screen_params;
+        TRexScreeningControl screen_params;
         screen_params.trex_method = ScreenTRexMethod::TREX;
         screen_params.use_bootstrap_CI = false;
         screen_params.trex_ctrl.K = 5;
         screen_params.trex_ctrl.lloop_strategy = strategy;
 
-        ScreenTRexSelector selector(Xm, ym, screen_params, /*seed=*/42);
+        TRexScreeningSelector selector(Xm, ym, screen_params, /*seed=*/42);
         return selector.select();
     };
 
@@ -415,10 +415,10 @@ TEST_F(TRexScreeningTest, Equivalence_SeededMatchesStandard) {
 /** @brief The getters of the base class hold the fixed values of a screening
  *         run, and the result holds the fields of the screening. */
 TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_ctrl.K = 5;
 
-    ScreenTRexSelector selector(X_map, y_map, screen_params, 42, false);
+    TRexScreeningSelector selector(X_map, y_map, screen_params, 42, false);
     selector.select();
     const auto& res = selector.getScreenResult();
     const auto p = X.cols();
@@ -452,7 +452,7 @@ TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
     // A supplied coefficient of a dependency-aware variant is reported as it is
     screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
     screen_params.cor_coef = 0.5;
-    ScreenTRexSelector filtered(X_map, y_map, screen_params, 42, false);
+    TRexScreeningSelector filtered(X_map, y_map, screen_params, 42, false);
     filtered.select();
     EXPECT_DOUBLE_EQ(filtered.getScreenResult().estimated_correlation, 0.5);
 }
@@ -460,14 +460,14 @@ TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
 
 /** @brief Test execution of Ordinary Screening */
 TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_method = ScreenTRexMethod::TREX;
     screen_params.use_bootstrap_CI = false;
     screen_params.trex_ctrl.K = 5; // Reduced K for quick unit testing
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
 
     EXPECT_NO_THROW({
-        ScreenTRexSelector selector(X_map, y_map, screen_params);
+        TRexScreeningSelector selector(X_map, y_map, screen_params);
         auto result = selector.select();
 
         // Ensure static execution values
@@ -481,7 +481,7 @@ TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
 
 /** @brief Test of Boostrap CI Screening */
 TEST_F(TRexScreeningTest, Execution_BootstrapScreenTRexDoesNotThrow) {
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_method = ScreenTRexMethod::TREX;
     screen_params.use_bootstrap_CI = true;
     screen_params.R_boot = 50; // Small bootstrap resamples for fast testing
@@ -489,7 +489,7 @@ TEST_F(TRexScreeningTest, Execution_BootstrapScreenTRexDoesNotThrow) {
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
 
     EXPECT_NO_THROW({
-        ScreenTRexSelector selector(X_map, y_map, screen_params);
+        TRexScreeningSelector selector(X_map, y_map, screen_params);
 
         auto result = selector.getScreenResult();
         selector.select();
@@ -504,16 +504,16 @@ TEST_F(TRexScreeningTest, Execution_BootstrapScreenTRexDoesNotThrow) {
 TEST_F(TRexScreeningTest, DataIntegrity_XRestoredAfterSelect) {
     Eigen::MatrixXd X_copy = X;
 
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_ctrl.K = 3;
     screen_params.trex_ctrl.max_dummy_multiplier = 2;
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
 
-    ScreenTRexSelector selector(X_map, y_map, screen_params, 42, false);
+    TRexScreeningSelector selector(X_map, y_map, screen_params, 42, false);
     selector.select();
 
     EXPECT_TRUE(X.isApprox(X_copy, 1e-12))
-        << "X was not restored after ScreenTRexSelector::select().";
+        << "X was not restored after TRexScreeningSelector::select().";
 }
 
 
@@ -522,18 +522,18 @@ TEST_F(TRexScreeningTest, DataIntegrity_XRestoredAfterSelect) {
 TEST_F(TRexScreeningTest, DataIntegrity_XRestoredOnDestruction) {
     Eigen::MatrixXd X_copy = X;
 
-    ScreenTRexControlParameter screen_params;
+    TRexScreeningControl screen_params;
     screen_params.trex_ctrl.K = 3;
     screen_params.trex_ctrl.max_dummy_multiplier = 2;
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
 
     {
-        ScreenTRexSelector selector(X_map, y_map, screen_params, 42, false);
+        TRexScreeningSelector selector(X_map, y_map, screen_params, 42, false);
         // X is now normalized. Destructor fires here.
     }
 
     EXPECT_TRUE(X.isApprox(X_copy, 1e-12))
-        << "X was not restored by ScreenTRexSelector destructor.";
+        << "X was not restored by TRexScreeningSelector destructor.";
 }
 
 // ========================================================================================
@@ -541,7 +541,7 @@ TEST_F(TRexScreeningTest, DataIntegrity_XRestoredOnDestruction) {
 // ========================================================================================
 
 /**
- * @brief Runs ScreenTRexSelector under a given scaling mode and returns the
+ * @brief Runs TRexScreeningSelector under a given scaling mode and returns the
  *        selected-variable indicator vector.
  *
  * estimateEquiCorrelation() / estimateBlockEquiCorrelation() accumulate
@@ -565,16 +565,16 @@ Eigen::VectorXi run_screen_trex_select(Eigen::Index n,
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
     trex_ctrl.scaling_mode = scaling_mode;
 
-    ScreenTRexControlParameter screen_ctrl;
+    TRexScreeningControl screen_ctrl;
     screen_ctrl.trex_method = method;
     screen_ctrl.trex_ctrl = trex_ctrl;
 
-    ScreenTRexSelector selector(X_map, y_map, screen_ctrl, 42, false);
+    TRexScreeningSelector selector(X_map, y_map, screen_ctrl, 42, false);
     auto result = selector.select();
 
     return result.selected_var;

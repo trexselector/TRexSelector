@@ -325,9 +325,9 @@ inline void bind_ml_methods(py::module& m) {
     // =========================================================================
     // Model selection: Ridge CV (SVD path) and Elastic-Net (CCD path + CV)
     // =========================================================================
-    using trex::ml_methods::model_selection::ridge_cv_svd;
-    using trex::ml_methods::model_selection::enet_gaussian;
-    using trex::ml_methods::model_selection::enet_cv_ccd;
+    using trex::ml_methods::model_selection::RidgeCV;
+    using trex::ml_methods::model_selection::ElasticNet;
+    using trex::ml_methods::model_selection::ElasticNetCV;
 
     /**
      * @brief K-fold cross-validated ridge regression (SVD path per fold).
@@ -336,7 +336,7 @@ inline void bind_ml_methods(py::module& m) {
      *          returning glmnet-style lambda.min / lambda.1se. Mirrors the R
      *          RidgeCV R6 class. Indices are 0-based (add 1 for R parity).
      */
-    py::class_<ridge_cv_svd>(m, "RidgeCV",
+    py::class_<RidgeCV>(m, "RidgeCV",
         "K-fold cross-validated ridge regression (SVD path per fold).\n"
         "\n"
         "References\n"
@@ -347,7 +347,7 @@ inline void bind_ml_methods(py::module& m) {
         "G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.\n")
         .def(py::init<>())
         .def(py::init([](bool low_memory, std::optional<int> n_threads) {
-                 ridge_cv_svd cv(low_memory);
+                 RidgeCV cv(low_memory);
                  cv.set_num_threads(n_threads.value_or(trex::utils::openmp::get_num_threads()));
                  return cv;
              }),
@@ -358,23 +358,23 @@ inline void bind_ml_methods(py::module& m) {
              "O(n^2) instead of O(n p), the route for p >> n. n_threads: the thread budget "
              "of the fit's matrix products (None: the library's default budget, "
              "utils.get_num_threads(), initially 1).")
-        .def("set_num_threads", &ridge_cv_svd::set_num_threads, py::arg("n_threads"),
+        .def("set_num_threads", &RidgeCV::set_num_threads, py::arg("n_threads"),
              "Set the thread budget of the fit's matrix products (>= 1).")
-        .def("num_threads", &ridge_cv_svd::num_threads,
+        .def("num_threads", &RidgeCV::num_threads,
              "The thread budget of the fit's matrix products.")
-        .def("set_low_memory", &ridge_cv_svd::set_low_memory, py::arg("low_memory"),
+        .def("set_low_memory", &RidgeCV::set_low_memory, py::arg("low_memory"),
              "Switch the fold engine; takes effect at the next fit().")
-        .def("low_memory", &ridge_cv_svd::low_memory,
+        .def("low_memory", &RidgeCV::low_memory,
              "Whether the kernel fold engine is selected.")
-        .def("interpolates", &ridge_cv_svd::interpolates,
+        .def("interpolates", &RidgeCV::interpolates,
              "Whether the smallest training fold has p >= n_train, so the lambda -> 0 end of the grid interpolates.")
-        .def("selection_at_grid_edge", &ridge_cv_svd::selection_at_grid_edge,
+        .def("selection_at_grid_edge", &RidgeCV::selection_at_grid_edge,
              "Whether lambda.min or lambda.1se sits on the first or last grid point.")
         .def("fit",
-            [](ridge_cv_svd& self, Eigen::Ref<const Eigen::MatrixXd> X,
+            [](RidgeCV& self, Eigen::Ref<const Eigen::MatrixXd> X,
                Eigen::Ref<const Eigen::VectorXd> y, int n_folds,
                Eigen::Index n_lambda, double lambda_ratio, unsigned int seed)
-               -> ridge_cv_svd& {
+               -> RidgeCV& {
                 self.fit(X, y, n_folds, n_lambda, lambda_ratio, seed);
                 return self;
             },
@@ -382,13 +382,13 @@ inline void bind_ml_methods(py::module& m) {
             py::arg("n_lambda") = 100, py::arg("lambda_ratio") = 1000.0,
             py::arg("seed") = 0, py::return_value_policy::reference_internal,
             "Fit K-fold CV over a log-spaced ridge grid.")
-        .def("cv_min", &ridge_cv_svd::cv_min, "lambda minimizing mean CV MSE.")
-        .def("cv_1se", &ridge_cv_svd::cv_1se, "Largest lambda within 1 SE of the min.")
-        .def("index_min", &ridge_cv_svd::index_min, "0-based index of lambda.min.")
-        .def("index_1se", &ridge_cv_svd::index_1se, "0-based index of lambda.1se.")
-        .def("lambdas", &ridge_cv_svd::lambdas, "Lambda grid used (descending).")
-        .def("cv_mse", &ridge_cv_svd::cv_mse, "Mean CV MSE per lambda.")
-        .def("cv_sem", &ridge_cv_svd::cv_sem, "Standard error of the CV MSE per lambda.");
+        .def("cv_min", &RidgeCV::cv_min, "lambda minimizing mean CV MSE.")
+        .def("cv_1se", &RidgeCV::cv_1se, "Largest lambda within 1 SE of the min.")
+        .def("index_min", &RidgeCV::index_min, "0-based index of lambda.min.")
+        .def("index_1se", &RidgeCV::index_1se, "0-based index of lambda.1se.")
+        .def("lambdas", &RidgeCV::lambdas, "Lambda grid used (descending).")
+        .def("cv_mse", &RidgeCV::cv_mse, "Mean CV MSE per lambda.")
+        .def("cv_sem", &RidgeCV::cv_sem, "Standard error of the CV MSE per lambda.");
 
     /**
      * @brief Elastic-net coordinate-descent path (glmnet-equivalent).
@@ -398,7 +398,7 @@ inline void bind_ml_methods(py::module& m) {
      *          coefficients in the ORIGINAL predictor scale, intercepts, the
      *          deviance-ratio path, and predictions for new data.
      */
-    py::class_<enet_gaussian>(m, "ElasticNet",
+    py::class_<ElasticNet>(m, "ElasticNet",
         "Elastic-net coordinate-descent path (glmnet-equivalent).\n"
         "\n"
         "References\n"
@@ -410,7 +410,7 @@ inline void bind_ml_methods(py::module& m) {
         "  doi: 10.18637/jss.v033.i01.\n")
         .def(py::init<>())
         .def(py::init([](bool low_memory, std::optional<int> n_threads) {
-                 enet_gaussian path(low_memory);
+                 ElasticNet path(low_memory);
                  path.set_num_threads(n_threads.value_or(trex::utils::openmp::get_num_threads()));
                  return path;
              }),
@@ -423,20 +423,20 @@ inline void bind_ml_methods(py::module& m) {
              "1e-12 in the coefficients). n_threads: the thread budget of the fit's matrix "
              "products (None: the library's default budget, utils.get_num_threads(), "
              "initially 1).")
-        .def("set_num_threads", &enet_gaussian::set_num_threads, py::arg("n_threads"),
+        .def("set_num_threads", &ElasticNet::set_num_threads, py::arg("n_threads"),
              "Set the thread budget of the fit's matrix products (>= 1).")
-        .def("num_threads", &enet_gaussian::num_threads,
+        .def("num_threads", &ElasticNet::num_threads,
              "The thread budget of the fit's matrix products.")
-        .def("set_low_memory", &enet_gaussian::set_low_memory, py::arg("low_memory"),
+        .def("set_low_memory", &ElasticNet::set_low_memory, py::arg("low_memory"),
              "Switch the engine; takes effect at the next fit().")
-        .def("low_memory", &enet_gaussian::low_memory,
+        .def("low_memory", &ElasticNet::low_memory,
              "Whether the raw-X (no working copy) engine is selected.")
         .def("fit",
-            [](enet_gaussian& self, Eigen::Ref<const Eigen::MatrixXd> X,
+            [](ElasticNet& self, Eigen::Ref<const Eigen::MatrixXd> X,
                Eigen::Ref<const Eigen::VectorXd> y, double alpha,
                Eigen::Index n_lambda, double lambda_min_ratio, bool standardize,
                bool intercept, bool use_strong_rule, int max_iter, double tol)
-               -> enet_gaussian& {
+               -> ElasticNet& {
                 self.fit(X, y, alpha, n_lambda, lambda_min_ratio, standardize,
                          intercept, use_strong_rule, max_iter, tol);
                 return self;
@@ -449,11 +449,11 @@ inline void bind_ml_methods(py::module& m) {
             "Fit the EN path over an auto-generated glmnet-style lambda grid "
             "(alpha: 1 = lasso, 0 = ridge).")
         .def("fit_grid",
-            [](enet_gaussian& self, Eigen::Ref<const Eigen::MatrixXd> X,
+            [](ElasticNet& self, Eigen::Ref<const Eigen::MatrixXd> X,
                Eigen::Ref<const Eigen::VectorXd> y,
                Eigen::Ref<const Eigen::VectorXd> lambda_grid, double alpha,
                bool standardize, bool intercept, bool use_strong_rule,
-               int max_iter, double tol) -> enet_gaussian& {
+               int max_iter, double tol) -> ElasticNet& {
                 self.fit(X, y, lambda_grid, alpha, standardize, intercept,
                          use_strong_rule, max_iter, tol);
                 return self;
@@ -465,19 +465,19 @@ inline void bind_ml_methods(py::module& m) {
             py::return_value_policy::reference_internal,
             "Fit the EN path at an explicit lambda grid (sorted descending "
             "internally); use to evaluate at exactly glmnet's lambda sequence.")
-        .def("coef", &enet_gaussian::coef,
+        .def("coef", &ElasticNet::coef,
              "Coefficient path in original predictor scale (p x n_lambda).")
-        .def("intercepts", &enet_gaussian::intercepts,
+        .def("intercepts", &ElasticNet::intercepts,
              "Intercept per lambda (zero if intercept=False).")
-        .def("lambdas", &enet_gaussian::lambdas, "Lambda grid used (descending).")
-        .def("dev_ratio", &enet_gaussian::dev_ratio,
+        .def("lambdas", &ElasticNet::lambdas, "Lambda grid used (descending).")
+        .def("dev_ratio", &ElasticNet::dev_ratio,
              "Fraction of null deviance explained per fitted lambda (glmnet %Dev).")
-        .def("converged", &enet_gaussian::converged,
+        .def("converged", &ElasticNet::converged,
              "True if every lambda reached the convergence tolerance.")
-        .def("n_nonconverged", &enet_gaussian::n_nonconverged,
+        .def("n_nonconverged", &ElasticNet::n_nonconverged,
              "Number of lambda points that hit max_iter without converging.")
         .def("predict",
-            [](const enet_gaussian& self, Eigen::Ref<const Eigen::MatrixXd> X_new) {
+            [](const ElasticNet& self, Eigen::Ref<const Eigen::MatrixXd> X_new) {
                 return self.predict(X_new);
             },
             py::arg("X_new"), "Predictions per lambda: (X_new @ coef) + intercept.");
@@ -490,7 +490,7 @@ inline void bind_ml_methods(py::module& m) {
      *          alpha defaults to 0 (ridge), matching the C++ default. Indices
      *          are 0-based (add 1 for R parity).
      */
-    py::class_<enet_cv_ccd>(m, "ElasticNetCV",
+    py::class_<ElasticNetCV>(m, "ElasticNetCV",
         "K-fold cross-validated elastic net (coordinate-descent per fold).\n"
         "\n"
         "References\n"
@@ -508,7 +508,7 @@ inline void bind_ml_methods(py::module& m) {
         "  Trees. Wadsworth, Belmont, CA, 1984.\n")
         .def(py::init<>())
         .def(py::init([](bool low_memory, std::optional<int> n_threads) {
-                 enet_cv_ccd cv(low_memory);
+                 ElasticNetCV cv(low_memory);
                  cv.set_num_threads(n_threads.value_or(trex::utils::openmp::get_num_threads()));
                  return cv;
              }),
@@ -517,24 +517,24 @@ inline void bind_ml_methods(py::module& m) {
              "training mask (no allocation of the size of X); see ElasticNet. n_threads: "
              "the thread budget of the matrix products of the fit and its folds (None: the "
              "library's default budget, utils.get_num_threads(), initially 1).")
-        .def("set_num_threads", &enet_cv_ccd::set_num_threads, py::arg("n_threads"),
+        .def("set_num_threads", &ElasticNetCV::set_num_threads, py::arg("n_threads"),
              "Set the thread budget of the matrix products of the fit and its folds (>= 1).")
-        .def("num_threads", &enet_cv_ccd::num_threads,
+        .def("num_threads", &ElasticNetCV::num_threads,
              "The thread budget of the matrix products of the fit and its folds.")
-        .def("set_low_memory", &enet_cv_ccd::set_low_memory, py::arg("low_memory"),
+        .def("set_low_memory", &ElasticNetCV::set_low_memory, py::arg("low_memory"),
              "Switch the engine; takes effect at the next fit().")
-        .def("low_memory", &enet_cv_ccd::low_memory,
+        .def("low_memory", &ElasticNetCV::low_memory,
              "Whether the raw-X engine is selected.")
-        .def("selection_at_grid_edge", &enet_cv_ccd::selection_at_grid_edge,
+        .def("selection_at_grid_edge", &ElasticNetCV::selection_at_grid_edge,
              "Whether lambda.min or lambda.1se sits on the first or last grid point.")
-        .def("grid_truncated", &enet_cv_ccd::grid_truncated,
+        .def("grid_truncated", &ElasticNetCV::grid_truncated,
              "Whether the deviance rules stopped the path before the requested n_lambda.")
         .def("fit",
-            [](enet_cv_ccd& self, Eigen::Ref<const Eigen::MatrixXd> X,
+            [](ElasticNetCV& self, Eigen::Ref<const Eigen::MatrixXd> X,
                Eigen::Ref<const Eigen::VectorXd> y, double alpha, int n_folds,
                Eigen::Index n_lambda, double lambda_min_ratio, unsigned int seed,
                bool standardize, bool intercept, int max_iter, double tol)
-               -> enet_cv_ccd& {
+               -> ElasticNetCV& {
                 self.fit(X, y, alpha, n_folds, n_lambda, lambda_min_ratio, seed,
                          standardize, intercept, max_iter, tol);
                 return self;
@@ -547,13 +547,13 @@ inline void bind_ml_methods(py::module& m) {
             py::return_value_policy::reference_internal,
             "Fit K-fold CV over a glmnet-style EN grid (alpha: 1 = lasso, "
             "0 = ridge).")
-        .def("cv_min", &enet_cv_ccd::cv_min, "lambda minimizing mean CV MSE.")
-        .def("cv_1se", &enet_cv_ccd::cv_1se, "Largest lambda within 1 SE of the min.")
-        .def("index_min", &enet_cv_ccd::index_min, "0-based index of lambda.min.")
-        .def("index_1se", &enet_cv_ccd::index_1se, "0-based index of lambda.1se.")
-        .def("lambdas", &enet_cv_ccd::lambdas, "Lambda grid used (descending).")
-        .def("cv_mse", &enet_cv_ccd::cv_mse, "Mean CV MSE per lambda.")
-        .def("cv_sem", &enet_cv_ccd::cv_sem, "Standard error of the CV MSE per lambda.");
+        .def("cv_min", &ElasticNetCV::cv_min, "lambda minimizing mean CV MSE.")
+        .def("cv_1se", &ElasticNetCV::cv_1se, "Largest lambda within 1 SE of the min.")
+        .def("index_min", &ElasticNetCV::index_min, "0-based index of lambda.min.")
+        .def("index_1se", &ElasticNetCV::index_1se, "0-based index of lambda.1se.")
+        .def("lambdas", &ElasticNetCV::lambdas, "Lambda grid used (descending).")
+        .def("cv_mse", &ElasticNetCV::cv_mse, "Mean CV MSE per lambda.")
+        .def("cv_sem", &ElasticNetCV::cv_sem, "Standard error of the CV MSE per lambda.");
 
 
     // =================================================================================
@@ -564,7 +564,7 @@ inline void bind_ml_methods(py::module& m) {
     /**
      * @brief Container for a truncated SVD decomposition.
      *
-     * @details Returned by SVDSolver::compute(). Holds U (n × M), S (M), V (p × M).
+     * @details Returned by SVD::compute(). Holds U (n × M), S (M), V (p × M).
      */
     py::class_<SVDResult>(m, "SVDResult")
         .def(py::init<>())
@@ -578,7 +578,7 @@ inline void bind_ml_methods(py::module& m) {
      * @details Dispatches among direct (tall), Gram (wide), and randomized paths
      *          based on matrix shape.
      */
-    py::class_<SVDSolver>(m, "SVDSolver",
+    py::class_<SVD>(m, "SVDSolver",
         "Computes the top-M truncated SVD of a matrix.\n"
         "\n"
         "References\n"
@@ -587,7 +587,7 @@ inline void bind_ml_methods(py::module& m) {
         .def(py::init<>())
         .def(py::init([](Eigen::Index min_dim_thresh, Eigen::Index block_size,
                          std::optional<int> n_threads) {
-                 return SVDSolver(min_dim_thresh, block_size,
+                 return SVD(min_dim_thresh, block_size,
                                   n_threads.value_or(trex::utils::openmp::get_num_threads()));
              }),
              py::arg("min_dim_thresh") = 10000, py::arg("block_size") = 1024,
@@ -600,12 +600,12 @@ inline void bind_ml_methods(py::module& m) {
              "(no copy; the route for a memory-mapped X), and p > 2n always takes the Gram "
              "path. Lowering min_dim_thresh selects the randomized path for smaller "
              "designs; block_size is the column block of the block-wise passes.")
-        .def("set_num_threads", &SVDSolver::set_num_threads, py::arg("n_threads"),
+        .def("set_num_threads", &SVD::set_num_threads, py::arg("n_threads"),
              "Set the thread budget of the matrix products (>= 1).")
-        .def("num_threads", &SVDSolver::num_threads,
+        .def("num_threads", &SVD::num_threads,
              "The thread budget of the matrix products.")
         .def("compute",
-            [](SVDSolver& self,
+            [](SVD& self,
                Eigen::Ref<const Eigen::MatrixXd> X, // NOLINT(performance-unnecessary-value-param)
                Eigen::Index M) {
                 return self.compute(X, M);
@@ -680,7 +680,7 @@ inline void bind_ml_methods(py::module& m) {
      *
      * @details Dispatches between primal (n >= p) and dual (n < p) Cholesky solvers.
      */
-    py::class_<RidgeSolver>(m, "RidgeSolver",
+    py::class_<Ridge>(m, "RidgeSolver",
         "Solves ridge regression for a single lambda value.\n"
         "\n"
         "References\n"
@@ -693,7 +693,7 @@ inline void bind_ml_methods(py::module& m) {
             [](Eigen::Ref<const Eigen::MatrixXd> X, // NOLINT(performance-unnecessary-value-param)
                Eigen::Ref<const Eigen::VectorXd> y, // NOLINT(performance-unnecessary-value-param)
                double lambda, std::optional<int> n_threads) {
-                return RidgeSolver::solve(X, y, lambda,
+                return Ridge::solve(X, y, lambda,
                                           n_threads.value_or(trex::utils::openmp::get_num_threads()));
             },
             py::arg("X"), py::arg("y"), py::arg("lambda_val"), py::arg("n_threads") = py::none(),

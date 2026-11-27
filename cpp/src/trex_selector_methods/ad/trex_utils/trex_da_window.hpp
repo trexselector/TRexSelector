@@ -11,7 +11,7 @@
  *
  * @details
  *  Single home of the window half-width of `TRexDASelector` (AR1 method) and
- *  `ScreenTRexSelector` (TREX_DA_AR1), so both selectors group the same
+ *  `TRexScreeningSelector` (TREX_DA_AR1), so both selectors group the same
  *  neighbors for the same inputs, and of the rule that tells whether a
  *  supplied value is a correlation coefficient.
  *

@@ -1,5 +1,5 @@
 // =====================================================================================
-// trex_spca_bindings.hpp - Pybind11 bindings for TRexSPCA
+// trex_spca_bindings.hpp - Pybind11 bindings for TRexSPCASelector
 // =====================================================================================
 #ifndef TREX_PYTHON_TREX_SPCA_BINDINGS_HPP
 #define TREX_PYTHON_TREX_SPCA_BINDINGS_HPP
@@ -9,7 +9,7 @@
  *
  * @brief Pybind11 bindings for the T-Rex sparse PCA selector (T-Rex+SPCA).
  *
- * @details Exposes TRexSPCAResult, TRexSPCAControlParameter, SPCAMode, and the
+ * @details Exposes TRexSPCAResult, TRexSPCAControl, SPCAMode, and the
  *          PyTRexSPCASelector instance wrapper to Python.
  */
 // =====================================================================================
@@ -35,10 +35,10 @@ namespace tg = trex::trex_selector_methods::ad::trex_gvs;
 // =====================================================================================
 
 /**
- * @brief Zero-copy Python wrapper for TRexSPCA.
+ * @brief Zero-copy Python wrapper for TRexSPCASelector.
  *
  * @details Holds an Eigen::Map pointing into the numpy array's buffer (no copy),
- *          and a TRexSPCA instance. Mirrors the pattern of PyTRexGVSSelector.
+ *          and a TRexSPCASelector instance. Mirrors the pattern of PyTRexGVSSelector.
  */
 class PyTRexSPCASelector {
 public:
@@ -56,12 +56,12 @@ public:
         Eigen::Ref<Eigen::MatrixXd> X,
         Eigen::Index M,
         double tFDR,
-        const TRexSPCAControlParameter& ctrl,
+        const TRexSPCAControl& ctrl,
         int seed,
         bool verbose
     ) {
         X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(), X.rows(), X.cols());
-        selector_ = std::make_unique<TRexSPCA>(*X_map_, M, tFDR, ctrl, seed, verbose);
+        selector_ = std::make_unique<TRexSPCASelector>(*X_map_, M, tFDR, ctrl, seed, verbose);
     }
 
     /**
@@ -74,7 +74,7 @@ public:
         const DesignArray& X,
         Eigen::Index M,
         double tFDR,
-        const TRexSPCAControlParameter& ctrl,
+        const TRexSPCAControl& ctrl,
         int seed,
         bool verbose
     ) : PyTRexSPCASelector(
@@ -99,7 +99,7 @@ public:
 
 private:
     std::unique_ptr<Eigen::Map<Eigen::MatrixXd>> X_map_;
-    std::unique_ptr<TRexSPCA>                    selector_;
+    std::unique_ptr<TRexSPCASelector>                    selector_;
     TRexSPCAResult                               result_;
     bool                                         has_result_{false};
 };
@@ -107,7 +107,7 @@ private:
 // =====================================================================================
 
 /**
- * @brief Bind TRexSPCA types and PyTRexSPCASelector to a Python module.
+ * @brief Bind TRexSPCASelector types and PyTRexSPCASelector to a Python module.
  *
  * @param m The Python module (trex_selector_methods submodule).
  */
@@ -129,18 +129,18 @@ inline void bind_trex_spca(py::module& m) {
 
 
     // =========================================================================
-    // TRexSPCAControlParameter
+    // TRexSPCAControl
     // =========================================================================
 
-    py::class_<TRexSPCAControlParameter>(m, "TRexSPCAControlParameter",
+    py::class_<TRexSPCAControl>(m, "TRexSPCAControlParameter",
         "Control parameters of the T-Rex sparse PCA selector.")
         .def(py::init<>())
-        .def_readwrite("mode",                  &TRexSPCAControlParameter::mode,
+        .def_readwrite("mode",                  &TRexSPCAControl::mode,
                        "Assembly of the sparse loading vectors (default: ActiveSet).")
-        .def_readwrite("lambda2_ridge_loadings", &TRexSPCAControlParameter::lambda2_ridge_loadings,
+        .def_readwrite("lambda2_ridge_loadings", &TRexSPCAControl::lambda2_ridge_loadings,
                        "Ridge penalty of the loading assembly in ActiveSet mode (default: 1e-6). "
                        "Not used in Thresholded mode.")
-        .def_readwrite("gvs_ctrl",              &TRexSPCAControlParameter::gvs_ctrl,
+        .def_readwrite("gvs_ctrl",              &TRexSPCAControl::gvs_ctrl,
                        "Control of the T-Rex+GVS run of each component (TRexGVSControlParameter), with "
                        "the base control in gvs_ctrl.trex_ctrl.\n"
                        "\n"
@@ -159,7 +159,7 @@ inline void bind_trex_spca(py::module& m) {
                        "gvs_ctrl.lambda2_method: CV_1SE_CCD (default), CV_MIN_CCD, CV_1SE_SVD or "
                        "CV_MIN_SVD. The selector raises ValueError for the rules of the informed "
                        "elastic net (CV_*_IEN_CCD and CV_*_TIK_SVD).")
-        .def_readwrite("en_solver",             &TRexSPCAControlParameter::en_solver,
+        .def_readwrite("en_solver",             &TRexSPCAControl::en_solver,
                        "Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG). TENET_AUG is the "
                        "elastic net as a LASSO on row-augmented data, the form of the paper. TENET is "
                        "the elastic net on the Gram matrix. The two solve the same elastic net problem.");
@@ -231,11 +231,11 @@ inline void bind_trex_spca(py::module& m) {
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
         .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Index, double,
-                      const TRexSPCAControlParameter&, int, bool>(),
+                      const TRexSPCAControl&, int, bool>(),
              py::arg("X"),
              py::arg("M"),
              py::arg("tFDR"),
-             py::arg("ctrl")    = TRexSPCAControlParameter(),
+             py::arg("ctrl")    = TRexSPCAControl(),
              py::arg("seed")    = -1,
              py::arg("verbose") = false,
              py::keep_alive<1, 2>(),
@@ -246,11 +246,11 @@ inline void bind_trex_spca(py::module& m) {
              "each component runs with its own seed derived from it. verbose prints one line per "
              "component (default: False), and the T-Rex+GVS runs stay quiet.")
         .def(py::init<const DesignArray&, Eigen::Index, double,
-                      const TRexSPCAControlParameter&, int, bool>(),
+                      const TRexSPCAControl&, int, bool>(),
              py::arg("X").noconvert(),
              py::arg("M"),
              py::arg("tFDR"),
-             py::arg("ctrl")    = TRexSPCAControlParameter(),
+             py::arg("ctrl")    = TRexSPCAControl(),
              py::arg("seed")    = -1,
              py::arg("verbose") = false,
              py::keep_alive<1, 2>(),

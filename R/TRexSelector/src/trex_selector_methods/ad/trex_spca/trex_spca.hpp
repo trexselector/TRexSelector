@@ -27,10 +27,10 @@
 // Centering (stored as member for exception-safe restoration)
 #include <ml_methods/scaler_methods/lp_norm_scaler.hpp>
 
-// TRex core (TRexControlParameter)
+// TRex core (TRexControl)
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
 
-// TRex GVS (TRexGVSSelector, TRexGVSControlParameter, GVSType)
+// TRex GVS (TRexGVSSelector, TRexGVSControl, GVSType)
 #include <trex_selector_methods/ad/trex_gvs/trex_gvs.hpp>
 
 // ==============================================================================
@@ -108,7 +108,7 @@ struct TRexSPCAResult {
 /**
  * @brief Control parameters of the T-Rex sparse PCA selector.
  */
-struct TRexSPCAControlParameter {
+struct TRexSPCAControl {
 
     // ====================================
     // Loading Assembly
@@ -147,7 +147,7 @@ struct TRexSPCAControlParameter {
      *    informed elastic net (CV_*_IEN_CCD and CV_*_TIK_SVD).
      *  - gvs_ctrl.trex_ctrl.lloop_strategy: see the class documentation.
      */
-    tg::TRexGVSControlParameter gvs_ctrl;
+    tg::TRexGVSControl gvs_ctrl;
 
     /** @brief Elastic net solver of the T-Rex+GVS runs (default: TENET_AUG).
      *
@@ -164,13 +164,17 @@ struct TRexSPCAControlParameter {
     // could differ from it.
 };
 
+/** @brief Old name of TRexSPCAControl.
+ *  @deprecated Use TRexSPCAControl. */
+using TRexSPCAControlParameter [[deprecated("Use TRexSPCAControl")]] = TRexSPCAControl;
+
 
 // ==============================================================================
-// TRexSPCA
+// TRexSPCASelector
 // ==============================================================================
 
 /**
- * @class TRexSPCA
+ * @class TRexSPCASelector
  *
  * @brief T-Rex sparse PCA selector (T-Rex+SPCA): sparse principal components
  *        whose non-zero loadings are selected with FDR control. Each ordinary
@@ -211,7 +215,7 @@ struct TRexSPCAControlParameter {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TRexSPCA {
+class TRexSPCASelector {
 public:
 
     // ============================================================
@@ -238,27 +242,27 @@ public:
      *         gvs_ctrl.lambda2_method is a rule of the informed elastic net,
      *         or if the L-loop strategy is PERMUTATION or PERMUTATION_SEEDED.
      */
-    TRexSPCA(Eigen::Map<Eigen::MatrixXd>& X,
+    TRexSPCASelector(Eigen::Map<Eigen::MatrixXd>& X,
              Eigen::Index M,
              double tFDR,
-             TRexSPCAControlParameter spca_ctrl = TRexSPCAControlParameter(),
+             TRexSPCAControl spca_ctrl = TRexSPCAControl(),
              int seed = -1,
              bool verbose = false);
 
     /** @brief Destructor. Restores X if select() was interrupted by an exception. */
-    ~TRexSPCA();
+    ~TRexSPCASelector();
 
     /** @brief Deleted copy constructor. */
-    TRexSPCA(const TRexSPCA&) = delete;
+    TRexSPCASelector(const TRexSPCASelector&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TRexSPCA& operator=(const TRexSPCA&) = delete;
+    TRexSPCASelector& operator=(const TRexSPCASelector&) = delete;
 
     /** @brief Deleted move constructor. */
-    TRexSPCA(TRexSPCA&&) = delete;
+    TRexSPCASelector(TRexSPCASelector&&) = delete;
 
     /** @brief Deleted move assignment operator. */
-    TRexSPCA& operator=(TRexSPCA&&) = delete;
+    TRexSPCASelector& operator=(TRexSPCASelector&&) = delete;
 
 
     // ============================================================
@@ -299,7 +303,7 @@ private:
     const double tFDR_;
 
     /** @brief Algorithmic control parameters. */
-    TRexSPCAControlParameter spca_ctrl_;
+    TRexSPCAControl spca_ctrl_;
 
     /** @brief Random seed. A negative value gives a run that is not reproducible. */
     const int seed_;
@@ -356,6 +360,10 @@ private:
     void adjustExplainedVariance(TRexSPCAResult& result,
                                  const Eigen::Ref<const Eigen::MatrixXd>& X_ref) const;
 };
+
+/** @brief Old name of TRexSPCASelector.
+ *  @deprecated Use TRexSPCASelector. */
+using TRexSPCA [[deprecated("Use TRexSPCASelector")]] = TRexSPCASelector;
 
 // ==============================================================================
 } /* End of namespace trex::trex_selector_methods::ad::trex_spca */

@@ -33,19 +33,19 @@ namespace fpc = trex::utils::fp_classify;
 // Constructors
 // ============================================================================
 
-TIKNET_Solver::TIKNET_Solver(
+TSolverTIKNET::TSolverTIKNET(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D,
     Eigen::Map<Eigen::VectorXd>& y,
     const Eigen::SparseMatrix<double>& tikhonov_matrix,
-    const SolverOptions& options
+    const TSolverOptions& options
 )
-    : TLARS_Solver(X, D, y, options, SolverTypeLarsBased::TIKNET),
+    : TSolverLARS(X, D, y, options, SolverTypeLarsBased::TIKNET),
       lambda2_(options.lambda2) {
 
     if (lambda2_ < 0.0) {
         throw std::invalid_argument(
-            "TIKNET_Solver: quadratic penalty lambda2 must be non-negative.");
+            "TSolverTIKNET: quadratic penalty lambda2 must be non-negative.");
     }
 
     const std::size_t p = p_original_;
@@ -55,19 +55,19 @@ TIKNET_Solver::TIKNET_Solver(
     // ---- Validate the penalty matrix --------------------------------------
     if (tikhonov_matrix.rows() != p_idx || tikhonov_matrix.cols() != p_idx) {
         throw std::invalid_argument(concatMsg(
-            "TIKNET_Solver: Tikhonov matrix is ", tikhonov_matrix.rows(),
+            "TSolverTIKNET: Tikhonov matrix is ", tikhonov_matrix.rows(),
             "x", tikhonov_matrix.cols(), ", expected ", p, "x", p));
     }
     if (lambda2_ > 0.0 && L > 0 && L % p != 0) {
         throw std::invalid_argument(
-            "TIKNET_Solver: D.cols() must be a multiple of X.cols() "
+            "TSolverTIKNET: D.cols() must be a multiple of X.cols() "
             "(FOLDED layered dummy convention).");
     }
     // Finiteness, symmetry, PSD within tolerance (shared trio helper),
     // unless the caller has checked the matrix.
     if (!options.tikhonov_validated) {
         solver_utils::tikhonov::validateTikhonovK(tikhonov_matrix,
-                                                  "TIKNET_Solver");
+                                                  "TSolverTIKNET");
     }
     tikhonov_K_ = tikhonov_matrix;
     tikhonov_K_.makeCompressed();
@@ -106,7 +106,7 @@ TIKNET_Solver::TIKNET_Solver(
 // Core executeStep()
 // ============================================================================
 
-void TIKNET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverTIKNET::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
 
     // Set openMP dominance for the entire algorithm
@@ -119,7 +119,7 @@ void TIKNET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 
         // ========================================================
         // STEP 0: Drop-recovery step (R-lars drop-breakpoint
-        // semantics; see TLASSO_Solver::executeStep).
+        // semantics; see TSolverLASSO::executeStep).
         // The previous step ended in a drop, so NO variable joins:
         // the path moves along the REDUCED active set with the
         // TIK-modified correlation level until an inactive genuinely
@@ -309,7 +309,7 @@ void TIKNET_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // TIK-specific path machinery
 // ============================================================================
 
-std::vector<int> TIKNET_Solver::updateActiveSetTIK(
+std::vector<int> TSolverTIKNET::updateActiveSetTIK(
     const std::vector<std::size_t>& new_vars) {
 
     std::vector<int> actions_this_step;
@@ -317,7 +317,7 @@ std::vector<int> TIKNET_Solver::updateActiveSetTIK(
 
     for (auto j_new : new_vars) {
         // updateRTIK never mutates R_, so only the rank needs restoring on
-        // rejection (mirror of TLARS_Solver::updateActiveSet).
+        // rejection (mirror of TSolverLARS::updateActiveSet).
         int rankR_backup = last_updateR_rank_;
         std::size_t active_size_backup = actives_.size();
 
@@ -338,7 +338,7 @@ std::vector<int> TIKNET_Solver::updateActiveSetTIK(
             num_additions_++;
             std::erase(inactives_, j_new);
 
-            // Counted while active or frozen nonzero (see TLARS_Solver::updateActiveSet)
+            // Counted while active or frozen nonzero (see TSolverLARS::updateActiveSet)
             if (j_new >= dummy_start_idx_ && runningBeta(j_new) == 0.0) count_active_dummies_++;
         }
     }
@@ -346,7 +346,7 @@ std::vector<int> TIKNET_Solver::updateActiveSetTIK(
 }
 
 
-Eigen::MatrixXd TIKNET_Solver::updateRTIK(std::size_t j_new, double eps) {
+Eigen::MatrixXd TSolverTIKNET::updateRTIK(std::size_t j_new, double eps) {
     std::size_t m = actives_.size();
     const auto b_new = static_cast<Eigen::Index>(foldedBase(j_new));
 
@@ -409,7 +409,7 @@ Eigen::MatrixXd TIKNET_Solver::updateRTIK(std::size_t j_new, double eps) {
 }
 
 
-void TIKNET_Solver::computeFoldedDirSums(
+void TSolverTIKNET::computeFoldedDirSums(
     const Eigen::Ref<const Eigen::VectorXd>& w_A) {
 
     // setZero(size) also (re)sizes: keeps the per-step buffers valid after
@@ -436,7 +436,7 @@ void TIKNET_Solver::computeFoldedDirSums(
 }
 
 
-std::pair<double, Eigen::VectorXd> TIKNET_Solver::computeStepSizeTIK(
+std::pair<double, Eigen::VectorXd> TSolverTIKNET::computeStepSizeTIK(
     double Cmax,
     const Eigen::Ref<const Eigen::VectorXd>& u) const {
 
@@ -509,7 +509,7 @@ std::pair<double, Eigen::VectorXd> TIKNET_Solver::computeStepSizeTIK(
 }
 
 
-void TIKNET_Solver::updateCorrelationsTIK(
+void TSolverTIKNET::updateCorrelationsTIK(
     double gamma,
     const Eigen::Ref<const Eigen::VectorXd>& a) {
 
@@ -551,7 +551,7 @@ void TIKNET_Solver::updateCorrelationsTIK(
 }
 
 
-void TIKNET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
+void TSolverTIKNET::refreshDroppedCorrelation(std::size_t dropped_var) {
     Eigen::Index j = static_cast<Eigen::Index>(dropped_var);
     correlations_(j) = getColumn(dropped_var).dot(r_) -
                        lambda2_ * ks_(static_cast<Eigen::Index>(
@@ -564,9 +564,9 @@ void TIKNET_Solver::refreshDroppedCorrelation(std::size_t dropped_var) {
 // Memory report
 // ============================================================================
 
-std::size_t TIKNET_Solver::memoryBytes() const noexcept {
+std::size_t TSolverTIKNET::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
-    return TLARS_Solver::memoryBytes() + bytesOf(tikhonov_K_) + bytesOf(folded_s_) +
+    return TSolverLARS::memoryBytes() + bytesOf(tikhonov_K_) + bytesOf(folded_s_) +
            bytesOf(ks_) + bytesOf(tau_) + bytesOf(ktau_) + bytesOf(kcol_gather_);
 }
 
@@ -575,13 +575,13 @@ std::size_t TIKNET_Solver::memoryBytes() const noexcept {
 // Serialization
 // ============================================================================
 
-void TIKNET_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverTIKNET::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TIKNET_Solver TIKNET_Solver::load(const std::string& filename,
+TSolverTIKNET TSolverTIKNET::load(const std::string& filename,
                                   Eigen::Map<Eigen::MatrixXd>& X,
                                   Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TIKNET_Solver>(filename, X, D);
+    return loadImpl<TSolverTIKNET>(filename, X, D);
 }
 
 // ============================================================================
@@ -594,4 +594,6 @@ TIKNET_Solver TIKNET_Solver::load(const std::string& filename,
 // the header would otherwise compile the serialization code again. The
 // bindings cover the archives included above, binary and portable binary.
 CEREAL_REGISTER_DYNAMIC_INIT(trex_tiknet_solver)
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TIKNET_Solver)
+// The name is the key of this class in saved files and stays as it was written.
+CEREAL_REGISTER_TYPE_WITH_NAME(trex::tsolvers::ad::linear_model::lars_based::TSolverTIKNET,
+                               "trex::tsolvers::ad::linear_model::lars_based::TIKNET_Solver")

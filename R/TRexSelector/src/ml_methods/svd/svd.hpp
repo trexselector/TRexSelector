@@ -48,7 +48,7 @@ struct SVDResult {
 
 
 /**
- * @class SVDSolver
+ * @class SVD
  *
  * @brief Dimensionality-aware SVD dispatcher.
  *
@@ -61,11 +61,11 @@ struct SVDResult {
  *  -----------
  *   G. Guennebaud, B. Jacob et al., Eigen v3, https://libeigen.gitlab.io/, 2010.
  */
-class SVDSolver {
+class SVD {
 public:
 
     /**
-     * @brief Construct an SVDSolver with tunable dispatch and cache parameters.
+     * @brief Construct an SVD with tunable dispatch and cache parameters.
      *
      * @param min_dim_thresh Minimum dimension size (for both n and p) at which the
      *                           Randomized SVD path is considered. Default: 10,000.
@@ -74,7 +74,7 @@ public:
      * @param n_threads          Thread budget of the Eigen products in the SVD paths (>= 1);
      *                           the library's default budget unless given.
      */
-    explicit SVDSolver(Eigen::Index min_dim_thresh = 10'000,
+    explicit SVD(Eigen::Index min_dim_thresh = 10'000,
                        Eigen::Index block_size     = 1'024,
                        int n_threads = ::trex::utils::openmp::get_num_threads())
         : min_dim_thresh_(min_dim_thresh)
@@ -82,18 +82,18 @@ public:
         , n_threads_(n_threads)
     {
         if (n_threads < 1) {
-            throw std::invalid_argument("SVDSolver: n_threads must be >= 1.");
+            throw std::invalid_argument("SVD: n_threads must be >= 1.");
         }
     }
 
 
     /** @brief Default destructor */
-    ~SVDSolver() = default;
+    ~SVD() = default;
 
     /** @brief Set the thread budget of the Eigen products of compute() (>= 1). */
     void set_num_threads(int n_threads) {
         if (n_threads < 1) {
-            throw std::invalid_argument("SVDSolver::set_num_threads: n_threads must be >= 1.");
+            throw std::invalid_argument("SVD::set_num_threads: n_threads must be >= 1.");
         }
         n_threads_ = n_threads;
     }
@@ -314,6 +314,10 @@ private:
     /** @brief Thread budget of the Eigen products of compute() (>= 1). */
     int n_threads_;
 };
+
+/** @brief Old name of SVD.
+ *  @deprecated Use SVD. */
+using SVDSolver [[deprecated("Use SVD")]] = SVD;
 
 
 // ===================================================================================

@@ -62,10 +62,10 @@ namespace fs = std::filesystem;
 
 // Type List for the 15 solvers
 typedef ::testing::Types<
-    TLARS_Solver, TLASSO_Solver, TENET_Solver, TENETAug_Solver, TIENET_Solver,
-    TIENETAug_Solver, TSTEPWISE_Solver, TSTAGEWISE_Solver,
-    TOMP_Solver, TMP_Solver, TGP_Solver, TACGP_Solver, TNCGMP_Solver,
-    TOOLS_Solver, TAFS_Solver
+    TSolverLARS, TSolverLASSO, TSolverENET, TSolverENETAug, TSolverIENET,
+    TSolverIENETAug, TSolverStepwise, TSolverStagewise,
+    TSolverOMP, TSolverMP, TSolverGP, TSolverACGP, TSolverNCGMP,
+    TSolverOOLS, TSolverAFS
 > AllSolvers;
 
 // Factory for construction
@@ -75,13 +75,13 @@ std::unique_ptr<T> create_solver(Eigen::Map<Eigen::MatrixXd>& X,
                                  Eigen::Map<Eigen::VectorXd>& y) {
     // Every solver takes (X, D, y, options); the EN / IEN families read
     // lambda2 from the options, the IEN family also takes the group vector.
-    trex::tsolvers::ad::SolverOptions opts;
+    trex::tsolvers::ad::TSolverOptions opts;
     opts.lambda2 = 0.5;
-    if constexpr (std::is_same_v<T, TENET_Solver> ||
-                  std::is_same_v<T, TENETAug_Solver>) {
+    if constexpr (std::is_same_v<T, TSolverENET> ||
+                  std::is_same_v<T, TSolverENETAug>) {
         return std::make_unique<T>(X, D, y, opts);
-    } else if constexpr (std::is_same_v<T, TIENET_Solver> ||
-                         std::is_same_v<T, TIENETAug_Solver>) {
+    } else if constexpr (std::is_same_v<T, TSolverIENET> ||
+                         std::is_same_v<T, TSolverIENETAug>) {
         // Singleton groups (each variable its own group) exercise the full
         // group machinery; per Corollary 1 of the IEN paper this is the
         // EN-like special case.
@@ -99,18 +99,18 @@ std::unique_ptr<T> create_solver(Eigen::Map<Eigen::MatrixXd>& X,
  *  quadratic penalty (lambda2 > 0) lifts the cap of the elastic nets. */
 template <typename T>
 constexpr bool lifts_row_bound =
-    std::is_same_v<T, TENET_Solver> || std::is_same_v<T, TENETAug_Solver> ||
-    std::is_same_v<T, TIENET_Solver> || std::is_same_v<T, TIENETAug_Solver>;
+    std::is_same_v<T, TSolverENET> || std::is_same_v<T, TSolverENETAug> ||
+    std::is_same_v<T, TSolverIENET> || std::is_same_v<T, TSolverIENETAug>;
 
 // Factory with explicit preprocessing options (lambda2 = 0.5 as above)
 template <typename T>
 std::unique_ptr<T> create_solver_with(Eigen::Map<Eigen::MatrixXd>& X,
                                       Eigen::Map<Eigen::MatrixXd>& D,
                                       Eigen::Map<Eigen::VectorXd>& y,
-                                      trex::tsolvers::ad::SolverOptions opts) {
+                                      trex::tsolvers::ad::TSolverOptions opts) {
     opts.lambda2 = 0.5;
-    if constexpr (std::is_same_v<T, TIENET_Solver> ||
-                  std::is_same_v<T, TIENETAug_Solver>) {
+    if constexpr (std::is_same_v<T, TSolverIENET> ||
+                  std::is_same_v<T, TSolverIENETAug>) {
         Eigen::VectorXi groups = Eigen::VectorXi::LinSpaced(
             X.cols(), 0, static_cast<int>(X.cols()) - 1);
         return std::make_unique<T>(X, D, y, groups, opts);
@@ -147,7 +147,7 @@ protected:
             std::vector<double>{5.0, -3.0, 2.0},
             1.0, 42, -1, -1,
             predictor_policy::Normal(),
-            dummygen::Distribution::Normal(),
+            dummygen::DummyDistribution::Normal(),
             noisegen::noise_policy::Normal()
         );
     }
@@ -265,7 +265,7 @@ TYPED_TEST(TSolverPolymorphicTest, ActiveInactiveDroppedPartition) {
     EXPECT_EQ(seen.size(), p_tot) << "actives/inactives/dropped do not cover all indices";
 }
 
-/** @brief Contract of SolverOptions::precentered: a reader on caller-centered
+/** @brief Contract of TSolverOptions::precentered: a reader on caller-centered
  *         data counts the intercept exactly as intercept = true does on the
  *         same data (same path, degrees of freedom and Cp), and the active set
  *         stays within the n - 1 row bound of the centered design unless the
@@ -280,7 +280,7 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     beta(1) = 3.0; beta(4) = -2.0; beta(9) = 2.0;
     const Eigen::VectorXd y0 = X0 * beta + exactly_centered_integers(n, 1, 13).col(0);
 
-    trex::tsolvers::ad::SolverOptions base;
+    trex::tsolvers::ad::TSolverOptions base;
     base.normalize = false;
     base.tie_seed = 7;
     // The run takes every dummy and so goes into saturation.
@@ -292,7 +292,7 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     Eigen::Map<Eigen::MatrixXd> Xa_map(Xa.data(), n, p);
     Eigen::Map<Eigen::MatrixXd> Da_map(Da.data(), n, L);
     Eigen::Map<Eigen::VectorXd> ya_map(ya.data(), n);
-    trex::tsolvers::ad::SolverOptions with_intercept = base;
+    trex::tsolvers::ad::TSolverOptions with_intercept = base;
     with_intercept.intercept = true;
     auto fitted = create_solver_with<TypeParam>(Xa_map, Da_map, ya_map, with_intercept);
     fitted->executeStep(T_stop, true);
@@ -303,7 +303,7 @@ TYPED_TEST(TSolverPolymorphicTest, PrecenteredCountsInterceptLikeIntercept) {
     Eigen::Map<Eigen::MatrixXd> Xb_map(Xb.data(), n, p);
     Eigen::Map<Eigen::MatrixXd> Db_map(Db.data(), n, L);
     Eigen::Map<Eigen::VectorXd> yb_map(yb.data(), n);
-    trex::tsolvers::ad::SolverOptions reader = base;
+    trex::tsolvers::ad::TSolverOptions reader = base;
     reader.intercept = false;
     reader.precentered = true;
     auto precentered = create_solver_with<TypeParam>(Xb_map, Db_map, yb_map, reader);
@@ -341,7 +341,7 @@ TYPED_TEST(TSolverPolymorphicTest, PathIsIndependentOfTheThreadBudget) {
     constexpr Eigen::Index n = 400, p = 1500, L = 1500;   // 1.2 M entries per pass
     SyntheticData data(n, p, L, std::vector<std::size_t>{3, 17, 41, 77, 101, 150, 222},
                        std::vector<double>{3.0, -2.0, 2.0, -3.0, 2.5, 1.5, -1.5}, 10.0, 7, -1, -1,
-                       predictor_policy::Normal(), dummygen::Distribution::Normal(),
+                       predictor_policy::Normal(), dummygen::DummyDistribution::Normal(),
                        noisegen::noise_policy::Normal());
     const Eigen::MatrixXd X0 = data.getX(), D0 = data.getD();
     const Eigen::VectorXd y0 = data.getY();
@@ -352,7 +352,7 @@ TYPED_TEST(TSolverPolymorphicTest, PathIsIndependentOfTheThreadBudget) {
         Eigen::VectorXd y = y0;
         Eigen::Map<Eigen::MatrixXd> Xm(X.data(), n, p), Dm(D.data(), n, L);
         Eigen::Map<Eigen::VectorXd> ym(y.data(), n);
-        trex::tsolvers::ad::SolverOptions opts;
+        trex::tsolvers::ad::TSolverOptions opts;
         opts.n_threads = n_threads;
         auto solver = create_solver_with<TypeParam>(Xm, Dm, ym, opts);
         EXPECT_EQ(solver->getNumThreads(), n_threads);

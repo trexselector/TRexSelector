@@ -13,7 +13,7 @@
  * Two operating modi:
  *
  * Modus 1: IN-MEMORY  (for in-memory X and D)
- * - Solvers are retained as unique_ptr<TSolver_Base> in a vector.
+ * - Solvers are retained as unique_ptr<TSolverBase> in a vector.
  * - The L-loop invalidates retained solvers (dummies changed).
  * - On the first T-loop iteration each solver is constructed fresh.
  * - On subsequent iterations the retained solver is re-executed with a higher T_stop
@@ -70,7 +70,7 @@ private:
     // In-Memory state
     // ---------------------
     /** @brief Vector of in-memory solvers. */
-    std::vector<std::unique_ptr<tsolvers::ad::TSolver_Base>> solvers_{};
+    std::vector<std::unique_ptr<tsolvers::ad::TSolverBase>> solvers_{};
 
     /** @brief Per-slot dummy matrices co-retained with the solvers.
      *
@@ -192,7 +192,7 @@ public:
      *          D_k; the caller must guarantee those buffers outlive the
      *          retention (co-retain per-call temporaries via retainDummies()).
      */
-    void storeSolver(std::size_t k, std::unique_ptr<tsolvers::ad::TSolver_Base> solver) {
+    void storeSolver(std::size_t k, std::unique_ptr<tsolvers::ad::TSolverBase> solver) {
         if (k < solvers_.size()) {
             solvers_[k] = std::move(solver);
         }
@@ -201,7 +201,7 @@ public:
     /**
      * @brief Access the retained solver for experiment k (nullptr if none).
      */
-    tsolvers::ad::TSolver_Base* getSolver(std::size_t k) {
+    tsolvers::ad::TSolverBase* getSolver(std::size_t k) {
         return (k < solvers_.size()) ? solvers_[k].get() : nullptr;
     }
 

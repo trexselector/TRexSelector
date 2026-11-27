@@ -7,19 +7,19 @@ using namespace trex::trex_selector_methods::ad::trex_gvs;
 using namespace trex::trex_selector_methods::ad::trex_core;
 
 // From rcpp_trex_selector.cpp
-extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
+extern TRexControl parse_control_parameter(const Rcpp::List& control);
 
 /**
- * @brief Parses an R list into a TRexGVSControlParameter C++ struct.
+ * @brief Parses an R list into a TRexGVSControl C++ struct.
  *
  * Maps parameters such as grouping correlation thresholds, linkage methods,
  * and lambda penalties associated with the Group Variable Selection variant.
  *
  * @param control List of parameters passed from R.
- * @return Populated TRexGVSControlParameter instance.
+ * @return Populated TRexGVSControl instance.
  */
-TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control) {
-    TRexGVSControlParameter params;
+TRexGVSControl parse_gvs_parameter(const Rcpp::List& control) {
+    TRexGVSControl params;
 
     if (control.containsElementNamed("gvs_type")) {
         std::string method = control["gvs_type"];
@@ -118,7 +118,7 @@ TRexGVSControlParameter parse_gvs_parameter(const Rcpp::List& control) {
  *        Tikhonov glue (declared extern there).
  */
 Rcpp::List lambda2_cv_diagnostics_to_list(
-    const trex::ml_methods::model_selection::lambda2_cv_diagnostics& d) {
+    const trex::ml_methods::model_selection::Lambda2CVDiagnostics& d) {
     return Rcpp::List::create(
         Rcpp::Named("ran")               = d.ran,
         Rcpp::Named("seconds")           = d.seconds,
@@ -140,10 +140,10 @@ Rcpp::List lambda2_cv_diagnostics_to_list(
  * @brief The control of a GVS run from the two R lists. A NULL base control
  *        leaves the one nested in the GVS control in place.
  */
-TRexGVSControlParameter gvs_run_control(
+TRexGVSControl gvs_run_control(
     const Rcpp::List& gvs_control_list,
     const Rcpp::Nullable<Rcpp::List>& trex_control_list) {
-    std::optional<TRexControlParameter> trex_control;
+    std::optional<TRexControl> trex_control;
     if (trex_control_list.isNotNull()) {
         trex_control = parse_control_parameter(Rcpp::List(trex_control_list));
     }
@@ -165,7 +165,7 @@ XPtr<RTRexGVSSelector> trex_gvs_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
+    const TRexGVSControl gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
     return XPtr<RTRexGVSSelector>(new RTRexGVSSelector(X_map, y_map, tFDR, gvs_ctrl, seed, verbose),
@@ -185,7 +185,7 @@ XPtr<RTRexGVSSelector> trex_gvs_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    const TRexGVSControlParameter gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
+    const TRexGVSControl gvs_ctrl = gvs_run_control(gvs_control_list, trex_control_list);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexGVSSelector>(
         new RTRexGVSSelector(mapped_design_for(*X_ptr, gvs_ctrl.trex_ctrl), y_map, tFDR, gvs_ctrl, seed, verbose),

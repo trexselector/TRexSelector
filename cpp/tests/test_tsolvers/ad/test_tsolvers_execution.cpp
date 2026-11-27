@@ -5,7 +5,7 @@
  * @file test_tsolvers_execution.cpp
  *
  * @brief Unit tests verifying core execution path integrity (bounds checking, monotonicity)
- *        for TSolver_Base via the concrete proxy TLARS_Solver.
+ *        for TSolverBase via the concrete proxy TSolverLARS.
  */
 // ========================================================================================
 
@@ -67,7 +67,7 @@ protected:
             {5.0, -3.0, 2.0},
             1.0, 42, -1, -1,
             predictor_policy::Normal(),
-            dummygen::Distribution::Normal(),
+            dummygen::DummyDistribution::Normal(),
             noisegen::noise_policy::Normal()
         );
 
@@ -85,7 +85,7 @@ TEST_F(TSolverExecutionTest, ExecuteEarlyStoppingAtTStop) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // Goal: Stop when 4 dummy variables have entered the active set.
     int T_stop = 4;
@@ -106,7 +106,7 @@ TEST_F(TSolverExecutionTest, MonotonicRSSDecrease) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // Execute multiple steps
     solver.executeStep(10, true);
@@ -126,8 +126,8 @@ TEST_F(TSolverExecutionTest, MonotonicRSSDecrease) {
  *         OMP): on a full path, some atom is picked in more than one step,
  *         while the active set keeps each index exactly once. */
 TEST_F(TSolverExecutionTest, MPAndGPReSelectAtoms) {
-    using trex::tsolvers::ad::linear_model::omp_based::TMP_Solver;
-    using trex::tsolvers::ad::linear_model::omp_based::TGP_Solver;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverMP;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverGP;
 
     auto max_selection_count = [this](auto make_solver) {
         Eigen::MatrixXd Xc = X, Dc = D;
@@ -155,12 +155,12 @@ TEST_F(TSolverExecutionTest, MPAndGPReSelectAtoms) {
     };
 
     int mp_max = max_selection_count([](auto& Xm, auto& Dm, auto& ym) {
-        return TMP_Solver(Xm, Dm, ym);
+        return TSolverMP(Xm, Dm, ym);
     });
     EXPECT_GE(mp_max, 2) << "MP never re-selected an atom on a full path";
 
     int gp_max = max_selection_count([](auto& Xm, auto& Dm, auto& ym) {
-        return TGP_Solver(Xm, Dm, ym);
+        return TSolverGP(Xm, Dm, ym);
     });
     EXPECT_GE(gp_max, 2) << "GP never re-selected an atom on a full path";
 }
@@ -170,9 +170,9 @@ TEST_F(TSolverExecutionTest, MPAndGPReSelectAtoms) {
  *         the least-squares objective (L = 1), NCGMP-LineSearch is exactly
  *         T-MP and NCGMP-FullyCorrective is exactly T-OMP. */
 TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
-    using trex::tsolvers::ad::linear_model::omp_based::TMP_Solver;
-    using trex::tsolvers::ad::linear_model::omp_based::TOMP_Solver;
-    using trex::tsolvers::ad::linear_model::omp_based::TNCGMP_Solver;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverMP;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverOMP;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverNCGMP;
     using trex::tsolvers::ad::linear_model::omp_based::NCGMPVariant;
 
     auto fit = [this](auto make_solver) {
@@ -187,21 +187,21 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
     };
 
     Eigen::MatrixXd mp_path = fit([](auto& Xm, auto& Dm, auto& ym) {
-        return TMP_Solver(Xm, Dm, ym);
+        return TSolverMP(Xm, Dm, ym);
     });
     Eigen::MatrixXd ncg_ls_path = fit([](auto& Xm, auto& Dm, auto& ym) {
-        return TNCGMP_Solver(Xm, Dm, ym);
+        return TSolverNCGMP(Xm, Dm, ym);
     });
     ASSERT_EQ(mp_path.cols(), ncg_ls_path.cols());
     EXPECT_TRUE(mp_path.isApprox(ncg_ls_path, 1e-12))
         << "max abs diff: " << (mp_path - ncg_ls_path).cwiseAbs().maxCoeff();
 
     Eigen::MatrixXd omp_path = fit([](auto& Xm, auto& Dm, auto& ym) {
-        return TOMP_Solver(Xm, Dm, ym);
+        return TSolverOMP(Xm, Dm, ym);
     });
     Eigen::MatrixXd ncg_fc_path = fit([](auto& Xm, auto& Dm, auto& ym) {
-        return TNCGMP_Solver(Xm, Dm, ym,
-            trex::tsolvers::ad::SolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+        return TSolverNCGMP(Xm, Dm, ym,
+            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
     });
     ASSERT_EQ(omp_path.cols(), ncg_fc_path.cols());
     EXPECT_TRUE(omp_path.isApprox(ncg_fc_path, 1e-12))
@@ -220,10 +220,10 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
         return std::make_pair(solver.getActions(), solver.getBetaPathSparse().dense());
     };
     const auto [mp_actions, mp_full] = full([](auto& Xm, auto& Dm, auto& ym) {
-        return TMP_Solver(Xm, Dm, ym);
+        return TSolverMP(Xm, Dm, ym);
     });
     const auto [ls_actions, ls_full] = full([](auto& Xm, auto& Dm, auto& ym) {
-        return TNCGMP_Solver(Xm, Dm, ym);
+        return TSolverNCGMP(Xm, Dm, ym);
     });
     EXPECT_EQ(mp_actions, ls_actions);
     ASSERT_EQ(mp_full.cols(), ls_full.cols());
@@ -231,11 +231,11 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
         << "max abs diff: " << (mp_full - ls_full).cwiseAbs().maxCoeff();
 
     const auto [omp_actions, omp_full] = full([](auto& Xm, auto& Dm, auto& ym) {
-        return TOMP_Solver(Xm, Dm, ym);
+        return TSolverOMP(Xm, Dm, ym);
     });
     const auto [fc_actions, fc_full] = full([](auto& Xm, auto& Dm, auto& ym) {
-        return TNCGMP_Solver(Xm, Dm, ym,
-            trex::tsolvers::ad::SolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+        return TSolverNCGMP(Xm, Dm, ym,
+            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
     });
     EXPECT_EQ(omp_actions, fc_actions);
     ASSERT_EQ(omp_full.cols(), fc_full.cols());
@@ -249,15 +249,15 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
  *         asserts the actions/diagnostics alignment invariant that collinear
  *         rejections must not break. */
 TEST_F(TSolverExecutionTest, TNCGMPFullyCorrectiveExecutesAndStaysAligned) {
-    using trex::tsolvers::ad::linear_model::omp_based::TNCGMP_Solver;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverNCGMP;
     using trex::tsolvers::ad::linear_model::omp_based::NCGMPVariant;
 
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TNCGMP_Solver solver(X_map, D_map, y_map,
-        trex::tsolvers::ad::SolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+    TSolverNCGMP solver(X_map, D_map, y_map,
+        trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
     solver.executeStep(4, true);
 
     EXPECT_GT(solver.getNumSteps(), 0u);
@@ -287,14 +287,14 @@ TEST_F(TSolverExecutionTest, DefaultExecuteStepComputesFullPath) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver by_default(X_map, D_map, y_map);
+    TSolverLARS by_default(X_map, D_map, y_map);
     by_default.executeStep(); // T_stop = 0, early_stop = true
 
     Eigen::Map<Eigen::MatrixXd> X_map2(X2.data(), X2.rows(), X2.cols());
     Eigen::Map<Eigen::MatrixXd> D_map2(D2.data(), D2.rows(), D2.cols());
     Eigen::Map<Eigen::VectorXd> y_map2(y2.data(), y2.size());
 
-    TLARS_Solver explicit_full(X_map2, D_map2, y_map2);
+    TSolverLARS explicit_full(X_map2, D_map2, y_map2);
     explicit_full.executeStep(0, false); // documented full-path form
 
     EXPECT_GT(by_default.getNumSteps(), 0u);
@@ -322,7 +322,7 @@ TEST_F(TSolverExecutionTest, LassoZeroCrossingDropsBehaveConsistently) {
     Eigen::Map<Eigen::MatrixXd> D_map(Dc.data(), Dc.rows(), Dc.cols());
     Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
 
-    TLASSO_Solver solver(X_map, D_map, y_map);
+    TSolverLASSO solver(X_map, D_map, y_map);
     solver.executeStep(0, false); // full path
 
     // The design must actually trigger drops, otherwise this test is vacuous.
@@ -374,7 +374,7 @@ TEST_F(TSolverExecutionTest, StagewiseNNLSDropKeepsLambdaMonotone) {
     Eigen::Map<Eigen::MatrixXd> D_map(Dc.data(), Dc.rows(), Dc.cols());
     Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
 
-    TSTAGEWISE_Solver solver(X_map, D_map, y_map);
+    TSolverStagewise solver(X_map, D_map, y_map);
     solver.executeStep(0, false); // full path
 
     // The design must actually trigger NNLS removals, otherwise this test is vacuous.
@@ -408,7 +408,7 @@ TEST_F(TSolverExecutionTest, TIENETNativeMatchesAugmentedPath) {
         Eigen::Map<Eigen::MatrixXd> Xn_map(Xn.data(), Xn.rows(), Xn.cols());
         Eigen::Map<Eigen::MatrixXd> Dn_map(Dn.data(), Dn.rows(), Dn.cols());
         Eigen::Map<Eigen::VectorXd> yn_map(yn.data(), yn.size());
-        TIENET_Solver native(Xn_map, Dn_map, yn_map, groups, trex::tsolvers::ad::SolverOptions{.lambda2 = lambda2});
+        TSolverIENET native(Xn_map, Dn_map, yn_map, groups, trex::tsolvers::ad::TSolverOptions{.lambda2 = lambda2});
         native.executeStep(5, true);
 
         Eigen::MatrixXd Xa = X, Da = D;
@@ -416,7 +416,7 @@ TEST_F(TSolverExecutionTest, TIENETNativeMatchesAugmentedPath) {
         Eigen::Map<Eigen::MatrixXd> Xa_map(Xa.data(), Xa.rows(), Xa.cols());
         Eigen::Map<Eigen::MatrixXd> Da_map(Da.data(), Da.rows(), Da.cols());
         Eigen::Map<Eigen::VectorXd> ya_map(ya.data(), ya.size());
-        TIENETAug_Solver aug(Xa_map, Da_map, ya_map, groups, trex::tsolvers::ad::SolverOptions{.lambda2 = lambda2});
+        TSolverIENETAug aug(Xa_map, Da_map, ya_map, groups, trex::tsolvers::ad::TSolverOptions{.lambda2 = lambda2});
         aug.executeStep(5, true);
 
         // Identical step-by-step action sequences (adds and drops).
@@ -445,8 +445,8 @@ TEST_F(TSolverExecutionTest, TIENETLambda2ZeroReducesToTLASSO) {
     Eigen::Map<Eigen::MatrixXd> Xi_map(Xi.data(), Xi.rows(), Xi.cols());
     Eigen::Map<Eigen::MatrixXd> Di_map(Di.data(), Di.rows(), Di.cols());
     Eigen::Map<Eigen::VectorXd> yi_map(yi.data(), yi.size());
-    TIENET_Solver ien(Xi_map, Di_map, yi_map, groups,
-                      trex::tsolvers::ad::SolverOptions{.lambda2 = 0.0});
+    TSolverIENET ien(Xi_map, Di_map, yi_map, groups,
+                      trex::tsolvers::ad::TSolverOptions{.lambda2 = 0.0});
     ien.executeStep(5, true);
 
     Eigen::MatrixXd Xl = X, Dl = D;
@@ -454,7 +454,7 @@ TEST_F(TSolverExecutionTest, TIENETLambda2ZeroReducesToTLASSO) {
     Eigen::Map<Eigen::MatrixXd> Xl_map(Xl.data(), Xl.rows(), Xl.cols());
     Eigen::Map<Eigen::MatrixXd> Dl_map(Dl.data(), Dl.rows(), Dl.cols());
     Eigen::Map<Eigen::VectorXd> yl_map(yl.data(), yl.size());
-    TLASSO_Solver lasso(Xl_map, Dl_map, yl_map);
+    TSolverLASSO lasso(Xl_map, Dl_map, yl_map);
     lasso.executeStep(5, true);
 
     EXPECT_EQ(ien.getActions(), lasso.getActions());
@@ -469,9 +469,9 @@ TEST_F(TSolverExecutionTest, TIENETLambda2ZeroReducesToTLASSO) {
  *        h_j = X_A^T x_j and one triangular solve per candidate, the direct
  *        form of ||P_perp x_j||^2 = ||x_j||^2 - ||R^{-T} h_j||^2.
  */
-class TOOLSFromScratch : public trex::tsolvers::ad::linear_model::omp_based::TOOLS_Solver {
+class TOOLSFromScratch : public trex::tsolvers::ad::linear_model::omp_based::TSolverOOLS {
 public:
-    using TOOLS_Solver::TOOLS_Solver;
+    using TSolverOOLS::TSolverOOLS;
 
 protected:
     std::pair<double, std::vector<std::size_t>> findTiedMaxCorrelations() const override {
@@ -514,14 +514,14 @@ protected:
  *        score on centered designs run to the n - 1 row bound.
  */
 TEST(TOOLSScoring, DowndatedNormsMatchFromScratchProjection) {
-    using trex::tsolvers::ad::SolverOptions;
-    using trex::tsolvers::ad::linear_model::omp_based::TOOLS_Solver;
+    using trex::tsolvers::ad::TSolverOptions;
+    using trex::tsolvers::ad::linear_model::omp_based::TSolverOOLS;
 
     constexpr Eigen::Index n = 60, p = 120, L = 120;
     for (int seed : {1, 2, 3, 4, 5}) {
         SyntheticData data(n, p, L, {3, 17, 41, 77, 101}, {3.0, -2.0, 2.0, -3.0, 2.5},
                            10.0, seed, -1, -1, predictor_policy::Normal(),
-                           dummygen::Distribution::Normal(), noisegen::noise_policy::Normal());
+                           dummygen::DummyDistribution::Normal(), noisegen::noise_policy::Normal());
         Eigen::MatrixXd Xs = data.getX();
         Eigen::MatrixXd Ds = data.getD();
         Eigen::VectorXd ys = data.getY();
@@ -539,9 +539,9 @@ TEST(TOOLSScoring, DowndatedNormsMatchFromScratchProjection) {
         Eigen::Map<Eigen::MatrixXd> D_map(Ds.data(), n, L);
         Eigen::Map<Eigen::VectorXd> y_map(ys.data(), n);
 
-        const SolverOptions opts{.normalize = false, .intercept = false, .precentered = true,
+        const TSolverOptions opts{.normalize = false, .intercept = false, .precentered = true,
                                  .tie_seed = seed};
-        TOOLS_Solver downdated(X_map, D_map, y_map, opts);
+        TSolverOOLS downdated(X_map, D_map, y_map, opts);
         TOOLSFromScratch reference(X_map, D_map, y_map, opts);
         for (std::size_t T : {1, 5, 20, 120}) {  // warm starts through a T grid
             downdated.executeStep(T, true);
@@ -573,13 +573,13 @@ TEST(TStagewiseSelection, FrozenCoefficientsAreSelected) {
     int runs_with_frozen = 0;
     for (int seed = 1; seed <= 10; ++seed) {
         SyntheticData data(n, p, L, {2, 11, 23, 37, 49}, {3.0, -2.0, 2.0, -3.0, 2.5}, 10.0, seed,
-                           -1, -1, predictor_policy::Normal(), dummygen::Distribution::Normal(),
+                           -1, -1, predictor_policy::Normal(), dummygen::DummyDistribution::Normal(),
                            noisegen::noise_policy::Normal());
         Eigen::MatrixXd Xs = data.getX(), Ds = data.getD();
         Eigen::VectorXd ys = data.getY();
         Eigen::Map<Eigen::MatrixXd> X_map(Xs.data(), n, p), D_map(Ds.data(), n, L);
         Eigen::Map<Eigen::VectorXd> y_map(ys.data(), n);
-        TSTAGEWISE_Solver solver(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.tie_seed = seed});
+        TSolverStagewise solver(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.tie_seed = seed});
         solver.executeStep(10, true);
 
         const auto sel = cdiag::selected_variables(solver);
@@ -612,13 +612,13 @@ TEST(TStagewiseSelection, NoRoundingNoiseStepsAfterNNLSRemoval) {
     int runs_with_removals = 0;
     for (int seed = 1; seed <= 10; ++seed) {
         SyntheticData data(n, p, L, {2, 11, 23, 37, 49, 60, 71, 83, 97, 110}, std::vector<double>(10, 3.0),
-                           90.0, seed, -1, -1, predictor_policy::Normal(), dummygen::Distribution::Normal(),
+                           90.0, seed, -1, -1, predictor_policy::Normal(), dummygen::DummyDistribution::Normal(),
                            noisegen::noise_policy::Normal());
         Eigen::MatrixXd Xs = data.getX(), Ds = data.getD();
         Eigen::VectorXd ys = data.getY();
         Eigen::Map<Eigen::MatrixXd> X_map(Xs.data(), n, p), D_map(Ds.data(), n, L);
         Eigen::Map<Eigen::VectorXd> y_map(ys.data(), n);
-        TSTAGEWISE_Solver solver(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.tie_seed = seed});
+        TSolverStagewise solver(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.tie_seed = seed});
         solver.executeStep(10, true);
 
         const auto& lambda = solver.getLambda();
@@ -650,13 +650,13 @@ TEST(TStagewiseSelection, FrozenDummiesCountTowardT) {
     int runs_with_frozen_dummies = 0;
     for (int seed = 1; seed <= 20; ++seed) {
         SyntheticData data(n, p, L, {2, 11, 23, 37, 49}, {3.0, -2.0, 2.0, -3.0, 2.5}, 10.0, seed,
-                           -1, -1, predictor_policy::Normal(), dummygen::Distribution::Normal(),
+                           -1, -1, predictor_policy::Normal(), dummygen::DummyDistribution::Normal(),
                            noisegen::noise_policy::Normal());
         Eigen::MatrixXd Xs = data.getX(), Ds = data.getD();
         Eigen::VectorXd ys = data.getY();
         Eigen::Map<Eigen::MatrixXd> X_map(Xs.data(), n, p), D_map(Ds.data(), n, L);
         Eigen::Map<Eigen::VectorXd> y_map(ys.data(), n);
-        TSTAGEWISE_Solver solver(X_map, D_map, y_map, trex::tsolvers::ad::SolverOptions{.tie_seed = seed});
+        TSolverStagewise solver(X_map, D_map, y_map, trex::tsolvers::ad::TSolverOptions{.tie_seed = seed});
         solver.executeStep(T_stop, true);
 
         const auto path = solver.getBetaPathSparse();
@@ -686,16 +686,16 @@ TEST(TStagewiseSelection, FrozenDummiesCountTowardT) {
 
 /**
  * @brief The tie seed reaches the inner solver of the augmented wrappers on
- *        every path: setTieSeed() through a TSolver_Base pointer (the R
- *        binding's path, virtual) and SolverOptions::tie_seed at construction
+ *        every path: setTieSeed() through a TSolverBase pointer (the R
+ *        binding's path, virtual) and TSolverOptions::tie_seed at construction
  *        give the pruned dummy tie the same outcome as setTieSeed() on the
  *        concrete type. Two bitwise identical dummies enter together at the
  *        first step with a budget of one, and pruneTiedDummies draws the
  *        survivor from the tie-break engine.
  */
 TEST(TieSeedDispatch, AugmentedWrappersForwardThroughBasePointer) {
-    using trex::tsolvers::ad::SolverOptions;
-    using trex::tsolvers::ad::TSolver_Base;
+    using trex::tsolvers::ad::TSolverOptions;
+    using trex::tsolvers::ad::TSolverBase;
     constexpr Eigen::Index n = 40, p = 10, L = 10;
     std::mt19937 gen(3);
     std::normal_distribution<double> dist(0.0, 1.0);
@@ -715,12 +715,12 @@ TEST(TieSeedDispatch, AugmentedWrappersForwardThroughBasePointer) {
     y.array() -= y.mean();
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), n, p), D_map(D.data(), n, L);
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), n);
-    const SolverOptions opts{.normalize = false, .intercept = false, .precentered = true, .lambda2 = 0.5};
+    const TSolverOptions opts{.normalize = false, .intercept = false, .precentered = true, .lambda2 = 0.5};
     Eigen::VectorXi groups(p);
     for (Eigen::Index j = 0; j < p; ++j) { groups(j) = static_cast<int>(j / 5); }
 
     // The surviving dummy (p or p + 1) after the first step with T_stop = 1
-    const auto survivor = [&](TSolver_Base& s) {
+    const auto survivor = [&](TSolverBase& s) {
         s.executeStep(1, true);
         const auto& act = s.getActives();
         const bool d0 = std::find(act.begin(), act.end(), static_cast<std::size_t>(p)) != act.end();
@@ -731,27 +731,27 @@ TEST(TieSeedDispatch, AugmentedWrappersForwardThroughBasePointer) {
 
     std::set<std::size_t> seen_tenet, seen_tienet;
     for (std::uint32_t seed = 0; seed < 16; ++seed) {
-        SolverOptions seeded = opts;
+        TSolverOptions seeded = opts;
         seeded.tie_seed = static_cast<long long>(seed);
 
-        TENETAug_Solver concrete(X_map, D_map, y_map, opts);
+        TSolverENETAug concrete(X_map, D_map, y_map, opts);
         concrete.setTieSeed(seed);
         const std::size_t k = survivor(concrete);
-        std::unique_ptr<TSolver_Base> base = std::make_unique<TENETAug_Solver>(X_map, D_map, y_map, opts);
+        std::unique_ptr<TSolverBase> base = std::make_unique<TSolverENETAug>(X_map, D_map, y_map, opts);
         base->setTieSeed(seed);
         EXPECT_EQ(survivor(*base), k) << "TENETAug through the base pointer, seed " << seed;
-        TENETAug_Solver constructed(X_map, D_map, y_map, seeded);
+        TSolverENETAug constructed(X_map, D_map, y_map, seeded);
         EXPECT_EQ(survivor(constructed), k) << "TENETAug through the options, seed " << seed;
         seen_tenet.insert(k);
 
-        TIENETAug_Solver concrete_g(X_map, D_map, y_map, groups, opts);
+        TSolverIENETAug concrete_g(X_map, D_map, y_map, groups, opts);
         concrete_g.setTieSeed(seed);
         const std::size_t kg = survivor(concrete_g);
-        std::unique_ptr<TSolver_Base> base_g =
-            std::make_unique<TIENETAug_Solver>(X_map, D_map, y_map, groups, opts);
+        std::unique_ptr<TSolverBase> base_g =
+            std::make_unique<TSolverIENETAug>(X_map, D_map, y_map, groups, opts);
         base_g->setTieSeed(seed);
         EXPECT_EQ(survivor(*base_g), kg) << "TIENETAug through the base pointer, seed " << seed;
-        TIENETAug_Solver constructed_g(X_map, D_map, y_map, groups, seeded);
+        TSolverIENETAug constructed_g(X_map, D_map, y_map, groups, seeded);
         EXPECT_EQ(survivor(constructed_g), kg) << "TIENETAug through the options, seed " << seed;
         seen_tienet.insert(kg);
     }
@@ -794,7 +794,7 @@ struct ClusterDesign {
 /** @brief Variable of the first step of a solver run with the given band and tie seed. */
 template <class Solver>
 std::size_t firstPick(const ClusterDesign& d, double alpha, long long tie_seed,
-                      trex::tsolvers::ad::SolverOptions options = {}) {
+                      trex::tsolvers::ad::TSolverOptions options = {}) {
     Eigen::MatrixXd Xc = d.X, Dc = d.D;
     Eigen::VectorXd yc = d.y;
     Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
@@ -810,7 +810,7 @@ std::size_t firstPick(const ClusterDesign& d, double alpha, long long tie_seed,
 
 /** @brief The band off gives one first pick, the band on draws it from the cluster. */
 template <class Solver>
-void expectBandDrawsFromTheCluster(const char* name, trex::tsolvers::ad::SolverOptions options = {}) {
+void expectBandDrawsFromTheCluster(const char* name, trex::tsolvers::ad::TSolverOptions options = {}) {
     SCOPED_TRACE(name);
     const ClusterDesign d;
     // A band this wide holds every column that correlates with the top one
@@ -829,8 +829,8 @@ void expectBandDrawsFromTheCluster(const char* name, trex::tsolvers::ad::SolverO
 }
 
 /** @brief Matching pursuit with access to the band, to probe single candidates. */
-struct BandProbe : trex::tsolvers::ad::linear_model::omp_based::TMP_Solver {
-    using TMP_Solver::TMP_Solver;
+struct BandProbe : trex::tsolvers::ad::linear_model::omp_based::TSolverMP {
+    using TSolverMP::TSolverMP;
 
     std::size_t pickFor(std::size_t candidate) {
         std::vector<std::size_t> step{candidate};
@@ -845,17 +845,17 @@ struct BandProbe : trex::tsolvers::ad::linear_model::omp_based::TMP_Solver {
 /** @brief Every greedy solver applies the exchangeable-tie band. */
 TEST(ExchangeableTieBand, EveryGreedySolverDrawsItsPickFromTheTieSet) {
     using namespace trex::tsolvers::ad::linear_model::omp_based;
-    using trex::tsolvers::ad::linear_model::afs_based::TAFS_Solver;
-    expectBandDrawsFromTheCluster<TOMP_Solver>("TOMP");
-    expectBandDrawsFromTheCluster<TOOLS_Solver>("TOOLS");
-    expectBandDrawsFromTheCluster<TGP_Solver>("TGP");
-    expectBandDrawsFromTheCluster<TACGP_Solver>("TACGP");
-    expectBandDrawsFromTheCluster<TMP_Solver>("TMP");
-    expectBandDrawsFromTheCluster<TNCGMP_Solver>("TNCGMP, line search");
-    trex::tsolvers::ad::SolverOptions corrective;
+    using trex::tsolvers::ad::linear_model::afs_based::TSolverAFS;
+    expectBandDrawsFromTheCluster<TSolverOMP>("TOMP");
+    expectBandDrawsFromTheCluster<TSolverOOLS>("TOOLS");
+    expectBandDrawsFromTheCluster<TSolverGP>("TGP");
+    expectBandDrawsFromTheCluster<TSolverACGP>("TACGP");
+    expectBandDrawsFromTheCluster<TSolverMP>("TMP");
+    expectBandDrawsFromTheCluster<TSolverNCGMP>("TNCGMP, line search");
+    trex::tsolvers::ad::TSolverOptions corrective;
     corrective.ncgmp_variant = trex::tsolvers::ad::NCGMPVariant::FullyCorrective;
-    expectBandDrawsFromTheCluster<TNCGMP_Solver>("TNCGMP, fully corrective", corrective);
-    expectBandDrawsFromTheCluster<TAFS_Solver>("TAFS");
+    expectBandDrawsFromTheCluster<TSolverNCGMP>("TNCGMP, fully corrective", corrective);
+    expectBandDrawsFromTheCluster<TSolverAFS>("TAFS");
 }
 
 
@@ -870,7 +870,7 @@ TEST(ExchangeableTieBand, ReselectedActiveVariableKeepsItsPick) {
     const std::size_t p = static_cast<std::size_t>(d.X.cols());
 
     // Floor 0 and a wide band: every inactive variable is a candidate
-    trex::tsolvers::ad::SolverOptions options;
+    trex::tsolvers::ad::TSolverOptions options;
     options.exch_tie_alpha = 1e6;
     options.exch_tie_floor = 0.0;
     BandProbe solver(X_map, D_map, y_map, options);

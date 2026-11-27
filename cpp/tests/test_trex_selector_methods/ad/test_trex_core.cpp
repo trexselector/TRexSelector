@@ -60,7 +60,7 @@ void run_trex_core_test(Eigen::Index n,
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3; // Keep K small for fast testing
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
@@ -102,8 +102,8 @@ void run_trex_core_test(Eigen::Index n,
  *  default, inside a selector and in the stand-alone solver. The two
  *  tolerances differ on purpose. */
 TEST(TRexCoreTest, SolverDefaultsOfTheSelectorMatchTheSolverOptions) {
-    const TRexControlParameter ctrl;
-    const trex::tsolvers::ad::SolverOptions opts;
+    const TRexControl ctrl;
+    const trex::tsolvers::ad::TSolverOptions opts;
 
     EXPECT_DOUBLE_EQ(opts.lambda2, 0.1);
     EXPECT_DOUBLE_EQ(opts.rho_afs, 0.3);
@@ -156,7 +156,7 @@ TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
@@ -167,7 +167,7 @@ TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
     EXPECT_THROW(trex.select(), std::invalid_argument);
 
     // Parallel path: the same discipline must hold with live threads.
-    TRexControlParameter par_ctrl = trex_ctrl;
+    TRexControl par_ctrl = trex_ctrl;
     par_ctrl.parallel_rnd_experiments = true;
     par_ctrl.max_outer_threads = 2;
     SyntheticData data2(60, 20, support, coefs, 1.0, 42);
@@ -196,7 +196,7 @@ TEST(TRexCoreTest, Equivalence_TenetAugMatchesTenet) {
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-        TRexControlParameter trex_ctrl;
+        TRexControl trex_ctrl;
         trex_ctrl.K = 3;
         trex_ctrl.max_dummy_multiplier = 2;
         trex_ctrl.solver_type = solver;
@@ -234,28 +234,28 @@ TEST(TRexCoreTest, Param_Concurrency) {
  *  capped at K, and the defaults are one thread each (no parallelism unless
  *  asked for). */
 TEST(TRexCoreTest, ThreadOptionsResolveAtConstruction) {
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 4;
     ctrl.resolveThreadOptions();
     EXPECT_EQ(ctrl.max_outer_threads, 1);
     EXPECT_EQ(ctrl.max_inner_threads, 1);
 
-    TRexControlParameter zero_outer;
+    TRexControl zero_outer;
     zero_outer.K = 4;
     zero_outer.max_outer_threads = 0;
     EXPECT_THROW(zero_outer.resolveThreadOptions(), std::invalid_argument);
-    TRexControlParameter zero_inner;
+    TRexControl zero_inner;
     zero_inner.K = 4;
     zero_inner.max_inner_threads = 0;
     EXPECT_THROW(zero_inner.resolveThreadOptions(), std::invalid_argument);
 
-    TRexControlParameter capped;
+    TRexControl capped;
     capped.K = 2;
     capped.max_outer_threads = 64;
     capped.resolveThreadOptions();
     EXPECT_EQ(capped.max_outer_threads, 2);
 
-    TRexControlParameter negative;
+    TRexControl negative;
     negative.max_inner_threads = -1;
     EXPECT_THROW(negative.resolveThreadOptions(), std::invalid_argument);
 
@@ -266,7 +266,7 @@ TEST(TRexCoreTest, ThreadOptionsResolveAtConstruction) {
     auto y = data.getY();
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-    TRexControlParameter bad;
+    TRexControl bad;
     bad.max_outer_threads = -2;
     EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, bad, 42, false), std::invalid_argument);
 }
@@ -290,7 +290,7 @@ TEST(TRexCoreTest, ParallelExperimentsSelectAsSerial) {
         Eigen::VectorXd yc = y;
         Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
         Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 4;
         ctrl.max_dummy_multiplier = 2;
         ctrl.parallel_rnd_experiments = parallel;
@@ -318,7 +318,7 @@ TEST(TRexCoreTest, Exceptions_InvalidDimensions) {
     Eigen::Map<Eigen::MatrixXd> X_map(X_empty.data(), 0, 0);
     Eigen::Map<Eigen::VectorXd> y_map(y_empty.data(), 0);
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, trex_ctrl),
                  std::invalid_argument);
 }
@@ -331,7 +331,7 @@ TEST(TRexCoreTest, Exceptions_MismatchedDimensions) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, trex_ctrl),
                  std::invalid_argument);
 }
@@ -344,7 +344,7 @@ TEST(TRexCoreTest, Exceptions_InvalidParameters) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
 
     // Test invalid tFDR bounds
     EXPECT_THROW(TRexSelector(X_map, y_map, -0.1, trex_ctrl),
@@ -360,7 +360,7 @@ TEST(TRexCoreTest, Exceptions_InvalidParameters) {
                  std::invalid_argument);
 
     // The stagnation window is at least one step
-    TRexControlParameter zero_steps;
+    TRexControl zero_steps;
     zero_steps.tloop_max_stagnant_steps = 0;
     EXPECT_THROW(TRexSelector(X_map, y_map, 0.1, zero_steps),
                  std::invalid_argument);
@@ -382,7 +382,7 @@ TEST(TRexCoreTest, DataIntegrity_XRestoredAfterSelect) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
@@ -404,7 +404,7 @@ TEST(TRexCoreTest, DataIntegrity_XRestoredOnDestruction) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
@@ -445,7 +445,7 @@ TEST(TRexCoreTest, RunnerMarksCenteredDesignPrecentered) {
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-        TRexControlParameter trex_ctrl;
+        TRexControl trex_ctrl;
         trex_ctrl.K = 3;
         trex_ctrl.max_dummy_multiplier = 2;
         trex_ctrl.scaling_mode = mode;
@@ -483,7 +483,7 @@ TEST(TRexCoreTest, StagnationStop_AutoDefaultResolvesBySolverFamily) {
 
     auto resolved_default = [&](disp::SolverTypeForTRex solver,
                                 std::optional<bool> user_choice) {
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 3;
         ctrl.solver_type = solver;
         ctrl.tloop_stagnation_stop = user_choice;
@@ -553,7 +553,7 @@ TEST(TRexCoreTest, WarmStart_EngagesAndMatchesColdRun) {
     Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
 
     dg::DummyGenerator dummy_gen(static_cast<std::size_t>(n),
-                                 dummygen::Distribution::Normal(), 42, false);
+                                 dummygen::DummyDistribution::Normal(), 42, false);
     dummy_gen.generateAndStore(K, static_cast<std::size_t>(p), 1);
 
     wsm::WarmStartManager warm_mgr(K, wsm::WarmStartMode::IN_MEMORY, false);
@@ -610,7 +610,7 @@ TEST(TRexCoreTest, WarmStart_DirectStrategyContinuationMatchesCold) {
     Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
 
     dg::DummyGenerator dummy_gen(static_cast<std::size_t>(n),
-                                 dummygen::Distribution::Normal(), 7, false);
+                                 dummygen::DummyDistribution::Normal(), 7, false);
     wsm::WarmStartManager warm_mgr(K, wsm::WarmStartMode::IN_MEMORY, false);
     er::ExperimentRunner runner(X_map, d.y, dummy_gen, warm_mgr, nullptr);
 
@@ -624,7 +624,7 @@ TEST(TRexCoreTest, WarmStart_DirectStrategyContinuationMatchesCold) {
     // Cold reference with a separate, equally seeded generator: DIRECT
     // dummies must be reproducible across instances for the same seed.
     dg::DummyGenerator cold_gen(static_cast<std::size_t>(n),
-                                dummygen::Distribution::Normal(), 7, false);
+                                dummygen::DummyDistribution::Normal(), 7, false);
     wsm::WarmStartManager cold_mgr(K, wsm::WarmStartMode::IN_MEMORY, false);
     er::ExperimentRunner cold_runner(X_map, d.y, cold_gen, cold_mgr, nullptr);
     auto cold_cfg = cfg;
@@ -652,7 +652,7 @@ TEST(TRexCoreTest, WarmStart_MemoryMappedMatchesInMemory) {
     auto X_map_data = X_mem;   // independent copies: X is normalized in-place
     auto y_map_data = y_mem;
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
 
@@ -705,9 +705,9 @@ TEST(TRexCoreTest, WarmStart_MemoryMappedMatchesInMemory) {
 TEST(TRexCoreTest, DirectDummies_HonourUserSeedAndAreStableWithinRun) {
     const std::size_t n = 50, num_dummies = 30;
 
-    dg::DummyGenerator g_seed1(n, dummygen::Distribution::Normal(), 1, false);
-    dg::DummyGenerator g_seed2(n, dummygen::Distribution::Normal(), 2, false);
-    dg::DummyGenerator g_seed1_again(n, dummygen::Distribution::Normal(), 1, false);
+    dg::DummyGenerator g_seed1(n, dummygen::DummyDistribution::Normal(), 1, false);
+    dg::DummyGenerator g_seed2(n, dummygen::DummyDistribution::Normal(), 2, false);
+    dg::DummyGenerator g_seed1_again(n, dummygen::DummyDistribution::Normal(), 1, false);
 
     Eigen::MatrixXd D1  = g_seed1.generateSeeded(num_dummies, 0, /*l_tag=*/1);
     Eigen::MatrixXd D2  = g_seed2.generateSeeded(num_dummies, 0, /*l_tag=*/1);
@@ -721,7 +721,7 @@ TEST(TRexCoreTest, DirectDummies_HonourUserSeedAndAreStableWithinRun) {
     // Unseeded (seed < 0): the base is resolved once per generator, so
     // repeated derivation of the same experiment's dummies must be identical
     // (the T-loop re-derives D_k at every step).
-    dg::DummyGenerator g_random(n, dummygen::Distribution::Normal(), -1, false);
+    dg::DummyGenerator g_random(n, dummygen::DummyDistribution::Normal(), -1, false);
     Eigen::MatrixXd Da = g_random.generateSeeded(num_dummies, 3, /*l_tag=*/1);
     Eigen::MatrixXd Db = g_random.generateSeeded(num_dummies, 3, /*l_tag=*/1);
     EXPECT_TRUE(Da.isApprox(Db, 1e-12))
@@ -742,7 +742,7 @@ TEST(TRexCoreTest, SharedBufferClaim_ThrowsOnSecondSelector) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
 
@@ -763,7 +763,7 @@ TEST(TRexCoreTest, SharedBufferClaim_ReleasedAfterSelect) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
 
@@ -786,7 +786,7 @@ TEST(TRexCoreTest, SharedBufferClaim_DistinctBuffersOk) {
     Eigen::Map<Eigen::MatrixXd> Xbm(Xb.data(), Xb.rows(), Xb.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
 
@@ -817,7 +817,7 @@ TEST(TRexCoreTest, SkiplLargeBudgetWithoutStopWarns) {
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
     const auto warns = [&](LLoopStrategy strategy, std::size_t multiplier, std::optional<bool> stop) {
-        TRexControlParameter ctrl;
+        TRexControl ctrl;
         ctrl.K = 5;
         ctrl.solver_type = disp::SolverTypeForTRex::TLARS;
         ctrl.lloop_strategy = strategy;
@@ -846,7 +846,7 @@ TEST(TRexCoreTest, PhiPrimeKeepsNegativeValues) {
     auto y = data.getY();
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 5;
     FdpEstimatorProbe trex(X_map, y_map, 0.1, ctrl, 42, false);
 

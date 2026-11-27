@@ -41,7 +41,7 @@ constructed for a new run.
 
 ## T-solvers: writers and readers
 
-A T-solver with `normalize = true` or `intercept = true` in its SolverOptions is a writer. It
+A T-solver with `normalize = true` or `intercept = true` in its TSolverOptions is a writer. It
 transforms `X` and `D` in place, keeps the statistics, and holds a claim on both matrices until
 `restore()` or its destructor writes them back. A second writer on a claimed matrix is refused,
 because a second transformation would move the data by rounding. The `restore()` of a T-solver
@@ -75,7 +75,7 @@ as well, and the element access reads from the file, so no accessor copies the d
 A file opened in `AccessMode::ReadOnly` cannot be written, so it serves exactly the code that only
 reads. That is a selector under `ScalingMode::NONE`, which takes the design as supplied, a T-solver
 that is a reader, and the fits of the regressions. A selector under `ScalingMode::L2` or
-`ScalingMode::ZSCORE`, a writer among the T-solvers, the in-place scalers and TRexSPCA write into
+`ScalingMode::ZSCORE`, a writer among the T-solvers, the in-place scalers and TRexSPCASelector write into
 the design and need `AccessMode::ReadWrite`. The handle keeps the two apart. Its `getMap()` is
 refused for a read-only file, and `getReaderMap()` is the `Eigen::Map` for code that only reads.
 
@@ -86,9 +86,9 @@ size of `X`.
 
 | Class | `low_memory = false` | `low_memory = true` |
 | --- | --- | --- |
-| `ridge_cv_svd` | each fold gathers and standardizes its training rows and takes a thin singular value decomposition (SVD), about three to four copies of `X` in flight | the dual (kernel) form, \f$n \times n\f$ kernels accumulated from column blocks read in place, memory \f$O(n^2)\f$ |
-| `enet_gaussian` | coordinate descent on a centered and standardized working copy, one \f$n \times p\f$ matrix | coordinate descent on `X` itself, no allocation of the size of `X` |
-| `enet_cv_ccd` | one working copy per fit | every fold on `X` itself with a training mask |
+| `RidgeCV` | each fold gathers and standardizes its training rows and takes a thin singular value decomposition (SVD), about three to four copies of `X` in flight | the dual (kernel) form, \f$n \times n\f$ kernels accumulated from column blocks read in place, memory \f$O(n^2)\f$ |
+| `ElasticNet` | coordinate descent on a centered and standardized working copy, one \f$n \times p\f$ matrix | coordinate descent on `X` itself, no allocation of the size of `X` |
+| `ElasticNetCV` | one working copy per fit | every fold on `X` itself with a training mask |
 
 The two engines compute the same estimator on the same grid and agree to rounding. The selectors
 that tune \f$\lambda_2\f$ by cross-validation (GVS, SPCA, Tikhonov) use these engines, and the elastic-net

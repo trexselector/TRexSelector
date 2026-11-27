@@ -15,15 +15,15 @@ includes its solvers.
 
 | Family | Header | Classes | Algorithm |
 | --- | --- | --- | --- |
-| LARS | `lars_based.hpp` | TLARS_Solver, TLASSO_Solver, TSTEPWISE_Solver | least angle regression and its lasso and stepwise modifications \cite efron2004lars and \cite tibshirani1996lasso |
-| LARS | `lars_based.hpp` | TSTAGEWISE_Solver | forward stagewise \cite hastie2007stagewise and \cite tibshirani2015stagewise |
-| LARS | `lars_based.hpp` | TENET_Solver, TENETAug_Solver | the elastic net \cite zou2005elasticnet, Gram based and row augmented |
-| LARS | `lars_based.hpp` | TIENET_Solver, TIENETAug_Solver | the informed elastic net \cite machkour2023ien, pathwise and row augmented |
-| LARS | `lars_based.hpp` | TIKNET_Solver | the Tikhonov net, pathwise |
-| OMP | `omp_based.hpp` | TOMP_Solver, TOOLS_Solver | orthogonal matching pursuit and orthogonal least squares \cite pati1993omp, \cite chen1989ols and \cite blumensath2007ompols |
-| OMP | `omp_based.hpp` | TGP_Solver, TACGP_Solver | gradient and approximate conjugate gradient pursuit \cite blumensath2008gp |
-| OMP | `omp_based.hpp` | TMP_Solver, TNCGMP_Solver | matching pursuit \cite mallat1993mp and non-negative constrained generalized matching pursuit \cite locatello2017mpfw |
-| AFS | `afs_based.hpp` | TAFS_Solver | adaptive forward stepwise \cite zhang2026afs |
+| LARS | `lars_based.hpp` | TSolverLARS, TSolverLASSO, TSolverStepwise | least angle regression and its lasso and stepwise modifications \cite efron2004lars and \cite tibshirani1996lasso |
+| LARS | `lars_based.hpp` | TSolverStagewise | forward stagewise \cite hastie2007stagewise and \cite tibshirani2015stagewise |
+| LARS | `lars_based.hpp` | TSolverENET, TSolverENETAug | the elastic net \cite zou2005elasticnet, Gram based and row augmented |
+| LARS | `lars_based.hpp` | TSolverIENET, TSolverIENETAug | the informed elastic net \cite machkour2023ien, pathwise and row augmented |
+| LARS | `lars_based.hpp` | TSolverTIKNET | the Tikhonov net, pathwise |
+| OMP | `omp_based.hpp` | TSolverOMP, TSolverOOLS | orthogonal matching pursuit and orthogonal least squares \cite pati1993omp, \cite chen1989ols and \cite blumensath2007ompols |
+| OMP | `omp_based.hpp` | TSolverGP, TSolverACGP | gradient and approximate conjugate gradient pursuit \cite blumensath2008gp |
+| OMP | `omp_based.hpp` | TSolverMP, TSolverNCGMP | matching pursuit \cite mallat1993mp and non-negative constrained generalized matching pursuit \cite locatello2017mpfw |
+| AFS | `afs_based.hpp` | TSolverAFS | adaptive forward stepwise \cite zhang2026afs |
 
 The path solvers (LARS family) walk a regularization path, the greedy solvers (OMP and AFS
 families) add one variable per step. The informed solvers take a `groups` vector, the Tikhonov
@@ -44,7 +44,7 @@ solvers, which share them without a copy.
 
 \snippet{trimleft} tsolvers.cpp data
 
-A solver is constructed on `X`, `D`, `y` and a SolverOptions object, and `executeStep()` runs the
+A solver is constructed on `X`, `D`, `y` and a TSolverOptions object, and `executeStep()` runs the
 path until `T_stop` dummies are active. The path can be continued by calling `executeStep()` again
 with a larger `T_stop`.
 
@@ -85,7 +85,7 @@ variable that enters.
 
 ## The options
 
-SolverOptions holds every input except the data, the same struct for every solver. A solver reads
+TSolverOptions holds every input except the data, the same struct for every solver. A solver reads
 the fields it needs and ignores the rest. The fields have defaults, so a designated initializer sets
 only what differs.
 

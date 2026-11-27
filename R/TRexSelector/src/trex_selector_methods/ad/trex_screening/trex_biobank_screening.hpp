@@ -42,7 +42,7 @@ namespace ts = trex::trex_selector_methods::ad::trex_screening;
 // =========================================================
 
 /** @brief Result of screening a single phenotype. */
-struct BiobankScreenTRexResult {
+struct TRexBiobankScreeningResult {
 
     /** @brief Index of the screened phenotype in matrix Y. */
     std::size_t phenotype_index;
@@ -90,11 +90,15 @@ struct BiobankScreenTRexResult {
     bool used_fallback_trex;
 };
 
+/** @brief Old name of TRexBiobankScreeningResult.
+ *  @deprecated Use TRexBiobankScreeningResult. */
+using BiobankScreenTRexResult [[deprecated("Use TRexBiobankScreeningResult")]] = TRexBiobankScreeningResult;
+
 
 /**
  * @brief Control parameters for biobank screening (Algorithm 1).
  */
-struct BiobankScreenTRexControl {
+struct TRexBiobankScreeningControl {
 
     /** @brief Target FDR level α for fallback T-Rex selector */
     double target_FDR_trex = 0.1;
@@ -121,15 +125,43 @@ struct BiobankScreenTRexControl {
      *  algorithmic control). Its use_bootstrap_CI has no effect here: the
      *  biobank screening computes the ordinary and the bootstrap variant for
      *  every phenotype. */
-    ts::ScreenTRexControlParameter trex_screen_ctrl;
+    ts::TRexScreeningControl trex_screen_ctrl;
 
     /** @brief Default constructor. The strategy of the nested control is STANDARD, the default of
      *  the base control. */
-    BiobankScreenTRexControl() {
+    TRexBiobankScreeningControl() {
         trex_screen_ctrl.trex_ctrl.lloop_strategy = tc::LLoopStrategy::STANDARD;
     }
 };
 
+/** @brief Old name of TRexBiobankScreeningControl.
+ *  @deprecated Use TRexBiobankScreeningControl. */
+using BiobankScreenTRexControl [[deprecated("Use TRexBiobankScreeningControl")]] = TRexBiobankScreeningControl;
+
+
+/**
+ * @brief Get summary statistics across all phenotypes.
+ */
+struct TRexBiobankScreeningStatistics {
+    /** @brief Total number of phenotypes. */
+    std::size_t num_phenotypes;
+
+    /** @brief Number using ordinary T-Rex+Screening result. */
+    std::size_t num_used_screen_ordinary = 0;
+
+    /** @brief Number using bootstrap-CI T-Rex+Screening result. */
+    std::size_t num_used_screen_bootstrap = 0;
+
+    /** @brief Number of phenotypes using fallback T-REx result. */
+    std::size_t num_used_trex = 0;
+
+    /** @brief Average of `estimated_FDR` across all phenotypes: estimates
+     *  for screening results and the target level for fallback results. */
+    double avg_estimated_FDR;
+
+    /** @brief Average number of selected variables across all phenotypes. */
+    double avg_selected_count;
+};
 
 /**
  * @brief Biobank screening with the T-Rex selector: per phenotype the fast screening
@@ -151,7 +183,7 @@ struct BiobankScreenTRexControl {
  *  bootstrap variant is derived from its coefficients.
  *
  *  L-loop strategies: STANDARD (default), SEEDED, PERMUTATION and PERMUTATION_SEEDED, as
- *  for ScreenTRexSelector. HCONCAT and SKIPL are refused.
+ *  for TRexScreeningSelector. HCONCAT and SKIPL are refused.
  *
  *  References:
  *  -----------
@@ -164,7 +196,7 @@ struct BiobankScreenTRexControl {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class BiobankScreenTRex {
+class TRexBiobankScreeningSelector {
 protected:
     // ======================================================================
     // Protected Members
@@ -180,7 +212,7 @@ protected:
     Eigen::Map<Eigen::MatrixXd>* Y_;
 
     /** @brief Control parameters for the biobank screening */
-    BiobankScreenTRexControl bio_ctrl_;
+    TRexBiobankScreeningControl bio_ctrl_;
 
     /** @brief Random seed for reproducibility. Phenotype i runs with
      *  seed + i, see phenotypeSeed(). */
@@ -205,10 +237,10 @@ public:
      *             not reproducible.
      * @param verbose If true, print progress messages (default: false)
      */
-    BiobankScreenTRex(
+    TRexBiobankScreeningSelector(
         Eigen::Map<Eigen::MatrixXd>& X,
         Eigen::Map<Eigen::VectorXd>& y,
-        BiobankScreenTRexControl bio_ctrl,
+        TRexBiobankScreeningControl bio_ctrl,
         int seed = -1,
         bool verbose = false
     );
@@ -229,34 +261,34 @@ public:
      *             reproduced by a single-phenotype run with that seed.
      * @param verbose If true, print progress messages (default: false)
      */
-    BiobankScreenTRex(
+    TRexBiobankScreeningSelector(
         Eigen::Map<Eigen::MatrixXd>& X,
         Eigen::Map<Eigen::MatrixXd>& Y,
-        BiobankScreenTRexControl bio_ctrl,
+        TRexBiobankScreeningControl bio_ctrl,
         int seed = -1,
         bool verbose = false
     );
 
 
     /** @brief Virtual destructor */
-    virtual ~BiobankScreenTRex() = default;
+    virtual ~TRexBiobankScreeningSelector() = default;
 
 
     // Delete copy and move constructors and assignment operators
     /** @brief Deleted copy constructor */
-    BiobankScreenTRex(const BiobankScreenTRex&) = delete;
+    TRexBiobankScreeningSelector(const TRexBiobankScreeningSelector&) = delete;
 
 
     /** @brief Deleted copy assignment operator */
-    BiobankScreenTRex& operator=(const BiobankScreenTRex&) = delete;
+    TRexBiobankScreeningSelector& operator=(const TRexBiobankScreeningSelector&) = delete;
 
 
     /** @brief Deleted move constructor */
-    BiobankScreenTRex(BiobankScreenTRex&&) = delete;
+    TRexBiobankScreeningSelector(TRexBiobankScreeningSelector&&) = delete;
 
 
     /** @brief Deleted move assignment operator */
-    BiobankScreenTRex& operator=(BiobankScreenTRex&&) = delete;
+    TRexBiobankScreeningSelector& operator=(TRexBiobankScreeningSelector&&) = delete;
 
 
     // ======================================================================
@@ -277,7 +309,7 @@ public:
      * @throws std::runtime_error if called with multiple phenotypes
      *         (use screenPhenotypes() instead).
      */
-    BiobankScreenTRexResult screenPhenotype();
+    TRexBiobankScreeningResult screenPhenotype();
 
 
     /**
@@ -287,36 +319,17 @@ public:
      *
      * @throws std::runtime_error if called without Y matrix (use screenPhenotype() instead).
      */
-    std::vector<BiobankScreenTRexResult> screenPhenotypes();
+    std::vector<TRexBiobankScreeningResult> screenPhenotypes();
 
 
     // ======================================================================
     // Public Getters and Structures
     // ======================================================================
 
-    /**
-     * @brief Get summary statistics across all phenotypes.
-     */
-    struct BiobankScreenTRexStatistics {
-        /** @brief Total number of phenotypes. */
-        std::size_t num_phenotypes;
-
-        /** @brief Number using ordinary T-Rex+Screening result. */
-        std::size_t num_used_screen_ordinary = 0;
-
-        /** @brief Number using bootstrap-CI T-Rex+Screening result. */
-        std::size_t num_used_screen_bootstrap = 0;
-
-        /** @brief Number of phenotypes using fallback T-REx result. */
-        std::size_t num_used_trex = 0;
-
-        /** @brief Average of `estimated_FDR` across all phenotypes: estimates
-         *  for screening results and the target level for fallback results. */
-        double avg_estimated_FDR;
-
-        /** @brief Average number of selected variables across all phenotypes. */
-        double avg_selected_count;
-    };
+    /** @brief Old name of TRexBiobankScreeningStatistics.
+     *  @deprecated Use TRexBiobankScreeningStatistics. */
+    using BiobankScreenTRexStatistics [[deprecated("Use TRexBiobankScreeningStatistics")]] =
+        TRexBiobankScreeningStatistics;
 
 
     /**
@@ -324,10 +337,10 @@ public:
      *
      * @param results Vector of individual phenotype screening results.
      *
-     * @return BiobankScreenTRexStatistics object containing summary statistics.
+     * @return TRexBiobankScreeningStatistics object containing summary statistics.
      */
-    BiobankScreenTRexStatistics getBiobankScreenTRexResult(
-        const std::vector<BiobankScreenTRexResult>& results
+    TRexBiobankScreeningStatistics getBiobankScreenTRexResult(
+        const std::vector<TRexBiobankScreeningResult>& results
     ) const;
 
 
@@ -357,7 +370,7 @@ protected:
      *
      * @return Result from Screening after applying Algorithm 1.
      */
-    BiobankScreenTRexResult screenSinglePhenotype(
+    TRexBiobankScreeningResult screenSinglePhenotype(
         const Eigen::VectorXd& y,
         std::size_t phenotype_index
     );
@@ -387,9 +400,9 @@ protected:
      *
      * @return Final screening result after applying decision logic.
      */
-    BiobankScreenTRexResult applyDecisionLogic(
-        const ts::ScreenTRexSelectionResult& sctrex_result_bootstrap,
-        const ts::ScreenTRexSelectionResult& sctrex_result_ordinary,
+    TRexBiobankScreeningResult applyDecisionLogic(
+        const ts::TRexScreeningResult& sctrex_result_bootstrap,
+        const ts::TRexScreeningResult& sctrex_result_ordinary,
         const Eigen::VectorXd& y,
         std::size_t phenotype_index
     );
@@ -403,7 +416,7 @@ protected:
      *
      * @return Result from T-REx selector.
      */
-    BiobankScreenTRexResult runFallbackTRexSelector(
+    TRexBiobankScreeningResult runFallbackTRexSelector(
         const Eigen::VectorXd& y,
         std::size_t phenotype_idx
     );
@@ -417,7 +430,7 @@ protected:
 
     /** @brief Validate the configured dummy strategy at construction.
      *
-     * @details Mirrors ScreenTRexSelector's gate so an unsupported strategy
+     * @details Mirrors TRexScreeningSelector's gate so an unsupported strategy
      *  fails immediately instead of mid-way through the per-phenotype loop
      *  (the per-phenotype selectors are only built inside screening).
      *
@@ -426,6 +439,10 @@ protected:
     void validateBiobankStrategy() const;
 
 };
+
+/** @brief Old name of TRexBiobankScreeningSelector.
+ *  @deprecated Use TRexBiobankScreeningSelector. */
+using BiobankScreenTRex [[deprecated("Use TRexBiobankScreeningSelector")]] = TRexBiobankScreeningSelector;
 
 // ===================================================================================
 } /* End of namespace trex::trex_selector_methods::ad::trex_biobank_screening */

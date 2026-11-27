@@ -18,8 +18,8 @@
 #include <utils/memmap/memory_mapped_matrix.hpp>
 
 using trex::trex_selector_methods::ad::trex_spca::SPCAMode;
-using trex::trex_selector_methods::ad::trex_spca::TRexSPCA;
-using trex::trex_selector_methods::ad::trex_spca::TRexSPCAControlParameter;
+using trex::trex_selector_methods::ad::trex_spca::TRexSPCASelector;
+using trex::trex_selector_methods::ad::trex_spca::TRexSPCAControl;
 using trex::utils::memmap::AccessMode;
 using trex::utils::memmap::MemoryMappedMatrix;
 //! [includes]
@@ -55,10 +55,10 @@ int main() {
 
     doc.begin("run");
     //! [run]
-    TRexSPCAControlParameter spca_ctrl;
+    TRexSPCAControl spca_ctrl;
     spca_ctrl.gvs_ctrl.trex_ctrl.K = 10;
 
-    TRexSPCA spca(X_map, /*M=*/2, /*tFDR=*/0.1, spca_ctrl, /*seed=*/9, /*verbose=*/false);
+    TRexSPCASelector spca(X_map, /*M=*/2, /*tFDR=*/0.1, spca_ctrl, /*seed=*/9, /*verbose=*/false);
     const auto& res = spca.select();
     print_active_sets(res.active_sets);
     //! [run]
@@ -90,11 +90,11 @@ int main() {
 
     doc.begin("thresholded");
     //! [thresholded]
-    TRexSPCAControlParameter thr_ctrl;
+    TRexSPCAControl thr_ctrl;
     thr_ctrl.mode = SPCAMode::Thresholded;
     thr_ctrl.gvs_ctrl.trex_ctrl.K = 10;
 
-    TRexSPCA thr(X_map, 2, 0.1, thr_ctrl, 9, false);
+    TRexSPCASelector thr(X_map, 2, 0.1, thr_ctrl, 9, false);
     const auto& thr_res = thr.select();
     print_active_sets(thr_res.active_sets);
     std::cout << "cumulative_ev: " << thr_res.cumulative_ev.transpose() << '\n';
@@ -111,7 +111,7 @@ int main() {
         file.getMap() = X;                                 // writes the design into the file
         Eigen::Map<Eigen::MatrixXd> X_file = file.getMap();
 
-        TRexSPCA mapped(X_file, 2, 0.1, spca_ctrl, 9, false);
+        TRexSPCASelector mapped(X_file, 2, 0.1, spca_ctrl, 9, false);
         const auto& mapped_res = mapped.select();
         const bool same_sets = mapped_res.active_sets == res.active_sets;
         std::cout << std::boolalpha;

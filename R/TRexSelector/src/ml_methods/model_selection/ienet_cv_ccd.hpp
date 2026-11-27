@@ -10,8 +10,8 @@
  * @brief Cyclic coordinate-descent Informed Elastic Net solver in the
  *        T-solver objective scaling, plus a K-fold cross-validation wrapper
  *        that selects lambda2 over a DIRECT grid by profiling the lambda1
- *        path.  Companion of `enet_cv_ccd` for the IEN geometry: the selected
- *        lambda2 is consumable AS-IS by `TIENET_Solver`
+ *        path.  Companion of `ElasticNetCV` for the IEN geometry: the selected
+ *        lambda2 is consumable AS-IS by `TSolverIENET`
  *        (no p/2 conversion).
  *
  * @details
@@ -48,7 +48,7 @@
  *   the recommended lambda2 prediction-CV tuner for the T-Rex p > n setting.
  *
  *   **CV wrapper.**  `ienet_cv_ccd` transplants the speed mechanisms of
- *   `enet_cv_ccd` / cv.glmnet onto the 2D (lambda2 x lambda1) scan:
+ *   `ElasticNetCV` / cv.glmnet onto the 2D (lambda2 x lambda1) scan:
  *
  *   1. GRID-ONCE: a warm-started full-data reference scan over the ascending
  *      lambda2 grid truncates each descending lambda1 path with glmnet's
@@ -97,7 +97,7 @@
  *   Empirically `cv_min()` can pin to the LOWER grid edge; prefer the 1SE
  *   rule (`cv_1se()`), which counteracts the bias.
  *
- *   **Public interface** (parity with `enet_cv_ccd` / `ridge_cv_svd`):
+ *   **Public interface** (parity with `ElasticNetCV` / `RidgeCV`):
  *   `fit()`, `cv_min()`, `cv_1se()`, `lambdas()`, `cv_mse()`, `cv_sem()`,
  *   `index_min()`, `index_1se()`; additionally `lambda1s()`,
  *   `lambda1_profile()`, `lambda1_at_min()`, `lambda1_at_1se()`,
@@ -790,7 +790,7 @@ public:
     const Eigen::VectorXd& cv_sem() const noexcept { return cv_sem_; }
 
     /** @brief lambda2 minimising the profiled CV-MSE (`lambda.min`),
-     *         directly consumable by TIENET_Solver. */
+     *         directly consumable by TSolverIENET. */
     double cv_min() const { check_fitted(); return lambdas_(idx_min_); }
 
     /** @brief Largest lambda2 within one SE of the CV-min (`lambda.1se`). */
@@ -868,7 +868,7 @@ public:
 
     /** @brief True when `cv_min()` or `cv_1se()` landed on the FIRST or LAST
      *         lambda2 grid point — the pick is the grid boundary, not an
-     *         optimum (parity with `enet_cv_ccd` / `ridge_cv_svd` /
+     *         optimum (parity with `ElasticNetCV` / `RidgeCV` /
      *         `tikhonov_cv_svd`). A flat profiled curve (low SNR) lands
      *         here with `n_profile_at_edge() == 0`, which is why the guard
      *         (`diagnostics()`) reads both. */
@@ -887,9 +887,9 @@ public:
      *        `cv_min()`: the grid-pick fields (`grid_index`, `at_grid_edge`,
      *        `profile_at_edge`, `profile_at_support_cap`, `boundary_pick`)
      *        describe THAT pick. */
-    lambda2_cv_diagnostics diagnostics(bool one_se) const {
+    Lambda2CVDiagnostics diagnostics(bool one_se) const {
         check_fitted();
-        lambda2_cv_diagnostics d;
+        Lambda2CVDiagnostics d;
         d.ran               = true;
         d.n_profile_at_edge = n_profile_at_edge_;
         d.support_cap       = support_cap_;
@@ -1032,7 +1032,7 @@ private:
         }
         const Eigen::Index K2 = n_lambda2, K1 = n_lambda1;
 
-        // ---- deterministic folds (identical scheme to ridge_cv_svd) --------
+        // ---- deterministic folds (identical scheme to RidgeCV) --------
         std::vector<Eigen::Index> perm(static_cast<std::size_t>(n));
         std::iota(perm.begin(), perm.end(), Eigen::Index{0});
         std::mt19937 rng(seed);

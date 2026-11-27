@@ -15,7 +15,7 @@
  *  numpy.memmap opened with mode "r", an array with the write flag cleared)
  *  is accepted where nothing is written into it and refused everywhere else.
  *  The library decides what writes: dn::writesDesign() for the selectors and
- *  SolverOptions::writesDesign() for the T-solvers.
+ *  TSolverOptions::writesDesign() for the T-solvers.
  */
 // =====================================================================================
 

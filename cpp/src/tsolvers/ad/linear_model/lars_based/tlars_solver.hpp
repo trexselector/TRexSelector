@@ -9,10 +9,10 @@
  *
  * @brief Header file for the Terminating Least Angle Regression (T-LARS) solver.
  *
- * @details The TLARS_Solver class implements the T-LARS algorithm for variable
+ * @details The TSolverLARS class implements the T-LARS algorithm for variable
  * selection in linear regression, with support for dummy variable augmentation.
  * It inherits state management, standardization, and diagnostics from the
- * TSolver_Base class.
+ * TSolverBase class.
  *
  * Furthermore, it serves as mother class for:
  * - TLASSO_solver,
@@ -74,7 +74,7 @@ enum class SolverTypeLarsBased: int {
  *     High-Dimensional Variable Selection with False Discovery Rate Control," Signal Process., vol. 231,
  *     Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.
  */
-class TLARS_Solver : public TSolver_Base {
+class TSolverLARS : public TSolverBase {
 protected:
     // ==========================================================================
     // LARS specific state variables
@@ -127,16 +127,16 @@ protected:
     std::vector<std::size_t> last_dropped_vars_{};
 
     /** @brief Protected constructor for inheritance. */
-    explicit TLARS_Solver(SolverTypeLarsBased type);
+    explicit TSolverLARS(SolverTypeLarsBased type);
 
     /**
      * @brief Protected data constructor for inheritance: the public
      *        constructor with the algorithm variant passed through.
      */
-    TLARS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverLARS(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options,
+                 const TSolverOptions& options,
                  SolverTypeLarsBased algorithm_type);
 
 public:
@@ -146,12 +146,12 @@ public:
     // ============================================================================
 
     /**
-     * @brief Construct a TLARS_Solver object using data and options.
+     * @brief Construct a TSolverLARS object using data and options.
      *
      * @param X Original design matrix (n x p).
      * @param D Dummy design matrix (n x num_dummies).
      * @param y Response vector (n).
-     * @param options Every other input (SolverOptions): preprocessing flags,
+     * @param options Every other input (TSolverOptions): preprocessing flags,
      *        tolerance and tie-breaking. Plain T-LARS reads no family
      *        hyperparameter.
      *
@@ -163,34 +163,34 @@ public:
      *       that you exclude collinear columns a priori before passing X to
      *       the algorithm.
      */
-    TLARS_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverLARS(Eigen::Map<Eigen::MatrixXd>& X,
                  Eigen::Map<Eigen::MatrixXd>& D,
                  Eigen::Map<Eigen::VectorXd>& y,
-                 const SolverOptions& options = SolverOptions{});
+                 const TSolverOptions& options = TSolverOptions{});
 
     /**
      * @brief Default constructor for serialization or deferred initialization.
      * @note X_ must be set via reconnect() before running any algorithm.
      */
-    TLARS_Solver();
+    TSolverLARS();
 
     /**
      * @brief Virtual destructor (X_ pointer is not owned, so not deleted).
      * @note Present for completeness and to support inheritance.
      */
-    virtual ~TLARS_Solver() override = default;
+    virtual ~TSolverLARS() override = default;
 
     /** @brief Deleted copy constructor and assignment. */
-    TLARS_Solver(const TLARS_Solver&) = delete;
+    TSolverLARS(const TSolverLARS&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TLARS_Solver& operator=(const TLARS_Solver&) = delete;
+    TSolverLARS& operator=(const TSolverLARS&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TLARS_Solver(TLARS_Solver&&) = default;
+    TSolverLARS(TSolverLARS&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TLARS_Solver& operator=(TLARS_Solver&&) = delete;
+    TSolverLARS& operator=(TSolverLARS&&) = delete;
 
     // ============================================================================
     // Main Algorithm (Overrides Pure Virtual)
@@ -271,7 +271,7 @@ public:
                static_cast<double>(num_additions_);
     }
 
-    /** @brief TSolver_Base::memoryBytes() plus the lambda sequence (reserved for
+    /** @brief TSolverBase::memoryBytes() plus the lambda sequence (reserved for
      *  maxSteps + 1 entries), the Kahan compensation and the sign and drop records. */
     std::size_t memoryBytes() const noexcept override;
 
@@ -295,7 +295,7 @@ public:
         // no-op round-trip on save.
         int algo_type = static_cast<int>(algo_type_);
         archive(
-            cereal::base_class<TSolver_Base>(this),
+            cereal::base_class<TSolverBase>(this),
             cereal::make_nvp("algo_type", algo_type),
             CEREAL_NVP(lambda_),
             CEREAL_NVP(correlation_compensation_),
@@ -329,9 +329,9 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TLARS_Solver object connected to X and D.
+     * @return Deserialized TSolverLARS object connected to X and D.
      */
-    static TLARS_Solver load(const std::string& filename,
+    static TSolverLARS load(const std::string& filename,
                              Eigen::Map<Eigen::MatrixXd>& X,
                              Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -486,6 +486,10 @@ protected:
 
     virtual void refreshDroppedCorrelation(std::size_t dropped_var);
 };
+
+/** @brief Old name of TSolverLARS.
+ *  @deprecated Use TSolverLARS. */
+using TLARS_Solver [[deprecated("Use TSolverLARS")]] = TSolverLARS;
 
 // ===================================================================================
 

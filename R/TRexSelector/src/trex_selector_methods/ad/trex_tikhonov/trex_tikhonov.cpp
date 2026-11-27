@@ -56,7 +56,7 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::VectorXd>& y,
     double                        tFDR,
-    TRexTikhonovControlParameter  trex_tik_ctrl,
+    TRexTikhonovControl  trex_tik_ctrl,
     int                           seed,
     bool                          verbose
 ) :
@@ -459,7 +459,7 @@ namespace {
  *  The pick is returned unchanged; getLambda2CVDiagnostics() carries the
  *  flags. Not gated on verbose: a boundary pick is a result-quality
  *  condition the caller must see. */
-void warnIfBoundaryPick(const ms::lambda2_cv_diagnostics& d,
+void warnIfBoundaryPick(const ms::Lambda2CVDiagnostics& d,
                         const char* method, double lambda2) {
     const std::string msg =
         ms::boundary_pick_message(d, "TRexTikhonovSelector", method, lambda2);
@@ -471,7 +471,7 @@ void warnIfBoundaryPick(const ms::lambda2_cv_diagnostics& d,
 
 double TRexTikhonovSelector::computeLambda2() const {
 
-    lambda2_cv_diag_ = ms::lambda2_cv_diagnostics{};
+    lambda2_cv_diag_ = ms::Lambda2CVDiagnostics{};
 
     if (trex_tik_ctrl_.lambda_2 >= 0.0) {
         // Fixed user value (>= 0); lambda_2 == 0 -> pure lasso path.
@@ -603,7 +603,7 @@ std::size_t TRexTikhonovSelector::pilotDummyTag() const {
 
 double TRexTikhonovSelector::runLambda2Pilot() {
 
-    const TRexTikhonovControlParameter& c = trex_tik_ctrl_;
+    const TRexTikhonovControl& c = trex_tik_ctrl_;
     const std::size_t K_pilot = std::min(c.pilot_K, trex_ctrl_.K);
     const std::size_t L_0     = c.pilot_L_multiplier * p_;
     const std::size_t half_n  = (n_ + 1) / 2;   // ceil(n / 2), the T-loop's cap
@@ -701,7 +701,7 @@ double TRexTikhonovSelector::runLambda2Pilot() {
     if (!trex_ctrl_.use_memory_mapping) {
         dummy_gen_.clearStored();
     }
-    lambda2_cv_diag_     = ms::lambda2_cv_diagnostics{};
+    lambda2_cv_diag_     = ms::Lambda2CVDiagnostics{};
     lambda2_cv_diag_.ran = true;
     res.seconds = std::chrono::duration<double>(
         std::chrono::steady_clock::now() - t_all).count();

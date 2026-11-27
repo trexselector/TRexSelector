@@ -136,11 +136,11 @@ static int make_selector_seed(unsigned data_seed)
     return static_cast<int>(7000 + data_seed);
 }
 
-static TRexGVSControlParameter make_en_gvs_ctrl(
+static TRexGVSControl make_en_gvs_ctrl(
     const ScalingBugPreset& preset,
     ENSolverType solver)
 {
-    TRexGVSControlParameter gvs_ctrl;
+    TRexGVSControl gvs_ctrl;
     gvs_ctrl.gvs_type = GVSType::EN;
     gvs_ctrl.en_solver = solver;
     gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
@@ -168,8 +168,8 @@ static GVSDGPResult make_hastie_data(
 static GVSScalingRun run_gvs_scaled(
     const GVSDGPResult& dat,
     double tFDR,
-    const TRexGVSControlParameter& gvs_ctrl,
-    TRexControlParameter trex_ctrl,
+    const TRexGVSControl& gvs_ctrl,
+    TRexControl trex_ctrl,
     ScalingMode scaling,
     int seed)
 {
@@ -181,7 +181,7 @@ static GVSScalingRun run_gvs_scaled(
 
     trex_ctrl.scaling_mode = scaling;
 
-    TRexGVSControlParameter trex_gvs_ctrl = gvs_ctrl;
+    TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
     trex_gvs_ctrl.trex_ctrl = trex_ctrl;
 
     TRexGVSSelector selector(

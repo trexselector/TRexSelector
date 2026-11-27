@@ -26,14 +26,14 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructors
 // ==================================================================================
 
-TMP_Solver::TMP_Solver(SolverTypeOMPBased solver_type)
-    : TOMP_Solver(solver_type) {}
+TSolverMP::TSolverMP(SolverTypeOMPBased solver_type)
+    : TSolverOMP(solver_type) {}
 
 // ==================================================================================
 // Main Algorithm: executeStep()
 // ==================================================================================
 
-void TMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverMP::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -113,17 +113,17 @@ void TMP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // MP-Specific Helper Methods
 // ==================================================================================
 
-void TMP_Solver::incrementCoefficient(std::size_t atom_idx) {
+void TSolverMP::incrementCoefficient(std::size_t atom_idx) {
     // beta_A^{n}[i^{n}] = beta_A^{n-1}[i^{n}] + alpha^{n}
     active_coefficients_[static_cast<Eigen::Index>(atom_idx)] += step_size_;
 }
 
-void TMP_Solver::subtractAtom(std::size_t col_idx) {
+void TSolverMP::subtractAtom(std::size_t col_idx) {
     // r^{n} = r^{n-1} - alpha^{n} * x_{i^{n}}
     r_.noalias() -= step_size_ * getColumn(col_idx);
 }
 
-void TMP_Solver::updateBetaPath() {
+void TSolverMP::updateBetaPath() {
     // active_coefficients_ is already the sparse coefficient vector over
     // actives_ — snapshot it directly.
     setRunningBeta(actives_, active_coefficients_);
@@ -135,13 +135,13 @@ void TMP_Solver::updateBetaPath() {
 // ==================================================================================
 
 std::pair<double, std::vector<std::size_t>>
-TMP_Solver::findTiedMaxCorrelations() const {
+TSolverMP::findTiedMaxCorrelations() const {
     // Scan ALL non-dropped variables (atom re-selection is allowed in MP)
     return findTiedMaxCorrelationsAllNonDropped();
 }
 
 std::vector<int>
-TMP_Solver::updateActiveSet(const std::vector<std::size_t>& new_vars) {
+TSolverMP::updateActiveSet(const std::vector<std::size_t>& new_vars) {
 
     std::vector<int> actions_this_step;
 
@@ -177,7 +177,7 @@ TMP_Solver::updateActiveSet(const std::vector<std::size_t>& new_vars) {
     return actions_this_step;
 }
 
-void TMP_Solver::updateCorrelations() {
+void TSolverMP::updateCorrelations() {
     // c^n = X^T r for ALL non-dropped variables (to allow re-selection)
     refreshAllCorrelations();
 }
@@ -186,8 +186,8 @@ void TMP_Solver::updateCorrelations() {
 // Memory report
 // ==================================================================================
 
-std::size_t TMP_Solver::memoryBytes() const noexcept {
-    return TOMP_Solver::memoryBytes() +
+std::size_t TSolverMP::memoryBytes() const noexcept {
+    return TSolverOMP::memoryBytes() +
            solver_utils::memory_bytes::bytesOf(active_coefficients_);
 }
 
@@ -195,12 +195,12 @@ std::size_t TMP_Solver::memoryBytes() const noexcept {
 // De-/Serialization
 // ==================================================================================
 
-void TMP_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverMP::save(const std::string& filename) const { saveImpl(*this, filename); }
 
-TMP_Solver TMP_Solver::load(const std::string& filename,
+TSolverMP TSolverMP::load(const std::string& filename,
                             Eigen::Map<Eigen::MatrixXd>& X,
                             Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TMP_Solver>(filename, X, D);
+    return loadImpl<TSolverMP>(filename, X, D);
 }
 
 // ==================================================================================

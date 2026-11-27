@@ -68,12 +68,12 @@ void run_trex_da_test(Eigen::Index n,
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = K;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = solver;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = method;
     da_ctrl.trex_ctrl = trex_ctrl;
 
@@ -154,12 +154,12 @@ Eigen::VectorXi run_trex_da_select(Eigen::Index n,
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.scaling_mode = scaling_mode;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = method;
     da_ctrl.trex_ctrl = trex_ctrl;
 
@@ -213,11 +213,11 @@ Eigen::VectorXi run_trex_da_bt_select(Eigen::Index n,
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method            = DAMethod::BT;
     da_ctrl.bt_selection_mode = bt_mode;
     da_ctrl.trex_ctrl         = trex_ctrl;
@@ -234,7 +234,7 @@ TEST(TRexDATest, Method_BT_SelectionModeField) {
     const Eigen::Index n = 150, p = 300;
 
     // The default candidate policy must be the FDR-controlling FeasibleOnly.
-    TRexDAControlParameter da_default;
+    TRexDAControl da_default;
     EXPECT_EQ(da_default.bt_selection_mode, BTSelectionMode::FeasibleOnly);
 
     Eigen::VectorXi sel_feasible =
@@ -266,7 +266,7 @@ TEST(TRexDATest, Validation_ThrowsOnInvalidParameters) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter da_params;
+    TRexDAControl da_params;
 
     // 1. Invalid rho_thr_DA
     da_params.rho_thr_DA = 1.5; // Bounds are [0, 1]
@@ -330,7 +330,7 @@ TEST(TRexDATest, Result_GridMethodsReportTheReferenceThreshold) {
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
     for (const DAMethod method : {DAMethod::BT, DAMethod::NN}) {
-        TRexDAControlParameter da_ctrl;
+        TRexDAControl da_ctrl;
         da_ctrl.method = method;
         da_ctrl.trex_ctrl.K = 5;
 
@@ -377,10 +377,10 @@ TEST(TRexDATest, Method_AR1_SKIPL_DoesNotThrow) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter tc_params;
+    TRexControl tc_params;
     tc_params.lloop_strategy = LLoopStrategy::SKIPL;
 
-    TRexDAControlParameter da_params;
+    TRexDAControl da_params;
     da_params.method = DAMethod::AR1;
     da_params.trex_ctrl = tc_params;
 
@@ -406,11 +406,11 @@ TEST(TRexDATest, DataIntegrity_XRestoredAfterSelect) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = DAMethod::AR1;
     da_ctrl.trex_ctrl = trex_ctrl;
 
@@ -432,11 +432,11 @@ TEST(TRexDATest, DataIntegrity_XRestoredOnDestruction) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = DAMethod::AR1;
     da_ctrl.trex_ctrl = trex_ctrl;
 
@@ -500,7 +500,7 @@ TEST(TRexDATest, Deflation_PenaltyOfTheLastStepForEveryMethod) {
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
 
-        TRexDAControlParameter da_ctrl;
+        TRexDAControl da_ctrl;
         da_ctrl.method = method;
         TRexDASelectorProbe trex(X_map, y_map, 0.1, da_ctrl, 42, false);
         prepare(trex);
@@ -606,7 +606,7 @@ TEST(TRexDATest, Estimation_AR1YuleWalkerRecoversKnownRho) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.method = DAMethod::AR1;
 
     // The constructor normalizes X in place; the estimator runs on the
@@ -635,7 +635,7 @@ TEST(TRexDATest, Setup_AR1WindowFollowsCoefficientMagnitude) {
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
 
-        TRexDAControlParameter da_ctrl;
+        TRexDAControl da_ctrl;
         da_ctrl.method = DAMethod::AR1;
         da_ctrl.cor_coef = cor_coef;
         da_ctrl.rho_thr_DA = rho_thr_DA;
@@ -670,7 +670,7 @@ TEST(TRexDATest, Setup_UnusableCoefficientIsEstimated) {
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), X_run.rows(), X_run.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y_run.data(), y_run.size());
 
-        TRexDAControlParameter da_ctrl;
+        TRexDAControl da_ctrl;
         da_ctrl.method = method;
         da_ctrl.cor_coef = cor_coef;
 
@@ -773,7 +773,7 @@ TEST(TRexDATest, Method_PriorGroups_ConstrainedSubclusteringStructure) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.prior_groups.resize(1);
     for (Eigen::Index j = 0; j < p; ++j) {
         da_ctrl.prior_groups[0].push_back(j / group_size);
@@ -835,7 +835,7 @@ TEST(TRexDATest, Method_PriorGroups_FinestCommonRefinement) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.prior_groups.resize(2);
     for (Eigen::Index j = 0; j < p; ++j) {
         da_ctrl.prior_groups[0].push_back(j / 4);  // groups of 4
@@ -880,11 +880,11 @@ TEST(TRexDATest, Method_PriorGroups_Select) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.trex_ctrl = trex_ctrl;
     da_ctrl.prior_groups.resize(1);
     for (Eigen::Index j = 0; j < p; ++j) {
@@ -915,7 +915,7 @@ TEST(TRexDATest, Method_PriorGroups_NegativeLabelThrows) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexDAControlParameter da_ctrl;
+    TRexDAControl da_ctrl;
     da_ctrl.prior_groups = {{0, 0, 1, 1, 2, 2, 3, 3, -1, 4}};
 
     EXPECT_THROW({
@@ -971,13 +971,13 @@ BandRun runWithBand(const ClusteredDesign& d, const double* alpha) {
     Eigen::VectorXd yc = d.y;
     Eigen::Map<Eigen::MatrixXd> X_map(Xc.data(), Xc.rows(), Xc.cols());
     Eigen::Map<Eigen::VectorXd> y_map(yc.data(), yc.size());
-    TRexControlParameter trex_ctrl;
+    TRexControl trex_ctrl;
     trex_ctrl.K = 50;
     trex_ctrl.max_dummy_multiplier = 2;
     trex_ctrl.solver_type = disp::SolverTypeForTRex::TOMP;
     if (alpha != nullptr) { trex_ctrl.solver_params.exch_tie_alpha = *alpha; }
     if constexpr (std::is_same_v<Selector, TRexDASelector>) {
-        TRexDAControlParameter da_ctrl;
+        TRexDAControl da_ctrl;
         da_ctrl.method = DAMethod::BT;
         da_ctrl.trex_ctrl = trex_ctrl;
         TRexDASelector selector(X_map, y_map, 0.2, da_ctrl, 5, false);
@@ -995,7 +995,7 @@ BandRun runWithBand(const ClusteredDesign& d, const double* alpha) {
 
 /** @brief A band left to the selector runs with the DA width, and 0 switches it off. */
 TEST(TRexDATest, Band_LeftToTheSelectorRunsWithTheDAWidth) {
-    EXPECT_EQ(TRexControlParameter().solver_params.exch_tie_alpha, -1.0);
+    EXPECT_EQ(TRexControl().solver_params.exch_tie_alpha, -1.0);
     EXPECT_EQ(DA_EXCH_TIE_ALPHA, 0.25);
 
     const ClusteredDesign d;

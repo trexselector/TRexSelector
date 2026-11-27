@@ -93,10 +93,10 @@ const ModeCase kModes[] = {
 TEST(DummyScaling, GenerateAndStoreColumnsCenteredAndScaled) {
     const std::size_t n = 40, p = 25, K = 3;
 
-    const dummygen::Distribution dists[] = {
-        dummygen::Distribution::Normal(),
-        dummygen::Distribution::Uniform(),
-        dummygen::Distribution::Rademacher(),
+    const dummygen::DummyDistribution dists[] = {
+        dummygen::DummyDistribution::Normal(),
+        dummygen::DummyDistribution::Uniform(),
+        dummygen::DummyDistribution::Rademacher(),
     };
 
     for (const auto& mc : kModes) {
@@ -119,9 +119,9 @@ TEST(DummyScaling, GenerateAndStoreColumnsCenteredAndScaled) {
 TEST(DummyScaling, NoneMapsDummiesToTheUnitL2Standard) {
     const std::size_t n = 40, p = 25, K = 3;
 
-    DummyGenerator gen_none(n, dummygen::Distribution::Normal(),
+    DummyGenerator gen_none(n, dummygen::DummyDistribution::Normal(),
                             /*seed=*/321, /*verbose=*/false, dn::ScalingMode::NONE);
-    DummyGenerator gen_l2(n, dummygen::Distribution::Normal(),
+    DummyGenerator gen_l2(n, dummygen::DummyDistribution::Normal(),
                           /*seed=*/321, /*verbose=*/false, dn::ScalingMode::L2);
     gen_none.generateAndStore(K, p, /*l_tag=*/0);
     gen_l2.generateAndStore(K, p, /*l_tag=*/0);
@@ -142,7 +142,7 @@ TEST(DummyScaling, ExpandStoredKeepsAllBlocksOnScale) {
     const std::size_t n = 35, p = 20, K = 2, L_max = 5;
 
     for (const auto& mc : kModes) {
-        DummyGenerator gen(n, dummygen::Distribution::Normal(),
+        DummyGenerator gen(n, dummygen::DummyDistribution::Normal(),
                            /*seed=*/11, /*verbose=*/false, mc.mode);
         gen.generateAndStore(K, p, /*l_tag=*/0);
         for (std::size_t L = 2; L <= L_max; ++L) { gen.expandStored(p); }
@@ -165,7 +165,7 @@ TEST(DummyScaling, PermutationPreservesScaleAndContentExactly) {
     const std::size_t n = 30, p = 15, K = 5;
 
     for (const auto& mc : kModes) {
-        DummyGenerator gen(n, dummygen::Distribution::Normal(),
+        DummyGenerator gen(n, dummygen::DummyDistribution::Normal(),
                            /*seed=*/7, /*verbose=*/false, mc.mode);
 
         const std::size_t base_id = 99u;
@@ -201,7 +201,7 @@ TEST(DummyScaling, ExpandBaseDummiesGrownBaseOnScale) {
     const std::size_t n = 30, p = 15, L_max = 4;
 
     for (const auto& mc : kModes) {
-        DummyGenerator gen(n, dummygen::Distribution::Normal(),
+        DummyGenerator gen(n, dummygen::DummyDistribution::Normal(),
                            /*seed=*/13, /*verbose=*/false, mc.mode);
 
         const std::size_t base_id = 5u;
@@ -226,7 +226,7 @@ TEST(DummyScaling, PermuteIntoMatchesGetPermuted) {
     const std::size_t n = 25, p = 12, K = 4;
 
     for (const auto& mc : kModes) {
-        DummyGenerator gen(n, dummygen::Distribution::Normal(),
+        DummyGenerator gen(n, dummygen::DummyDistribution::Normal(),
                            /*seed=*/3, /*verbose=*/false, mc.mode);
         const std::size_t base_id = 17u;
         gen.storeBaseDummies(gen.generate(p, base_id), base_id);

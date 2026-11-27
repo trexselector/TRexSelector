@@ -263,7 +263,7 @@ Lambda2PowerRuleResult run_lambda2_power_rule(const Lambda2PowerRuleConfig& cfg,
 inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd> X,
                                                           Eigen::Map<Eigen::VectorXd> y,
                                                           double tFDR,
-                                                          TRexTikhonovControlParameter ctrl,
+                                                          TRexTikhonovControl ctrl,
                                                           int seed,
                                                           const Lambda2PowerRuleConfig& cfg,
                                                           bool verbose = false)
@@ -289,7 +289,7 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(Eigen::Map<Eigen::Matr
 inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(const Eigen::MatrixXd& X,
                                                           const Eigen::VectorXd& y,
                                                           double tFDR,
-                                                          TRexTikhonovControlParameter ctrl,
+                                                          TRexTikhonovControl ctrl,
                                                           int seed,
                                                           const Lambda2PowerRuleConfig& cfg,
                                                           bool verbose = false)
@@ -312,7 +312,7 @@ inline Lambda2PowerRuleResult tikhonov_lambda2_power_rule(const Eigen::MatrixXd&
 inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd> X,
                                                      Eigen::Map<Eigen::VectorXd> y,
                                                      double tFDR,
-                                                     trex_gvs::TRexGVSControlParameter ctrl,
+                                                     trex_gvs::TRexGVSControl ctrl,
                                                      int seed,
                                                      const Lambda2PowerRuleConfig& cfg,
                                                      bool verbose = false)
@@ -337,7 +337,7 @@ inline Lambda2PowerRuleResult gvs_lambda2_power_rule(Eigen::Map<Eigen::MatrixXd>
 inline Lambda2PowerRuleResult gvs_lambda2_power_rule(const Eigen::MatrixXd& X,
                                                      const Eigen::VectorXd& y,
                                                      double tFDR,
-                                                     trex_gvs::TRexGVSControlParameter ctrl,
+                                                     trex_gvs::TRexGVSControl ctrl,
                                                      int seed,
                                                      const Lambda2PowerRuleConfig& cfg,
                                                      bool verbose = false)

@@ -4,7 +4,7 @@
 /**
  * @file test_tsolvers_initialization.cpp
  * @brief Unit tests verifying initialization behavior (preprocessing, mappings,
- * collinearity checks) for TSolver_Base via the concrete proxy TLARS_Solver.
+ * collinearity checks) for TSolverBase via the concrete proxy TSolverLARS.
  */
 // ========================================================================================
 
@@ -62,8 +62,8 @@ TEST_F(TSolverInitTest, NormalizationAndCentering) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    // Creating the solver triggers the preprocessing inside TSolver_Base
-    TLARS_Solver solver(X_map, D_map, y_map);
+    // Creating the solver triggers the preprocessing inside TSolverBase
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // After centering and scaling, each column should have a zero mean and unit L2-norm
     for (int j = 0; j < X.cols(); ++j) {
@@ -90,7 +90,7 @@ TEST_F(TSolverInitTest, CollinearDroppingLogic) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // Since we forced dependent columns, there should be dropped indices
     const auto& dropped = solver.getDroppedIndices();
@@ -113,7 +113,7 @@ TEST_F(TSolverInitTest, NearConstantColumnIsDropped) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     const auto& dropped = solver.getDroppedIndices();
     EXPECT_TRUE(std::find(dropped.begin(), dropped.end(), 3u) != dropped.end())
@@ -131,7 +131,7 @@ TEST_F(TSolverInitTest, RestoreReversesPreprocessing) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TLARS_Solver solver(X_map, D_map, y_map);
+    TSolverLARS solver(X_map, D_map, y_map);
 
     // Preprocessing mutated the buffers in place
     ASSERT_FALSE(X.isApprox(X0, 1e-12));
@@ -152,19 +152,19 @@ TEST_F(TSolverInitTest, DefaultTieSeedIsReproducible) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    trex::tsolvers::ad::SolverOptions reader;
+    trex::tsolvers::ad::TSolverOptions reader;
     reader.normalize = false;
     reader.intercept = false;
     EXPECT_EQ(reader.tie_seed, 0);
 
-    TLARS_Solver a(X_map, D_map, y_map, reader);
-    TLARS_Solver b(X_map, D_map, y_map, reader);
+    TSolverLARS a(X_map, D_map, y_map, reader);
+    TSolverLARS b(X_map, D_map, y_map, reader);
     EXPECT_TRUE(a.getRNG() == b.getRNG());
 
-    trex::tsolvers::ad::SolverOptions entropy = reader;
+    trex::tsolvers::ad::TSolverOptions entropy = reader;
     entropy.tie_seed = -1;
-    TLARS_Solver c(X_map, D_map, y_map, entropy);
-    TLARS_Solver d(X_map, D_map, y_map, entropy);
+    TSolverLARS c(X_map, D_map, y_map, entropy);
+    TSolverLARS d(X_map, D_map, y_map, entropy);
     EXPECT_FALSE(c.getRNG() == d.getRNG());  // equal with probability 2^-32
 }
 
@@ -177,21 +177,21 @@ TEST_F(TSolverInitTest, ThreadBudgetDefaultsToSerial) {
     Eigen::Map<Eigen::MatrixXd> D_map(D.data(), D.rows(), D.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    trex::tsolvers::ad::SolverOptions reader;
+    trex::tsolvers::ad::TSolverOptions reader;
     reader.normalize = false;
     reader.intercept = false;
     EXPECT_EQ(reader.n_threads, 1);
 
-    TLARS_Solver serial(X_map, D_map, y_map, reader);
+    TSolverLARS serial(X_map, D_map, y_map, reader);
     EXPECT_EQ(serial.getNumThreads(), 1);
 
-    trex::tsolvers::ad::SolverOptions zero = reader;
+    trex::tsolvers::ad::TSolverOptions zero = reader;
     zero.n_threads = 0;   // no "every core" value: below 1 throws
-    EXPECT_THROW(TLARS_Solver(X_map, D_map, y_map, zero), std::invalid_argument);
+    EXPECT_THROW(TSolverLARS(X_map, D_map, y_map, zero), std::invalid_argument);
 
-    trex::tsolvers::ad::SolverOptions negative = reader;
+    trex::tsolvers::ad::TSolverOptions negative = reader;
     negative.n_threads = -1;
-    EXPECT_THROW(TLARS_Solver(X_map, D_map, y_map, negative), std::invalid_argument);
+    EXPECT_THROW(TSolverLARS(X_map, D_map, y_map, negative), std::invalid_argument);
 
     serial.setNumThreads(4);
     EXPECT_EQ(serial.getNumThreads(), 4);

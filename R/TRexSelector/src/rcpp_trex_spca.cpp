@@ -1,5 +1,5 @@
 // =============================================================================
-// rcpp_trex_spca.cpp - Rcpp bindings for TRexSPCA
+// rcpp_trex_spca.cpp - Rcpp bindings for TRexSPCASelector
 // =============================================================================
 
 // [[Rcpp::plugins(cpp20)]]
@@ -23,15 +23,15 @@ namespace tg = trex::trex_selector_methods::ad::trex_gvs;
 // =============================================================================
 
 /**
- * @brief Parses an R list into a TRexSPCAControlParameter C++ struct.
+ * @brief Parses an R list into a TRexSPCAControl C++ struct.
  *
  * @param spca_ctrl_list R list of trex_spca_control(): mode, lambda2_ridge_loadings,
  *   gvs_type, lambda_2, lambda2_method, en_solver, tenet_aug_use_lars, K,
  *   max_dummy_multiplier. Other keys are not read.
- * @return Populated TRexSPCAControlParameter instance.
+ * @return Populated TRexSPCAControl instance.
  */
-TRexSPCAControlParameter parse_spca_control(const Rcpp::List& spca_ctrl_list) {
-    TRexSPCAControlParameter ctrl;
+TRexSPCAControl parse_spca_control(const Rcpp::List& spca_ctrl_list) {
+    TRexSPCAControl ctrl;
 
     if (spca_ctrl_list.containsElementNamed("mode")) {
         std::string mode_str = spca_ctrl_list["mode"];
@@ -128,9 +128,9 @@ static Rcpp::List spca_select_on_map(
     int seed,
     bool verbose
 ) {
-    TRexSPCAControlParameter ctrl = parse_spca_control(spca_ctrl_list);
+    TRexSPCAControl ctrl = parse_spca_control(spca_ctrl_list);
 
-    TRexSPCA spca(X_map, static_cast<Eigen::Index>(M), tFDR, ctrl, seed, verbose);
+    TRexSPCASelector spca(X_map, static_cast<Eigen::Index>(M), tFDR, ctrl, seed, verbose);
     const TRexSPCAResult& res = spca.select();   // wrapped once below, not copied here
 
     // Convert active sets to R-friendly 1-based integer vectors
@@ -187,7 +187,7 @@ Rcpp::List trex_spca_select(
 ) {
     // Zero-copy view over the R buffer (X is REALSXP by contract — the R6 layer
     // enforces double storage, so no silent integer→double copy happens here).
-    // No prot slot needed: the TRexSPCA object lives and dies within this call,
+    // No prot slot needed: the TRexSPCASelector object lives and dies within this call,
     // so its map never outlives X.
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     return spca_select_on_map(X_map, M, tFDR, spca_ctrl_list, seed, verbose);

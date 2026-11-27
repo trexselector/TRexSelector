@@ -22,11 +22,11 @@
 
 using trex::ml_methods::scaler_methods::ZScoreScaler;
 using trex::ml_methods::scaler_methods::LpNormScaler;
-using trex::ml_methods::ridge::RidgeSolver;
-using trex::ml_methods::model_selection::ridge_cv_svd;
-using trex::ml_methods::model_selection::enet_gaussian;
-using trex::ml_methods::model_selection::enet_cv_ccd;
-using trex::ml_methods::svd::SVDSolver;
+using trex::ml_methods::ridge::Ridge;
+using trex::ml_methods::model_selection::RidgeCV;
+using trex::ml_methods::model_selection::ElasticNet;
+using trex::ml_methods::model_selection::ElasticNetCV;
+using trex::ml_methods::svd::SVD;
 using trex::ml_methods::svd::SVDResult;
 using trex::ml_methods::pca::PCA;
 using trex::ml_methods::pca::PCAResult;
@@ -82,10 +82,10 @@ int main() {
 
     doc.begin("ridge");
     //! [ridge]
-    Eigen::VectorXd b_ridge = RidgeSolver::solve(X, y, /*lambda=*/1.0);
+    Eigen::VectorXd b_ridge = Ridge::solve(X, y, /*lambda=*/1.0);
     std::cout << "ridge, first five coefficients: " << b_ridge.head(5).transpose() << '\n';
 
-    ridge_cv_svd cv;
+    RidgeCV cv;
     cv.fit(X, y, /*n_folds=*/5, /*n_lambda=*/50);
     std::cout << std::setprecision(4) << "lambda_min: " << cv.cv_min()
               << "  lambda_1se: " << cv.cv_1se() << std::setprecision(3) << '\n';
@@ -110,7 +110,7 @@ int main() {
 
     doc.begin("enet");
     //! [enet]
-    enet_gaussian en;
+    ElasticNet en;
     en.fit(X, y, /*alpha=*/0.5, /*n_lambda=*/50);
     const Eigen::MatrixXd& B = en.coef();   // the path can stop before n_lambda points
     const Eigen::Index last = B.cols() - 1;
@@ -125,7 +125,7 @@ int main() {
 
     doc.begin("enet-cv");
     //! [enet-cv]
-    enet_cv_ccd encv;
+    ElasticNetCV encv;
     encv.fit(X, y, /*alpha=*/0.5, /*n_folds=*/5, /*n_lambda=*/50);
     std::cout << std::setprecision(4) << "lambda_min: " << encv.cv_min()
               << "  lambda_1se: " << encv.cv_1se() << std::setprecision(3) << '\n';
@@ -133,7 +133,7 @@ int main() {
 
     doc.begin("svd");
     //! [svd]
-    SVDSolver solver;
+    SVD solver;
     SVDResult svd_res = solver.compute(X, /*M=*/3);
     std::cout << "U: " << svd_res.U.rows() << " x " << svd_res.U.cols()
               << "  V: " << svd_res.V.rows() << " x " << svd_res.V.cols() << '\n';

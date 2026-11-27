@@ -8,20 +8,20 @@ using namespace trex::trex_selector_methods::ad::trex_core;
 using namespace trex::trex_selector_methods::ad::trex_da;
 
 // Expose the parse_control_parameter from rcpp_trex_selector.cpp
-extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
-extern void validate_core_solver_type(const TRexControlParameter& params);
+extern TRexControl parse_control_parameter(const Rcpp::List& control);
+extern void validate_core_solver_type(const TRexControl& params);
 
 /**
- * @brief Parses an R list into a TRexDAControlParameter C++ struct.
+ * @brief Parses an R list into a TRexDAControl C++ struct.
  *
  * Extracts dependency-aware specific configurations like da_method (BT, AR1,
  * EQUI, NN), correlation coefficients, and threshold levels.
  *
  * @param control List of parameters passed from R.
- * @return Populated TRexDAControlParameter instance.
+ * @return Populated TRexDAControl instance.
  */
-TRexDAControlParameter parse_da_parameter(const Rcpp::List& control) {
-    TRexDAControlParameter params;
+TRexDAControl parse_da_parameter(const Rcpp::List& control) {
+    TRexDAControl params;
 
     if (control.containsElementNamed("da_method")) {
         std::string method = control["da_method"];
@@ -91,8 +91,8 @@ XPtr<RTRexDASelector> trex_da_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexDAControlParameter da_control = parse_da_parameter(da_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    TRexDAControl da_control = parse_da_parameter(da_control_list);
+    TRexControl trex_control = parse_control_parameter(trex_control_list);
     validate_core_solver_type(trex_control);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
@@ -113,8 +113,8 @@ XPtr<RTRexDASelector> trex_da_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    TRexDAControlParameter da_control = parse_da_parameter(da_control_list);
-    TRexControlParameter trex_control = parse_control_parameter(trex_control_list);
+    TRexDAControl da_control = parse_da_parameter(da_control_list);
+    TRexControl trex_control = parse_control_parameter(trex_control_list);
     validate_core_solver_type(trex_control);
     // Pin the mmap holder and y until the finalizer has run (see above).
     return XPtr<RTRexDASelector>(new RTRexDASelector(mapped_design_for(*X_ptr, trex_control), y_map, tFDR,

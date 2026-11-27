@@ -93,7 +93,7 @@ public:
      */
     explicit DummyGenerator(
         std::size_t n,
-        dummygen::Distribution distribution = dummygen::Distribution::Normal(),
+        dummygen::DummyDistribution distribution = dummygen::DummyDistribution::Normal(),
         int seed = -1,
         bool verbose = false,
         data_normalizer::ScalingMode scaling_mode = data_normalizer::ScalingMode::L2)
@@ -832,7 +832,7 @@ private:
     std::size_t n_;
 
     /** @brief Distribution type for dummy generation. */
-    dummygen::Distribution distribution_;
+    dummygen::DummyDistribution distribution_;
 
     /** @brief Flag to print progress. */
     bool verbose_;

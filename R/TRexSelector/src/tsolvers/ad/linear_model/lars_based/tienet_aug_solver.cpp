@@ -4,8 +4,8 @@
 /**
  * @file tienet_aug_solver.cpp
  *
- * @brief Implementation of TIENETAug_Solver: thin wrapper around
- * TLASSO_Solver / TLARS_Solver on a group-informed row-augmented system
+ * @brief Implementation of TSolverIENETAug: thin wrapper around
+ * TSolverLASSO / TSolverLARS on a group-informed row-augmented system
  * encoding the Informed Elastic Net (IEN) penalty.
  */
 // ============================================================================
@@ -35,7 +35,7 @@ using MapVecXd = Eigen::Map<Eigen::VectorXd>;
 // Static helpers
 // ============================================================================
 
-Eigen::MatrixXd TIENETAug_Solver::buildGroupBlock(
+Eigen::MatrixXd TSolverIENETAug::buildGroupBlock(
     const Eigen::VectorXi& groups,
     std::size_t M,
     double lambda2)
@@ -63,7 +63,7 @@ Eigen::MatrixXd TIENETAug_Solver::buildGroupBlock(
 
 // ----------------------------------------------------------------------------
 
-void TIENETAug_Solver::centerAndScaleColumns(Eigen::MatrixXd& A,
+void TSolverIENETAug::centerAndScaleColumns(Eigen::MatrixXd& A,
                                              double eps,
                                              ScalingMode scaling_mode,
                                              bool center,
@@ -92,7 +92,7 @@ void TIENETAug_Solver::centerAndScaleColumns(Eigen::MatrixXd& A,
 
 // ----------------------------------------------------------------------------
 
-void TIENETAug_Solver::buildMaps() {
+void TSolverIENETAug::buildMaps() {
     X_aug_map_ = std::make_unique<MapMatXd>(
         X_aug_owned_.data(), X_aug_owned_.rows(), X_aug_owned_.cols());
     D_aug_map_ = std::make_unique<MapMatXd>(
@@ -101,13 +101,13 @@ void TIENETAug_Solver::buildMaps() {
         y_aug_owned_.data(), y_aug_owned_.size());
 }
 
-void TIENETAug_Solver::buildInnerSolver(bool normalize,
+void TSolverIENETAug::buildInnerSolver(bool normalize,
                                         bool intercept,
                                         bool precentered,
                                         bool verbose,
                                         ScalingMode scaling_mode,
                                         long long tie_seed, int n_threads) {
-    SolverOptions inner;
+    TSolverOptions inner;
     inner.normalize    = normalize;
     inner.intercept    = intercept;
     inner.precentered  = precentered;
@@ -118,11 +118,11 @@ void TIENETAug_Solver::buildInnerSolver(bool normalize,
     inner.n_threads    = n_threads;
     if (use_lars_inner_) {
         // Pure-LARS inner solver: never drops variables (matches R type="lar").
-        inner_ = std::make_unique<TLARS_Solver>(
+        inner_ = std::make_unique<TSolverLARS>(
             *X_aug_map_, *D_aug_map_, *y_aug_map_, inner);
     } else {
         // Default LARS-LASSO inner solver: can drop variables on sign change.
-        inner_ = std::make_unique<TLASSO_Solver>(
+        inner_ = std::make_unique<TSolverLASSO>(
             *X_aug_map_, *D_aug_map_, *y_aug_map_, inner);
     }
 }
@@ -131,14 +131,14 @@ void TIENETAug_Solver::buildInnerSolver(bool normalize,
 // Constructor
 // ============================================================================
 
-TIENETAug_Solver::TIENETAug_Solver(
+TSolverIENETAug::TSolverIENETAug(
     MapMatXd& X,
     MapMatXd& D,
     MapVecXd& y,
     const Eigen::VectorXi& groups,
-    const SolverOptions& options
+    const TSolverOptions& options
 ) {
-    // SolverOptions fields consumed here.
+    // TSolverOptions fields consumed here.
     const double      lambda2        = options.lambda2;
     const bool        normalize      = options.normalize;
     const bool        intercept      = options.intercept;
@@ -150,7 +150,7 @@ TIENETAug_Solver::TIENETAug_Solver(
     // The wrapper builds its base by hand: the budget is set here and on the inner solver
     n_threads_ = resolveThreadBudget(options.n_threads);
     if (lambda2 < 0.0) {
-        throw std::invalid_argument("TIENETAug_Solver: lambda2 must be non-negative.");
+        throw std::invalid_argument("TSolverIENETAug: lambda2 must be non-negative.");
     }
 
     const std::size_t p = static_cast<std::size_t>(X.cols());
@@ -159,14 +159,14 @@ TIENETAug_Solver::TIENETAug_Solver(
     // ---- Validate the group structure --------------------------------------
     if (static_cast<std::size_t>(groups.size()) != p) {
         throw std::invalid_argument(
-            "TIENETAug_Solver: groups length must equal the number of "
+            "TSolverIENETAug: groups length must equal the number of "
             "predictors p.");
     }
     Eigen::Index max_id = -1;
     for (Eigen::Index j = 0; j < groups.size(); ++j) {
         if (groups(j) < 0) {
             throw std::invalid_argument(
-                "TIENETAug_Solver: groups must be 0-based non-negative ids.");
+                "TSolverIENETAug: groups must be 0-based non-negative ids.");
         }
         if (groups(j) > max_id) { max_id = groups(j); }
     }
@@ -179,7 +179,7 @@ TIENETAug_Solver::TIENETAug_Solver(
         for (std::size_t m = 0; m < M; ++m) {
             if (!seen[m]) {
                 throw std::invalid_argument(
-                    "TIENETAug_Solver: group ids are non-contiguous (id " +
+                    "TSolverIENETAug: group ids are non-contiguous (id " +
                     std::to_string(m) + " is missing).");
             }
         }
@@ -211,7 +211,7 @@ TIENETAug_Solver::TIENETAug_Solver(
     if (lambda2_ == 0.0) {
         // lambda2 = 0: the group penalty vanishes. TIENETAug collapses to a
         // plain TLASSO / TLARS on the original data — no augmentation rows
-        // (mirror of TENETAug_Solver's degenerate path; using the (n+M)-row
+        // (mirror of TSolverENETAug's degenerate path; using the (n+M)-row
         // system here would inflate effective_n_).
         X_aug_owned_ = Eigen::MatrixXd(X);
         D_aug_owned_ = Eigen::MatrixXd(D);
@@ -222,7 +222,7 @@ TIENETAug_Solver::TIENETAug_Solver(
         // so the group-ridge block B tiles once per layer.
         if (L % p != 0) {
             throw std::invalid_argument(
-                "TIENETAug_Solver: D.cols() must be a multiple of X.cols() "
+                "TSolverIENETAug: D.cols() must be a multiple of X.cols() "
                 "(one group-aligned dummy layer per p columns).");
         }
         const std::size_t w = L / p;  // number of dummy layers
@@ -251,7 +251,7 @@ TIENETAug_Solver::TIENETAug_Solver(
         // which rescales the augmented system (`X_Dummy <- scale(X_Dummy)`)
         // and thereby solves the perturbed problem described above. The
         // pre-augmentation convention makes this wrapper exactly equivalent
-        // to the native TIENET_Solver path.
+        // to the native TSolverIENET path.
         Eigen::MatrixXd X_data = X;
         Eigen::MatrixXd D_data = D;
         Eigen::VectorXd y_data = y;
@@ -296,13 +296,13 @@ TIENETAug_Solver::TIENETAug_Solver(
 // Core interface delegation
 // ============================================================================
 
-void TIENETAug_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverIENETAug::executeStep(std::size_t T_stop, bool early_stop) {
     inner_->executeStep(T_stop, early_stop);
     syncDiagnosticsFromInner();
 }
 
 
-void TIENETAug_Solver::syncDiagnosticsFromInner() {
+void TSolverIENETAug::syncDiagnosticsFromInner() {
     if (!inner_) { return; }
 
     RSS_             = inner_->getRSS();
@@ -326,17 +326,17 @@ void TIENETAug_Solver::syncDiagnosticsFromInner() {
 }
 
 
-double TIENETAug_Solver::getIntercept(int step) const {
+double TSolverIENETAug::getIntercept(int step) const {
     return inner_->getIntercept(step);
 }
 
-SparseBetaPath TIENETAug_Solver::getBetaPathSparse() const {
+SparseBetaPath TSolverIENETAug::getBetaPathSparse() const {
     // Coefficients on the normalized augmented-column scale (no global
     // rescaling factor exists for the IEN; see the class documentation).
     return inner_->getBetaPathSparse();
 }
 
-Eigen::VectorXd TIENETAug_Solver::getBeta(int step) const {
+Eigen::VectorXd TSolverIENETAug::getBeta(int step) const {
     return inner_->getBeta(step);
 }
 
@@ -344,11 +344,11 @@ Eigen::VectorXd TIENETAug_Solver::getBeta(int step) const {
 // Memory report
 // ============================================================================
 
-std::size_t TIENETAug_Solver::memoryBytes() const noexcept {
+std::size_t TSolverIENETAug::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
 
     // Base part: the diagnostic mirror (X_, D_ are never connected here)
-    std::size_t bytes = TSolver_Base::memoryBytes() + bytesOf(groups_) +
+    std::size_t bytes = TSolverBase::memoryBytes() + bytesOf(groups_) +
                         bytesOf(X_aug_owned_) + bytesOf(D_aug_owned_) +
                         bytesOf(y_aug_owned_);
 
@@ -357,7 +357,7 @@ std::size_t TIENETAug_Solver::memoryBytes() const noexcept {
     if (D_aug_map_) { bytes += sizeof(MapMatXd); }
     if (y_aug_map_) { bytes += sizeof(MapVecXd); }
     if (inner_) {
-        bytes += (use_lars_inner_ ? sizeof(TLARS_Solver) : sizeof(TLASSO_Solver)) +
+        bytes += (use_lars_inner_ ? sizeof(TSolverLARS) : sizeof(TSolverLASSO)) +
                  inner_->memoryBytes();
     }
     return bytes;
@@ -367,15 +367,15 @@ std::size_t TIENETAug_Solver::memoryBytes() const noexcept {
 // De-/Serialization
 // ============================================================================
 
-void TIENETAug_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverIENETAug::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TIENETAug_Solver TIENETAug_Solver::load(
+TSolverIENETAug TSolverIENETAug::load(
     const std::string& filename,
     Eigen::Map<Eigen::MatrixXd>& X,
     Eigen::Map<Eigen::MatrixXd>& D
 ) {
-    TIENETAug_Solver solver;
+    TSolverIENETAug solver;
     std::ifstream is(filename, std::ios::binary);
     if (!is.is_open()) {
         throw std::runtime_error(
@@ -409,6 +409,8 @@ TIENETAug_Solver TIENETAug_Solver::load(
 // the header would otherwise compile the serialization code again. The
 // bindings cover the archives included above, binary and portable binary.
 CEREAL_REGISTER_DYNAMIC_INIT(trex_tienet_aug_solver)
-CEREAL_REGISTER_TYPE(trex::tsolvers::ad::linear_model::lars_based::TIENETAug_Solver)
-CEREAL_REGISTER_POLYMORPHIC_RELATION(trex::tsolvers::ad::TSolver_Base,
-                                     trex::tsolvers::ad::linear_model::lars_based::TIENETAug_Solver)
+// The name is the key of this class in saved files and stays as it was written.
+CEREAL_REGISTER_TYPE_WITH_NAME(trex::tsolvers::ad::linear_model::lars_based::TSolverIENETAug,
+                               "trex::tsolvers::ad::linear_model::lars_based::TIENETAug_Solver")
+CEREAL_REGISTER_POLYMORPHIC_RELATION(trex::tsolvers::ad::TSolverBase,
+                                     trex::tsolvers::ad::linear_model::lars_based::TSolverIENETAug)

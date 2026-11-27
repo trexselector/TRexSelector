@@ -23,7 +23,7 @@ int main() {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
     TRexSelector trex(X_map, y_map, 0.1, ctrl, 42, false);

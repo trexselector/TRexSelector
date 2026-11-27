@@ -13,7 +13,7 @@ run in sequence and a solver may split its passes. Nested teams of threads are n
 
 The default is serial. A selector runs its experiments one after the other, every solver runs on one
 thread, and a T-solver used on its own runs serially. Parallel work is opt-in through two fields of
-TRexControlParameter: `max_outer_threads` for the experiments and `max_inner_threads` for the
+TRexControl: `max_outer_threads` for the experiments and `max_inner_threads` for the
 solvers' passes.
 
 ## The default thread budget of the library
@@ -38,7 +38,7 @@ The selectors and the solvers do not read the default budget. Their budget comes
 
 ## The solvers' passes
 
-`TRexControlParameter::max_inner_threads = m` gives every solver inside the random experiments a
+`TRexControl::max_inner_threads = m` gives every solver inside the random experiments a
 budget of `m` threads for its passes over the design (the correlation refreshes, the step-length
 search, the standardization). The default is 1. A pass is split only when it touches at least a
 million entries of the design, because the cost of forming a team of threads exceeds the gain below
@@ -47,7 +47,7 @@ the synthetic designs) count their work in the same unit with the measured cost 
 (about 80 entries) and of seeding an engine (up to 32,000), so they split from a few thousand
 entries. The budget is live when the experiments run in sequence. Inside parallel experiments the
 solvers stay serial. A T-solver used on its own takes the same budget through
-`SolverOptions::n_threads`, and `setNumThreads()` changes it on a live solver.
+`TSolverOptions::n_threads`, and `setNumThreads()` changes it on a live solver.
 
 ## Parallel random experiments
 

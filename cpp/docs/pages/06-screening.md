@@ -46,7 +46,7 @@ default L-loop strategy `STANDARD`.
 
 ### A bootstrap confidence interval
 
-`use_bootstrap_CI = true` in the ScreenTRexControlParameter selects by the coefficients instead of
+`use_bootstrap_CI = true` in the TRexScreeningControl selects by the coefficients instead of
 the vote. The non-zero dummy coefficients of the experiments are resampled `R_boot` times, at least
 twice, for a confidence interval of their mean, and a variable is selected when its averaged
 coefficient lies outside that interval. `confidence_level` is the smallest level at which the
@@ -90,9 +90,9 @@ in about 99 % of the runs.
 
 ## The biobank screening
 
-BiobankScreenTRex screens one or many phenotypes against one genotype matrix. The constructor takes
+TRexBiobankScreeningSelector screens one or many phenotypes against one genotype matrix. The constructor takes
 `Y` as a vector map for one phenotype or as a matrix map with one column per phenotype. The control
-is a BiobankScreenTRexControl: the acceptance window of the estimated FDR is `lower_bound_FDR` to
+is a TRexBiobankScreeningControl: the acceptance window of the estimated FDR is `lower_bound_FDR` to
 `upper_bound_FDR`, `target_FDR_trex` is the target of the fallback selector, and the screening
 control with its base control is nested in `trex_screen_ctrl`. The phenotypes draw independent
 dummies, because phenotype `i` (0-based) runs with `seed + i`, and a single-phenotype run with that

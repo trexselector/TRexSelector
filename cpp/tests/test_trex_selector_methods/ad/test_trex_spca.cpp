@@ -31,7 +31,7 @@ namespace tc = trex::trex_selector_methods::ad::trex_core;
 
 /**
  * @brief Test fixture providing a minimal (n=30, p=10) design matrix shared
- *        across all TRexSPCA tests.
+ *        across all TRexSPCASelector tests.
  *
  * @details Dimensions are kept deliberately small so that the gtest_discover_tests
  *          post-build enumeration step (5 s limit) is never exceeded even under
@@ -47,9 +47,9 @@ protected:
     Eigen::MatrixXd X;
     Eigen::Map<Eigen::MatrixXd> X_map;
 
-    /** @brief Returns a TRexSPCAControlParameter tuned for fast unit testing. */
-    static TRexSPCAControlParameter fast_ctrl(SPCAMode mode = SPCAMode::ActiveSet) {
-        TRexSPCAControlParameter ctrl;
+    /** @brief Returns a TRexSPCAControl tuned for fast unit testing. */
+    static TRexSPCAControl fast_ctrl(SPCAMode mode = SPCAMode::ActiveSet) {
+        TRexSPCAControl ctrl;
         ctrl.mode                           = mode;
         ctrl.lambda2_ridge_loadings         = 1e-6;
         ctrl.gvs_ctrl.trex_ctrl.K                    = 3;
@@ -115,7 +115,7 @@ protected:
         Eigen::MatrixXd Xf = plantedFactorX();
         Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
 
-        TRexSPCA spca(Xf_map, M, 0.1, fast_ctrl(mode), seed);
+        TRexSPCASelector spca(Xf_map, M, 0.1, fast_ctrl(mode), seed);
         auto result = spca.select();
 
         // The planted factor must be picked up, otherwise the invariant below
@@ -148,7 +148,7 @@ protected:
 /** @brief ActiveSet mode runs without throwing on valid inputs. */
 TEST_F(TRexSPCATest, Execution_ActiveSetModeDoesNotThrow) {
     EXPECT_NO_THROW({
-        TRexSPCA spca(X_map, M, 0.2, fast_ctrl(SPCAMode::ActiveSet), seed);
+        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::ActiveSet), seed);
         spca.select();
     });
 }
@@ -157,7 +157,7 @@ TEST_F(TRexSPCATest, Execution_ActiveSetModeDoesNotThrow) {
 /** @brief Thresholded mode runs without throwing on valid inputs. */
 TEST_F(TRexSPCATest, Execution_ThresholdedModeDoesNotThrow) {
     EXPECT_NO_THROW({
-        TRexSPCA spca(X_map, M, 0.2, fast_ctrl(SPCAMode::Thresholded), seed);
+        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::Thresholded), seed);
         spca.select();
     });
 }
@@ -169,7 +169,7 @@ TEST_F(TRexSPCATest, Execution_ThresholdedModeDoesNotThrow) {
 
 /** @brief Result matrices have the expected shapes. */
 TEST_F(TRexSPCATest, Dimensions_ResultMatricesCorrectShape) {
-    TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
     auto result = spca.select();
 
     EXPECT_EQ(result.Z.rows(), n);
@@ -184,7 +184,7 @@ TEST_F(TRexSPCATest, Dimensions_ResultMatricesCorrectShape) {
 
 /** @brief Extracting only one sparse PC (M=1) produces correct shapes. */
 TEST_F(TRexSPCATest, Dimensions_SingleComponentCorrectShape) {
-    TRexSPCA spca(X_map, 1, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, 1, 0.2, fast_ctrl(), seed);
     auto result = spca.select();
 
     EXPECT_EQ(result.Z.rows(), n);
@@ -201,7 +201,7 @@ TEST_F(TRexSPCATest, Dimensions_SingleComponentCorrectShape) {
 
 /** @brief All active-set indices are valid column indices of X. */
 TEST_F(TRexSPCATest, ActiveSets_IndicesInBounds) {
-    TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
     auto result = spca.select();
 
     for (const auto& as : result.active_sets) {
@@ -219,7 +219,7 @@ TEST_F(TRexSPCATest, ActiveSets_IndicesInBounds) {
 
 /** @brief Adjusted explained variances are non-negative. */
 TEST_F(TRexSPCATest, ExplainedVariance_AdjustedNonNegative) {
-    TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
     auto result = spca.select();
 
     for (Eigen::Index k = 0; k < M; ++k) {
@@ -230,7 +230,7 @@ TEST_F(TRexSPCATest, ExplainedVariance_AdjustedNonNegative) {
 
 /** @brief Cumulative explained variance is monotonically non-decreasing and in [0, 1]. */
 TEST_F(TRexSPCATest, ExplainedVariance_CumulativeMonotoneInUnitInterval) {
-    TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
     auto result = spca.select();
 
     double prev = 0.0;
@@ -269,21 +269,21 @@ TEST_F(TRexSPCATest, Scores_MatchCenteredXTimesV_Thresholded) {
 /** @brief X is restored to its original values after select() returns. */
 TEST_F(TRexSPCATest, DataIntegrity_XRestoredAfterSelect) {
     Eigen::MatrixXd X_copy = X;
-    TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+    TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
     spca.select();
 
     EXPECT_TRUE(X.isApprox(X_copy, 1e-12))
-        << "X was not restored after TRexSPCA::select().";
+        << "X was not restored after TRexSPCASelector::select().";
 }
 
 
 /** @brief The constructor does not mutate X — centering only happens inside select(). */
 TEST_F(TRexSPCATest, DataIntegrity_ConstructorDoesNotMutateX) {
     Eigen::MatrixXd X_copy = X;
-    { TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed); }
+    { TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed); }
 
     EXPECT_TRUE(X.isApprox(X_copy, 1e-12))
-        << "X was mutated by TRexSPCA constructor or destructor without select().";
+        << "X was mutated by TRexSPCASelector constructor or destructor without select().";
 }
 
 
@@ -292,12 +292,12 @@ TEST_F(TRexSPCATest, DataIntegrity_XUnchangedOnDestructionWithoutSelect) {
     Eigen::MatrixXd X_copy = X;
 
     {
-        TRexSPCA spca(X_map, M, 0.2, fast_ctrl(), seed);
+        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(), seed);
         // Destructor fires here; X_is_centered_ = false, so no inverse_transform.
     }
 
     EXPECT_TRUE(X.isApprox(X_copy, 1e-12))
-        << "X was incorrectly modified by TRexSPCA destructor.";
+        << "X was incorrectly modified by TRexSPCASelector destructor.";
 }
 
 
@@ -312,7 +312,7 @@ TEST_F(TRexSPCATest, DataIntegrity_XUnchangedOnDestructionWithoutSelect) {
 /** @brief M > min(n, p) triggers std::invalid_argument in the constructor. */
 TEST_F(TRexSPCATest, Exceptions_InvalidM) {
     EXPECT_THROW(
-        (TRexSPCA(X_map, p + 1, 0.2, fast_ctrl(), seed)),
+        (TRexSPCASelector(X_map, p + 1, 0.2, fast_ctrl(), seed)),
         std::invalid_argument
     );
 }
@@ -320,20 +320,20 @@ TEST_F(TRexSPCATest, Exceptions_InvalidM) {
 /** @brief TRex-SPCA is defined on the elastic net: an IEN request is rejected
  *         at construction instead of being run as EN. */
 TEST_F(TRexSPCATest, Exceptions_IENRejected) {
-    TRexSPCAControlParameter ctrl = fast_ctrl();
+    TRexSPCAControl ctrl = fast_ctrl();
     ctrl.gvs_ctrl.gvs_type = tg::GVSType::IEN;
-    EXPECT_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
+    EXPECT_THROW((TRexSPCASelector(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
 
     ctrl.gvs_ctrl.gvs_type = tg::GVSType::EN;
-    EXPECT_NO_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)));
+    EXPECT_NO_THROW((TRexSPCASelector(X_map, M, 0.2, ctrl, seed)));
 }
 
 /** @brief M below 1 is refused at construction, before any allocation. */
 TEST_F(TRexSPCATest, Exceptions_MBelowOne) {
-    EXPECT_THROW((TRexSPCA(X_map, 0, 0.2, fast_ctrl(), seed)), std::invalid_argument);
-    EXPECT_THROW((TRexSPCA(X_map, -1, 0.2, fast_ctrl(), seed)), std::invalid_argument);
-    EXPECT_NO_THROW((TRexSPCA(X_map, 1, 0.2, fast_ctrl(), seed)));
-    EXPECT_NO_THROW((TRexSPCA(X_map, p, 0.2, fast_ctrl(), seed)));
+    EXPECT_THROW((TRexSPCASelector(X_map, 0, 0.2, fast_ctrl(), seed)), std::invalid_argument);
+    EXPECT_THROW((TRexSPCASelector(X_map, -1, 0.2, fast_ctrl(), seed)), std::invalid_argument);
+    EXPECT_NO_THROW((TRexSPCASelector(X_map, 1, 0.2, fast_ctrl(), seed)));
+    EXPECT_NO_THROW((TRexSPCASelector(X_map, p, 0.2, fast_ctrl(), seed)));
 }
 
 /** @brief The target FDR is checked at construction: [0, 1] is accepted,
@@ -341,11 +341,11 @@ TEST_F(TRexSPCATest, Exceptions_MBelowOne) {
 TEST_F(TRexSPCATest, Exceptions_TargetFDROutsideUnitInterval) {
     const double nan = std::numeric_limits<double>::quiet_NaN();
     for (const double bad : {-0.1, 1.5, nan}) {
-        EXPECT_THROW((TRexSPCA(X_map, M, bad, fast_ctrl(), seed)), std::invalid_argument)
+        EXPECT_THROW((TRexSPCASelector(X_map, M, bad, fast_ctrl(), seed)), std::invalid_argument)
             << "tFDR = " << bad;
     }
     for (const double good : {0.0, 0.2, 1.0}) {
-        EXPECT_NO_THROW((TRexSPCA(X_map, M, good, fast_ctrl(), seed))) << "tFDR = " << good;
+        EXPECT_NO_THROW((TRexSPCASelector(X_map, M, good, fast_ctrl(), seed))) << "tFDR = " << good;
     }
 }
 
@@ -355,15 +355,15 @@ TEST_F(TRexSPCATest, Exceptions_IENRulesRejectedAtConstruction) {
     using Rule = tg::LambdaSelectionMethod;
     for (const Rule rule : {Rule::CV_1SE_IEN_CCD, Rule::CV_MIN_IEN_CCD,
                             Rule::CV_1SE_TIK_SVD, Rule::CV_MIN_TIK_SVD}) {
-        TRexSPCAControlParameter ctrl = fast_ctrl();
+        TRexSPCAControl ctrl = fast_ctrl();
         ctrl.gvs_ctrl.lambda2_method = rule;
-        EXPECT_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
+        EXPECT_THROW((TRexSPCASelector(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
     }
     for (const Rule rule : {Rule::CV_1SE_CCD, Rule::CV_MIN_CCD,
                             Rule::CV_1SE_SVD, Rule::CV_MIN_SVD}) {
-        TRexSPCAControlParameter ctrl = fast_ctrl();
+        TRexSPCAControl ctrl = fast_ctrl();
         ctrl.gvs_ctrl.lambda2_method = rule;
-        EXPECT_NO_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)));
+        EXPECT_NO_THROW((TRexSPCASelector(X_map, M, 0.2, ctrl, seed)));
     }
 }
 
@@ -372,15 +372,15 @@ TEST_F(TRexSPCATest, Exceptions_IENRulesRejectedAtConstruction) {
 TEST_F(TRexSPCATest, LLoopStrategies_FourRunAndPermutationsAreRefused) {
     using Strategy = tc::LLoopStrategy;
     for (const Strategy strategy : {Strategy::PERMUTATION, Strategy::PERMUTATION_SEEDED}) {
-        TRexSPCAControlParameter ctrl = fast_ctrl();
+        TRexSPCAControl ctrl = fast_ctrl();
         ctrl.gvs_ctrl.trex_ctrl.lloop_strategy = strategy;
-        EXPECT_THROW((TRexSPCA(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
+        EXPECT_THROW((TRexSPCASelector(X_map, M, 0.2, ctrl, seed)), std::invalid_argument);
     }
     for (const Strategy strategy : {Strategy::STANDARD, Strategy::HCONCAT,
                                     Strategy::SKIPL, Strategy::SEEDED}) {
-        TRexSPCAControlParameter ctrl = fast_ctrl();
+        TRexSPCAControl ctrl = fast_ctrl();
         ctrl.gvs_ctrl.trex_ctrl.lloop_strategy = strategy;
-        TRexSPCA spca(X_map, M, 0.2, ctrl, seed);
+        TRexSPCASelector spca(X_map, M, 0.2, ctrl, seed);
         EXPECT_NO_THROW(spca.select());
         EXPECT_EQ(spca.getResult().active_sets.size(), static_cast<std::size_t>(M));
     }
@@ -394,21 +394,21 @@ TEST_F(TRexSPCATest, LLoopStrategies_FourRunAndPermutationsAreRefused) {
 /** @brief The nested gvs_ctrl.en_solver and gvs_ctrl.trex_ctrl.solver_type
  *         have no effect: the selector replaces them by en_solver. */
 TEST_F(TRexSPCATest, Control_NestedSolverFieldsHaveNoEffect) {
-    using SolverType = decltype(tc::TRexControlParameter::solver_type);
+    using SolverType = decltype(tc::TRexControl::solver_type);
 
-    auto run = [](const TRexSPCAControlParameter& ctrl) {
+    auto run = [](const TRexSPCAControl& ctrl) {
         Eigen::MatrixXd Xf = plantedFactorX();
         Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
-        TRexSPCA spca(Xf_map, M, 0.1, ctrl, seed);
+        TRexSPCASelector spca(Xf_map, M, 0.1, ctrl, seed);
         return spca.select();
     };
 
-    TRexSPCAControlParameter plain = fast_ctrl();
+    TRexSPCAControl plain = fast_ctrl();
     plain.gvs_ctrl.lambda_2 = 1.0;
 
     // A nested solver type outside the elastic-net family would end a
     // T-Rex+GVS run with an error.
-    TRexSPCAControlParameter nested = plain;
+    TRexSPCAControl nested = plain;
     nested.gvs_ctrl.en_solver = tg::ENSolverType::TENET_AUG;
     nested.gvs_ctrl.trex_ctrl.solver_type = SolverType::TLASSO;
 
@@ -427,7 +427,7 @@ TEST_F(TRexSPCATest, ExplainedVariance_CumulativeIsFractionOfTotalVariance) {
         (Xf.rowwise() - mu).squaredNorm() / static_cast<double>(n_f - 1);
 
     Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
-    TRexSPCA spca(Xf_map, M, 0.1, fast_ctrl(), seed);
+    TRexSPCASelector spca(Xf_map, M, 0.1, fast_ctrl(), seed);
     const TRexSPCAResult result = spca.select();
 
     double running = 0.0;
@@ -442,7 +442,7 @@ TEST_F(TRexSPCATest, ExplainedVariance_CumulativeIsFractionOfTotalVariance) {
 TEST_F(TRexSPCATest, Loadings_ThresholdedKeepsAsManyEntriesAsSelected) {
     Eigen::MatrixXd Xf = plantedFactorX();
     Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
-    TRexSPCA spca(Xf_map, M, 0.1, fast_ctrl(SPCAMode::Thresholded), seed);
+    TRexSPCASelector spca(Xf_map, M, 0.1, fast_ctrl(SPCAMode::Thresholded), seed);
     const TRexSPCAResult result = spca.select();
 
     for (Eigen::Index m = 0; m < M; ++m) {
@@ -460,7 +460,7 @@ TEST_F(TRexSPCATest, Result_ComponentWithoutSelectionIsZero) {
     for (const double tFDR : {0.0, 0.05, 0.2}) {
         Eigen::MatrixXd Xf = plantedFactorX();
         Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
-        TRexSPCA spca(Xf_map, 3, tFDR, fast_ctrl(), seed);
+        TRexSPCASelector spca(Xf_map, 3, tFDR, fast_ctrl(), seed);
         const TRexSPCAResult result = spca.select();
 
         double previous = 0.0;

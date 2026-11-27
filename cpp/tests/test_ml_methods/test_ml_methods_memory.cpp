@@ -73,13 +73,13 @@
 
 namespace trex::test::ml_methods::memory {
 
-using trex::ml_methods::model_selection::enet_cv_ccd;
-using trex::ml_methods::model_selection::enet_gaussian;
-using trex::ml_methods::model_selection::ridge_cv_svd;
+using trex::ml_methods::model_selection::ElasticNetCV;
+using trex::ml_methods::model_selection::ElasticNet;
+using trex::ml_methods::model_selection::RidgeCV;
 using trex::ml_methods::pca::PCA;
-using trex::ml_methods::ridge::RidgeSolver;
+using trex::ml_methods::ridge::Ridge;
 using trex::ml_methods::scaler_methods::LpNormScaler;
-using trex::ml_methods::svd::SVDSolver;
+using trex::ml_methods::svd::SVD;
 
 #if !defined(TREX_TEST_HEAP_STATISTICS)
 
@@ -167,8 +167,8 @@ double growth_in_X(const Design& d, const char* what, F&& f) {
 /** @brief RidgeCV: per fold X_train + standardized copy + Jacobi internals. */
 TEST(MLMemory, RidgeCV) {
     Design d;
-    const double g = growth_in_X(d, "ridge_cv_svd::fit", [&] {
-        ridge_cv_svd cv;
+    const double g = growth_in_X(d, "RidgeCV::fit", [&] {
+        RidgeCV cv;
         cv.fit(d.X, d.y, 5, 20, 1000.0, 1u);
     });
     // The Jacobi SVD keeps one internal copy of the fold under Eigen 5.0 (the
@@ -181,8 +181,8 @@ TEST(MLMemory, RidgeCV) {
 /** @brief ElasticNet: the centred member copy Xs_ plus p x K paths. */
 TEST(MLMemory, ElasticNetPath) {
     Design d;
-    const double g = growth_in_X(d, "enet_gaussian::fit", [&] {
-        enet_gaussian en;
+    const double g = growth_in_X(d, "ElasticNet::fit", [&] {
+        ElasticNet en;
         en.fit(d.X, d.y, 1.0, 20, -1.0, true, true, false, 1000, 1e-5);
     });
     EXPECT_LT(g, 1.6) << "elastic net allocated more than its budget of 1.6 x X";
@@ -191,8 +191,8 @@ TEST(MLMemory, ElasticNetPath) {
 /** @brief RidgeCV, kernel engine: n x n kernels and column blocks only. */
 TEST(MLMemory, RidgeCVLowMemory) {
     Design d;
-    const double g = growth_in_X(d, "ridge_cv_svd::fit (low_memory)", [&] {
-        ridge_cv_svd cv(/*low_memory=*/true);
+    const double g = growth_in_X(d, "RidgeCV::fit (low_memory)", [&] {
+        RidgeCV cv(/*low_memory=*/true);
         cv.fit(d.X, d.y, 5, 20, 1000.0, 1u);
     });
     // O(n^2) kernels plus the eigen solver's workspaces and the column-block
@@ -203,8 +203,8 @@ TEST(MLMemory, RidgeCVLowMemory) {
 /** @brief ElasticNet, raw-X engine: no allocation of the size of X. */
 TEST(MLMemory, ElasticNetPathLowMemory) {
     Design d;
-    const double g = growth_in_X(d, "enet_gaussian::fit (low_memory)", [&] {
-        enet_gaussian en(/*low_memory=*/true);
+    const double g = growth_in_X(d, "ElasticNet::fit (low_memory)", [&] {
+        ElasticNet en(/*low_memory=*/true);
         en.fit(d.X, d.y, 1.0, 20, -1.0, true, true, false, 1000, 1e-5);
     });
     EXPECT_LT(g, 0.2) << "low-memory elastic net allocated more than its budget of 0.2 x X";
@@ -213,8 +213,8 @@ TEST(MLMemory, ElasticNetPathLowMemory) {
 /** @brief ElasticNetCV, raw-X engine: masks and row-wise predictions only. */
 TEST(MLMemory, ElasticNetCVLowMemory) {
     Design d;
-    const double g = growth_in_X(d, "enet_cv_ccd::fit (low_memory)", [&] {
-        enet_cv_ccd cv(/*low_memory=*/true);
+    const double g = growth_in_X(d, "ElasticNetCV::fit (low_memory)", [&] {
+        ElasticNetCV cv(/*low_memory=*/true);
         cv.fit(d.X, d.y, 0.5, 5, 20, -1.0, 2u, true, true, 1000, 1e-5);
     });
     // One fit needs about 0.1 X (the p x K paths, 0.093 X in ElasticNetPathLowMemory).
@@ -226,8 +226,8 @@ TEST(MLMemory, ElasticNetCVLowMemory) {
 /** @brief ElasticNetCV: full-data Xs_, then per fold X_tr + X_te + the fold's Xs_. */
 TEST(MLMemory, ElasticNetCV) {
     Design d;
-    const double g = growth_in_X(d, "enet_cv_ccd::fit", [&] {
-        enet_cv_ccd cv;
+    const double g = growth_in_X(d, "ElasticNetCV::fit", [&] {
+        ElasticNetCV cv;
         cv.fit(d.X, d.y, 0.5, 5, 20, -1.0, 2u, true, true, 1000, 1e-5);
     });
     EXPECT_LT(g, 1.6) << "elastic net CV allocated more than its budget of 1.6 x X";
@@ -236,8 +236,8 @@ TEST(MLMemory, ElasticNetCV) {
 /** @brief SVD, wide: the Gram path forms n x n and reads X blockwise. */
 TEST(MLMemory, SVDWide) {
     Design d;
-    const double g = growth_in_X(d, "SVDSolver::compute (wide, Gram path)", [&] {
-        auto r = SVDSolver{}.compute(d.X, 5);
+    const double g = growth_in_X(d, "SVD::compute (wide, Gram path)", [&] {
+        auto r = SVD{}.compute(d.X, 5);
         volatile double sink = r.S.sum(); (void)sink;
     });
     EXPECT_LT(g, 0.5) << "wide SVD allocated more than its budget of 0.5 x X";
@@ -246,8 +246,8 @@ TEST(MLMemory, SVDWide) {
 /** @brief Ridge, wide: the n x n kernel and its factorization only. */
 TEST(MLMemory, RidgeWide) {
     Design d;
-    const double g = growth_in_X(d, "RidgeSolver::solve (wide, dual)", [&] {
-        Eigen::VectorXd b = RidgeSolver::solve(d.X, d.y, 1.0);
+    const double g = growth_in_X(d, "Ridge::solve (wide, dual)", [&] {
+        Eigen::VectorXd b = Ridge::solve(d.X, d.y, 1.0);
         volatile double sink = b.sum(); (void)sink;
     });
     EXPECT_LT(g, 0.5) << "wide ridge allocated more than its budget of 0.5 x X";

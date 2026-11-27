@@ -9,10 +9,10 @@
  *
  * @brief Header file for the Terminating Orthogonal Matching Pursuit (T-OMP) solver.
  *
- * @details The TOMP_Solver class implements the T-OMP algorithm for variable selection
+ * @details The TSolverOMP class implements the T-OMP algorithm for variable selection
  * in linear regression, with support for dummy variable augmentation.
  * It inherits state management, standardization, and diagnostics from the
- * TSolver_Base class.
+ * TSolverBase class.
  *
  * Furthermore, it serves as mother class for:
  * - TGP_solver,
@@ -55,7 +55,7 @@ enum class SolverTypeOMPBased: int {
 
 /**
  * @brief Terminating Orthogonal Matching Pursuit (T-OMP) solver.
- * Inherits state management, standardization, and memory mapping from TSolver_Base.
+ * Inherits state management, standardization, and memory mapping from TSolverBase.
  *
  *  References:
  *  -----------
@@ -69,7 +69,7 @@ enum class SolverTypeOMPBased: int {
  *   F. Scheidt and M. Muma, "Terminating Greedy Pursuits for High-Dimensional False Discovery Rate Control,"
  *     in Proc. Eur. Signal Process. Conf. (EUSIPCO), 2026, pp. 2511-2515.
  */
-class TOMP_Solver : public TSolver_Base {
+class TSolverOMP : public TSolverBase {
 protected:
     /** @brief Algorithm variant type. */
     SolverTypeOMPBased algo_type_{SolverTypeOMPBased::TOMP};
@@ -80,14 +80,14 @@ protected:
     std::vector<double> xty_active_{};
 
     /** @brief Protected constructor for inheritance. */
-    explicit TOMP_Solver(SolverTypeOMPBased type);
+    explicit TSolverOMP(SolverTypeOMPBased type);
 
     /** @brief Protected data constructor for inheritance: the public
      *  constructor with the algorithm variant passed through. */
-    TOMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverOMP(Eigen::Map<Eigen::MatrixXd>& X,
                 Eigen::Map<Eigen::MatrixXd>& D,
                 Eigen::Map<Eigen::VectorXd>& y,
-                const SolverOptions& options,
+                const TSolverOptions& options,
                 SolverTypeOMPBased algorithm_type);
 
 public:
@@ -96,37 +96,37 @@ public:
     // ==========================================================================
 
     /**
-     * @brief Construct a new TOMP_Solver object.
+     * @brief Construct a new TSolverOMP object.
      *
      * @param X Map to predictor matrix (n x p).
      * @param D Map to the dummy predictor matrix (n x num_dummies).
      * @param y Map to the response vector (n x 1).
-     * @param options Every other input (SolverOptions): preprocessing flags,
+     * @param options Every other input (TSolverOptions): preprocessing flags,
      *        tolerance and tie-breaking (exch_tie_alpha / exch_tie_floor,
      *        the exchangeable-tie band of the greedy solvers).
      */
-    TOMP_Solver(Eigen::Map<Eigen::MatrixXd>& X,
+    TSolverOMP(Eigen::Map<Eigen::MatrixXd>& X,
                 Eigen::Map<Eigen::MatrixXd>& D,
                 Eigen::Map<Eigen::VectorXd>& y,
-                const SolverOptions& options = SolverOptions{});
+                const TSolverOptions& options = TSolverOptions{});
 
     /** @brief Default constructor for serialization. */
-    TOMP_Solver();
+    TSolverOMP();
 
     /** @brief Virtual destructor. */
-    ~TOMP_Solver() override = default;
+    ~TSolverOMP() override = default;
 
     /** @brief Deleted copy operations. */
-    TOMP_Solver(const TOMP_Solver&) = delete;
+    TSolverOMP(const TSolverOMP&) = delete;
 
     /** @brief Deleted copy assignment operator. */
-    TOMP_Solver& operator=(const TOMP_Solver&) = delete;
+    TSolverOMP& operator=(const TSolverOMP&) = delete;
 
     /** @brief Defaulted move constructor. */
-    TOMP_Solver(TOMP_Solver&&) = default;
+    TSolverOMP(TSolverOMP&&) = default;
 
     /** @brief Deleted move assignment operator. */
-    TOMP_Solver& operator=(TOMP_Solver&&) = delete;
+    TSolverOMP& operator=(TSolverOMP&&) = delete;
 
     // ==========================================================================
     // Main algorithm
@@ -160,7 +160,7 @@ public:
         }
     }
 
-    /** @brief TSolver_Base::memoryBytes() plus the X_A^T y cache of the refit. */
+    /** @brief TSolverBase::memoryBytes() plus the X_A^T y cache of the refit. */
     std::size_t memoryBytes() const noexcept override;
 
     // ==========================================================================
@@ -184,7 +184,7 @@ public:
         // no-op round-trip on save.
         int algo_type = static_cast<int>(algo_type_);
         archive(
-            cereal::base_class<TSolver_Base>(this),
+            cereal::base_class<TSolverBase>(this),
             cereal::make_nvp("algo_type", algo_type)
         );
         algo_type_ = static_cast<SolverTypeOMPBased>(algo_type);
@@ -210,9 +210,9 @@ public:
      * @param X Map to feature matrix.
      * @param D Map to dummy matrix.
      *
-     * @return Deserialized TOMP_Solver object connected to X and D.
+     * @return Deserialized TSolverOMP object connected to X and D.
      */
-    static TOMP_Solver load(const std::string& filename,
+    static TSolverOMP load(const std::string& filename,
                             Eigen::Map<Eigen::MatrixXd>& X,
                             Eigen::Map<Eigen::MatrixXd>& D);
 
@@ -247,6 +247,10 @@ protected:
      */
     virtual void updateBetaPath();
 };
+
+/** @brief Old name of TSolverOMP.
+ *  @deprecated Use TSolverOMP. */
+using TOMP_Solver [[deprecated("Use TSolverOMP")]] = TSolverOMP;
 
 // =============================================================================
 } /* End of namespace trex::tsolvers::ad::linear_model::omp_based */

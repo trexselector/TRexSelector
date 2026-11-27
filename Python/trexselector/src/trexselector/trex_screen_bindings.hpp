@@ -1,5 +1,5 @@
 // =====================================================================================
-// trex_screen_bindings.hpp - Pybind11 bindings for ScreenTRexSelector
+// trex_screen_bindings.hpp - Pybind11 bindings for TRexScreeningSelector
 // =====================================================================================
 #ifndef TREX_PYTHON_TREX_SCREEN_BINDINGS_HPP
 #define TREX_PYTHON_TREX_SCREEN_BINDINGS_HPP
@@ -7,7 +7,7 @@
 /**
  * @file trex_screen_bindings.hpp
  *
- * @brief Pybind11 bindings for ScreenTRexSelector.
+ * @brief Pybind11 bindings for TRexScreeningSelector.
  *
  */
 // =====================================================================================
@@ -29,7 +29,7 @@ using namespace trex::trex_selector_methods::ad::trex_core;
 // =====================================================================================
 
 /**
- * @brief Python wrapper class for ScreenTRexSelector leveraging zero-copy references.
+ * @brief Python wrapper class for TRexScreeningSelector leveraging zero-copy references.
  */
 class PyScreenTRexSelector : public PyTRexSelector {
 public:
@@ -46,8 +46,8 @@ public:
     PyScreenTRexSelector(
         Eigen::Ref<Eigen::MatrixXd> X,
         Eigen::Ref<Eigen::VectorXd> y,
-        const ScreenTRexControlParameter& screen_control,
-        const TRexControlParameter& trex_control,
+        const TRexScreeningControl& screen_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) {
@@ -60,10 +60,10 @@ public:
         // The refactored C++ constructor takes a single screening control
         // struct that nests the base algorithmic parameters as `trex_ctrl`.
         // Merge the separately-supplied `trex_control` into that nested field.
-        ScreenTRexControlParameter screen_ctrl = screen_control;
+        TRexScreeningControl screen_ctrl = screen_control;
         screen_ctrl.trex_ctrl = trex_control;
 
-        this->selector_ = std::make_unique<ScreenTRexSelector>(
+        this->selector_ = std::make_unique<TRexScreeningSelector>(
             *(this->X_map_), *(this->y_map_), screen_ctrl, seed, verbose
         );
     }
@@ -79,8 +79,8 @@ public:
     PyScreenTRexSelector(
         const DesignArray& X,
         Eigen::Ref<Eigen::VectorXd> y,
-        const ScreenTRexControlParameter& screen_control,
-        const TRexControlParameter& trex_control,
+        const TRexScreeningControl& screen_control,
+        const TRexControl& trex_control,
         int seed,
         bool verbose
     ) : PyScreenTRexSelector(selector_design_ref(X, trex_control), y, screen_control, trex_control, seed,
@@ -89,14 +89,14 @@ public:
     /**
      * @brief Get the complete Screening selection result.
      */
-    const ScreenTRexSelectionResult& getScreenResult() const {
-        return static_cast<ScreenTRexSelector*>(this->selector_.get())->getScreenResult();
+    const TRexScreeningResult& getScreenResult() const {
+        return static_cast<TRexScreeningSelector*>(this->selector_.get())->getScreenResult();
     }
 };
 
 
 /**
- * @brief Binds the ScreenTRexSelector and related configurations.
+ * @brief Binds the TRexScreeningSelector and related configurations.
  *
  * @param m The Python module to bind against.
  */
@@ -118,21 +118,21 @@ inline void bind_trex_screen(py::module& m) {
             "variant selects as TREX.")
         .export_values();
 
-    py::class_<ScreenTRexControlParameter>(m, "ScreenTRexControlParameter", "Control parameters for "
+    py::class_<TRexScreeningControl>(m, "ScreenTRexControlParameter", "Control parameters for "
         "TRexScreeningSelector.")
         .def(py::init<>())
-        .def_readwrite("use_bootstrap_CI", &ScreenTRexControlParameter::use_bootstrap_CI, "Whether the "
+        .def_readwrite("use_bootstrap_CI", &TRexScreeningControl::use_bootstrap_CI, "Whether the "
             "confidence-based screening (bootstrap) makes the selection (default False). The FDR estimate stays one "
             "over the number of selected variables. With a dependency-aware variant it mostly selects nothing: the "
             "filter lowers the ordinary count that the confidence level has to reach, and in simulations no level "
             "reached it in 90 % to 100 % of the runs.")
-        .def_readwrite("R_boot", &ScreenTRexControlParameter::R_boot, "Number of bootstrap resamples, at least 2 "
+        .def_readwrite("R_boot", &TRexScreeningControl::R_boot, "Number of bootstrap resamples, at least 2 "
             "(default 1000).")
-        .def_readwrite("ci_grid_step", &ScreenTRexControlParameter::ci_grid_step, "Step of the grid over the "
+        .def_readwrite("ci_grid_step", &TRexScreeningControl::ci_grid_step, "Step of the grid over the "
             "confidence level, in (0, 1] (default 0.001).")
-        .def_readwrite("trex_method", &ScreenTRexControlParameter::trex_method, "Variant of the screening (default "
+        .def_readwrite("trex_method", &TRexScreeningControl::trex_method, "Variant of the screening (default "
             "TREX). See ScreenTRexMethod.")
-        .def_readwrite("rho_thr_DA", &ScreenTRexControlParameter::rho_thr_DA, "Correlation threshold of the "
+        .def_readwrite("rho_thr_DA", &TRexScreeningControl::rho_thr_DA, "Correlation threshold of the "
             "dependency-aware variants (default 0.02). TREX_DA_AR1: the window around a variable reaches "
             "ceil(log(rho_thr_DA) / log(abs(cor_coef))) columns to each side, up to the first lag whose correlation "
             "abs(cor_coef)**lag has fallen to the threshold, range [0, 1). TREX_DA_NN: the same window, of which "
@@ -142,32 +142,32 @@ inline void bind_trex_screen(py::module& m) {
             "is meant to guard against. At the default the variant selected as TREX_DA_AR1 in simulations. "
             "TREX_DA_EQUI and TREX_DA_BLOCK_EQUI: the filter is skipped when abs(cor_coef) does not exceed the "
             "threshold, range [0, 1].")
-        .def_readwrite("cor_coef",   &ScreenTRexControlParameter::cor_coef,   "Correlation coefficient of the "
+        .def_readwrite("cor_coef",   &TRexScreeningControl::cor_coef,   "Correlation coefficient of the "
             "dependency-aware variants; setting the parameter to -2 estimates it from the data. The variants use the "
             "magnitude of a supplied coefficient. Any other value outside [-1, 1] gives a warning and is replaced "
             "by the estimate.")
-        .def_readwrite("n_blocks",   &ScreenTRexControlParameter::n_blocks,   "Number of blocks of "
+        .def_readwrite("n_blocks",   &TRexScreeningControl::n_blocks,   "Number of blocks of "
             "TREX_DA_BLOCK_EQUI, between 1 and the number of variables (default 5).")
-        .def_readwrite("trex_ctrl",  &ScreenTRexControlParameter::trex_ctrl,  "Nested base T-Rex algorithmic control "
+        .def_readwrite("trex_ctrl",  &TRexScreeningControl::trex_ctrl,  "Nested base T-Rex algorithmic control "
             "parameters (overridden by the separate trex_control argument to TRexScreeningSelector).");
 
-    py::class_<ScreenTRexSelectionResult, TRexSelector::SelectionResult>(m, "ScreenTRexSelectionResult",
+    py::class_<TRexScreeningResult, TRexResult>(m, "ScreenTRexSelectionResult",
         "SelectionResult "
         ""
         "extended with screening-specific fields.")
-        .def_readonly("estimated_FDR", &ScreenTRexSelectionResult::estimated_FDR, "Estimated false discovery rate, "
+        .def_readonly("estimated_FDR", &TRexScreeningResult::estimated_FDR, "Estimated false discovery rate, "
             "one over the number of selected variables. An empty selection reports 1. It rests on the expected "
             "number of false discoveries, about one, and is no bound on the FDP of a run (see the notes of "
             "TRexScreeningSelector).")
-        .def_readonly("used_bootstrap", &ScreenTRexSelectionResult::used_bootstrap, "Whether the confidence-based "
+        .def_readonly("used_bootstrap", &TRexScreeningResult::used_bootstrap, "Whether the confidence-based "
             "screening (bootstrap) made the selection.")
-        .def_readonly("confidence_level", &ScreenTRexSelectionResult::confidence_level, "Confidence level that the "
+        .def_readonly("confidence_level", &TRexScreeningResult::confidence_level, "Confidence level that the "
             "grid search of the bootstrap picked. 0 without the bootstrap.")
-        .def_readonly("beta_mat", &ScreenTRexSelectionResult::beta_mat, "Coefficients of the variables, averaged "
+        .def_readonly("beta_mat", &TRexScreeningResult::beta_mat, "Coefficients of the variables, averaged "
             "over the K experiments (one per variable).")
-        .def_readonly("dummy_betas", &ScreenTRexSelectionResult::dummy_betas, "Non-zero coefficients of the dummies, "
+        .def_readonly("dummy_betas", &TRexScreeningResult::dummy_betas, "Non-zero coefficients of the dummies, "
             "collected over the K experiments. They are the sample of the bootstrap.")
-        .def_readonly("estimated_correlation", &ScreenTRexSelectionResult::estimated_correlation, "Correlation "
+        .def_readonly("estimated_correlation", &TRexScreeningResult::estimated_correlation, "Correlation "
             "coefficient of the dependency-aware variants: the supplied value, or the estimate from the data. 0 "
             "for TREX.");
 
@@ -210,20 +210,20 @@ inline void bind_trex_screen(py::module& m) {
         "J. Machkour, M. Muma, and D. P. Palomar, \"The Terminating-Random Experiments Selector:\n"
         "  Fast High-Dimensional Variable Selection with False Discovery Rate Control,\" Signal\n"
         "  Process., vol. 231, Art. no. 109894, 2025, doi: 10.1016/j.sigpro.2025.109894.\n")
-        .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, const ScreenTRexControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+        .def(py::init<Eigen::Ref<Eigen::MatrixXd>, Eigen::Ref<Eigen::VectorXd>, const TRexScreeningControl&,
+            const TRexControl&, int, bool>(),
              py::arg("X"), py::arg("y"),
-             py::arg("screen_control") = ScreenTRexControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("screen_control") = TRexScreeningControl(),
+             py::arg("trex_control") = TRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              "Construct the screening selector. X and y are accessed zero-copy via Eigen::Map. A negative\n"
              "seed (default: -1) gives a run that is not reproducible.")
-        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, const ScreenTRexControlParameter&,
-            const TRexControlParameter&, int, bool>(),
+        .def(py::init<const DesignArray&, Eigen::Ref<Eigen::VectorXd>, const TRexScreeningControl&,
+            const TRexControl&, int, bool>(),
              py::arg("X").noconvert(), py::arg("y"),
-             py::arg("screen_control") = ScreenTRexControlParameter(),
-             py::arg("trex_control") = TRexControlParameter(),
+             py::arg("screen_control") = TRexScreeningControl(),
+             py::arg("trex_control") = TRexControl(),
              py::arg("seed") = -1, py::arg("verbose") = true,
              py::keep_alive<1, 2>(), py::keep_alive<1, 3>(),
              kReaderSelectorDoc.c_str())

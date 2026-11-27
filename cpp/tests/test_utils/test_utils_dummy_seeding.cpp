@@ -126,7 +126,7 @@ TEST(DummySeeding, HconcatExpandStoredNoDuplicatesAndPrefixStable) {
 TEST(DummySeeding, HconcatFullGenerationMatchesIncrementalBuild) {
     const std::size_t n = 25, p = 40, K = 3, L_max = 4;
 
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/1234);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/1234);
 
     gen.generateAndStore(K, p, /*l_tag=*/0);
     for (std::size_t L = 2; L <= L_max; ++L) { gen.expandStored(p); }
@@ -145,7 +145,7 @@ TEST(DummySeeding, HconcatFullGenerationMatchesIncrementalBuild) {
 TEST(DummySeeding, PermutationExpandBaseNoDuplicatesAndPrefixStable) {
     const std::size_t n = 30, p = 50, L_max = 5;
 
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/77);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/77);
 
     const std::size_t base_id = 424242u;
     Eigen::MatrixXd base = gen.generate(p, base_id);
@@ -166,7 +166,7 @@ TEST(DummySeeding, PermutationExpandBaseNoDuplicatesAndPrefixStable) {
 TEST(DummySeeding, ExperimentsReceiveDistinctDummies) {
     const std::size_t n = 20, p = 30, K = 8;
 
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/5);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/5);
     gen.generateAndStore(K, p, /*l_tag=*/0);
 
     for (std::size_t a = 0; a < K; ++a) {
@@ -185,7 +185,7 @@ TEST(DummySeeding, ExperimentsReceiveDistinctDummies) {
 TEST(DummySeeding, LTagSeparatesStandardIterationsAndReproduces) {
     const std::size_t n = 20, p = 30;
 
-    DummyGenerator gen(n, dummygen::Distribution::Normal(), /*seed=*/99);
+    DummyGenerator gen(n, dummygen::DummyDistribution::Normal(), /*seed=*/99);
 
     Eigen::MatrixXd d_tag1(n, p), d_tag2(n, p), d_tag1_again(n, p);
     gen.generateInto(d_tag1, /*experiment_k=*/0, /*l_tag=*/1);

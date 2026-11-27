@@ -12,7 +12,7 @@
  *        K-fold cross-validation wrapper that reproduces `glmnet::cv.glmnet`.
  *
  * @details
- *   Unlike `ridge_cv_svd` — which solves the ridge problem analytically via the
+ *   Unlike `RidgeCV` — which solves the ridge problem analytically via the
  *   SVD — this file implements the *same* pathwise cyclic coordinate-descent
  *   algorithm that `glmnet` uses internally.
  *
@@ -56,12 +56,12 @@ namespace model_selection {
  *  explicit-grid `fit()` overload to solve at a caller-supplied sequence (e.g.
  *  `glmnet$lambda`) for a coefficient-by-coefficient comparison.
  */
-class enet_gaussian {
+class ElasticNet {
 
 public:
 
     /** @brief Default constructor: the copying engine. */
-    enet_gaussian() = default;
+    ElasticNet() = default;
 
     /**
      * @brief Choose the engine.
@@ -76,13 +76,13 @@ public:
      *        grid; the two engines agree to rounding (about 1e-12 in the
      *        coefficients), so a CV pick can differ only on a flat curve.
      */
-    explicit enet_gaussian(bool low_memory) : low_memory_(low_memory) {}
+    explicit ElasticNet(bool low_memory) : low_memory_(low_memory) {}
 
     /** @brief Set the thread budget of the Eigen products of fit() (>= 1);
      *  the library's default budget unless set. */
     void set_num_threads(int n_threads) {
         if (n_threads < 1) {
-            throw std::invalid_argument("enet_gaussian::set_num_threads: n_threads must be >= 1.");
+            throw std::invalid_argument("ElasticNet::set_num_threads: n_threads must be >= 1.");
         }
         n_threads_ = n_threads;
     }
@@ -149,7 +149,7 @@ public:
         // lambda_max == 0, and log(0) would poison the whole grid with NaNs.
         if (!(lambda_max > 1e-12) || !std::isfinite(lambda_max)) {
             throw std::runtime_error(
-                "enet_gaussian::fit: lambda grid anchor is degenerate "
+                "ElasticNet::fit: lambda grid anchor is degenerate "
                 "(y is constant or (nearly) orthogonal to X).");
         }
 
@@ -194,7 +194,7 @@ public:
         validate_inputs(X, y, alpha);
         if (lambda_grid.size() == 0) {
             throw std::invalid_argument(
-                "enet_gaussian::fit: lambda_grid is empty");
+                "ElasticNet::fit: lambda_grid is empty");
         }
         if (low_memory_) {
             const Eigen::VectorXd grid = lambda_grid;
@@ -231,7 +231,7 @@ public:
         validate_inputs(X_owned, y, alpha);
         if (lambda_grid.size() == 0) {
             throw std::invalid_argument(
-                "enet_gaussian::fit_owned: lambda_grid is empty");
+                "ElasticNet::fit_owned: lambda_grid is empty");
         }
         preprocess_owned(std::move(X_owned), y, standardize, intercept);
         lambdas_ = lambda_grid;
@@ -244,7 +244,7 @@ public:
     /**
      * @brief Fit at a caller-supplied grid on the rows selected by a 0/1 mask,
      *        with the raw-X engine: the training fold is never gathered
-     *        (used by enet_cv_ccd in low-memory mode).
+     *        (used by ElasticNetCV in low-memory mode).
      *
      * @param X               Predictor matrix (n x p), all rows.
      * @param y               Response vector (n), all rows.
@@ -275,7 +275,7 @@ public:
         validate_inputs(X, y, alpha);
         if (lambda_grid.size() == 0) {
             throw std::invalid_argument(
-                "enet_gaussian::fit_masked: lambda_grid is empty");
+                "ElasticNet::fit_masked: lambda_grid is empty");
         }
         const Eigen::VectorXd grid = lambda_grid;
         fit_raw_(X, y, &mask, &grid, alpha, 0, -1.0, standardize, intercept,
@@ -501,11 +501,11 @@ private:
         p_ = X.cols();
         const bool masked = (mask != nullptr);
         if (masked && mask->size() != n_) {
-            throw std::invalid_argument("enet_gaussian::fit_masked: mask length != n");
+            throw std::invalid_argument("ElasticNet::fit_masked: mask length != n");
         }
         const double n_w = masked ? mask->sum() : static_cast<double>(n_);
         if (n_w < 2.0) {
-            throw std::invalid_argument("enet_gaussian: fewer than 2 training rows");
+            throw std::invalid_argument("ElasticNet: fewer than 2 training rows");
         }
         const double inv_nw = 1.0 / n_w;
 
@@ -551,7 +551,7 @@ private:
             const double lambda_max = cmax / (n_w * alpha_eff) * y_scale_;
             if (!(lambda_max > 1e-12) || !std::isfinite(lambda_max)) {
                 throw std::runtime_error(
-                    "enet_gaussian::fit: lambda grid anchor is degenerate "
+                    "ElasticNet::fit: lambda grid anchor is degenerate "
                     "(y is constant or (nearly) orthogonal to X).");
             }
             const double lmr = (lambda_min_ratio > 0.0)
@@ -761,17 +761,17 @@ private:
                                 double alpha)
     {
         if (X.rows() != y.size())
-            throw std::invalid_argument("enet_gaussian: X.rows() != y.size()");
+            throw std::invalid_argument("ElasticNet: X.rows() != y.size()");
         if (X.rows() < 2)
-            throw std::invalid_argument("enet_gaussian: need n >= 2");
+            throw std::invalid_argument("ElasticNet: need n >= 2");
         if (alpha < 0.0 || alpha > 1.0)
-            throw std::invalid_argument("enet_gaussian: alpha must be in [0,1]");
+            throw std::invalid_argument("ElasticNet: alpha must be in [0,1]");
     }
 
     static Eigen::VectorXd make_log_grid(double hi, double lo, Eigen::Index n_lambda)
     {
         if (n_lambda <= 0)
-            throw std::invalid_argument("enet_gaussian: n_lambda must be positive");
+            throw std::invalid_argument("ElasticNet: n_lambda must be positive");
         Eigen::VectorXd g(n_lambda);
         if (n_lambda == 1) { g(0) = hi; return g; }
         const double log_hi = std::log(hi);
@@ -811,20 +811,24 @@ private:
     Eigen::VectorXd d_;         ///< ||x_{s,j}||^2 / n over the training rows
 };
 
+/** @brief Old name of ElasticNet.
+ *  @deprecated Use ElasticNet. */
+using enet_gaussian [[deprecated("Use ElasticNet")]] = ElasticNet;
+
 // ===================================================================================
 
 /**
  * @brief K-fold cross-validated elastic-net replicating `glmnet::cv.glmnet`.
  *
- * @details Mirrors the public contract of `ridge_cv_svd`
+ * @details Mirrors the public contract of `RidgeCV`
  *  (`fit / cv_min / cv_1se / lambdas / cv_mse / cv_sem / index_min / index_1se`)
- *  but solves each fold with the coordinate-descent `enet_gaussian`
+ *  but solves each fold with the coordinate-descent `ElasticNet`
  *  engine instead of the SVD.  The @f$\lambda@f$ grid is built once on the full
  *  data (glmnet semantics) and reused unchanged across folds.
  *
  *  For ridge (@f$\alpha=0@f$) the returned lambdas are on glmnet's scale and the
  *  T-Rex conversion `lambda_2_lars = lambda.1se * p / 2` applies, exactly as for
- *  `ridge_cv_svd`.
+ *  `RidgeCV`.
  *
  *  References:
  *  -----------
@@ -838,23 +842,23 @@ private:
  *   L. Breiman, J. H. Friedman, R. A. Olshen, and C. J. Stone, Classification and Regression Trees.
  *     Wadsworth, Belmont, CA, 1984.
  */
-class enet_cv_ccd {
+class ElasticNetCV {
 
 public:
 
     /** @brief Default constructor. */
-    enet_cv_ccd() = default;
+    ElasticNetCV() = default;
 
     /** @brief Choose the engine of the full-data and the fold fits (see
-     *  enet_gaussian(bool)): true runs every fit on the raw X with a 0/1
+     *  ElasticNet(bool)): true runs every fit on the raw X with a 0/1
      *  training mask, so the CV makes no allocation of the size of X. */
-    explicit enet_cv_ccd(bool low_memory) : low_memory_(low_memory) {}
+    explicit ElasticNetCV(bool low_memory) : low_memory_(low_memory) {}
 
     /** @brief Set the thread budget of the Eigen products of fit() (>= 1);
      *  the library's default budget unless set. The fold fits inherit it. */
     void set_num_threads(int n_threads) {
         if (n_threads < 1) {
-            throw std::invalid_argument("enet_cv_ccd::set_num_threads: n_threads must be >= 1.");
+            throw std::invalid_argument("ElasticNetCV::set_num_threads: n_threads must be >= 1.");
         }
         n_threads_ = n_threads;
     }
@@ -898,18 +902,18 @@ public:
         // Eigen's products run on this object's budget for the scope of the fit
         ::trex::utils::openmp::EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
         if (X.rows() != y.size())
-            throw std::invalid_argument("enet_cv_ccd::fit: X.rows() != y.size()");
+            throw std::invalid_argument("ElasticNetCV::fit: X.rows() != y.size()");
         const Eigen::Index n = X.rows();
         const Eigen::Index p = X.cols();
-        if (n_folds < 2)            throw std::invalid_argument("enet_cv_ccd::fit: n_folds >= 2");
+        if (n_folds < 2)            throw std::invalid_argument("ElasticNetCV::fit: n_folds >= 2");
         if (static_cast<Eigen::Index>(n_folds) > n)
-            throw std::invalid_argument("enet_cv_ccd::fit: n_folds <= n");
-        if (n_lambda <= 0)          throw std::invalid_argument("enet_cv_ccd::fit: n_lambda > 0");
+            throw std::invalid_argument("ElasticNetCV::fit: n_folds <= n");
+        if (n_lambda <= 0)          throw std::invalid_argument("ElasticNetCV::fit: n_lambda > 0");
 
         // ---- full-data grid (descending), reused across folds --------------
         n_lambda_requested_ = n_lambda;
         {
-            enet_gaussian full(low_memory_);
+            ElasticNet full(low_memory_);
             full.set_num_threads(n_threads_);
             full.fit(X, y, alpha, n_lambda, lambda_min_ratio,
                      standardize, intercept, /*use_strong_rule=*/false, max_iter, tol);
@@ -945,7 +949,7 @@ public:
                     w(test_idx[static_cast<std::size_t>(t)]) = 0.0;
                     y_te(t) = y(test_idx[static_cast<std::size_t>(t)]);
                 }
-                enet_gaussian en(true);
+                ElasticNet en(true);
                 en.set_num_threads(n_threads_);
                 en.fit_masked(X, y, w, lambdas_, alpha,
                               standardize, intercept, /*use_strong_rule=*/false, max_iter, tol);
@@ -968,7 +972,7 @@ public:
             // Fit CD path on the training fold at the SHARED full-data grid.
             // The gathered fold becomes the fit's working copy (centred and
             // standardised in place): one n_tr x p matrix per fold, not two.
-            enet_gaussian en;
+            ElasticNet en;
             en.set_num_threads(n_threads_);
             en.fit_owned(std::move(X_tr), y_tr, lambdas_, alpha,
                          standardize, intercept, /*use_strong_rule=*/false, max_iter, tol);
@@ -1075,7 +1079,7 @@ private:
 
     void check_fitted() const {
         if (!fitted_)
-            throw std::runtime_error("enet_cv_ccd: call fit() first");
+            throw std::runtime_error("ElasticNetCV: call fit() first");
     }
 
     bool            fitted_  = false;
@@ -1087,6 +1091,10 @@ private:
     Eigen::Index    idx_1se_ = 0;
     Eigen::Index    n_lambda_requested_ = 0;
 };
+
+/** @brief Old name of ElasticNetCV.
+ *  @deprecated Use ElasticNetCV. */
+using enet_cv_ccd [[deprecated("Use ElasticNetCV")]] = ElasticNetCV;
 
 // ===================================================================================
 } /* End of namespace model_selection */

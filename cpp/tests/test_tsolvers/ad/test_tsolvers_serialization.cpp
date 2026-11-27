@@ -5,7 +5,7 @@
  * @file test_tsolvers_serialization.cpp
  *
  * @brief Unit tests verifying serialization and warm-start capabilities
- *        for TSolver_Base via the concrete proxy TLARS_Solver.
+ *        for TSolverBase via the concrete proxy TSolverLARS.
  */
 // ========================================================================================
 
@@ -49,7 +49,7 @@ protected:
             {4.0, -2.5, 3.1},
             1.0, 42, -1, -1,
             predictor_policy::Normal(),
-            dummygen::Distribution::Normal(),
+            dummygen::DummyDistribution::Normal(),
             noisegen::noise_policy::Normal()
         );
         X = data.getX();
@@ -62,7 +62,7 @@ protected:
 
 /** @brief Verify resuming essentially replicates a continuous run */
 TEST_F(TSolverSerializationTest, ExpectResumePathMatchesContinuousPath) {
-    // CRUCIAL: TSolver_Base mutates the input matrices via Eigen::Map because of normalization!
+    // CRUCIAL: TSolverBase mutates the input matrices via Eigen::Map because of normalization!
     // If we run `ref_solver` on X, X is permanently centered and scaled.
     // `partial_solver` would then receive ALREADY NORMALIZED data, calculate new normalization
     // weights, and diverge!
@@ -75,7 +75,7 @@ TEST_F(TSolverSerializationTest, ExpectResumePathMatchesContinuousPath) {
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
     // 1. Continuous Reference execution to T_stop = 10
-    TLARS_Solver ref_solver(X_map, D_map, y_map);
+    TSolverLARS ref_solver(X_map, D_map, y_map);
     ref_solver.executeStep(10, true);
 
     Eigen::Map<Eigen::MatrixXd> X_map2(X2.data(), X2.rows(), X2.cols());
@@ -83,7 +83,7 @@ TEST_F(TSolverSerializationTest, ExpectResumePathMatchesContinuousPath) {
     Eigen::Map<Eigen::VectorXd> y_map2(y2.data(), y2.size());
 
     // 2. Partial execution followed by save and resume
-    TLARS_Solver partial_solver(X_map2, D_map2, y_map2);
+    TSolverLARS partial_solver(X_map2, D_map2, y_map2);
     partial_solver.executeStep(5, true);
 
     std::string checkpoint = ::testing::TempDir() + "temp_tlars_checkpoint.bin";
@@ -93,7 +93,7 @@ TEST_F(TSolverSerializationTest, ExpectResumePathMatchesContinuousPath) {
     EXPECT_TRUE(fs::exists(checkpoint));
 
     // Reload from file (Provide the tracking maps which hold their internally preprocessed state)
-    TLARS_Solver resumed_solver = TLARS_Solver::load(checkpoint, X_map2, D_map2);
+    TSolverLARS resumed_solver = TSolverLARS::load(checkpoint, X_map2, D_map2);
 
     // Verify it picked up correctly
     EXPECT_EQ(resumed_solver.getNumSteps(), partial_solver.getNumSteps());

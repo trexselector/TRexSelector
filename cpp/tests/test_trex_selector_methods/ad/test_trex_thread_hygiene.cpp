@@ -60,7 +60,7 @@ void runCore(LLoopStrategy strategy, bool parallel) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    TRexControlParameter ctrl;
+    TRexControl ctrl;
     ctrl.K = 3;
     ctrl.max_dummy_multiplier = 2;
     ctrl.lloop_strategy = strategy;
@@ -82,7 +82,7 @@ void runGvs(bool parallel) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    gvs::TRexGVSControlParameter ctrl;
+    gvs::TRexGVSControl ctrl;
     ctrl.gvs_type = gvs::GVSType::EN;
     ctrl.lambda_2 = 1.0;
     ctrl.trex_ctrl.K = 3;

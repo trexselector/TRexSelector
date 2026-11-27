@@ -193,7 +193,7 @@ inline double seeded_loop_work(std::size_t engines,
  *   E. Mammen, "Bootstrap and Wild Bootstrap for High Dimensional Linear Models," Ann. Statist., vol. 21,
  *     no. 1, pp. 255-285, 1993, doi: 10.1214/aos/1176349025.
  */
-struct Distribution {
+struct DummyDistribution {
 
     // ============================================
     // Enumeration for distribution types
@@ -299,10 +299,10 @@ struct Distribution {
     // ============================================
 
     /** @brief Default constructor (Normal distribution) */
-    Distribution() : type(Type::Normal) {};
+    DummyDistribution() : type(Type::Normal) {};
 
     /** Construct with specific type, using default paramters */
-    explicit Distribution(Type t): type(t) {};
+    explicit DummyDistribution(Type t): type(t) {};
 
     // ============================================
     // Named constructors (factory pattern)
@@ -315,10 +315,10 @@ struct Distribution {
      *
      * @see https://en.wikipedia.org/wiki/Normal_distribution
      *
-     * @return Distribution instance for Normal distribution.
+     * @return DummyDistribution instance for Normal distribution.
      */
-    static Distribution Normal() {
-        return Distribution(Type::Normal);
+    static DummyDistribution Normal() {
+        return DummyDistribution(Type::Normal);
     }
 
 
@@ -332,13 +332,13 @@ struct Distribution {
      *
      * @param a Half-range parameter (default: sqrt(3) for unit variance).
      *
-     * @return Distribution instance for Uniform distribution.
+     * @return DummyDistribution instance for Uniform distribution.
      */
-    static Distribution Uniform(double a = std::sqrt(3.0)) {
+    static DummyDistribution Uniform(double a = std::sqrt(3.0)) {
         if (a <= 0.0) {
             throw std::invalid_argument("Uniform distribution parameter a must be > 0.");
         }
-        Distribution dist(Type::Uniform);
+        DummyDistribution dist(Type::Uniform);
         dist.uniform_a = a;
         return dist;
     }
@@ -353,10 +353,10 @@ struct Distribution {
      *
      * @see https://en.wikipedia.org/wiki/Rademacher_distribution
      *
-     * @return Distribution instance for Rademacher distribution.
+     * @return DummyDistribution instance for Rademacher distribution.
      */
-    static Distribution Rademacher() {
-        return Distribution(Type::Rademacher);
+    static DummyDistribution Rademacher() {
+        return DummyDistribution(Type::Rademacher);
     }
 
 
@@ -371,13 +371,13 @@ struct Distribution {
      *
      * @param df Degrees of freedom (default: 5.0).
      *
-     * @return Distribution instance for Student's t-distribution.
+     * @return DummyDistribution instance for Student's t-distribution.
      */
-    static Distribution StudentT(double df = 5.0) {
+    static DummyDistribution StudentT(double df = 5.0) {
         if (df <= 0.0) {
             throw std::invalid_argument("Student-t degrees of freedom must be > 0.");
         }
-        Distribution dist(Type::StudentT);
+        DummyDistribution dist(Type::StudentT);
         dist.student_t_df = df;
         return dist;
     }
@@ -394,13 +394,13 @@ struct Distribution {
      * @param location Location parameter (default: 0.0).
      * @param scale Scale parameter (default: 1/sqrt(2)).
      *
-     * @return Distribution instance for Laplace distribution.
+     * @return DummyDistribution instance for Laplace distribution.
      */
-    static Distribution Laplace(double location = 0.0, double scale = 1.0 / std::sqrt(2.0)) {
+    static DummyDistribution Laplace(double location = 0.0, double scale = 1.0 / std::sqrt(2.0)) {
         if (scale <= 0.0) {
             throw std::invalid_argument("Laplace distribution scale parameter must be > 0.");
         }
-        Distribution dist(Type::Laplace);
+        DummyDistribution dist(Type::Laplace);
         dist.laplace_location = location;
         dist.laplace_scale = scale;
         return dist;
@@ -419,13 +419,13 @@ struct Distribution {
      * @param location Location parameter (default: 0.0, automatically adjusted for centering).
      * @param scale Scale parameter (default: 1.0).
      *
-     * @return Distribution instance for Gumbel distribution.
+     * @return DummyDistribution instance for Gumbel distribution.
      */
-    static Distribution Gumbel(double location = 0.0, double scale = 1.0) {
+    static DummyDistribution Gumbel(double location = 0.0, double scale = 1.0) {
         if (scale <= 0.0) {
             throw std::invalid_argument("Gumbel distribution scale parameter must be > 0.");
         }
-        Distribution dist(Type::Gumbel);
+        DummyDistribution dist(Type::Gumbel);
         dist.gumbel_location = location;
         dist.gumbel_scale = scale;
         return dist;
@@ -448,9 +448,9 @@ struct Distribution {
      * @param b Mode (default: 0.0 for symmetric distribution)
      * @param c Upper bound (default: +sqrt(6) for unit variance)
      *
-     * @return Distribution instance for Triangle distribution.
+     * @return DummyDistribution instance for Triangle distribution.
      */
-    static Distribution Triangle(
+    static DummyDistribution Triangle(
         double a = -std::sqrt(6.0),
         double b = 0.0,
         double c = std::sqrt(6.0)
@@ -458,7 +458,7 @@ struct Distribution {
         if (!(a < b && b < c)) {
             throw std::invalid_argument("Triangle distribution parameters must satisfy a < b < c.");
         }
-        Distribution dist(Type::Triangle);
+        DummyDistribution dist(Type::Triangle);
         dist.triangle_a = a;
         dist.triangle_b = b;
         dist.triangle_c = c;
@@ -479,13 +479,13 @@ struct Distribution {
      *
      * @param dim Dimension of the sphere (default: 3 for 3D sphere, must be >= 2).
      *
-     * @return Distribution instance for uniform distribution on the unit sphere.
+     * @return DummyDistribution instance for uniform distribution on the unit sphere.
      */
-    static Distribution UniformSphere(int dim = 3) {
+    static DummyDistribution UniformSphere(int dim = 3) {
         if (dim < 2) {
             throw std::invalid_argument("Sphere dimension must be >= 2.");
         }
-        Distribution dist(Type::UniformSphere);
+        DummyDistribution dist(Type::UniformSphere);
         dist.sphere_dim = dim;
         return dist;
     }
@@ -507,13 +507,13 @@ struct Distribution {
      * @param p1 Probability for value -(sqrt(5) - 1) / 2
      * @param p2 Probability for value +(sqrt(5) + 1) / 2
      *
-     * @return Distribution instance for Mammen distribution.
+     * @return DummyDistribution instance for Mammen distribution.
      */
-    static Distribution Mammen(
+    static DummyDistribution Mammen(
         double p1 = (std::sqrt(5.0) + 1.0) / (2.0 * std::sqrt(5.0)),
         double p2 = (std::sqrt(5.0) - 1.0) / (2.0 * std::sqrt(5.0))
     ) {
-        Distribution dist(Type::Mammen);
+        DummyDistribution dist(Type::Mammen);
         dist.mammen_param_p1 = p1;
         dist.mammen_param_p2 = p2;
         return dist;
@@ -529,15 +529,15 @@ struct Distribution {
      * @param s Sparsity parameter in (0, 1] (default: 0.1). s = 1 recovers the Rademacher
      *          distribution.
      *
-     * @return Distribution instance for Constrained Sparse Rademacher distribution.
+     * @return DummyDistribution instance for Constrained Sparse Rademacher distribution.
      *
      * @throws std::invalid_argument if s is not in (0, 1].
      */
-    static Distribution ConstrainedSparseRademacher(const double s = 0.1) {
+    static DummyDistribution ConstrainedSparseRademacher(const double s = 0.1) {
         if (s <= 0.0 || s > 1.0) {
             throw std::invalid_argument("Sparsity parameter s must be in (0, 1].");
         }
-        Distribution dist(Type::ConstrainedSparseRademacher);
+        DummyDistribution dist(Type::ConstrainedSparseRademacher);
         dist.constrained_sparse_rademacher_s = s;
         return dist;
     }
@@ -559,16 +559,16 @@ struct Distribution {
      * @param location Location parameter (default: 0.0).
      * @param scale Scale parameter (default: sqrt(3)/pi for unit variance).
      *
-     * @return Distribution instance for Logistic distribution.
+     * @return DummyDistribution instance for Logistic distribution.
      */
-    static Distribution Logistic(
+    static DummyDistribution Logistic(
         double location = 0.0,
         double scale = std::sqrt(3.0) / std::numbers::pi
     ) {
         if (scale <= 0.0) {
             throw std::invalid_argument("Logistic distribution scale parameter must be > 0.");
         }
-        Distribution dist(Type::Logistic);
+        DummyDistribution dist(Type::Logistic);
         dist.logistic_location = location;
         dist.logistic_scale = scale;
         return dist;
@@ -582,6 +582,10 @@ struct Distribution {
     /** @brief Get distribution type. */
     Type get_type() const { return type; }
 };
+
+/** @brief Old name of DummyDistribution.
+ *  @deprecated Use DummyDistribution. */
+using Distribution [[deprecated("Use DummyDistribution")]] = DummyDistribution;
 
 
 // ============================================
@@ -620,7 +624,7 @@ inline void generate_dummies(
     std::size_t n,
     std::size_t p,
     std::uint64_t base_seed,
-    const Distribution& dist = Distribution::Normal(),
+    const DummyDistribution& dist = DummyDistribution::Normal(),
     std::size_t col_offset = 0,
     int n_threads = ::trex::utils::openmp::get_num_threads()
 ) {
@@ -639,7 +643,7 @@ inline void generate_dummies(
     switch (dist.get_type()) {
 
         /** @brief Generate Normal distributed dummies. */
-        case Distribution::Type::Normal: {
+        case DummyDistribution::Type::Normal: {
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
             for (std::size_t j = 0; j < p; ++j) {
                 ::trex::utils::openmp::team_probe::record();
@@ -654,7 +658,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Uniform distributed dummies. */
-        case Distribution::Type::Uniform: {
+        case DummyDistribution::Type::Uniform: {
             double a = dist.uniform_a;
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
             for (std::size_t j = 0; j < p; ++j) {
@@ -670,7 +674,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Rademacher distributed dummies. */
-        case Distribution::Type::Rademacher: {
+        case DummyDistribution::Type::Rademacher: {
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
             for (std::size_t j = 0; j < p; ++j) {
                 ::trex::utils::openmp::team_probe::record();
@@ -685,7 +689,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Student's t-distributed dummies. */
-        case Distribution::Type::StudentT: {
+        case DummyDistribution::Type::StudentT: {
             double df = dist.student_t_df;
             // Scale to unit variance if df > 2
             double scale = (df > 2.0) ? std::sqrt((df - 2.0) / df) :  1.0;
@@ -704,7 +708,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Laplace distributed dummies using Boost.Math. */
-        case Distribution::Type::Laplace: {
+        case DummyDistribution::Type::Laplace: {
             double location = dist.laplace_location;
             double scale = dist.laplace_scale;
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
@@ -721,7 +725,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Gumbel distributed dummies. */
-        case Distribution::Type::Gumbel: {
+        case DummyDistribution::Type::Gumbel: {
             double location = dist.gumbel_location;
             double scale = dist.gumbel_scale;
 
@@ -742,7 +746,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Triangle distributed dummies using Boost.Random. */
-        case Distribution::Type::Triangle: {
+        case DummyDistribution::Type::Triangle: {
             double a = dist.triangle_a;
             double b = dist.triangle_b;
             double c = dist.triangle_c;
@@ -760,7 +764,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Unit Sphere distributed dummies using Boost.Random. */
-        case Distribution::Type::UniformSphere: {
+        case DummyDistribution::Type::UniformSphere: {
             int dim = dist.sphere_dim;
 
             // Validate dimensions
@@ -791,7 +795,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Mammen distributed dummies. */
-        case Distribution::Type::Mammen: {
+        case DummyDistribution::Type::Mammen: {
             double p1 = dist.mammen_param_p1; // Pr for value -(sqrt(5) - 1) / 2
             double p2 = dist.mammen_param_p2; // Pr for value +(sqrt(5) + 1) / 2
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
@@ -809,7 +813,7 @@ inline void generate_dummies(
         }
 
         /** @brief Generate Constrained Sparse Rademacher distributed dummies. */
-        case Distribution::Type::ConstrainedSparseRademacher: {
+        case DummyDistribution::Type::ConstrainedSparseRademacher: {
             double s = dist.constrained_sparse_rademacher_s;
 
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)
@@ -849,7 +853,7 @@ inline void generate_dummies(
 
 
         /** @brief Generate Logistic distributed dummies */
-        case Distribution::Type::Logistic: {
+        case DummyDistribution::Type::Logistic: {
             double location = dist.logistic_location;
             double scale = dist.logistic_scale;
             #pragma omp parallel for schedule(static) num_threads(nt) if (nt > 1)

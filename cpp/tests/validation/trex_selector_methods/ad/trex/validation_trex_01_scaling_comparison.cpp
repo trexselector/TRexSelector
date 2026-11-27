@@ -64,7 +64,7 @@ namespace datagen  = trex::utils::datageneration::datagen;
 namespace dummygen = trex::utils::datageneration::dummygen;
 namespace rates_ns = trex::utils::eval::rates;
 
-using trex::trex_selector_methods::ad::trex_core::TRexControlParameter;
+using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
@@ -74,12 +74,12 @@ using trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
 // Configuration helper
 // ==============================================================================
 
-static TRexControlParameter make_base_trex_control(SolverTypeForTRex solver) {
-    TRexControlParameter ctrl;
+static TRexControl make_base_trex_control(SolverTypeForTRex solver) {
+    TRexControl ctrl;
     ctrl.K                        = 20;
     ctrl.max_dummy_multiplier     = 10;
     ctrl.use_max_T_stop           = true;
-    ctrl.dummy_distribution       = dummygen::Distribution::Normal();
+    ctrl.dummy_distribution       = dummygen::DummyDistribution::Normal();
     ctrl.lloop_strategy           = LLoopStrategy::STANDARD;
     ctrl.tloop_stagnation_stop    = true;
     ctrl.tloop_max_stagnant_steps = 7;
@@ -104,7 +104,7 @@ static std::vector<std::size_t> run_once(const Eigen::MatrixXd& X,
     Eigen::Map<Eigen::MatrixXd> Xmap(Xw.data(), Xw.rows(), Xw.cols());
     Eigen::Map<Eigen::VectorXd> ymap(yw.data(), yw.rows());
 
-    TRexControlParameter ctrl = make_base_trex_control(solver);
+    TRexControl ctrl = make_base_trex_control(solver);
     ctrl.scaling_mode = mode;
 
     TRexSelector selector(Xmap, ymap, tFDR, ctrl, seed, /*verbose=*/false);

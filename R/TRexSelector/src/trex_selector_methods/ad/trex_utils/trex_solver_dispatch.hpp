@@ -25,7 +25,7 @@
  *        forwards to dispatchSolver<TSolver>.
  *
  *  Adding a new solver:
- *    1.  Write the solver class (inheriting TSolver_Base) with the standard
+ *    1.  Write the solver class (inheriting TSolverBase) with the standard
  *        constructor, default constructor, save(), and static load().
  *    2.  Add one `case` line in dispatchByType().
  */
@@ -108,7 +108,7 @@ enum class SolverTypeForTRex {
  * @details Adding a new parameter here automatically makes it available to the
  * dispatcher without touching intermediate routing layers.
  */
-struct SolverHyperparameters {
+struct TSolverParams {
     /** @brief L2 penalty for ENET-type solvers (ignored by non-using solvers). */
     double lambda2 = 0.1;   //
     /** @brief Shrinkage step size for AFS solver in (0, 1] (ignored by non-using solvers). */
@@ -118,7 +118,7 @@ struct SolverHyperparameters {
     int ncgmp_variant = 0;  //
     /** @brief Numerical tolerance of the selector: the threshold of its own
      *  comparisons and the tolerance of the solvers in its random experiments.
-     *  A stand-alone solver defaults to machine epsilon (SolverOptions::tol).
+     *  A stand-alone solver defaults to machine epsilon (TSolverOptions::tol).
      *  The two tolerances serve different purposes and differ on purpose. */
     double tol = 1e-6;      //
     /** @brief Exchangeable-tie band width of the greedy solvers (TOMP,
@@ -141,6 +141,10 @@ struct SolverHyperparameters {
      * tenet_aug_use_lars; ignored by every other solver. */
     bool tenet_aug_use_lars = false;
 };
+
+/** @brief Old name of TSolverParams.
+ *  @deprecated Use TSolverParams. */
+using SolverHyperparameters [[deprecated("Use TSolverParams")]] = TSolverParams;
 
 
 // ===================================================================================
@@ -177,7 +181,7 @@ struct SolverConfig {
      */
     bool intercept = false;
 
-    /** @brief The caller centered X, D and y (SolverOptions::precentered):
+    /** @brief The caller centered X, D and y (TSolverOptions::precentered):
      *  the solver caps its active set at n - 1. In TRex context true for
      *  every ScalingMode except NONE.
      */
@@ -213,7 +217,7 @@ struct SolverConfig {
 
     // --- Solver-specific extras ---
     /** @brief Encapsulated solver hyperparameters for t-solvers. */
-    SolverHyperparameters hyperparams{};
+    TSolverParams hyperparams{};
 
     /** @brief Deterministic tie-break seed for the solver's internal RNG
      *  (pruneTiedDummies shuffle). < 0 (the T-Rex default, an unseeded
@@ -223,7 +227,7 @@ struct SolverConfig {
     long long tie_seed = -1;
 
     /** @brief Thread budget of the solver's own OpenMP regions
-     *  (SolverOptions::n_threads): 1 serial, at least 1. Applied at
+     *  (TSolverOptions::n_threads): 1 serial, at least 1. Applied at
      *  construction and re-applied to warm-started and deserialized solvers,
      *  since the budget is not serialized. Inside a parallel K-loop the
      *  solver keeps its regions serial whatever the budget says. */
@@ -236,14 +240,14 @@ struct SolverConfig {
      *  this solver via executeStep(T_stop, early_stop). The solver holds
      *  non-owning views into X and its dummy matrix from the run that
      *  created it; cfg.X / cfg.D are ignored on this path. */
-    tsolvers::ad::TSolver_Base* warm_solver = nullptr;
+    tsolvers::ad::TSolverBase* warm_solver = nullptr;
 
     /** @brief Retention sink for the freshly constructed solver (nullptr = none).
      *  When set, dispatchSolver() heap-allocates the solver and moves it here
      *  after execution so the caller can retain it for the next T-step.
      *  The caller must keep the X and D buffers alive for as long as the
      *  solver is retained. */
-    std::unique_ptr<tsolvers::ad::TSolver_Base>* retain_sink = nullptr;
+    std::unique_ptr<tsolvers::ad::TSolverBase>* retain_sink = nullptr;
 
     // --- General-Tikhonov penalty (TIKNET dispatch) ---
 
@@ -268,16 +272,16 @@ namespace afs  = trex::tsolvers::ad::linear_model::afs_based;
 
 
 /**
- * @brief Translate a SolverConfig into the solver-level SolverOptions.
+ * @brief Translate a SolverConfig into the solver-level TSolverOptions.
  *
- * @details The T-Rex layer keeps its own SolverHyperparameters (lambda2 0.1
+ * @details The T-Rex layer keeps its own TSolverParams (lambda2 0.1
  *          and rho_afs 0.3 as the solvers' own defaults, its own tol 1e-6).
  *          This is the single place where they are mapped onto the solvers'
  *          construction-time options.
  */
-inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg) {
-    trex::tsolvers::ad::SolverOptions o;
-    const SolverHyperparameters& hp = cfg.hyperparams;
+inline trex::tsolvers::ad::TSolverOptions toSolverOptions(const SolverConfig& cfg) {
+    trex::tsolvers::ad::TSolverOptions o;
+    const TSolverParams& hp = cfg.hyperparams;
     o.normalize      = cfg.normalize;
     o.intercept      = cfg.intercept;
     o.precentered    = cfg.precentered;
@@ -310,9 +314,9 @@ inline trex::tsolvers::ad::SolverOptions toSolverOptions(const SolverConfig& cfg
  */
 template <typename TSolver>
 std::unique_ptr<TSolver> makeSolverForConfig(const SolverConfig& cfg) {
-    const trex::tsolvers::ad::SolverOptions options = toSolverOptions(cfg);
+    const trex::tsolvers::ad::TSolverOptions options = toSolverOptions(cfg);
 
-    if constexpr (std::is_same_v<TSolver, lars::TIKNET_Solver>) {
+    if constexpr (std::is_same_v<TSolver, lars::TSolverTIKNET>) {
         // TIKNET implements the FOLDED dummy convention: dummy copy t
         // couples as its base (t - p) mod p.
         if (cfg.tikhonov_K == nullptr) {
@@ -344,7 +348,7 @@ std::unique_ptr<TSolver> makeSolverForConfig(const SolverConfig& cfg) {
  *             cfg.retain_sink is set, ownership of the solver is handed to
  *             the caller for in-memory retention.
  *
- * @tparam TSolver Concrete solver type (must satisfy the TSolver_Base interface).
+ * @tparam TSolver Concrete solver type (must satisfy the TSolverBase interface).
  *
  * @param cfg Populated SolverConfig with data references and execution flags.
  *
@@ -379,7 +383,7 @@ SparseBetaPath dispatchSolver(const SolverConfig& cfg) {
     }
 
     // 3. Fresh construction: tolerance, tie seed and exchangeable ties are
-    //    part of the SolverOptions (toSolverOptions()).
+    //    part of the TSolverOptions (toSolverOptions()).
     std::unique_ptr<TSolver> solver = makeSolverForConfig<TSolver>(cfg);
     solver->executeStep(cfg.T_stop, cfg.early_stop);
     SparseBetaPath path = solver->getBetaPathSparse();
@@ -407,11 +411,11 @@ inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const Solver
     switch (solver_type) {
 
         // LARS family
-        case SolverTypeForTRex::TLARS:      return dispatchSolver<lars::TLARS_Solver>(cfg);
-        case SolverTypeForTRex::TLASSO:     return dispatchSolver<lars::TLASSO_Solver>(cfg);
-        case SolverTypeForTRex::TSTEPWISE:  return dispatchSolver<lars::TSTEPWISE_Solver>(cfg);
-        case SolverTypeForTRex::TENET:      return dispatchSolver<lars::TENET_Solver>(cfg);
-        case SolverTypeForTRex::TENET_AUG: return dispatchSolver<lars::TENETAug_Solver>(cfg);
+        case SolverTypeForTRex::TLARS:      return dispatchSolver<lars::TSolverLARS>(cfg);
+        case SolverTypeForTRex::TLASSO:     return dispatchSolver<lars::TSolverLASSO>(cfg);
+        case SolverTypeForTRex::TSTEPWISE:  return dispatchSolver<lars::TSolverStepwise>(cfg);
+        case SolverTypeForTRex::TENET:      return dispatchSolver<lars::TSolverENET>(cfg);
+        case SolverTypeForTRex::TENET_AUG: return dispatchSolver<lars::TSolverENETAug>(cfg);
         case SolverTypeForTRex::TIENET:     throw std::invalid_argument(
                 "trex_solver_dispatch: TIENET is a GVS-only solver (needs a "
                 "group assignment); use TRexGVSSelector with gvs_type=IEN.");
@@ -424,23 +428,23 @@ inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const Solver
             // the selector materializes K_GC, which this sparse path
             // consumes directly).
             if (cfg.tikhonov_K != nullptr) {
-                return dispatchSolver<lars::TIKNET_Solver>(cfg);
+                return dispatchSolver<lars::TSolverTIKNET>(cfg);
             }
             throw std::invalid_argument(
                 "trex_solver_dispatch: TIKNET needs a Tikhonov matrix "
                 "(TRexTikhonovSelector / SolverConfig::tikhonov_K).");
-        case SolverTypeForTRex::TSTAGEWISE: return dispatchSolver<lars::TSTAGEWISE_Solver>(cfg);
+        case SolverTypeForTRex::TSTAGEWISE: return dispatchSolver<lars::TSolverStagewise>(cfg);
 
         // OMP family
-        case SolverTypeForTRex::TOMP:       return dispatchSolver<omp::TOMP_Solver>(cfg);
-        case SolverTypeForTRex::TGP:        return dispatchSolver<omp::TGP_Solver>(cfg);
-        case SolverTypeForTRex::TACGP:      return dispatchSolver<omp::TACGP_Solver>(cfg);
-        case SolverTypeForTRex::TMP:        return dispatchSolver<omp::TMP_Solver>(cfg);
-        case SolverTypeForTRex::TNCGMP:     return dispatchSolver<omp::TNCGMP_Solver>(cfg);
-        case SolverTypeForTRex::TOOLS:      return dispatchSolver<omp::TOOLS_Solver>(cfg);
+        case SolverTypeForTRex::TOMP:       return dispatchSolver<omp::TSolverOMP>(cfg);
+        case SolverTypeForTRex::TGP:        return dispatchSolver<omp::TSolverGP>(cfg);
+        case SolverTypeForTRex::TACGP:      return dispatchSolver<omp::TSolverACGP>(cfg);
+        case SolverTypeForTRex::TMP:        return dispatchSolver<omp::TSolverMP>(cfg);
+        case SolverTypeForTRex::TNCGMP:     return dispatchSolver<omp::TSolverNCGMP>(cfg);
+        case SolverTypeForTRex::TOOLS:      return dispatchSolver<omp::TSolverOOLS>(cfg);
 
         // AFS family
-        case SolverTypeForTRex::TAFS:       return dispatchSolver<afs::TAFS_Solver>(cfg);
+        case SolverTypeForTRex::TAFS:       return dispatchSolver<afs::TSolverAFS>(cfg);
 
         default:
             throw std::invalid_argument("trex_solver_dispatch: unsupported SolverTypeForTRex");

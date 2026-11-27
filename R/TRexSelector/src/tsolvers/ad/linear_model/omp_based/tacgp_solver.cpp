@@ -27,15 +27,15 @@ namespace trex::tsolvers::ad::linear_model::omp_based {
 // Constructors
 // ==================================================================================
 
-TACGP_Solver::TACGP_Solver(SolverTypeOMPBased solver_type)
-    : TGP_Solver(solver_type) {}
+TSolverACGP::TSolverACGP(SolverTypeOMPBased solver_type)
+    : TSolverGP(solver_type) {}
 
 
 // ==================================================================================
 // Main executeStep method override
 // ==================================================================================
 
-void TACGP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
+void TSolverACGP::executeStep(std::size_t T_stop, bool early_stop) {
     validateConnected();
     EigenThreadBudgetGuard eigen_thread_budget_guard(n_threads_);
 
@@ -137,7 +137,7 @@ void TACGP_Solver::executeStep(std::size_t T_stop, bool early_stop) {
 // ACGP Specific Methods and Overrides
 // ==================================================================================
 
-void TACGP_Solver::computeGradientDirection() {
+void TSolverACGP::computeGradientDirection() {
 
     // Extract active correlations c^{n}_A
     std::size_t k = actives_.size();
@@ -176,7 +176,7 @@ void TACGP_Solver::computeGradientDirection() {
 }
 
 
-double TACGP_Solver::computeB_1() {
+double TSolverACGP::computeB_1() {
 
     // b_1 = - <p^{n-1}, X_A c^n_A> / ||p^{n-1}||^2
     std::size_t k = actives_.size();
@@ -219,7 +219,7 @@ double TACGP_Solver::computeB_1() {
 }
 
 
-void TACGP_Solver::storePreviousDirection() {
+void TSolverACGP::storePreviousDirection() {
     // Store current direction and projection for next iteration
     // d^{n-1} <- d^{n}
     direction_prev_ = direction_;
@@ -232,9 +232,9 @@ void TACGP_Solver::storePreviousDirection() {
 // Memory report
 // ==================================================================================
 
-std::size_t TACGP_Solver::memoryBytes() const noexcept {
+std::size_t TSolverACGP::memoryBytes() const noexcept {
     using solver_utils::memory_bytes::bytesOf;
-    return TGP_Solver::memoryBytes() + bytesOf(direction_prev_) +
+    return TSolverGP::memoryBytes() + bytesOf(direction_prev_) +
            bytesOf(projected_direction_prev_);
 }
 
@@ -243,13 +243,13 @@ std::size_t TACGP_Solver::memoryBytes() const noexcept {
 // De-/Serialization
 // ==================================================================================
 
-void TACGP_Solver::save(const std::string& filename) const { saveImpl(*this, filename); }
+void TSolverACGP::save(const std::string& filename) const { saveImpl(*this, filename); }
 
 
-TACGP_Solver TACGP_Solver::load(const std::string& filename,
+TSolverACGP TSolverACGP::load(const std::string& filename,
                               Eigen::Map<Eigen::MatrixXd>& X,
                               Eigen::Map<Eigen::MatrixXd>& D) {
-    return loadImpl<TACGP_Solver>(filename, X, D);
+    return loadImpl<TSolverACGP>(filename, X, D);
 }
 
 // ==================================================================================

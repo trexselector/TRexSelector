@@ -30,11 +30,11 @@ Two latent factors, the first loading on variables 0 to 9 and the second on vari
 
 ## Running the selector
 
-`TRexSPCA(X, M, tFDR, spca_ctrl, seed, verbose)` takes the design, the number of components `M`, the
+`TRexSPCASelector(X, M, tFDR, spca_ctrl, seed, verbose)` takes the design, the number of components `M`, the
 target FDR and the control, and `select()` extracts the components. The elastic-net penalty of the
 inner selector is chosen by cross-validation by default. `X` is centered in place during `select()`
 and restored on return. The base control of the inner selector, with the number of random
-experiments `K`, is nested in the group control of the TRexSPCAControlParameter.
+experiments `K`, is nested in the group control of the TRexSPCAControl.
 
 \snippet{trimleft} trex_spca.cpp run
 \output{trex_spca.run.txt}
@@ -60,7 +60,7 @@ centered design.
 
 ## The control
 
-TRexSPCAControlParameter sets the inner machinery.
+TRexSPCAControl sets the inner machinery.
 
 - `mode`: `SPCAMode::ActiveSet` (default) assembles the loading by a ridge regression of the
   component on the selected variables with penalty `lambda2_ridge_loadings`, `SPCAMode::Thresholded`

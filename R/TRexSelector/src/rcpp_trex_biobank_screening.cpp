@@ -6,16 +6,16 @@
 
 using namespace Rcpp;
 
-extern TRexControlParameter parse_control_parameter(const Rcpp::List& control);
-extern void validate_core_solver_type(const TRexControlParameter& params);
-extern ScreenTRexControlParameter parse_screen_parameter(const Rcpp::List& control);
+extern TRexControl parse_control_parameter(const Rcpp::List& control);
+extern void validate_core_solver_type(const TRexControl& params);
+extern TRexScreeningControl parse_screen_parameter(const Rcpp::List& control);
 
-BiobankScreenTRexControl parse_biobank_screen_parameter(
+TRexBiobankScreeningControl parse_biobank_screen_parameter(
     const Rcpp::List& biobank_control,
     const Rcpp::List& screen_control,
     const Rcpp::List& trex_control
 ) {
-    BiobankScreenTRexControl params;
+    TRexBiobankScreeningControl params;
 
     if (biobank_control.containsElementNamed("target_FDR_trex"))
         params.target_FDR_trex = biobank_control["target_FDR_trex"];
@@ -49,7 +49,7 @@ XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_1d_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    BiobankScreenTRexControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
+    TRexBiobankScreeningControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
         trex_control_list);
     // Pin X and y until the finalizer has run: the base destructor writes the
     // de-normalized X back through the stored map (GC order is unspecified).
@@ -93,7 +93,7 @@ XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_create(
 ) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.begin(), X.nrow(), X.ncol());
     Eigen::Map<Eigen::MatrixXd> Y_map = response_map_of(Y);
-    BiobankScreenTRexControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
+    TRexBiobankScreeningControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
         trex_control_list);
     // Pin X and Y until the finalizer has run (see above).
     return XPtr<RTRexBiobankScreeningSelector>(new RTRexBiobankScreeningSelector(X_map, Y_map, control, seed, verbose),
@@ -118,7 +118,7 @@ XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_1d_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::VectorXd> y_map(y.begin(), y.size());
-    BiobankScreenTRexControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
+    TRexBiobankScreeningControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
         trex_control_list);
     // Pin the mmap holder and y until the finalizer has run.
     return XPtr<RTRexBiobankScreeningSelector>(new RTRexBiobankScreeningSelector(
@@ -138,7 +138,7 @@ XPtr<RTRexBiobankScreeningSelector> trex_biobank_screening_2d_mmap_create(
     bool verbose
 ) {
     Eigen::Map<Eigen::MatrixXd> Y_map = response_map_of(Y);
-    BiobankScreenTRexControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
+    TRexBiobankScreeningControl control = parse_biobank_screen_parameter(biobank_control_list, screen_control_list,
         trex_control_list);
     // Pin the mmap holder and Y until the finalizer has run.
     return XPtr<RTRexBiobankScreeningSelector>(new RTRexBiobankScreeningSelector(
@@ -161,8 +161,8 @@ IntegerVector convert_indices_1based(const std::vector<std::size_t>& cpp_indices
 // single source of truth for the biobank result shape: the 1-D getter returns
 // one such record, and the 2-D getter returns a plain list of them. Keeping the
 // record identical across both paths mirrors the Python binding, which hands
-// back one BiobankScreenTRexResult (1-D) or a list of them (matrix).
-List biobank_result_to_record(const BiobankScreenTRexResult& res) {
+// back one TRexBiobankScreeningResult (1-D) or a list of them (matrix).
+List biobank_result_to_record(const TRexBiobankScreeningResult& res) {
     return List::create(
         Named("phenotype_index") = res.phenotype_index + 1, // 1-based for R
         Named("selected_indices") = convert_indices_1based(res.selected_indices),
@@ -194,7 +194,7 @@ List trex_biobank_screening_screen_phenotypes(XPtr<RTRexBiobankScreeningSelector
     // 1-D return. The former struct-of-arrays layout ($statistics data.frame +
     // parallel index lists) is dropped; every field it carried now lives inside
     // each record, so no information is lost and the shape matches Python's
-    // list[BiobankScreenTRexResult].
+    // list[TRexBiobankScreeningResult].
     List out(n);
     for (std::size_t i = 0; i < n; ++i) {
         out[i] = biobank_result_to_record(results[i]);
