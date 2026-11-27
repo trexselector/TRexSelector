@@ -33,7 +33,7 @@ using namespace trex::ml_methods::clustering::hierarchical::agglomerative;
 // ===================================================================================
 // Note on SciPy Equivalence:
 // 1. Distance Metrics: The C++ engine computes squared distances natively for performance.
-//    `DistanceMetric::Euclidean` maps directly to SciPy's `metric='sqeuclidean'`.
+//    `DistanceMetric::EUCLIDEAN` maps directly to SciPy's `metric='sqeuclidean'`.
 //
 // 2. Inversions: For non-reducible linkage methods (Centroid, Median), SciPy preserves
 //    chronological inversions (later merges with smaller distances). This framework enforces
@@ -60,8 +60,8 @@ TEST(AgglomerativeDispatcherTest, SingleLinkageSciPyMatch) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Single>(data, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::SINGLE>(data, false);
 
     ASSERT_EQ(merges.size(), 4);
 
@@ -102,8 +102,8 @@ TEST(AgglomerativeDispatcherTest, AverageLinkageSciPyMatch) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Average>(data, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::AVERAGE>(data, false);
 
     ASSERT_EQ(merges.size(), 4);
 
@@ -144,8 +144,8 @@ TEST(AgglomerativeDispatcherTest, CentroidLinkageSciPyMatch) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Centroid>(data, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::CENTROID>(data, false);
 
     ASSERT_EQ(merges.size(), 4);
 
@@ -179,7 +179,7 @@ TEST(AgglomerativeDispatcherTest, CentroidLinkageSciPyMatch) {
 
 // ===================================================================================
 // Correlation-metric tests mirroring the production configuration
-// (trex_gvs / trex_da dispatch with DistanceMetric::Correlation and
+// (trex_gvs / trex_da dispatch with DistanceMetric::CORRELATION and
 // Single/Complete/Average/WPGMA linkage).
 // ===================================================================================
 
@@ -225,8 +225,8 @@ TEST(AgglomerativeDispatcherTest, CompleteLinkageCorrelationMetric) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation>,
-        LinkageMethod::Complete>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION>,
+        LinkageMethod::COMPLETE>(data, false, false);
 
     ASSERT_EQ(merges.size(), 3);
 
@@ -256,8 +256,8 @@ TEST(AgglomerativeDispatcherTest, AverageLinkageCorrelationMetric) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation>,
-        LinkageMethod::Average>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION>,
+        LinkageMethod::AVERAGE>(data, false, false);
 
     ASSERT_EQ(merges.size(), 3);
 
@@ -289,7 +289,7 @@ TEST(AgglomerativeDispatcherTest, WPGMALinkageCorrelationMetric) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation>,
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION>,
         LinkageMethod::WPGMA>(data, false, false);
 
     ASSERT_EQ(merges.size(), 3);
@@ -325,8 +325,8 @@ TEST(AgglomerativeDispatcherTest, WardLinkageSciPyMatch) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Ward>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::WARD>(data, false, false);
 
     ASSERT_EQ(merges.size(), 4);
 
@@ -366,8 +366,8 @@ TEST(AgglomerativeDispatcherTest, MedianLinkageSciPyMatch) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Median>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::MEDIAN>(data, false, false);
 
     ASSERT_EQ(merges.size(), 4);
 
@@ -415,8 +415,8 @@ TEST(AgglomerativeDispatcherTest, CentroidInversionMonotoneRebuild) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Centroid>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::CENTROID>(data, false, false);
 
     ASSERT_EQ(merges.size(), 2);
 
@@ -457,8 +457,8 @@ TEST(AgglomerativeDispatcherTest, WardLSHApproxSeparatesClusters) {
 
     auto merges = AgglomerativeClustering::cluster<
         Eigen::MatrixXd,
-        DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation_LSH_Approx>,
-        LinkageMethod::Ward>(data, false, false);
+        DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION_LSH_APPROX>,
+        LinkageMethod::WARD>(data, false, false);
 
     ASSERT_EQ(merges.size(), 5);
 
@@ -483,13 +483,13 @@ TEST(AgglomerativeDispatcherTest, WardLSHApproxSeparatesClusters) {
 TEST(AgglomerativeDispatcherTest, MmapBackendMatchesRam) {
     Eigen::MatrixXd data = make_correlation_test_data();
 
-    using CorrPolicy = DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation>;
+    using CorrPolicy = DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION>;
 
     auto ram_merges = AgglomerativeClustering::cluster<
-        Eigen::MatrixXd, CorrPolicy, LinkageMethod::Average>(
+        Eigen::MatrixXd, CorrPolicy, LinkageMethod::AVERAGE>(
             data, /*use_mmap=*/false, /*verbose=*/false);
     auto mmap_merges = AgglomerativeClustering::cluster<
-        Eigen::MatrixXd, CorrPolicy, LinkageMethod::Average>(
+        Eigen::MatrixXd, CorrPolicy, LinkageMethod::AVERAGE>(
             data, /*use_mmap=*/true, /*verbose=*/false);
 
     ASSERT_EQ(ram_merges.size(), mmap_merges.size());

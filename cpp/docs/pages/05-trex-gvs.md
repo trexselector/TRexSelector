@@ -47,7 +47,7 @@ The result records the clustering and the penalty.
 ## Choosing lambda_2
 
 A negative `lambda_2` (the default `-1`) lets the selector determine the penalty. `lambda2_method`
-names the rule. For the elastic net the default is `LambdaSelectionMethod::CV_1SE_CCD`, a ridge
+names the rule. For the elastic net the default is `GVSLambda2Method::CV_1SE_CCD`, a ridge
 cross-validation by coordinate descent read with the one-standard-error rule, with `CV_MIN_CCD`,
 `CV_1SE_SVD` and `CV_MIN_SVD` as alternatives. The one-standard-error rule is preferred because the
 minimum rule tends to pin the penalty to the floor of the grid. `cv_n_folds`, `cv_n_lambda` and
@@ -64,7 +64,7 @@ the path (0 is healthy).
 `gvs_type = GVSType::IEN` encodes the groups in the penalty. The groups come from `prior_groups` in
 the control (one label per variable, numbered 0 to \f$M - 1\f$ without gaps) or from the correlation
 clustering. The solver is set in `trex_ctrl.solver_type`:
-`SolverTypeForTRex::TIENET` (default, the native pathwise form) or
+`TSolverType::TIENET` (default, the native pathwise form) or
 `TIENET_AUG` (row augmented). The IEN rules of `lambda2_method` (`CV_1SE_IEN_CCD`, the default on
 this track, `CV_MIN_IEN_CCD`, `CV_1SE_TIK_SVD`, `CV_MIN_TIK_SVD`) consume the group structure and
 return \f$\lambda_2\f$ on the solver scale. The penalty is left to the IEN rule here.

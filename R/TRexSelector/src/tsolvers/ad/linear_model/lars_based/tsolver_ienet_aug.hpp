@@ -47,7 +47,7 @@
  *
  *  Preprocessing (family convention): the DATA blocks X and D are
  *  standardized BEFORE augmentation (column centering and unit-L2 / unit-SD
- *  scaling per the caller's intercept/normalize flags and ScalingMode; y is
+ *  scaling per the caller's intercept/normalize flags and TSolverScalingMode; y is
  *  centered), the group-ridge rows are appended afterwards, and the
  *  augmented columns are NOT re-normalized. The inner solver then runs with
  *  `normalize = false, intercept = false`. This makes the wrapper exactly
@@ -174,8 +174,8 @@ class TSolverIENETAug : public TSolverBase {
     /**
      * @brief Center and/or rescale each column of `A` in place.
      *
-     * Divide the centered column by its L2-norm (ScalingMode::L2) or by its
-     * sample SD (ScalingMode::ZSCORE). A degenerate column (scale below eps)
+     * Divide the centered column by its L2-norm (TSolverScalingMode::L2) or by its
+     * sample SD (TSolverScalingMode::ZSCORE). A degenerate column (scale below eps)
      * keeps scale 1.0, consistent with the shared data-normalizer policy.
      * Applied to the DATA blocks before augmentation (never to the appended
      * group-ridge rows).
@@ -187,7 +187,7 @@ class TSolverIENETAug : public TSolverBase {
      * @param scale        Rescale the columns (normalize convention).
      */
     static void centerAndScaleColumns(Eigen::MatrixXd& A, double eps,
-                                      ScalingMode scaling_mode,
+                                      TSolverScalingMode scaling_mode,
                                       bool center = true, bool scale = true);
 
     /** @brief Construct Eigen::Maps from the three owned buffers. */
@@ -215,7 +215,7 @@ class TSolverIENETAug : public TSolverBase {
      * @param n_threads Thread budget of the inner solver (TSolverOptions::n_threads).
      */
     void buildInnerSolver(bool normalize, bool intercept, bool precentered,
-                          bool verbose, ScalingMode scaling_mode, long long tie_seed,
+                          bool verbose, TSolverScalingMode scaling_mode, long long tie_seed,
                           int n_threads);
 
 public:

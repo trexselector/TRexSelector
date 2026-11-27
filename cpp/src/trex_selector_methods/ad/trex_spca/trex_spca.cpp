@@ -86,10 +86,10 @@ TRexSPCASelector::TRexSPCASelector(Eigen::Map<Eigen::MatrixXd>& X,
     // error comes at the first component inside select(), after the ordinary
     // PCA is computed, and its message names TRexGVSSelector.
     const auto rule = spca_ctrl_.gvs_ctrl.lambda2_method;
-    if (rule == tg::LambdaSelectionMethod::CV_1SE_IEN_CCD ||
-        rule == tg::LambdaSelectionMethod::CV_MIN_IEN_CCD ||
-        rule == tg::LambdaSelectionMethod::CV_1SE_TIK_SVD ||
-        rule == tg::LambdaSelectionMethod::CV_MIN_TIK_SVD) {
+    if (rule == tg::GVSLambda2Method::CV_1SE_IEN_CCD ||
+        rule == tg::GVSLambda2Method::CV_MIN_IEN_CCD ||
+        rule == tg::GVSLambda2Method::CV_1SE_TIK_SVD ||
+        rule == tg::GVSLambda2Method::CV_MIN_TIK_SVD) {
         throw std::invalid_argument(
             "TRexSPCASelector: gvs_ctrl.lambda2_method is a rule of the informed elastic "
             "net, which T-Rex+SPCA does not support. Use CV_1SE_CCD, CV_MIN_CCD, "
@@ -213,7 +213,7 @@ const TRexSPCAResult& TRexSPCASelector::select() {
         result_.active_sets[static_cast<std::size_t>(m)] = active_set;
 
         // 4. Assemble sparse loading vector.
-        if (spca_ctrl_.mode == SPCAMode::ActiveSet) {
+        if (spca_ctrl_.mode == SPCAMode::ACTIVE_SET) {
             assembleActiveSetLoadings(*X_, z_m, active_set, result_.V.col(m));
         } else {
             assembleThresholdedLoadings(

@@ -199,17 +199,17 @@ enum class ENSolverType {
 
 
 /**
- * @brief Map an ENSolverType to the corresponding SolverTypeForTRex enumerator.
+ * @brief Map an ENSolverType to the corresponding TSolverType enumerator.
  *
  * @details Used by `TRexGVSSelector` to derive the nested
  *  `trex_ctrl.solver_type` when `gvs_type == EN`, and by `TRexSPCASelector` when
  *  forwarding its `en_solver` knob to the per-PC GVS runs.
  */
-inline constexpr disp::SolverTypeForTRex toSolverType(ENSolverType en_solver) {
+inline constexpr disp::TSolverType toSolverType(ENSolverType en_solver) {
     switch (en_solver) {
-        case ENSolverType::TENET_AUG: return disp::SolverTypeForTRex::TENET_AUG;
+        case ENSolverType::TENET_AUG: return disp::TSolverType::TENET_AUG;
         case ENSolverType::TENET:
-        default:                      return disp::SolverTypeForTRex::TENET;
+        default:                      return disp::TSolverType::TENET;
     }
 }
 
@@ -243,7 +243,7 @@ inline constexpr disp::SolverTypeForTRex toSolverType(ENSolverType en_solver) {
  *                 (contrast interpolation) — a warning is logged and the
  *                 IEN_CCD tuner should be preferred there.
  */
-enum class LambdaSelectionMethod {
+enum class GVSLambda2Method {
     /** @brief JacobiSVD direct ridge CV, 1SE. */
     CV_1SE_SVD,
     /** @brief JacobiSVD direct ridge CV, min. */
@@ -261,6 +261,10 @@ enum class LambdaSelectionMethod {
     /** @brief Generalized-Tikhonov SVD ridge CV (IEN geometry), min. */
     CV_MIN_TIK_SVD
 };
+
+/** @brief Old name of GVSLambda2Method.
+ *  @deprecated Use GVSLambda2Method. */
+using LambdaSelectionMethod [[deprecated("Use GVSLambda2Method")]] = GVSLambda2Method;
 
 
 // ===================================================================================
@@ -307,13 +311,13 @@ struct TRexGVSControl {
      *  The centroid and median linkages are rejected as well, because they
      *  are not reducible.
      */
-    hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
+    hac::LinkageMethod hc_linkage = hac::LinkageMethod::SINGLE;
 
     /** @brief User-supplied lambda_2.
      *  - `< 0` (default `-1.0`): sentinel meaning "not supplied"; triggers
      *    auto-computation via `lambda2_method`. The EN-shaped tuners scale
      *    the CV pick by p / 2 to LARS units; the IEN-geometry tuners return
-     *    it on the solver scale directly (see `LambdaSelectionMethod`).
+     *    it on the solver scale directly (see `GVSLambda2Method`).
      *  - `== 0`: fixed degenerate case -> pure TLASSO (no ridge penalty).
      *  - `> 0` : fixed ridge penalty.
      *
@@ -327,7 +331,7 @@ struct TRexGVSControl {
     double lambda_2 = -1.0;
 
     /** @brief Selection rule for auto-computing `lambda_2` when `lambda_2 < 0`.
-     *         Options (see the `LambdaSelectionMethod` enum for details):
+     *         Options (see the `GVSLambda2Method` enum for details):
      *          - CV_1SE_SVD / CV_MIN_SVD : JacobiSVD ridge CV (RidgeCV);
      *            for numerical validation.
      *          - CV_1SE_CCD / CV_MIN_CCD : glmnet-faithful coordinate-descent ridge CV
@@ -342,7 +346,7 @@ struct TRexGVSControl {
      *            Tikhonov CV (tikhonov_cv_svd); gvs_type = IEN only, solver
      *            scale, refused in the contrast-interpolating wide regime.
      */
-    LambdaSelectionMethod lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    GVSLambda2Method lambda2_method = GVSLambda2Method::CV_1SE_CCD;
 
     /** @brief Number of folds for k-fold cross-validation used by the
      *  `lambda2_method` CV paths. Default: 10 (matches R's `cv.glmnet`).
@@ -430,7 +434,7 @@ struct TRexGVSControl {
      */
     tc::TRexControl trex_ctrl = [] {
         tc::TRexControl t;
-        t.solver_type = disp::SolverTypeForTRex::TENET;
+        t.solver_type = disp::TSolverType::TENET;
         return t;
     }();
 };

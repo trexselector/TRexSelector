@@ -111,7 +111,7 @@ void demo_trex_spca_scaling_sweep(const SimConfig&           cfg,
         // 1. ENaug + ActiveSet, L2 scaling
         auto r1 = run_mc_trials_trex_spca(
             cfg.num_MC, snr_lbl + " [ENaug-Act-L2]",
-            make_data, cfg.tFDR, SPCAMode::ActiveSet, offset,
+            make_data, cfg.tFDR, SPCAMode::ACTIVE_SET, offset,
             cfg.lambda_2, ENSolverType::TENET_AUG, ScalingMode::L2);
         fdr_map["ENaug-Act-L2"](ei) = r1.avg_fdr;
         tpr_map["ENaug-Act-L2"](ei) = r1.avg_tpr;
@@ -120,7 +120,7 @@ void demo_trex_spca_scaling_sweep(const SimConfig&           cfg,
         // 2. ENaug + ActiveSet, z-score scaling
         auto r2 = run_mc_trials_trex_spca(
             cfg.num_MC, snr_lbl + " [ENaug-Act-Z]",
-            make_data, cfg.tFDR, SPCAMode::ActiveSet, offset,
+            make_data, cfg.tFDR, SPCAMode::ACTIVE_SET, offset,
             cfg.lambda_2, ENSolverType::TENET_AUG, ScalingMode::ZSCORE);
         fdr_map["ENaug-Act-Z"](ei) = r2.avg_fdr;
         tpr_map["ENaug-Act-Z"](ei) = r2.avg_tpr;
@@ -129,7 +129,7 @@ void demo_trex_spca_scaling_sweep(const SimConfig&           cfg,
         // 3. ENaug + Thresholded, L2 scaling
         auto r3 = run_mc_trials_trex_spca(
             cfg.num_MC, snr_lbl + " [ENaug-Thr-L2]",
-            make_data, cfg.tFDR, SPCAMode::Thresholded, offset,
+            make_data, cfg.tFDR, SPCAMode::THRESHOLDED, offset,
             cfg.lambda_2, ENSolverType::TENET_AUG, ScalingMode::L2);
         fdr_map["ENaug-Thr-L2"](ei) = r3.avg_fdr;
         tpr_map["ENaug-Thr-L2"](ei) = r3.avg_tpr;
@@ -138,7 +138,7 @@ void demo_trex_spca_scaling_sweep(const SimConfig&           cfg,
         // 4. ENaug + Thresholded, z-score scaling
         auto r4 = run_mc_trials_trex_spca(
             cfg.num_MC, snr_lbl + " [ENaug-Thr-Z]",
-            make_data, cfg.tFDR, SPCAMode::Thresholded, offset,
+            make_data, cfg.tFDR, SPCAMode::THRESHOLDED, offset,
             cfg.lambda_2, ENSolverType::TENET_AUG, ScalingMode::ZSCORE);
         fdr_map["ENaug-Thr-Z"](ei) = r4.avg_fdr;
         tpr_map["ENaug-Thr-Z"](ei) = r4.avg_tpr;

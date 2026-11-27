@@ -35,13 +35,21 @@ namespace trex::ml_methods::clustering::hierarchical::agglomerative {
  * @brief Available linkage methods for dynamical cluster updating.
  */
 enum class LinkageMethod {
-    Ward,       // Ward's Minimum Variance
-    Average,    // UPGMA / Average Linkage
-    Complete,   // Maximum Linkage
-    Single,     // Minimum Linkage
+    WARD,       // Ward's Minimum Variance
+    AVERAGE,    // UPGMA / Average Linkage
+    COMPLETE,   // Maximum Linkage
+    SINGLE,     // Minimum Linkage
     WPGMA,      // Weighted Average Linkage / McQuitty
-    Median,     // Median Linkage (WPGMC) - not supported by NN-CHAIN
-    Centroid    // Centroid Linkage (UPGMC) - not supported by NN-CHAIN
+    MEDIAN,     // Median Linkage (WPGMC) - not supported by NN-CHAIN
+    CENTROID,   // Centroid Linkage (UPGMC) - not supported by NN-CHAIN
+
+    // old names, kept for one release
+    Ward [[deprecated("Use WARD")]] = WARD,
+    Average [[deprecated("Use AVERAGE")]] = AVERAGE,
+    Complete [[deprecated("Use COMPLETE")]] = COMPLETE,
+    Single [[deprecated("Use SINGLE")]] = SINGLE,
+    Median [[deprecated("Use MEDIAN")]] = MEDIAN,
+    Centroid [[deprecated("Use CENTROID")]] = CENTROID
 };
 
 

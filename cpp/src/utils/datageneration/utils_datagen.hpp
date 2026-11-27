@@ -530,10 +530,10 @@ public:
 
         // Map X and Y
         X_mmap_ = std::make_unique<memmap::MemoryMappedMatrix<double>>(X_filepath_, n,
-            p, memmap::AccessMode::ReadWrite);
+            p, memmap::AccessMode::READ_WRITE);
 
         y_mmap_ = std::make_unique<memmap::MemoryMappedMatrix<double>>(y_filepath_, n,
-            1, memmap::AccessMode::ReadWrite);
+            1, memmap::AccessMode::READ_WRITE);
 
         auto X_map = X_mmap_->getMap();
         auto y_map = y_mmap_->getMap();
@@ -543,7 +543,7 @@ public:
         // Map D (Only if requested)
         if (num_dummies > 0 && !D_filepath_.empty()) {
             D_mmap_ = std::make_unique<memmap::MemoryMappedMatrix<double>>(D_filepath_, n,
-                num_dummies, memmap::AccessMode::ReadWrite);
+                num_dummies, memmap::AccessMode::READ_WRITE);
             auto D_map = D_mmap_->getMap();
             dummygen::generate_dummies(D_map, n, num_dummies, dummy_gen_seed,
                 dummy_dist, 0, n_threads);
@@ -711,7 +711,7 @@ inline void create_mapped_dummy_matrix(
         D_filepath,
         n,
         num_dummies,
-        memmap::AccessMode::ReadWrite
+        memmap::AccessMode::READ_WRITE
     );
     auto D_map = D_mmap.getMap();
     unsigned int base_seed = detail::get_base_seed(seed);

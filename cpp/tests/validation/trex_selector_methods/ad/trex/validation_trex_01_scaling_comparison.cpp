@@ -67,14 +67,14 @@ namespace rates_ns = trex::utils::eval::rates;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 using trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
 
 // ==============================================================================
 // Configuration helper
 // ==============================================================================
 
-static TRexControl make_base_trex_control(SolverTypeForTRex solver) {
+static TRexControl make_base_trex_control(TSolverType solver) {
     TRexControl ctrl;
     ctrl.K                        = 20;
     ctrl.max_dummy_multiplier     = 10;
@@ -95,7 +95,7 @@ static TRexControl make_base_trex_control(SolverTypeForTRex solver) {
 static std::vector<std::size_t> run_once(const Eigen::MatrixXd& X,
                                          const Eigen::VectorXd& y,
                                          double tFDR,
-                                         SolverTypeForTRex solver,
+                                         TSolverType solver,
                                          ScalingMode mode,
                                          int seed) {
     // Selector normalizes/denormalizes X in place → work on private copies.
@@ -120,7 +120,7 @@ static std::vector<std::size_t> run_once(const Eigen::MatrixXd& X,
 // ==============================================================================
 
 void demo_trex_scaling_comparison(std::size_t num_trials,
-                                  SolverTypeForTRex solver,
+                                  TSolverType solver,
                                   const std::string& solver_name) {
 
     std::cout.setf(std::ios::unitbuf);
@@ -222,8 +222,8 @@ int main() {
     omp_set_num_threads(6);
     std::cout << "Running with " << omp_get_max_threads() << " threads\n\n";
 
-    demo_trex_scaling_comparison(/*num_trials=*/30, SolverTypeForTRex::TLARS,  "TLARS");
-    demo_trex_scaling_comparison(/*num_trials=*/30, SolverTypeForTRex::TLASSO, "TLASSO");
+    demo_trex_scaling_comparison(/*num_trials=*/30, TSolverType::TLARS,  "TLARS");
+    demo_trex_scaling_comparison(/*num_trials=*/30, TSolverType::TLASSO, "TLASSO");
 
     return 0;
 }

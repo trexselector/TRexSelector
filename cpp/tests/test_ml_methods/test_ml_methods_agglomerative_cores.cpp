@@ -319,7 +319,7 @@ TEST(NNChainTest, CoreEngineExecution) {
 // ===================================================================================
 
 /** @brief Convenience alias: exact squared-Euclidean distance policy. */
-using EuclideanPolicy = DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>;
+using EuclideanPolicy = DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>;
 
 /** @brief SLINK pointer representation for a 1D chain with distinct distances. */
 TEST(SlinkTest, PointerRepresentationChain) {
@@ -418,12 +418,12 @@ TEST(DistancePolicyTest, ManhattanAndCorrelationEdgeCases) {
     data.col(1) << 1.0, -2.0;
     data.col(2) << 1.0, -1.0;
 
-    DistancePolicy<Eigen::MatrixXd, DistanceMetric::Manhattan> manhattan(data);
+    DistancePolicy<Eigen::MatrixXd, DistanceMetric::MANHATTAN> manhattan(data);
     EXPECT_DOUBLE_EQ(manhattan.get_distance(0, 1), 3.0); // |1| + |-2|
     EXPECT_DOUBLE_EQ(manhattan.get_distance(1, 2), 1.0); // |0| + |-1|
     EXPECT_DOUBLE_EQ(manhattan.get_distance(1, 1), 0.0);
 
-    DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation> corr(data);
+    DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION> corr(data);
 
     // A zero-norm (constant) column is treated as maximally dissimilar.
     EXPECT_DOUBLE_EQ(corr.get_distance(0, 1), 1.0);
@@ -445,7 +445,7 @@ TEST(DistancePolicyTest, LSHApproxAngularDistances) {
     data.col(2) = -u; // anti-parallel  -> all 64 bits flip, |cos(pi)| = 1
     data.col(3) = w;  // orthogonal     -> Hamming ~ 32, distance ~ 1
 
-    DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation_LSH_Approx> lsh(data);
+    DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION_LSH_APPROX> lsh(data);
 
     EXPECT_DOUBLE_EQ(lsh.get_distance(0, 0), 0.0); // i == j short-circuit
     EXPECT_NEAR(lsh.get_distance(0, 1), 0.0, 1e-12);
@@ -470,7 +470,7 @@ TEST(DistancePolicyTest, LSHFilterGatekeeper) {
     data.col(1) = 1.5 * (std::cos(theta) * u + std::sin(theta) * w);
     data.col(2) = w;
 
-    DistancePolicy<Eigen::MatrixXd, DistanceMetric::Correlation_LSH_Filter> lsh(data);
+    DistancePolicy<Eigen::MatrixXd, DistanceMetric::CORRELATION_LSH_FILTER> lsh(data);
 
     // Hamming ~ 64 * (5/180) < 14: gate passes -> exact 1 - |corr|
     EXPECT_NEAR(lsh.get_distance(0, 1), 1.0 - std::cos(theta), 1e-9);

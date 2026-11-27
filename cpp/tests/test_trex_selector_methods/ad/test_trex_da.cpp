@@ -54,7 +54,7 @@ void run_trex_da_test(Eigen::Index n,
                       DAMethod method,
                       std::size_t K = 3,
                       LLoopStrategy l_strategy = LLoopStrategy::HCONCAT,
-                      disp::SolverTypeForTRex solver = disp::SolverTypeForTRex::TLARS)
+                      disp::TSolverType solver = disp::TSolverType::TLARS)
 {
     // Explicit vectors prevent template resolution errors in the constructor
     std::vector<std::size_t> support = {1, 2, 3};
@@ -309,7 +309,7 @@ TEST(TRexDATest, Validation_ThrowsOnInvalidParameters) {
 
     // 4. PRIOR_GROUPS chosen by hand, without groups
     da_params.hc_linkage =
-        trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Single;
+        trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::SINGLE;
     da_params.method = DAMethod::PRIOR_GROUPS;
     EXPECT_THROW({
         TRexDASelector selector(X_map, y_map, 0.1, da_params);
@@ -974,7 +974,7 @@ BandRun runWithBand(const ClusteredDesign& d, const double* alpha) {
     TRexControl trex_ctrl;
     trex_ctrl.K = 50;
     trex_ctrl.max_dummy_multiplier = 2;
-    trex_ctrl.solver_type = disp::SolverTypeForTRex::TOMP;
+    trex_ctrl.solver_type = disp::TSolverType::TOMP;
     if (alpha != nullptr) { trex_ctrl.solver_params.exch_tie_alpha = *alpha; }
     if constexpr (std::is_same_v<Selector, TRexDASelector>) {
         TRexDAControl da_ctrl;

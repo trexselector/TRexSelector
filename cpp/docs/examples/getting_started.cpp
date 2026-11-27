@@ -14,7 +14,7 @@
 
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
 
@@ -86,7 +86,7 @@ int main() {
     doc.begin("solver");
     //! [solver]
     TRexControl ctrl;
-    ctrl.solver_type = SolverTypeForTRex::TLASSO;
+    ctrl.solver_type = TSolverType::TLASSO;
     ctrl.K = 10;
 
     TRexSelector sel2(X_map, y_map, 0.1, ctrl, 1234, false);

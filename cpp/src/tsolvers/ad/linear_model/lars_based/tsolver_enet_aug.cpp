@@ -115,7 +115,7 @@ void TSolverENETAug::buildMaps() {
 }
 
 void TSolverENETAug::buildInnerSolver(bool normalize, bool intercept, bool precentered,
-                                       bool verbose, ScalingMode scaling_mode,
+                                       bool verbose, TSolverScalingMode scaling_mode,
                                        long long tie_seed, int n_threads) {
     TSolverOptions inner;
     inner.normalize    = normalize;
@@ -153,7 +153,7 @@ TSolverENETAug::TSolverENETAug(
     const bool        intercept      = options.intercept;
     const bool        precentered    = options.precentered;
     const bool        verbose        = options.verbose;
-    const ScalingMode scaling_mode   = options.scaling_mode;
+    const TSolverScalingMode scaling_mode   = options.scaling_mode;
     const bool        use_lars_inner = options.tenet_aug_use_lars;
     eps_ = options.tol;
     // The wrapper builds its base by hand: the budget is set here and on the inner solver
@@ -186,7 +186,7 @@ TSolverENETAug::TSolverENETAug(
     bool inner_normalize       = normalize;
     bool inner_intercept       = intercept;
     bool inner_precentered     = precentered;
-    ScalingMode inner_scaling  = scaling_mode;
+    TSolverScalingMode inner_scaling  = scaling_mode;
 
     if (lambda2_ == 0.0) {
         // lambda2 = 0: no ridge penalty.  TENETAug collapses to TLASSO on

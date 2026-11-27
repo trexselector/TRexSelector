@@ -52,8 +52,8 @@ namespace trex::tsolvers::ad {
 
 /** @brief Column-scaling convention used by all solvers (unit-L2 or z-score).
  *  Aliased from the preprocessing utility so derived solvers in nested
- *  namespaces can refer to it unqualified as `ScalingMode`. */
-using ScalingMode = solver_utils::preprocessing::ScalingMode;
+ *  namespaces can refer to it unqualified as `TSolverScalingMode`. */
+using TSolverScalingMode = solver_utils::preprocessing::TSolverScalingMode;
 
 // ===================================================================================
 
@@ -201,7 +201,7 @@ protected:
 
     /** @brief Column-scaling convention applied when normalize_ is true.
      *  Default L2 (unit-L2 norm); ZSCORE divides by the sample standard deviation. */
-    ScalingMode scaling_mode_{ScalingMode::L2};
+    TSolverScalingMode scaling_mode_{TSolverScalingMode::L2};
 
     /** @brief Flag indicating if an intercept should be included. Default is true. */
     bool intercept_{true};
@@ -1044,7 +1044,7 @@ protected:
             CEREAL_NVP(dummies_at_step_)
         );
 
-        scaling_mode_ = static_cast<ScalingMode>(scaling_mode);
+        scaling_mode_ = static_cast<TSolverScalingMode>(scaling_mode);
         std::istringstream rng_in(rng_state);
         rng_in >> rng_;
 

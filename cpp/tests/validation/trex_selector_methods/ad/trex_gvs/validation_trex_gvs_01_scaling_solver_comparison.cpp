@@ -143,9 +143,9 @@ static TRexGVSControl make_en_gvs_ctrl(
     TRexGVSControl gvs_ctrl;
     gvs_ctrl.gvs_type = GVSType::EN;
     gvs_ctrl.en_solver = solver;
-    gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    gvs_ctrl.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
     gvs_ctrl.corr_max = preset.corr_max;
-    gvs_ctrl.hc_linkage = hac::LinkageMethod::Single;
+    gvs_ctrl.hc_linkage = hac::LinkageMethod::SINGLE;
     return gvs_ctrl;
 }
 

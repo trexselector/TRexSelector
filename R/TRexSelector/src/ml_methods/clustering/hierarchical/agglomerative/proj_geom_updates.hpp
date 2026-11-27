@@ -71,9 +71,9 @@ public:
     using ProjMatrixType = Eigen::Matrix<RealScalar, 64, Eigen::Dynamic>;
 
     static_assert(
-        SelectedMethod == LinkageMethod::Ward ||
-        SelectedMethod == LinkageMethod::Centroid ||
-        SelectedMethod == LinkageMethod::Median,
+        SelectedMethod == LinkageMethod::WARD ||
+        SelectedMethod == LinkageMethod::CENTROID ||
+        SelectedMethod == LinkageMethod::MEDIAN,
         "ProjectedGeometricUpdatePolicy only supports Ward, Centroid, and Median. "
         "Average (UPGMA) is the mean of pairwise distances, NOT the distance between "
         "centroids — the geometric centroid update would compute the wrong linkage "
@@ -175,7 +175,7 @@ public:
         double angle = (M_PI * hamming) / 64.0;
         double raw_dist = std::max(0.0, 1.0 - std::cos(angle));
 
-        if constexpr (SelectedMethod == LinkageMethod::Ward) {
+        if constexpr (SelectedMethod == LinkageMethod::WARD) {
             double n_c = static_cast<double>(sizes_[c_id]);
             double n_d = static_cast<double>(sizes_[d_id]);
             return raw_dist * ((n_c * n_d) / (n_c + n_d));
@@ -223,7 +223,7 @@ public:
         double n_d = static_cast<double>(cluster_sizes[args.d_id]);
 
         // Synthesize new centroid directly in the 64D space! O(64) cost.
-        if constexpr (SelectedMethod == LinkageMethod::Median) {
+        if constexpr (SelectedMethod == LinkageMethod::MEDIAN) {
             V_.col(phys_c) = (V_.col(phys_c) + V_.col(phys_d)) / 2.0;
         } else {
             V_.col(phys_c) = (n_c * V_.col(phys_c) + n_d * V_.col(phys_d)) / (n_c + n_d);

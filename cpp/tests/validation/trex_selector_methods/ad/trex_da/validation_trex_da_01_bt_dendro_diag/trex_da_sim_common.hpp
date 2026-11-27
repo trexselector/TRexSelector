@@ -72,7 +72,7 @@ using trex::trex_selector_methods::ad::trex_da::DAMethod;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverParams;
 
 
@@ -116,7 +116,7 @@ struct SimConfig {
 
 // Solver descriptor
 struct SolverInfo {
-    SolverTypeForTRex type;
+    TSolverType type;
     std::string       name;
     double            rho_afs        = 0.0;
     bool              use_stagnation = true;
@@ -388,7 +388,7 @@ inline TRexControl make_trex_control(std::size_t K = 20) {
 inline TRexDAControl make_da_bt_control() {
     TRexDAControl da;
     da.method     = DAMethod::BT;
-    da.hc_linkage = hac::LinkageMethod::Average;
+    da.hc_linkage = hac::LinkageMethod::AVERAGE;
     return da;
 }
 
@@ -954,9 +954,9 @@ void run_snr_sweep(
 inline std::vector<SolverInfo> default_solvers() {
     //          type                       name              rho_afs  use_stagnation
     return {
-        {SolverTypeForTRex::TLARS, "TREX-DA: TLARS", 0.0,  /*stagnation=*/false},
-        {SolverTypeForTRex::TAFS,  "TREX-DA: TAFS",  0.3,  /*stagnation=*/true},
-        {SolverTypeForTRex::TOMP,  "TREX-DA: TOMP",  0.0,  /*stagnation=*/true},
+        {TSolverType::TLARS, "TREX-DA: TLARS", 0.0,  /*stagnation=*/false},
+        {TSolverType::TAFS,  "TREX-DA: TAFS",  0.3,  /*stagnation=*/true},
+        {TSolverType::TOMP,  "TREX-DA: TOMP",  0.0,  /*stagnation=*/true},
     };
 }
 

@@ -56,7 +56,7 @@ as every selector does.
 
 ## Choosing lambda_2
 
-`lambda_2 < 0` (the default) hands the choice to `lambda2_method`, a `TikLambda2Method`. Three rules
+`lambda_2 < 0` (the default) hands the choice to `lambda2_method`, a `TikhonovLambda2Method`. Three rules
 exist.
 
 - `PILOT_KNEE` (the default) reads \f$\lambda_2\f$ off a few random experiments per candidate of
@@ -98,7 +98,7 @@ false` exists for validation runs. `getDummyClusters()` reports the clusters of 
 
 ## Group centering
 
-`penalty_structure = TikPenaltyStructure::GROUP_CENTERING` lets the selector build
+`penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING` lets the selector build
 \f$\boldsymbol K\f$ itself as the block-diagonal centering penalty
 \f$\boldsymbol I - \boldsymbol J / p_m\f$ over the groups of `prior_groups`, so the members of a
 group share a coefficient. The structure needs `prior_groups` (0-based group ids, one per variable),
@@ -111,7 +111,7 @@ vanishes and the path is the lasso on per-variable cluster dummies.
 
 ## The solver
 
-The selector runs `SolverTypeForTRex::TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. It is
+The selector runs `TSolverType::TIKNET`, the pathwise homotopy algorithm of the Tikhonov net. It is
 the solver of the base control nested in the Tikhonov control, `trex_ctrl`. A fresh
 `TRexControl` names `TLARS`, which the constructor refuses as every other solver, so a base
 control that is assigned to `trex_ctrl` has to set `solver_type` to `TIKNET`.

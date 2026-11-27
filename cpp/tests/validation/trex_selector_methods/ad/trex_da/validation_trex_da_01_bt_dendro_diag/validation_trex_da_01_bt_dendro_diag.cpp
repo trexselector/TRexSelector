@@ -118,11 +118,11 @@ int main() {
     // --------------------------------------------------------------------------
     Eigen::MatrixXd Xc = center_l2(dat.X);
     using MapT    = Eigen::Map<Eigen::MatrixXd>;
-    using CorrDist = hac::DistancePolicy<MapT, hac::DistanceMetric::Correlation>;
+    using CorrDist = hac::DistancePolicy<MapT, hac::DistanceMetric::CORRELATION>;
     MapT Xmap(Xc.data(), Xc.rows(), Xc.cols());
 
     auto merges = hac::AgglomerativeClustering::cluster<
-        MapT, CorrDist, hac::LinkageMethod::Single>(Xmap, /*use_mmap=*/false,
+        MapT, CorrDist, hac::LinkageMethod::SINGLE>(Xmap, /*use_mmap=*/false,
                                                     /*verbose=*/false);
 
     {
@@ -210,12 +210,12 @@ int main() {
     Eigen::Map<Eigen::VectorXd> y_sel(dat.y.data(), dat.y.rows());
 
     auto da_ctrl = make_da_bt_control();
-    da_ctrl.hc_linkage = hac::LinkageMethod::Single;
+    da_ctrl.hc_linkage = hac::LinkageMethod::SINGLE;
     auto trex_ctrl = make_trex_control(K);
     // Mirror the sweep's TLARS configuration (default_solvers): a LARS-based
     // solver runs with stagnation control OFF (monotone path), so the T-loop
     // terminates on the FDP criterion / max_T rather than on stagnation.
-    trex_ctrl.solver_type           = SolverTypeForTRex::TLARS;
+    trex_ctrl.solver_type           = TSolverType::TLARS;
     trex_ctrl.tloop_stagnation_stop = false;
     trex_ctrl.lloop_strategy        = LLoopStrategy::STANDARD;
     da_ctrl.trex_ctrl = trex_ctrl;

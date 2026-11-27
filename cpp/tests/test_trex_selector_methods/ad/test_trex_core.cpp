@@ -44,7 +44,7 @@ namespace disp = trex::trex_selector_methods::ad::utils::solver_dispatch;
  */
 void run_trex_core_test(Eigen::Index n,
                         Eigen::Index p,
-                        disp::SolverTypeForTRex solver = disp::SolverTypeForTRex::TLARS,
+                        disp::TSolverType solver = disp::TSolverType::TLARS,
                         LLoopStrategy l_strategy = LLoopStrategy::HCONCAT,
                         bool multi_threaded = false)
 {
@@ -128,13 +128,13 @@ TEST(TRexCoreTest, HighDimensional) {
 
 /** @brief Test TRexSelector with TLASSO solver. */
 TEST(TRexCoreTest, Param_Solvers_TLASSO) {
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TLASSO);
+    run_trex_core_test(150, 200, disp::TSolverType::TLASSO);
 }
 
 
 /** @brief Test TRexSelector with the row-augmented elastic net (TENET_AUG). */
 TEST(TRexCoreTest, Param_Solvers_TENET_AUG) {
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TENET_AUG);
+    run_trex_core_test(150, 200, disp::TSolverType::TENET_AUG);
 }
 
 
@@ -159,7 +159,7 @@ TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
     TRexControl trex_ctrl;
     trex_ctrl.K = 3;
     trex_ctrl.max_dummy_multiplier = 2;
-    trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
+    trex_ctrl.solver_type = disp::TSolverType::TIENET;
 
     // Serial path (parallel_rnd_experiments = false): the omp region is
     // inactive but still a structured block.
@@ -186,7 +186,7 @@ TEST(TRexCoreTest, SelectTimeThrowPropagatesInsteadOfTerminating) {
  *  same variables in the core selector. */
 TEST(TRexCoreTest, Equivalence_TenetAugMatchesTenet) {
 
-    auto run_with = [](disp::SolverTypeForTRex solver) {
+    auto run_with = [](disp::TSolverType solver) {
         std::vector<std::size_t> support = {1, 2, 3};
         std::vector<double> coefs = {5.0, -3.0, 2.0};
         SyntheticData data(150, 60, support, coefs, 1.0, 42);
@@ -205,8 +205,8 @@ TEST(TRexCoreTest, Equivalence_TenetAugMatchesTenet) {
         return trex.select().selected_var;
     };
 
-    const auto sel_tenet = run_with(disp::SolverTypeForTRex::TENET);
-    const auto sel_aug   = run_with(disp::SolverTypeForTRex::TENET_AUG);
+    const auto sel_tenet = run_with(disp::TSolverType::TENET);
+    const auto sel_aug   = run_with(disp::TSolverType::TENET_AUG);
 
     ASSERT_EQ(sel_tenet.size(), sel_aug.size());
     EXPECT_TRUE((sel_tenet.array() == sel_aug.array()).all())
@@ -216,7 +216,7 @@ TEST(TRexCoreTest, Equivalence_TenetAugMatchesTenet) {
 
 /** @brief Test TRexSelector with SKIPL L loop strategy. */
 TEST(TRexCoreTest, Param_LStrategies_SKIPL) {
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TLARS,
+    run_trex_core_test(150, 200, disp::TSolverType::TLARS,
                        LLoopStrategy::SKIPL);
 }
 
@@ -224,7 +224,7 @@ TEST(TRexCoreTest, Param_LStrategies_SKIPL) {
 /** @brief Test TRexSelector with concurrency enabled. */
 TEST(TRexCoreTest, Param_Concurrency) {
     // Parallel random experiments on two threads
-    run_trex_core_test(150, 200, disp::SolverTypeForTRex::TLARS,
+    run_trex_core_test(150, 200, disp::TSolverType::TLARS,
                        LLoopStrategy::HCONCAT, true);
 }
 
@@ -452,7 +452,7 @@ TEST(TRexCoreTest, RunnerMarksCenteredDesignPrecentered) {
 
         RunnerConfigProbe trex(X_map, y_map, 0.1, trex_ctrl, 42, false);
         const ter::ExperimentRunnerConfig cfg =
-            trex.buildRunnerConfig(10, 1, false, ter::ExperimentStrategy::Standard);
+            trex.buildRunnerConfig(10, 1, false, ter::ExperimentStrategy::STANDARD);
         EXPECT_EQ(cfg.precentered, mode != tdn::ScalingMode::NONE)
             << "scaling mode " << static_cast<int>(mode);
     }
@@ -481,7 +481,7 @@ TEST(TRexCoreTest, StagnationStop_AutoDefaultResolvesBySolverFamily) {
     Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
-    auto resolved_default = [&](disp::SolverTypeForTRex solver,
+    auto resolved_default = [&](disp::TSolverType solver,
                                 std::optional<bool> user_choice) {
         TRexControl ctrl;
         ctrl.K = 3;
@@ -492,16 +492,16 @@ TEST(TRexCoreTest, StagnationStop_AutoDefaultResolvesBySolverFamily) {
     };
 
     // AUTO: off for the equiangular LARS family, on for greedy solvers.
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TLARS,  std::nullopt));
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TLASSO, std::nullopt));
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TENET,  std::nullopt));
-    EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TOMP,    std::nullopt));
-    EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TSTEPWISE, std::nullopt));
-    EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TAFS,    std::nullopt));
+    EXPECT_FALSE(resolved_default(disp::TSolverType::TLARS,  std::nullopt));
+    EXPECT_FALSE(resolved_default(disp::TSolverType::TLASSO, std::nullopt));
+    EXPECT_FALSE(resolved_default(disp::TSolverType::TENET,  std::nullopt));
+    EXPECT_TRUE(resolved_default(disp::TSolverType::TOMP,    std::nullopt));
+    EXPECT_TRUE(resolved_default(disp::TSolverType::TSTEPWISE, std::nullopt));
+    EXPECT_TRUE(resolved_default(disp::TSolverType::TAFS,    std::nullopt));
 
     // Explicit user choice overrides the family default in both directions.
-    EXPECT_TRUE(resolved_default(disp::SolverTypeForTRex::TLARS, true));
-    EXPECT_FALSE(resolved_default(disp::SolverTypeForTRex::TOMP, false));
+    EXPECT_TRUE(resolved_default(disp::TSolverType::TLARS, true));
+    EXPECT_FALSE(resolved_default(disp::TSolverType::TOMP, false));
 }
 
 
@@ -560,7 +560,7 @@ TEST(TRexCoreTest, WarmStart_EngagesAndMatchesColdRun) {
     er::ExperimentRunner runner(X_map, d.y, dummy_gen, warm_mgr, nullptr);
 
     auto cfg = make_runner_cfg(K, static_cast<std::size_t>(p),
-                               er::ExperimentStrategy::Standard);
+                               er::ExperimentStrategy::STANDARD);
 
     // T = 1: fresh solvers must be retained for continuation.
     runner.run(cfg);
@@ -615,7 +615,7 @@ TEST(TRexCoreTest, WarmStart_DirectStrategyContinuationMatchesCold) {
     er::ExperimentRunner runner(X_map, d.y, dummy_gen, warm_mgr, nullptr);
 
     auto cfg = make_runner_cfg(K, static_cast<std::size_t>(p),
-                               er::ExperimentStrategy::Seeded);
+                               er::ExperimentStrategy::SEEDED);
 
     runner.run(cfg);           // T = 1, retains solvers + dummy buffers
     cfg.T_stop = 2;
@@ -819,7 +819,7 @@ TEST(TRexCoreTest, SkiplLargeBudgetWithoutStopWarns) {
     const auto warns = [&](LLoopStrategy strategy, std::size_t multiplier, std::optional<bool> stop) {
         TRexControl ctrl;
         ctrl.K = 5;
-        ctrl.solver_type = disp::SolverTypeForTRex::TLARS;
+        ctrl.solver_type = disp::TSolverType::TLARS;
         ctrl.lloop_strategy = strategy;
         ctrl.max_dummy_multiplier = multiplier;
         ctrl.tloop_stagnation_stop = stop;

@@ -88,21 +88,21 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidRhoThreshold) {
 
     for (const double bad : {-0.1, 1.5, std::numeric_limits<double>::quiet_NaN()}) {
         screen_params.rho_thr_DA = bad;
-        for (const auto method : {ScreenTRexMethod::TREX, ScreenTRexMethod::TREX_DA_AR1,
-                                  ScreenTRexMethod::TREX_DA_EQUI}) {
+        for (const auto method : {ScreeningMethod::TREX, ScreeningMethod::TREX_DA_AR1,
+                                  ScreeningMethod::TREX_DA_EQUI}) {
             screen_params.trex_method = method;
             EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
         }
     }
 
     screen_params.rho_thr_DA = 1.0;
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_AR1;
     EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_NN;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_NN;
     EXPECT_THROW(TRexScreeningSelector(X_map, y_map, screen_params), std::invalid_argument);
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_EQUI;
     EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_BLOCK_EQUI;
     EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 }
 
@@ -111,7 +111,7 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidRhoThreshold) {
  *  variants do not read `n_blocks`. */
 TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
     TRexScreeningControl screen_params;
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_BLOCK_EQUI;
 
     for (const std::size_t bad : {std::size_t{0}, std::size_t{21}}) {  // p = 20
         screen_params.n_blocks = bad;
@@ -123,7 +123,7 @@ TEST_F(TRexScreeningTest, Validation_ThrowsOnInvalidBlockCount) {
     }
 
     screen_params.n_blocks = 0;
-    screen_params.trex_method = ScreenTRexMethod::TREX;
+    screen_params.trex_method = ScreeningMethod::TREX;
     EXPECT_NO_THROW(TRexScreeningSelector(X_map, y_map, screen_params));
 }
 
@@ -224,7 +224,7 @@ TEST(TRexScreeningWindowTest, Method_DA_AR1_WindowEdges) {
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
         TRexScreeningControl screen_params;
-        screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+        screen_params.trex_method = ScreeningMethod::TREX_DA_AR1;
         screen_params.cor_coef = cor_coef;
         screen_params.rho_thr_DA = rho_thr_DA;
         screen_params.trex_ctrl.K = 10;
@@ -258,7 +258,7 @@ TEST(TRexScreeningWindowTest, Method_DA_NN_GroupsAndEmptyGroup) {
     const Eigen::Index p = 20;
     std::srand(13);
 
-    auto run = [&](const Eigen::MatrixXd& X0, const Eigen::VectorXd& y0, ScreenTRexMethod method,
+    auto run = [&](const Eigen::MatrixXd& X0, const Eigen::VectorXd& y0, ScreeningMethod method,
                    double cor_coef, double rho_thr_DA) {
         Eigen::MatrixXd X = X0;
         Eigen::VectorXd y = y0;
@@ -279,8 +279,8 @@ TEST(TRexScreeningWindowTest, Method_DA_NN_GroupsAndEmptyGroup) {
     const Eigen::MatrixXd X_any = Eigen::MatrixXd::Random(n, p);
     const Eigen::VectorXd y_any =
         3.0 * X_any.col(0) - 2.0 * X_any.col(7) + 2.5 * X_any.col(15) + 0.1 * Eigen::VectorXd::Random(n);
-    const auto nn_all = run(X_any, y_any, ScreenTRexMethod::TREX_DA_NN, 0.5, 0.0);
-    const auto ar1_all = run(X_any, y_any, ScreenTRexMethod::TREX_DA_AR1, 0.5, 0.0);
+    const auto nn_all = run(X_any, y_any, ScreeningMethod::TREX_DA_NN, 0.5, 0.0);
+    const auto ar1_all = run(X_any, y_any, ScreeningMethod::TREX_DA_AR1, 0.5, 0.0);
     EXPECT_EQ(nn_all.selected_var, ar1_all.selected_var);
     EXPECT_TRUE(nn_all.Phi_mat.isApprox(ar1_all.Phi_mat));
 
@@ -292,8 +292,8 @@ TEST(TRexScreeningWindowTest, Method_DA_NN_GroupsAndEmptyGroup) {
         Eigen::HouseholderQR<Eigen::MatrixXd>(centered).householderQ() * Eigen::MatrixXd::Identity(n, p);
     const Eigen::VectorXd y_orth =
         3.0 * X_orth.col(0) - 2.0 * X_orth.col(7) + 2.5 * X_orth.col(15) + 0.01 * Eigen::VectorXd::Random(n);
-    const auto nn_none = run(X_orth, y_orth, ScreenTRexMethod::TREX_DA_NN, 0.5, 0.5);
-    const auto plain = run(X_orth, y_orth, ScreenTRexMethod::TREX, 0.5, 0.5);
+    const auto nn_none = run(X_orth, y_orth, ScreeningMethod::TREX_DA_NN, 0.5, 0.5);
+    const auto plain = run(X_orth, y_orth, ScreeningMethod::TREX, 0.5, 0.5);
     EXPECT_EQ(nn_none.selected_var, plain.selected_var);
     EXPECT_TRUE(nn_none.Phi_mat.isApprox(plain.Phi_mat));
     EXPECT_GT(nn_none.selected_var.sum(), 0)
@@ -308,7 +308,7 @@ TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
     const Eigen::MatrixXd X0 = Eigen::MatrixXd::Random(60, 30);
     const Eigen::VectorXd y0 = 3.0 * X0.col(0) - 2.0 * X0.col(7) + 0.1 * Eigen::VectorXd::Random(60);
 
-    auto coefficient = [&](ScreenTRexMethod method, double cor_coef, std::string& warning) {
+    auto coefficient = [&](ScreeningMethod method, double cor_coef, std::string& warning) {
         Eigen::MatrixXd X = X0;
         Eigen::VectorXd y = y0;
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
@@ -327,8 +327,8 @@ TEST(TRexScreeningWindowTest, Method_DA_UnusableCoefficientIsEstimated) {
     };
 
     const double nan = std::numeric_limits<double>::quiet_NaN();
-    for (const auto method : {ScreenTRexMethod::TREX_DA_AR1, ScreenTRexMethod::TREX_DA_EQUI,
-                              ScreenTRexMethod::TREX_DA_BLOCK_EQUI, ScreenTRexMethod::TREX_DA_NN}) {
+    for (const auto method : {ScreeningMethod::TREX_DA_AR1, ScreeningMethod::TREX_DA_EQUI,
+                              ScreeningMethod::TREX_DA_BLOCK_EQUI, ScreeningMethod::TREX_DA_NN}) {
         std::string warning;
         const double estimated = coefficient(method, AUTO_ESTIMATE_CORRELATION, warning);
         EXPECT_TRUE(warning.empty()) << "The sentinel requests the estimate without a warning.";
@@ -356,7 +356,7 @@ TEST_F(TRexScreeningTest, Equivalence_PermutationSeededMatchesPermutation) {
         Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
 
         TRexScreeningControl screen_params;
-        screen_params.trex_method = ScreenTRexMethod::TREX;
+        screen_params.trex_method = ScreeningMethod::TREX;
         screen_params.use_bootstrap_CI = false;
         screen_params.trex_ctrl.K = 5;
         screen_params.trex_ctrl.lloop_strategy = strategy;
@@ -390,7 +390,7 @@ TEST_F(TRexScreeningTest, Equivalence_SeededMatchesStandard) {
         Eigen::Map<Eigen::VectorXd> ym(yc.data(), yc.size());
 
         TRexScreeningControl screen_params;
-        screen_params.trex_method = ScreenTRexMethod::TREX;
+        screen_params.trex_method = ScreeningMethod::TREX;
         screen_params.use_bootstrap_CI = false;
         screen_params.trex_ctrl.K = 5;
         screen_params.trex_ctrl.lloop_strategy = strategy;
@@ -450,7 +450,7 @@ TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
     EXPECT_TRUE((res.dummy_betas.array() != 0.0).all());
 
     // A supplied coefficient of a dependency-aware variant is reported as it is
-    screen_params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+    screen_params.trex_method = ScreeningMethod::TREX_DA_AR1;
     screen_params.cor_coef = 0.5;
     TRexScreeningSelector filtered(X_map, y_map, screen_params, 42, false);
     filtered.select();
@@ -461,7 +461,7 @@ TEST_F(TRexScreeningTest, Result_BaseGettersHoldTheFixedValuesOfAScreeningRun) {
 /** @brief Test execution of Ordinary Screening */
 TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
     TRexScreeningControl screen_params;
-    screen_params.trex_method = ScreenTRexMethod::TREX;
+    screen_params.trex_method = ScreeningMethod::TREX;
     screen_params.use_bootstrap_CI = false;
     screen_params.trex_ctrl.K = 5; // Reduced K for quick unit testing
     screen_params.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
@@ -482,7 +482,7 @@ TEST_F(TRexScreeningTest, Execution_OrdinaryScreenTRexDoesNotThrow) {
 /** @brief Test of Boostrap CI Screening */
 TEST_F(TRexScreeningTest, Execution_BootstrapScreenTRexDoesNotThrow) {
     TRexScreeningControl screen_params;
-    screen_params.trex_method = ScreenTRexMethod::TREX;
+    screen_params.trex_method = ScreeningMethod::TREX;
     screen_params.use_bootstrap_CI = true;
     screen_params.R_boot = 50; // Small bootstrap resamples for fast testing
     screen_params.trex_ctrl.K = 5;
@@ -551,7 +551,7 @@ TEST_F(TRexScreeningTest, DataIntegrity_XRestoredOnDestruction) {
  */
 Eigen::VectorXi run_screen_trex_select(Eigen::Index n,
                                        Eigen::Index p,
-                                       ScreenTRexMethod method,
+                                       ScreeningMethod method,
                                        dn::ScalingMode scaling_mode)
 {
     std::vector<std::size_t> support = {1, 2, 3};
@@ -583,9 +583,9 @@ Eigen::VectorXi run_screen_trex_select(Eigen::Index n,
 /** @brief Screen-TRex DA-EQUI selections must be identical under L2 and ZSCORE scaling. */
 TEST(TRexScreeningScalingTest, Method_DA_EQUI_ScalingModeParity) {
     Eigen::VectorXi sel_l2 =
-        run_screen_trex_select(300, 100, ScreenTRexMethod::TREX_DA_EQUI, dn::ScalingMode::L2);
+        run_screen_trex_select(300, 100, ScreeningMethod::TREX_DA_EQUI, dn::ScalingMode::L2);
     Eigen::VectorXi sel_zscore =
-        run_screen_trex_select(300, 100, ScreenTRexMethod::TREX_DA_EQUI, dn::ScalingMode::ZSCORE);
+        run_screen_trex_select(300, 100, ScreeningMethod::TREX_DA_EQUI, dn::ScalingMode::ZSCORE);
 
     ASSERT_EQ(sel_l2.size(), sel_zscore.size());
     EXPECT_TRUE((sel_l2.array() == sel_zscore.array()).all())
@@ -595,9 +595,9 @@ TEST(TRexScreeningScalingTest, Method_DA_EQUI_ScalingModeParity) {
 /** @brief Screen-TRex DA-BLOCK-EQUI selections must be identical under L2 and ZSCORE scaling. */
 TEST(TRexScreeningScalingTest, Method_DA_BLOCK_EQUI_ScalingModeParity) {
     Eigen::VectorXi sel_l2 =
-        run_screen_trex_select(300, 100, ScreenTRexMethod::TREX_DA_BLOCK_EQUI, dn::ScalingMode::L2);
+        run_screen_trex_select(300, 100, ScreeningMethod::TREX_DA_BLOCK_EQUI, dn::ScalingMode::L2);
     Eigen::VectorXi sel_zscore =
-        run_screen_trex_select(300, 100, ScreenTRexMethod::TREX_DA_BLOCK_EQUI, dn::ScalingMode::ZSCORE);
+        run_screen_trex_select(300, 100, ScreeningMethod::TREX_DA_BLOCK_EQUI, dn::ScalingMode::ZSCORE);
 
     ASSERT_EQ(sel_l2.size(), sel_zscore.size());
     EXPECT_TRUE((sel_l2.array() == sel_zscore.array()).all())

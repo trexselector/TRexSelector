@@ -9,6 +9,32 @@ gives the three packages one set of names, C++ first. The version files read C++
 
 ### 2026-11-27
 
+#### The enumerations of C++ take their final names
+
+- The third step of the naming pass in C++. Six enumeration types take their names: `TSolverType` (before
+  `SolverTypeForTRex`), `GVSLambda2Method` (`LambdaSelectionMethod`), `TikhonovLambda2Method`
+  (`TikLambda2Method`), `TikhonovPenaltyStructure` (`TikPenaltyStructure`), `ScreeningMethod`
+  (`ScreenTRexMethod`) and `TSolverScalingMode` for the scaling enumeration of the T-solvers, which had the
+  name `ScalingMode` of the selectors' own enumeration.
+- Every enumerator is SCREAMING_CASE now. 32 enumerators of seven enumerations changed: `LinkageMethod`
+  (`WARD`, `SINGLE`), `DistanceMetric` (`EUCLIDEAN`), `SPCAMode` (`ACTIVE_SET`, `THRESHOLDED`), `NCGMPVariant`
+  (`LINE_SEARCH`, `FULLY_CORRECTIVE`), `AccessMode` (`READ_ONLY`, `READ_WRITE`), the type of the dummy
+  distribution (`NORMAL`, `STUDENT_T`) and `ExperimentStrategy`. The deprecated `BTSelectionMode` keeps its
+  two.
+- Every old enumerator stays for one release as a second name with the same value and
+  `[[deprecated("Use <new name>")]]`, and every old type name stays as a deprecated alias. The test of the
+  old names holds the 7 type names and the 32 enumerators at compile time.
+- The private enumeration of `RegionError`, which records the class of an exception that leaves a parallel
+  region, takes the names of the standard exception classes (`OVERFLOW_ERROR` for `std::overflow_error`).
+  The plain forms `OVERFLOW` and `UNDERFLOW` are macros of `math.h` on macOS and Windows. Fabian agreed to
+  the names on 2026-11-27.
+- Two messages of the clustering name `DistanceMetric::EUCLIDEAN`.
+- The deprecated names did their work in this step. `R CMD check` warned about two lines of the R binding
+  that still used the old name of the scaling enumeration, and they were renamed.
+- The R and the Python surface do not change. The names and the strings that R and Python users write are
+  the old ones until their steps.
+- Tests. C++ 700, R 2,111 and Python 726.
+
 #### The files of the T-solvers follow their classes
 
 - The second step of the naming pass in C++. The 16 solver headers, their 16 source files and the header of

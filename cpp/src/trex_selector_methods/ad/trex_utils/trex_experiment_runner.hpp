@@ -69,10 +69,16 @@ namespace mm = trex::trex_selector_methods::ad::utils::memmap_manager;
 // ===================================================================================
 
 enum class ExperimentStrategy {
-    Standard,             // Pre-generated K dummy matrices (stored in DummyGenerator).
-    Permutation,          // Row permutations of a STORED base dummy matrix.
-    PermutationSeeded,  // Row permutations of a seed-derived base; nothing stored.
-    Seeded              // On-the-fly seed-based independent dummies per experiment.
+    STANDARD,             // Pre-generated K dummy matrices (stored in DummyGenerator).
+    PERMUTATION,          // Row permutations of a STORED base dummy matrix.
+    PERMUTATION_SEEDED,  // Row permutations of a seed-derived base; nothing stored.
+    SEEDED,              // On-the-fly seed-based independent dummies per experiment.
+
+    // old names, kept for one release
+    Standard [[deprecated("Use STANDARD")]] = STANDARD,
+    Permutation [[deprecated("Use PERMUTATION")]] = PERMUTATION,
+    PermutationSeeded [[deprecated("Use PERMUTATION_SEEDED")]] = PERMUTATION_SEEDED,
+    Seeded [[deprecated("Use SEEDED")]] = SEEDED
 };
 
 
@@ -92,7 +98,7 @@ struct ExperimentRunnerConfig {
     std::size_t p = 0;              // Number of original predictors (for phi_T_mat).
 
     // --- Strategy ---
-    ExperimentStrategy strategy = ExperimentStrategy::Standard;
+    ExperimentStrategy strategy = ExperimentStrategy::STANDARD;
 
     // --- L-loop seed tag (for deterministic dummy regeneration) ---
     std::size_t seed_factor = 0;    ///< L-loop tag (l_tag) for block seed derivation.
@@ -110,7 +116,7 @@ struct ExperimentRunnerConfig {
     std::uint64_t permutation_base_id = 0;
 
     // --- Solver ---
-    disp::SolverTypeForTRex solver_type = disp::SolverTypeForTRex::TLARS;
+    disp::TSolverType solver_type = disp::TSolverType::TLARS;
     disp::TSolverParams solver_params{};
 
     /** @brief Base for deterministic per-experiment tie-break seeds
@@ -125,7 +131,7 @@ struct ExperimentRunnerConfig {
     /** @brief Internal column-scaling mode applied by each solver.
      *  L2 (default) preserves prior behaviour; ZSCORE makes solvers z-score
      *  their own columns (needed for augmented-EN consistency). */
-    trex::tsolvers::ad::ScalingMode scaling_mode = trex::tsolvers::ad::ScalingMode::L2;
+    trex::tsolvers::ad::TSolverScalingMode scaling_mode = trex::tsolvers::ad::TSolverScalingMode::L2;
 
     /** @brief X and y were centered by the selector (the dummies always
      *  are): the solvers cap their active sets at n - 1, the rank of the
@@ -283,16 +289,16 @@ public:
         } else {
             // In-memory path
             switch (cfg.strategy) {
-                case ExperimentStrategy::Standard:
+                case ExperimentStrategy::STANDARD:
                     summaries = runStandard(cfg);
                     break;
-                case ExperimentStrategy::Permutation:
+                case ExperimentStrategy::PERMUTATION:
                     summaries = runPermutation(cfg);
                     break;
-                case ExperimentStrategy::PermutationSeeded:
+                case ExperimentStrategy::PERMUTATION_SEEDED:
                     summaries = runPermutationSeeded(cfg);
                     break;
-                case ExperimentStrategy::Seeded:
+                case ExperimentStrategy::SEEDED:
                     summaries = runSeeded(cfg);
                     break;
             }
@@ -758,7 +764,7 @@ private:
         if (cfg.existing_cols_on_disk >= cfg.num_dummies) { return; }
 
         switch (cfg.strategy) {
-            case ExperimentStrategy::Standard: {
+            case ExperimentStrategy::STANDARD: {
                 if (cfg.existing_cols_on_disk > 0) {
                     // HCONCAT: expand — only write new rightmost columns.
                     // Seeded under the same per-experiment base with global
@@ -779,12 +785,12 @@ private:
                 break;
             }
 
-            case ExperimentStrategy::Permutation: {
+            case ExperimentStrategy::PERMUTATION: {
                 dummy_gen_.permuteInto(D_map, k, cfg.num_dummies);
                 break;
             }
 
-            case ExperimentStrategy::PermutationSeeded: {
+            case ExperimentStrategy::PERMUTATION_SEEDED: {
                 // Stateless: re-derive the base (prefix-stable), permute into
                 // the map. Regenerated per k — the shared-file mmap layout for
                 // permutation strategies is sequential anyway.
@@ -796,7 +802,7 @@ private:
                 break;
             }
 
-            case ExperimentStrategy::Seeded: {
+            case ExperimentStrategy::SEEDED: {
                 dummy_gen_.generateSeededInto(D_map, k, cfg.seed_factor);
                 break;
             }

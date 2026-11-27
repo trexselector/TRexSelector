@@ -36,14 +36,22 @@ namespace trex::tsolvers::ad {
 // ===================================================================================
 
 /** @brief Column-scaling convention used by all solvers (unit-L2 or z-score). */
-using ScalingMode = solver_utils::preprocessing::ScalingMode;
+using TSolverScalingMode = solver_utils::preprocessing::TSolverScalingMode;
+
+/** @brief Old name of TSolverScalingMode.
+ *  @deprecated Use TSolverScalingMode. */
+using ScalingMode [[deprecated("Use TSolverScalingMode")]] = TSolverScalingMode;
 
 /**
  * @brief Variants of the Norm-Corrective GMP solver (TNCGMP).
  */
 enum class NCGMPVariant : int {
-    LineSearch = 0,       ///< Standard Matching Pursuit (1D projection)
-    FullyCorrective = 1   ///< Orthogonal Matching Pursuit (least squares over the active set)
+    LINE_SEARCH = 0,       ///< Standard Matching Pursuit (1D projection)
+    FULLY_CORRECTIVE = 1,  ///< Orthogonal Matching Pursuit (least squares over the active set)
+
+    // old names, kept for one release
+    LineSearch [[deprecated("Use LINE_SEARCH")]] = LINE_SEARCH,
+    FullyCorrective [[deprecated("Use FULLY_CORRECTIVE")]] = FULLY_CORRECTIVE
 };
 
 // ===================================================================================
@@ -83,7 +91,7 @@ struct TSolverOptions {
 
     /** @brief Column-scaling convention applied when normalize is true:
      *  L2 (unit L2 norm, default) or ZSCORE (sample SD). */
-    ScalingMode scaling_mode = ScalingMode::L2;
+    TSolverScalingMode scaling_mode = TSolverScalingMode::L2;
 
     /** @brief Print status and diagnostics during execution. Default false. */
     bool verbose = false;
@@ -137,7 +145,7 @@ struct TSolverOptions {
     double rho_afs = 0.3;
 
     /** @brief NCGMP variant. Read by TNCGMP only. Default LineSearch. */
-    NCGMPVariant ncgmp_variant = NCGMPVariant::LineSearch;
+    NCGMPVariant ncgmp_variant = NCGMPVariant::LINE_SEARCH;
 
     /** @brief TENETAug / TIENETAug: run the augmented system with a pure-LARS
      *  inner path that never drops variables (true) instead of the default

@@ -480,8 +480,8 @@ er::ExperimentRunnerConfig TRexSelector::buildRunnerConfig(
     // augmented-column handling. NONE maps to L2: the user-managed design is
     // unit-L2-commensurate by contract (see dn::ScalingMode).
     cfg.scaling_mode          = (trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE)
-                                    ? trex::tsolvers::ad::ScalingMode::ZSCORE
-                                    : trex::tsolvers::ad::ScalingMode::L2;
+                                    ? trex::tsolvers::ad::TSolverScalingMode::ZSCORE
+                                    : trex::tsolvers::ad::TSolverScalingMode::L2;
     // The constructor centered X and y in every mode except NONE (the
     // user-managed design is left untouched): the solvers then run on
     // centered data of rank n - 1.
@@ -1023,7 +1023,7 @@ void TRexSelector::runLLoopCalibration_SKIPL(
     // Per-step body via virtual hook (subclasses may inject deflation).
     StepView view = evaluateStep(num_dummies_, T_stop_,
                                  /*use_warm_start=*/false,
-                                 er::ExperimentStrategy::Standard,
+                                 er::ExperimentStrategy::STANDARD,
                                  /*seed_factor=*/trex_ctrl_.max_dummy_multiplier,
                                  /*existing_on_disk=*/0);
     lloop_last_Phi_ = view.Phi;
@@ -1095,7 +1095,7 @@ void TRexSelector::runLLoopCalibration_Standard(
     FDP_hat.resize(0);
 
     LLoopPolicyContext ctx;
-    ctx.strategy            = er::ExperimentStrategy::Standard;
+    ctx.strategy            = er::ExperimentStrategy::STANDARD;
     ctx.seed_factor_uses_LL = true;
     ctx.policy = [this](std::size_t LL,
                         std::size_t num_dummies,
@@ -1127,7 +1127,7 @@ void TRexSelector::runLLoopCalibration_HCONCAT(
     FDP_hat.resize(0);
 
     LLoopPolicyContext ctx;
-    ctx.strategy            = er::ExperimentStrategy::Standard;
+    ctx.strategy            = er::ExperimentStrategy::STANDARD;
     // HCONCAT is prefix-stable: all blocks live under the l_tag = 0 seed
     // domain (distinguished by global column offset), so the mmap path's
     // full regeneration must NOT vary the tag with LL.
@@ -1164,7 +1164,7 @@ void TRexSelector::runLLoopCalibration_Permutation(
     FDP_hat.resize(0);
 
     LLoopPolicyContext ctx;
-    ctx.strategy            = er::ExperimentStrategy::Permutation;
+    ctx.strategy            = er::ExperimentStrategy::PERMUTATION;
     ctx.seed_factor_uses_LL = false;
     ctx.policy = [this](std::size_t LL,
                         std::size_t num_dummies,
@@ -1212,8 +1212,8 @@ void TRexSelector::runLLoopCalibration_Seeded(
 
     LLoopPolicyContext ctx;
     ctx.strategy            = independent
-            ? er::ExperimentStrategy::Seeded
-            : er::ExperimentStrategy::PermutationSeeded;
+            ? er::ExperimentStrategy::SEEDED
+            : er::ExperimentStrategy::PERMUTATION_SEEDED;
     // SEEDED keys its draws on the L step like STANDARD (its storage-free
     // twin); PERMUTATION_SEEDED re-derives its base prefix-stable (tag 0).
     ctx.seed_factor_uses_LL = independent;
@@ -1272,16 +1272,16 @@ void TRexSelector::runTLoop(
     er::ExperimentStrategy exp_strategy;
     switch (trex_ctrl_.lloop_strategy) {
         case LLoopStrategy::PERMUTATION:
-            exp_strategy = er::ExperimentStrategy::Permutation;
+            exp_strategy = er::ExperimentStrategy::PERMUTATION;
             break;
         case LLoopStrategy::PERMUTATION_SEEDED:
-            exp_strategy = er::ExperimentStrategy::PermutationSeeded;
+            exp_strategy = er::ExperimentStrategy::PERMUTATION_SEEDED;
             break;
         case LLoopStrategy::SEEDED:
-            exp_strategy = er::ExperimentStrategy::Seeded;
+            exp_strategy = er::ExperimentStrategy::SEEDED;
             break;
         default:
-            exp_strategy = er::ExperimentStrategy::Standard;
+            exp_strategy = er::ExperimentStrategy::STANDARD;
             break;
     }
 

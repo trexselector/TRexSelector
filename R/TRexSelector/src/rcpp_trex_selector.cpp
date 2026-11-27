@@ -22,7 +22,7 @@
 // Namespace convenience
 using namespace Rcpp;
 using namespace trex::trex_selector_methods::ad::trex_core;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 
 // =========================================================================================
 
@@ -118,28 +118,28 @@ TRexControl parse_control_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("solver")) {
         std::string solver = control["solver"];
 
-        static const std::unordered_map<std::string, SolverTypeForTRex> solver_map = {
-            {"TLARS",      SolverTypeForTRex::TLARS},
-            {"TLASSO",     SolverTypeForTRex::TLASSO},
-            {"TENET",      SolverTypeForTRex::TENET},
-            {"TSTEPWISE",  SolverTypeForTRex::TSTEPWISE},
-            {"TSTAGEWISE", SolverTypeForTRex::TSTAGEWISE},
-            {"TOMP",       SolverTypeForTRex::TOMP},
-            {"TGP",        SolverTypeForTRex::TGP},
-            {"TACGP",      SolverTypeForTRex::TACGP},
-            {"TMP",        SolverTypeForTRex::TMP},
-            {"TNCGMP",     SolverTypeForTRex::TNCGMP},
-            {"TOOLS",     SolverTypeForTRex::TOOLS},
-            {"TAFS",      SolverTypeForTRex::TAFS},
-            {"TENET_AUG", SolverTypeForTRex::TENET_AUG},
+        static const std::unordered_map<std::string, TSolverType> solver_map = {
+            {"TLARS",      TSolverType::TLARS},
+            {"TLASSO",     TSolverType::TLASSO},
+            {"TENET",      TSolverType::TENET},
+            {"TSTEPWISE",  TSolverType::TSTEPWISE},
+            {"TSTAGEWISE", TSolverType::TSTAGEWISE},
+            {"TOMP",       TSolverType::TOMP},
+            {"TGP",        TSolverType::TGP},
+            {"TACGP",      TSolverType::TACGP},
+            {"TMP",        TSolverType::TMP},
+            {"TNCGMP",     TSolverType::TNCGMP},
+            {"TOOLS",     TSolverType::TOOLS},
+            {"TAFS",      TSolverType::TAFS},
+            {"TENET_AUG", TSolverType::TENET_AUG},
             // IEN family: GVS-only names, accepted so the full enum
             // vocabulary parses (gvs_type = "IEN" + this solver field);
             // validate_core_solver_type() rejects them elsewhere.
-            {"TIENET",    SolverTypeForTRex::TIENET},
-            {"TIENET_AUG", SolverTypeForTRex::TIENET_AUG},
+            {"TIENET",    TSolverType::TIENET},
+            {"TIENET_AUG", TSolverType::TIENET_AUG},
             // Tikhonov family: needs a penalty matrix K, dispatchable only
             // inside TRexTikhonovSelector (same gate).
-            {"TIKNET",    SolverTypeForTRex::TIKNET}
+            {"TIKNET",    TSolverType::TIKNET}
         };
 
         auto it = solver_map.find(solver);
@@ -260,14 +260,14 @@ TRexControl parse_control_parameter(const Rcpp::List& control) {
  */
 void validate_core_solver_type(const TRexControl& params) {
     switch (params.solver_type) {
-        case SolverTypeForTRex::TIENET:
+        case TSolverType::TIENET:
             Rcpp::stop("solver = \"TIENET\" is a GVS-only solver (needs a "
                        "group assignment); use TRexGVSSelector with "
                        "gvs_type = \"IEN\".");
-        case SolverTypeForTRex::TIENET_AUG:
+        case TSolverType::TIENET_AUG:
             Rcpp::stop("solver = \"TIENET_AUG\" is a GVS-only solver; use "
                        "TRexGVSSelector with gvs_type = \"IEN\".");
-        case SolverTypeForTRex::TIKNET:
+        case TSolverType::TIKNET:
             Rcpp::stop("solver = \"TIKNET\" needs a Tikhonov penalty "
                        "matrix; use TRexTikhonovSelector.");
         default:

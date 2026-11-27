@@ -152,8 +152,8 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
     fs::remove(X_file);
     fs::remove(D_file);
     {
-        mm::MemoryMappedMatrix<double> X_writer(X_file, X.rows(), X.cols(), mm::AccessMode::ReadWrite);
-        mm::MemoryMappedMatrix<double> D_writer(D_file, D.rows(), D.cols(), mm::AccessMode::ReadWrite);
+        mm::MemoryMappedMatrix<double> X_writer(X_file, X.rows(), X.cols(), mm::AccessMode::READ_WRITE);
+        mm::MemoryMappedMatrix<double> D_writer(D_file, D.rows(), D.cols(), mm::AccessMode::READ_WRITE);
         X_writer.getMap() = X;
         D_writer.getMap() = D;
     }
@@ -176,8 +176,8 @@ TEST(TSolverMmapTest, ReaderRunsOnReadOnlyMemoryMappedFiles) {
     reference.executeStep(5, true);
 
     {
-        mm::MemoryMappedMatrix<double> X_mapped(X_file, X.rows(), X.cols(), mm::AccessMode::ReadOnly);
-        mm::MemoryMappedMatrix<double> D_mapped(D_file, D.rows(), D.cols(), mm::AccessMode::ReadOnly);
+        mm::MemoryMappedMatrix<double> X_mapped(X_file, X.rows(), X.cols(), mm::AccessMode::READ_ONLY);
+        mm::MemoryMappedMatrix<double> D_mapped(D_file, D.rows(), D.cols(), mm::AccessMode::READ_ONLY);
 
         EXPECT_THROW(X_mapped.getMapFor(writer.writesDesign()), std::runtime_error);
 

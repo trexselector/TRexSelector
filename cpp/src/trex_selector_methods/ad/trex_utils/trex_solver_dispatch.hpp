@@ -21,7 +21,7 @@
  *        lifecycle. A single template handles all solver types uniformly.
  *
  *    3.  dispatchByType() — the one remaining switch/case that maps the
- *        runtime SolverTypeForTRex enum to a compile-time concrete type and
+ *        runtime TSolverType enum to a compile-time concrete type and
  *        forwards to dispatchSolver<TSolver>.
  *
  *  Adding a new solver:
@@ -67,7 +67,7 @@ using SparseBetaPath = trex::tsolvers::ad::SparseBetaPath;
 /**
  * @brief Solver types available for the T-Rex Selector.
  */
-enum class SolverTypeForTRex {
+enum class TSolverType {
 
     // LARS-based solvers
     // -------------------------------
@@ -97,6 +97,10 @@ enum class SolverTypeForTRex {
     TAFS
     // --------------------------------
 };
+
+/** @brief Old name of TSolverType.
+ *  @deprecated Use TSolverType. */
+using SolverTypeForTRex [[deprecated("Use TSolverType")]] = TSolverType;
 
 
 // ===================================================================================
@@ -195,7 +199,7 @@ struct SolverConfig {
      *  ZSCORE only when the caller wants the solver to z-score internally
      *  (e.g. augmented EN paths that must keep the ridge block consistent).
      */
-    trex::tsolvers::ad::ScalingMode scaling_mode = trex::tsolvers::ad::ScalingMode::L2;
+    trex::tsolvers::ad::TSolverScalingMode scaling_mode = trex::tsolvers::ad::TSolverScalingMode::L2;
 
     // --- Execution parameters ---
 
@@ -394,7 +398,7 @@ SparseBetaPath dispatchSolver(const SolverConfig& cfg) {
 
 
 /**
- * @brief Map a runtime SolverTypeForTRex enum to a concrete solver type and dispatch.
+ * @brief Map a runtime TSolverType enum to a concrete solver type and dispatch.
  *
  * @details The sole switch/case in the dispatch layer. Each case instantiates the
  *          corresponding solver type via dispatchSolver<TSolver>(cfg).
@@ -407,22 +411,22 @@ SparseBetaPath dispatchSolver(const SolverConfig& cfg) {
  *
  * @throws std::invalid_argument if solver_type is not a recognized enumerator.
  */
-inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const SolverConfig& cfg) {
+inline SparseBetaPath dispatchByType(TSolverType solver_type, const SolverConfig& cfg) {
     switch (solver_type) {
 
         // LARS family
-        case SolverTypeForTRex::TLARS:      return dispatchSolver<lars::TSolverLARS>(cfg);
-        case SolverTypeForTRex::TLASSO:     return dispatchSolver<lars::TSolverLASSO>(cfg);
-        case SolverTypeForTRex::TSTEPWISE:  return dispatchSolver<lars::TSolverStepwise>(cfg);
-        case SolverTypeForTRex::TENET:      return dispatchSolver<lars::TSolverENET>(cfg);
-        case SolverTypeForTRex::TENET_AUG: return dispatchSolver<lars::TSolverENETAug>(cfg);
-        case SolverTypeForTRex::TIENET:     throw std::invalid_argument(
+        case TSolverType::TLARS:      return dispatchSolver<lars::TSolverLARS>(cfg);
+        case TSolverType::TLASSO:     return dispatchSolver<lars::TSolverLASSO>(cfg);
+        case TSolverType::TSTEPWISE:  return dispatchSolver<lars::TSolverStepwise>(cfg);
+        case TSolverType::TENET:      return dispatchSolver<lars::TSolverENET>(cfg);
+        case TSolverType::TENET_AUG: return dispatchSolver<lars::TSolverENETAug>(cfg);
+        case TSolverType::TIENET:     throw std::invalid_argument(
                 "trex_solver_dispatch: TIENET is a GVS-only solver (needs a "
                 "group assignment); use TRexGVSSelector with gvs_type=IEN.");
-        case SolverTypeForTRex::TIENET_AUG: throw std::invalid_argument(
+        case TSolverType::TIENET_AUG: throw std::invalid_argument(
                 "trex_solver_dispatch: TIENET_AUG is a GVS-only solver; "
                 "use TRexGVSSelector with gvs_type=IEN.");
-        case SolverTypeForTRex::TIKNET:
+        case TSolverType::TIKNET:
             // Dispatchable only with a Tikhonov matrix (TRexTikhonovSelector
             // sets cfg.tikhonov_K; with penalty_structure GROUP_CENTERING
             // the selector materializes K_GC, which this sparse path
@@ -433,21 +437,21 @@ inline SparseBetaPath dispatchByType(SolverTypeForTRex solver_type, const Solver
             throw std::invalid_argument(
                 "trex_solver_dispatch: TIKNET needs a Tikhonov matrix "
                 "(TRexTikhonovSelector / SolverConfig::tikhonov_K).");
-        case SolverTypeForTRex::TSTAGEWISE: return dispatchSolver<lars::TSolverStagewise>(cfg);
+        case TSolverType::TSTAGEWISE: return dispatchSolver<lars::TSolverStagewise>(cfg);
 
         // OMP family
-        case SolverTypeForTRex::TOMP:       return dispatchSolver<omp::TSolverOMP>(cfg);
-        case SolverTypeForTRex::TGP:        return dispatchSolver<omp::TSolverGP>(cfg);
-        case SolverTypeForTRex::TACGP:      return dispatchSolver<omp::TSolverACGP>(cfg);
-        case SolverTypeForTRex::TMP:        return dispatchSolver<omp::TSolverMP>(cfg);
-        case SolverTypeForTRex::TNCGMP:     return dispatchSolver<omp::TSolverNCGMP>(cfg);
-        case SolverTypeForTRex::TOOLS:      return dispatchSolver<omp::TSolverOOLS>(cfg);
+        case TSolverType::TOMP:       return dispatchSolver<omp::TSolverOMP>(cfg);
+        case TSolverType::TGP:        return dispatchSolver<omp::TSolverGP>(cfg);
+        case TSolverType::TACGP:      return dispatchSolver<omp::TSolverACGP>(cfg);
+        case TSolverType::TMP:        return dispatchSolver<omp::TSolverMP>(cfg);
+        case TSolverType::TNCGMP:     return dispatchSolver<omp::TSolverNCGMP>(cfg);
+        case TSolverType::TOOLS:      return dispatchSolver<omp::TSolverOOLS>(cfg);
 
         // AFS family
-        case SolverTypeForTRex::TAFS:       return dispatchSolver<afs::TSolverAFS>(cfg);
+        case TSolverType::TAFS:       return dispatchSolver<afs::TSolverAFS>(cfg);
 
         default:
-            throw std::invalid_argument("trex_solver_dispatch: unsupported SolverTypeForTRex");
+            throw std::invalid_argument("trex_solver_dispatch: unsupported TSolverType");
     }
 }
 

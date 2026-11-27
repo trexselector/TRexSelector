@@ -136,9 +136,9 @@ void TRexDASelector::validateDAParameters() const {
     if (trex_da_ctrl_.method == DAMethod::BT ||
         trex_da_ctrl_.method == DAMethod::PRIOR_GROUPS) {
         auto lm = trex_da_ctrl_.hc_linkage;
-        if (lm != hac::LinkageMethod::Single &&
-            lm != hac::LinkageMethod::Complete &&
-            lm != hac::LinkageMethod::Average &&
+        if (lm != hac::LinkageMethod::SINGLE &&
+            lm != hac::LinkageMethod::COMPLETE &&
+            lm != hac::LinkageMethod::AVERAGE &&
             lm != hac::LinkageMethod::WPGMA) {
             throw std::invalid_argument(
                 "Unsupported linkage method for DA-BT / DA-PRIOR_GROUPS. "
@@ -881,22 +881,22 @@ double TRexDASelector::estimateEquiCorrelation() const {
 
 std::vector<hac::MergeStep> TRexDASelector::runClustering() const {
     using MapType = Eigen::Map<Eigen::MatrixXd>;
-    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::Correlation>;
+    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::CORRELATION>;
 
     switch (trex_da_ctrl_.hc_linkage) {
-        case hac::LinkageMethod::Single:
+        case hac::LinkageMethod::SINGLE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Single>(*X_,
+                MapType, CorrDist, hac::LinkageMethod::SINGLE>(*X_,
                     false, verbose_);
 
-        case hac::LinkageMethod::Complete:
+        case hac::LinkageMethod::COMPLETE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Complete>(*X_,
+                MapType, CorrDist, hac::LinkageMethod::COMPLETE>(*X_,
                     false, verbose_);
 
-        case hac::LinkageMethod::Average:
+        case hac::LinkageMethod::AVERAGE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Average>(*X_,
+                MapType, CorrDist, hac::LinkageMethod::AVERAGE>(*X_,
                     false, verbose_);
 
         case hac::LinkageMethod::WPGMA:
@@ -921,22 +921,22 @@ std::vector<hac::MergeStep> TRexDASelector::clusterColumns(
     }
 
     using CorrDist =
-        hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::Correlation>;
+        hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::CORRELATION>;
 
     switch (trex_da_ctrl_.hc_linkage) {
-        case hac::LinkageMethod::Single:
+        case hac::LinkageMethod::SINGLE:
             return hac::AgglomerativeClustering::cluster<
-                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::Single>(
+                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::SINGLE>(
                     sub, false, false);
 
-        case hac::LinkageMethod::Complete:
+        case hac::LinkageMethod::COMPLETE:
             return hac::AgglomerativeClustering::cluster<
-                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::Complete>(
+                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::COMPLETE>(
                     sub, false, false);
 
-        case hac::LinkageMethod::Average:
+        case hac::LinkageMethod::AVERAGE:
             return hac::AgglomerativeClustering::cluster<
-                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::Average>(
+                Eigen::MatrixXd, CorrDist, hac::LinkageMethod::AVERAGE>(
                     sub, false, false);
 
         case hac::LinkageMethod::WPGMA:

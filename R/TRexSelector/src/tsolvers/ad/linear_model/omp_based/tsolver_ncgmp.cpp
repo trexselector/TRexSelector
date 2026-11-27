@@ -80,7 +80,7 @@ void TSolverNCGMP::executeStep(std::size_t T_stop, bool early_stop) {
     // active, via maxSteps_, T_stop, or vanishing correlations.
     while (currentStep_ < maxSteps_ &&
            actives_.size() < effective_n_ &&
-           (variant_ == NCGMPVariant::LineSearch || !inactives_.empty()) &&
+           (variant_ == NCGMPVariant::LINE_SEARCH || !inactives_.empty()) &&
            (!early_stop || T_stop == 0 || count_active_dummies_ < T_stop)) {
 
         // 1. Linear Minimization Oracle (LMO) - Max Correlation
@@ -94,7 +94,7 @@ void TSolverNCGMP::executeStep(std::size_t T_stop, bool early_stop) {
 
         std::size_t j_new = new_vars[0]; // Take the top tied variable
 
-        if (variant_ == NCGMPVariant::LineSearch) {
+        if (variant_ == NCGMPVariant::LINE_SEARCH) {
             // Variant 0: Line Search (Standard MP)
             // -------------------------------------------------------------------
             // x_{t+1} = x_t + gamma * z_t
@@ -164,7 +164,7 @@ void TSolverNCGMP::executeStep(std::size_t T_stop, bool early_stop) {
 // ==================================================================================
 
 void TSolverNCGMP::updateCorrelations() {
-    if (variant_ == NCGMPVariant::LineSearch) {
+    if (variant_ == NCGMPVariant::LINE_SEARCH) {
         // MP re-selection: refresh ALL non-dropped variables (actives included)
         refreshAllCorrelations();
     } else {
@@ -178,7 +178,7 @@ std::pair<double, std::vector<std::size_t>>
 TSolverNCGMP::findTiedMaxCorrelations() const {
     // Line Search (MP) allows re-selection: scan all non-dropped variables.
     // Fully Corrective (OMP) uses the base inactive-only scan.
-    return (variant_ == NCGMPVariant::LineSearch)
+    return (variant_ == NCGMPVariant::LINE_SEARCH)
                ? findTiedMaxCorrelationsAllNonDropped()
                : TSolverBase::findTiedMaxCorrelations();
 }

@@ -93,11 +93,11 @@ using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
 using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl;
 using trex::trex_selector_methods::ad::trex_gvs::GVSType;
 using trex::trex_selector_methods::ad::trex_gvs::ENSolverType;
-using trex::trex_selector_methods::ad::trex_gvs::LambdaSelectionMethod;
+using trex::trex_selector_methods::ad::trex_gvs::GVSLambda2Method;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverParams;
 
 
@@ -245,7 +245,7 @@ inline GVSSingleRunResult run_gvs_single(
     TRexGVSControl trex_gvs_ctrl = gvs_ctrl;
     trex_gvs_ctrl.trex_ctrl = trex_ctrl;
     if (trex_gvs_ctrl.gvs_type != GVSType::EN)
-        trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+        trex_gvs_ctrl.trex_ctrl.solver_type = TSolverType::TLASSO;
 
     TRexGVSSelector selector(X_map, y_map, tFDR,
                              trex_gvs_ctrl,
@@ -393,10 +393,10 @@ inline GVSGridPointResult run_gvs_mc_trials(
         if (trex_gvs_ctrl.gvs_type == GVSType::EN)
             trex_gvs_ctrl.trex_ctrl.solver_type =
                 (trex_gvs_ctrl.en_solver == ENSolverType::TENET_AUG)
-                    ? SolverTypeForTRex::TENET_AUG
-                    : SolverTypeForTRex::TENET;
+                    ? TSolverType::TENET_AUG
+                    : TSolverType::TENET;
         else
-            trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+            trex_gvs_ctrl.trex_ctrl.solver_type = TSolverType::TLASSO;
 
         TRexGVSSelector selector(X_map, y_map, tFDR,
                                  trex_gvs_ctrl,
@@ -840,10 +840,10 @@ inline std::vector<std::vector<GVSGridPointResult>> run_gvs_2d_sweep(
                 if (trex_gvs_ctrl.gvs_type == GVSType::EN)
                     trex_gvs_ctrl.trex_ctrl.solver_type =
                         (trex_gvs_ctrl.en_solver == ENSolverType::TENET_AUG)
-                            ? SolverTypeForTRex::TENET_AUG
-                            : SolverTypeForTRex::TENET;
+                            ? TSolverType::TENET_AUG
+                            : TSolverType::TENET;
                 else
-                    trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+                    trex_gvs_ctrl.trex_ctrl.solver_type = TSolverType::TLASSO;
 
                 TRexGVSSelector selector(X_map, y_map, cfg.tFDR, trex_gvs_ctrl,
                                          static_cast<int>(trial_seed),
@@ -1494,10 +1494,10 @@ inline BlockMethodResult run_block_method(
     if (trex_gvs_ctrl.gvs_type == GVSType::EN)
         trex_gvs_ctrl.trex_ctrl.solver_type =
             (trex_gvs_ctrl.en_solver == ENSolverType::TENET_AUG)
-                ? SolverTypeForTRex::TENET_AUG
-                : SolverTypeForTRex::TENET;
+                ? TSolverType::TENET_AUG
+                : TSolverType::TENET;
     else
-        trex_gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+        trex_gvs_ctrl.trex_ctrl.solver_type = TSolverType::TLASSO;
 
     TRexGVSSelector selector(X_map, y_map, tFDR, trex_gvs_ctrl,
                               seed, /*verbose=*/false);
@@ -1573,16 +1573,16 @@ inline BlockTrialResult run_block_single(
     // --- Base GVS control parameters ---
     TRexGVSControl gvs_en;
     gvs_en.gvs_type       = GVSType::EN;
-    gvs_en.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    gvs_en.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
     gvs_en.corr_max       = corr_max;
-    gvs_en.hc_linkage     = hac::LinkageMethod::Single;
+    gvs_en.hc_linkage     = hac::LinkageMethod::SINGLE;
     gvs_en.en_solver      = en_solver;
 
     TRexGVSControl gvs_ien;
     gvs_ien.gvs_type       = GVSType::IEN;
-    gvs_ien.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    gvs_ien.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
     gvs_ien.corr_max       = corr_max;
-    gvs_ien.hc_linkage     = hac::LinkageMethod::Single;
+    gvs_ien.hc_linkage     = hac::LinkageMethod::SINGLE;
 
     // Oracle variants carry the true prior_groups
     TRexGVSControl gvs_en_oracle  = gvs_en;

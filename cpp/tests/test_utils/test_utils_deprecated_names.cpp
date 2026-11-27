@@ -2,8 +2,8 @@
 /**
  * @file test_utils_deprecated_names.cpp
  *
- * @brief The old type names are aliases of the new ones, and the old include paths of the T-solvers
- *        forward to the new files.
+ * @brief The old type names and enumerators are aliases of the new ones, and the old include paths of
+ *        the T-solvers forward to the new files.
  */
 // ========================================================================================
 
@@ -14,6 +14,11 @@
 #include <type_traits>
 
 // project includes
+#include <tsolvers/ad/solver_utils/solver_preprocessing.hpp>
+#include <utils/memmap/memory_mapped_matrix.hpp>
+#include <trex_selector_methods/ad/trex_utils/trex_experiment_runner.hpp>
+#include <ml_methods/clustering/hierarchical/agglomerative/distance_policy.hpp>
+#include <ml_methods/clustering/hierarchical/agglomerative/agglomerative_types.hpp>
 #include <ml_methods/model_selection/enet_cv_ccd.hpp>
 #include <ml_methods/model_selection/lambda2_cv_diagnostics.hpp>
 #include <ml_methods/model_selection/ridge_cv_svd.hpp>
@@ -172,6 +177,85 @@ static_assert(std::is_same_v<trex::tsolvers::ad::linear_model::omp_based::TOOLS_
                              trex::tsolvers::ad::linear_model::omp_based::TSolverOOLS>);
 static_assert(std::is_same_v<trex::utils::datageneration::dummygen::Distribution,
                              trex::utils::datageneration::dummygen::DummyDistribution>);
+
+// The old names of the enumeration types.
+static_assert(std::is_same_v<trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex,
+                             trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType>);
+static_assert(std::is_same_v<trex::trex_selector_methods::ad::trex_gvs::LambdaSelectionMethod,
+                             trex::trex_selector_methods::ad::trex_gvs::GVSLambda2Method>);
+static_assert(std::is_same_v<trex::trex_selector_methods::ad::trex_tikhonov::TikLambda2Method,
+                             trex::trex_selector_methods::ad::trex_tikhonov::TikhonovLambda2Method>);
+static_assert(std::is_same_v<trex::trex_selector_methods::ad::trex_tikhonov::TikPenaltyStructure,
+                             trex::trex_selector_methods::ad::trex_tikhonov::TikhonovPenaltyStructure>);
+static_assert(std::is_same_v<trex::trex_selector_methods::ad::trex_screening::ScreenTRexMethod,
+                             trex::trex_selector_methods::ad::trex_screening::ScreeningMethod>);
+static_assert(std::is_same_v<trex::tsolvers::ad::solver_utils::preprocessing::ScalingMode,
+                             trex::tsolvers::ad::solver_utils::preprocessing::TSolverScalingMode>);
+static_assert(std::is_same_v<trex::tsolvers::ad::ScalingMode,
+                             trex::tsolvers::ad::TSolverScalingMode>);
+
+// The old enumerators have the value of the new ones.
+static_assert(trex::utils::memmap::AccessMode::ReadOnly == trex::utils::memmap::AccessMode::READ_ONLY);
+static_assert(trex::utils::memmap::AccessMode::ReadWrite == trex::utils::memmap::AccessMode::READ_WRITE);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Ward ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::WARD);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Average ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::AVERAGE);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Complete ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::COMPLETE);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Single ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::SINGLE);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Median ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::MEDIAN);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::Centroid ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::LinkageMethod::CENTROID);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::Euclidean ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::EUCLIDEAN);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::Correlation ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::CORRELATION);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::Manhattan ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::MANHATTAN);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::Correlation_LSH_Filter ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::CORRELATION_LSH_FILTER);
+static_assert(trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::Correlation_LSH_Approx ==
+              trex::ml_methods::clustering::hierarchical::agglomerative::DistanceMetric::CORRELATION_LSH_APPROX);
+static_assert(trex::tsolvers::ad::NCGMPVariant::LineSearch == trex::tsolvers::ad::NCGMPVariant::LINE_SEARCH);
+static_assert(trex::tsolvers::ad::NCGMPVariant::FullyCorrective ==
+              trex::tsolvers::ad::NCGMPVariant::FULLY_CORRECTIVE);
+static_assert(trex::trex_selector_methods::ad::trex_spca::SPCAMode::ActiveSet ==
+              trex::trex_selector_methods::ad::trex_spca::SPCAMode::ACTIVE_SET);
+static_assert(trex::trex_selector_methods::ad::trex_spca::SPCAMode::Thresholded ==
+              trex::trex_selector_methods::ad::trex_spca::SPCAMode::THRESHOLDED);
+static_assert(trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::Standard ==
+              trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::STANDARD);
+static_assert(trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::Permutation ==
+              trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::PERMUTATION);
+static_assert(trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::PermutationSeeded ==
+              trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::PERMUTATION_SEEDED);
+static_assert(trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::Seeded ==
+              trex::trex_selector_methods::ad::utils::experiment_runner::ExperimentStrategy::SEEDED);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Normal ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::NORMAL);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Uniform ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::UNIFORM);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Rademacher ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::RADEMACHER);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::StudentT ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::STUDENT_T);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Laplace ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::LAPLACE);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Gumbel ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::GUMBEL);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Triangle ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::TRIANGLE);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::UniformSphere ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::UNIFORM_SPHERE);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Mammen ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::MAMMEN);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::ConstrainedSparseRademacher ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::CONSTRAINED_SPARSE_RADEMACHER);
+static_assert(trex::utils::datageneration::dummygen::DummyDistribution::Type::Logistic ==
+              trex::utils::datageneration::dummygen::DummyDistribution::Type::LOGISTIC);
 
 #if defined(__clang__)
 #pragma clang diagnostic pop

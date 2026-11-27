@@ -165,7 +165,7 @@ struct TRexDAControl {
      *  Ward is rejected, because its update is valid for squared Euclidean
      *  distances only and the correlation distance 1 - |cor| is not Euclidean.
      */
-    hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
+    hac::LinkageMethod hc_linkage = hac::LinkageMethod::SINGLE;
 
     /** @brief Number of correlation thresholds on the calibration grid of BT,
      *  NN and prior groups. 0 (default) takes min(20, p).

@@ -60,7 +60,7 @@ nothing, because the filter lowers the ordinary count that the confidence level 
 
 ### Dependent variables
 
-`trex_method` makes the screening dependency-aware, with the ScreenTRexMethod enum. The dummies stay
+`trex_method` makes the screening dependency-aware, with the ScreeningMethod enum. The dummies stay
 the same independent dummies, and the variants lower the relative occurrence of a variable that
 resembles its correlated neighbours. `TREX_DA_AR1` compares a variable with the neighbours inside a
 window, which holds the lags whose correlation `|cor_coef|^lag` reaches `rho_thr_DA`. `TREX_DA_NN`

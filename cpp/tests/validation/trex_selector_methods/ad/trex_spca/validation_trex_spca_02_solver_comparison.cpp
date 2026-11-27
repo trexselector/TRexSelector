@@ -77,9 +77,9 @@ run_single_spca(Eigen::MatrixXd X_centered,
                 ENSolverType    en_solver)
 {
     TRexSPCAControl ctrl;
-    ctrl.mode                    = SPCAMode::ActiveSet;
+    ctrl.mode                    = SPCAMode::ACTIVE_SET;
     ctrl.en_solver               = en_solver;
-    ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    ctrl.gvs_ctrl.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
     ctrl.gvs_ctrl.lambda_2       = -1.0;  // < 0: auto-compute via CV (0 would mean no ridge)
 
     Eigen::Map<Eigen::MatrixXd> X_map(
@@ -216,11 +216,11 @@ void run_mc_comparison(const SimConfig&           cfg,
 
         auto r_aug = run_mc_trials_trex_spca(
             cfg.num_MC, lbl + " [TENET_AUG]", make_data, cfg.tFDR,
-            SPCAMode::ActiveSet, offset, cfg.lambda_2, ENSolverType::TENET_AUG);
+            SPCAMode::ACTIVE_SET, offset, cfg.lambda_2, ENSolverType::TENET_AUG);
 
         auto r_tenet = run_mc_trials_trex_spca(
             cfg.num_MC, lbl + " [TENET]", make_data, cfg.tFDR,
-            SPCAMode::ActiveSet, offset, cfg.lambda_2, ENSolverType::TENET);
+            SPCAMode::ACTIVE_SET, offset, cfg.lambda_2, ENSolverType::TENET);
 
         std::cout << "  " << std::setw(6) << lbl_ss.str() << "   "
                   << std::setw(7) << r_aug.avg_fdr   << "  "

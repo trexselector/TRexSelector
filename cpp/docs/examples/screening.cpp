@@ -17,7 +17,7 @@
 using trex::trex_selector_methods::ad::trex_biobank_screening::TRexBiobankScreeningSelector;
 using trex::trex_selector_methods::ad::trex_biobank_screening::TRexBiobankScreeningControl;
 using trex::trex_selector_methods::ad::trex_screening::TRexScreeningControl;
-using trex::trex_selector_methods::ad::trex_screening::ScreenTRexMethod;
+using trex::trex_selector_methods::ad::trex_screening::ScreeningMethod;
 using trex::trex_selector_methods::ad::trex_screening::TRexScreeningSelector;
 //! [includes]
 
@@ -86,7 +86,7 @@ int main() {
     doc.begin("da");
     //! [da]
     TRexScreeningControl ar_ctrl = ctrl;
-    ar_ctrl.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+    ar_ctrl.trex_method = ScreeningMethod::TREX_DA_AR1;
 
     TRexScreeningSelector ar(X_map, y_map, ar_ctrl, 3, false);
     ar.select();

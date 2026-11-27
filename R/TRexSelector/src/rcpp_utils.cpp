@@ -72,7 +72,7 @@ XPtr<MemoryMappedMatrix<double>> mmap_matrix_create(
     int mode_idx = 1
 ) {
 
-    AccessMode mode = (mode_idx == 0) ? AccessMode::ReadOnly : AccessMode::ReadWrite;
+    AccessMode mode = (mode_idx == 0) ? AccessMode::READ_ONLY : AccessMode::READ_WRITE;
     return XPtr<MemoryMappedMatrix<double>>(
         new MemoryMappedMatrix<double>(filename,
                                          static_cast<std::size_t>(rows),
@@ -119,7 +119,7 @@ void convert_to_memory_mapped_matrix(
     std::size_t rows = mat.nrow();
     std::size_t cols = mat.ncol();
 
-    MemoryMappedMatrix<double> mmap(filename, rows, cols, AccessMode::ReadWrite);
+    MemoryMappedMatrix<double> mmap(filename, rows, cols, AccessMode::READ_WRITE);
     auto map = mmap.getMap();
 
     // R matrices are natively column-major. Stream directly into the mapped region.

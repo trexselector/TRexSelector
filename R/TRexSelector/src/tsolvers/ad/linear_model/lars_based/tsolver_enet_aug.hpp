@@ -201,7 +201,7 @@ class TSolverENETAug : public TSolverBase {
      * @param n_threads  Thread budget of the inner solver (TSolverOptions::n_threads).
      */
     void buildInnerSolver(bool normalize, bool intercept, bool precentered,
-                          bool verbose, ScalingMode scaling_mode, long long tie_seed,
+                          bool verbose, TSolverScalingMode scaling_mode, long long tie_seed,
                           int n_threads);
 
 public:

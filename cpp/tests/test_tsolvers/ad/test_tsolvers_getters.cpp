@@ -243,7 +243,7 @@ TEST(TSolverGettersTest, ZScoreScalingMatchesManualStandardization) {
     Eigen::Map<Eigen::MatrixXd> DA_map(DA.data(), n, L);
     Eigen::Map<Eigen::VectorXd> yA_map(yA.data(), n);
     TSolverLARS A(XA_map, DA_map, yA_map,
-        trex::tsolvers::ad::TSolverOptions{.scaling_mode = trex::tsolvers::ad::ScalingMode::ZSCORE});
+        trex::tsolvers::ad::TSolverOptions{.scaling_mode = trex::tsolvers::ad::TSolverScalingMode::ZSCORE});
     A.executeStep(2, true);
 
     // Solver B: manual z-scoring (divisor = sample SD), preprocessing disabled

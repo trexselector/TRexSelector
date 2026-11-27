@@ -189,7 +189,7 @@ int main(int argc, char** argv)
     std::cout << "}\n\n";
 
     using MapType  = Eigen::Map<Eigen::MatrixXd>;
-    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::Correlation>;
+    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::CORRELATION>;
 
     const double SIGMA_TOL = 1e-9;
     double worst_sigma = 0.0;
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
         // C++ single-linkage dendrogram (identical to TRexGVSSelector::runClustering)
         const std::vector<hac::MergeStep> merges =
             hac::AgglomerativeClustering::cluster<MapType, CorrDist,
-                                                  hac::LinkageMethod::Single>(X_map);
+                                                  hac::LinkageMethod::SINGLE>(X_map);
 
         for (double cm : corr_max) {
             const std::string tag = corrmax_tag(cm);

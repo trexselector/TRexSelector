@@ -40,7 +40,7 @@ using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_screening::TRexScreeningSelector;
 using trex::trex_selector_methods::ad::trex_screening::TRexScreeningControl;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 
 namespace {
 
@@ -63,7 +63,7 @@ TRexControl smallControl() {
     TRexControl ctrl;
     ctrl.K = 5;
     ctrl.max_dummy_multiplier = 2;
-    ctrl.solver_type = SolverTypeForTRex::TLARS;
+    ctrl.solver_type = TSolverType::TLARS;
     return ctrl;
 }
 
@@ -205,7 +205,7 @@ TEST(TRexRestore, SelectEndingWithAnErrorGivesXBack) {
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
     TRexControl ctrl = smallControl();
-    ctrl.solver_type = SolverTypeForTRex::TIENET;
+    ctrl.solver_type = TSolverType::TIENET;
     TRexSelector sel(Xm, ym, /*tFDR=*/0.2, ctrl, /*seed=*/3, /*verbose=*/false);
     EXPECT_FALSE(d.X.isApprox(X0, 1e-12));                   // normalized in place
 

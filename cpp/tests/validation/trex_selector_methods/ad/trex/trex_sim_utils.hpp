@@ -81,7 +81,7 @@ namespace trex_sim {
 namespace rates = trex::utils::eval::rates;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 
 
 // ==============================================================================
@@ -132,7 +132,7 @@ using TrexMmapDGPFactory =
  */
 struct DemoSolverInfo {
 
-    SolverTypeForTRex solver_type;
+    TSolverType solver_type;
     std::string       solver_name;
     double            lambda2       = 0.0;
     double            rho_afs       = 0.0;
@@ -173,25 +173,25 @@ using PrintFn = std::function<void(const std::string&)>;
  */
 inline std::vector<DemoSolverInfo> make_default_solvers_to_test() {
     return {
-        {SolverTypeForTRex::TLARS,      "TLARS"},
-        {SolverTypeForTRex::TLASSO,     "TLASSO"},
-        {SolverTypeForTRex::TENET,      "TENET",
+        {TSolverType::TLARS,      "TLARS"},
+        {TSolverType::TLASSO,     "TLASSO"},
+        {TSolverType::TENET,      "TENET",
             0.1},
-        {SolverTypeForTRex::TSTAGEWISE, "TSTAGEWISE"},
-        {SolverTypeForTRex::TSTEPWISE,  "TSTEPWISE"},
-        {SolverTypeForTRex::TOMP,       "TOMP"},
-        {SolverTypeForTRex::TGP,        "TGP"},
-        {SolverTypeForTRex::TACGP,      "TACGP"},
-        {SolverTypeForTRex::TMP,        "TMP"},
-        {SolverTypeForTRex::TAFS,       "TAFS_rho_0.3",
+        {TSolverType::TSTAGEWISE, "TSTAGEWISE"},
+        {TSolverType::TSTEPWISE,  "TSTEPWISE"},
+        {TSolverType::TOMP,       "TOMP"},
+        {TSolverType::TGP,        "TGP"},
+        {TSolverType::TACGP,      "TACGP"},
+        {TSolverType::TMP,        "TMP"},
+        {TSolverType::TAFS,       "TAFS_rho_0.3",
             0.0, 0.3},
-        {SolverTypeForTRex::TAFS,       "TAFS_rho_1.0",
+        {TSolverType::TAFS,       "TAFS_rho_1.0",
             0.0, 1.0},
-        {SolverTypeForTRex::TNCGMP,     "TNCGMP_v1",
+        {TSolverType::TNCGMP,     "TNCGMP_v1",
             0.0, 0.0, 1},
-        {SolverTypeForTRex::TNCGMP,     "TNCGMP_v0",
+        {TSolverType::TNCGMP,     "TNCGMP_v0",
             0.0, 0.0, 0},
-        {SolverTypeForTRex::TOOLS,      "TOOLS"}
+        {TSolverType::TOOLS,      "TOOLS"}
     };
 }
 

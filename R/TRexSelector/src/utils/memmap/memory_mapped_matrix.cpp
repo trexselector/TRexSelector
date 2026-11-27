@@ -75,7 +75,7 @@ void MemoryMappedMatrix<Scalar>::initialize() {
     namespace fs = std::filesystem;
 
     // 1. Handle File Creation / Resizing Explicitly
-    if (mode_ == AccessMode::ReadWrite) {
+    if (mode_ == AccessMode::READ_WRITE) {
         // The file is sparse, so a full disk only shows at a mapped write (SIGBUS);
         // check the growth against the free space of its volume first
         std::error_code ec_size;
@@ -121,7 +121,7 @@ void MemoryMappedMatrix<Scalar>::initialize() {
 
     // 2. Open the Mapping
     try {
-        boost::interprocess::mode_t b_mode = (mode_ == AccessMode::ReadOnly)
+        boost::interprocess::mode_t b_mode = (mode_ == AccessMode::READ_ONLY)
             ? boost::interprocess::read_only
             : boost::interprocess::read_write;
 
@@ -140,7 +140,7 @@ void MemoryMappedMatrix<Scalar>::releaseResidency() {
 
     // Synchronous flush (async = false): all pages are clean afterwards, so
     // the eviction below cannot lose data.
-    if (mode_ == AccessMode::ReadWrite) {
+    if (mode_ == AccessMode::READ_WRITE) {
         mapped_region_->flush(0, mapped_region_->get_size(), /*async=*/false);
     }
 
@@ -169,7 +169,7 @@ void MemoryMappedMatrix<Scalar>::applyAccessHints() {
 
 template<typename Scalar>
 typename MemoryMappedMatrix<Scalar>::MapType MemoryMappedMatrix<Scalar>::getMap() {
-    if (mode_ == AccessMode::ReadOnly) {
+    if (mode_ == AccessMode::READ_ONLY) {
         throw std::runtime_error(
             "Cannot return mutable Eigen::Map in ReadOnly mode. A selector that "
             "standardizes the design in place, a T-solver with normalize or "
@@ -201,7 +201,7 @@ typename MemoryMappedMatrix<Scalar>::ConstMapType MemoryMappedMatrix<Scalar>::ge
 
 template<typename Scalar>
 Scalar* MemoryMappedMatrix<Scalar>::data() {
-    if (mode_ == AccessMode::ReadOnly) {
+    if (mode_ == AccessMode::READ_ONLY) {
         throw std::runtime_error("Cannot return mutable pointer in ReadOnly mode");
     }
     return reinterpret_cast<Scalar*>(mapped_region_->get_address());
@@ -219,7 +219,7 @@ const Scalar* MemoryMappedMatrix<Scalar>::data() const {
 
 template<typename Scalar>
 Scalar& MemoryMappedMatrix<Scalar>::operator()(std::size_t row, std::size_t col) {
-    if (mode_ == AccessMode::ReadOnly) {
+    if (mode_ == AccessMode::READ_ONLY) {
         throw std::runtime_error("Cannot write element: matrix is in ReadOnly mode");
     }
     if (row >= rows_ || col >= cols_) {

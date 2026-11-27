@@ -75,17 +75,17 @@ inline constexpr double AUTO_ESTIMATE_CORRELATION = -2.0;
  *          corresponding validation warning.
  */
 inline constexpr bool isGreedySolver(
-    trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex st) noexcept
+    trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType st) noexcept
 {
     namespace sdx = trex::trex_selector_methods::ad::utils::solver_dispatch;
     switch (st) {
-        case sdx::SolverTypeForTRex::TLARS:
-        case sdx::SolverTypeForTRex::TLASSO:
-        case sdx::SolverTypeForTRex::TENET:
-        case sdx::SolverTypeForTRex::TENET_AUG:
-        case sdx::SolverTypeForTRex::TIENET:
-        case sdx::SolverTypeForTRex::TIENET_AUG:
-        case sdx::SolverTypeForTRex::TIKNET:
+        case sdx::TSolverType::TLARS:
+        case sdx::TSolverType::TLASSO:
+        case sdx::TSolverType::TENET:
+        case sdx::TSolverType::TENET_AUG:
+        case sdx::TSolverType::TIENET:
+        case sdx::TSolverType::TIENET_AUG:
+        case sdx::TSolverType::TIKNET:
             return false;
         default:
             return true;
@@ -242,7 +242,7 @@ struct TRexControl {
     // ===================================
 
     /** @brief Solver type (default: TLARS). */
-    disp::SolverTypeForTRex solver_type = disp::SolverTypeForTRex::TLARS;
+    disp::TSolverType solver_type = disp::TSolverType::TLARS;
 
     /** @brief Bundled hyperparameters for all solver algorithms. */
     disp::TSolverParams solver_params{};
@@ -266,8 +266,8 @@ struct TRexControl {
      *  exactly what the raw design selects under L2. Non-finite entries and
      *  dead columns are rejected in every mode (std::invalid_argument). L2
      *  and ZSCORE standardize X in place and restore it, so a memory-mapped
-     *  X needs AccessMode::ReadWrite. NONE writes nothing into X, so
-     *  AccessMode::ReadOnly serves (data_normalizer::writesDesign()). */
+     *  X needs AccessMode::READ_WRITE. NONE writes nothing into X, so
+     *  AccessMode::READ_ONLY serves (data_normalizer::writesDesign()). */
     dn::ScalingMode scaling_mode = dn::ScalingMode::L2;
 
 };

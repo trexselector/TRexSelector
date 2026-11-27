@@ -60,7 +60,7 @@ namespace ms = trex::ml_methods::model_selection;
  *        Every rule reports its pick on the working scale of the run (see
  *        the class documentation, "lambda_2").
  */
-enum class TikLambda2Method {
+enum class TikhonovLambda2Method {
     /** @brief IEN-geometry coordinate-descent CV (lambda1 profiled), 1SE. */
     CV_1SE_IEN_CCD,
     /** @brief IEN-geometry coordinate-descent CV (lambda1 profiled), min. */
@@ -74,6 +74,10 @@ enum class TikLambda2Method {
      *  `pilot_knee_tolerance` of the largest. */
     PILOT_KNEE
 };
+
+/** @brief Old name of TikhonovLambda2Method.
+ *  @deprecated Use TikhonovLambda2Method. */
+using TikLambda2Method [[deprecated("Use TikhonovLambda2Method")]] = TikhonovLambda2Method;
 
 /** @brief The count the pilot rule picks on, per grid point. Both are
  *  always recorded in `Lambda2PilotResult`. */
@@ -202,7 +206,7 @@ struct DummyClusters {
 /**
  * @brief Structural form of the Tikhonov penalty (solver routing).
  */
-enum class TikPenaltyStructure {
+enum class TikhonovPenaltyStructure {
     /** @brief The supplied matrix `tikhonov_K` is the penalty. The solver
      *  works on the matrix, at a cost per update that grows with the
      *  non-zero entries of a column of K. */
@@ -215,6 +219,10 @@ enum class TikPenaltyStructure {
     GROUP_CENTERING
 };
 
+/** @brief Old name of TikhonovPenaltyStructure.
+ *  @deprecated Use TikhonovPenaltyStructure. */
+using TikPenaltyStructure [[deprecated("Use TikhonovPenaltyStructure")]] = TikhonovPenaltyStructure;
+
 
 // ===================================================================================
 // Control Parameters
@@ -225,10 +233,10 @@ enum class TikPenaltyStructure {
  */
 struct TRexTikhonovControl {
 
-    /** @brief Structural form of the penalty (see TikPenaltyStructure).
+    /** @brief Structural form of the penalty (see TikhonovPenaltyStructure).
      *  Default SPARSE_GENERAL (matrix-passing). GROUP_CENTERING requires
      *  non-empty `prior_groups` and builds the centering matrix from them. */
-    TikPenaltyStructure penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+    TikhonovPenaltyStructure penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
 
     /** @brief General Tikhonov matrix K = Gamma^T Gamma (p x p, sparse,
      *  PSD). REQUIRED for SPARSE_GENERAL: an empty matrix throws at
@@ -255,7 +263,7 @@ struct TRexTikhonovControl {
     /** @brief Selection rule for auto-computing `lambda_2` when
      *  `lambda_2 < 0`. Default: PILOT_KNEE, the knee of the pilot profile;
      *  the CV tuners (well-posed in any p/n regime) are the alternatives. */
-    TikLambda2Method lambda2_method = TikLambda2Method::PILOT_KNEE;
+    TikhonovLambda2Method lambda2_method = TikhonovLambda2Method::PILOT_KNEE;
 
     /** @brief Number of folds for the lambda_2 CV, 2 to n. Default: 10. */
     int cv_n_folds = 10;
@@ -376,7 +384,7 @@ struct TRexTikhonovControl {
      *  Euclidean. The centroid and median linkages are rejected as well,
      *  because they are not reducible. Ignored when `prior_groups` is set
      *  or `cluster_dummies == false`. */
-    hac::LinkageMethod hc_linkage = hac::LinkageMethod::Single;
+    hac::LinkageMethod hc_linkage = hac::LinkageMethod::SINGLE;
 
     /** @brief Base T-Rex algorithmic control parameters (nested).
      *  `solver_type` must be TIKNET, the homotopy solver of the general
@@ -386,7 +394,7 @@ struct TRexTikhonovControl {
      *  starts, memory mapping, ...) apply unchanged. */
     tc::TRexControl trex_ctrl = [] {
         tc::TRexControl t;
-        t.solver_type = disp::SolverTypeForTRex::TIKNET;
+        t.solver_type = disp::TSolverType::TIKNET;
         return t;
     }();
 };
@@ -415,7 +423,7 @@ using TRexTikhonovControlParameter [[deprecated("Use TRexTikhonovControl")]] = T
  *    - K = sum_m 1_m 1_m^T / p_m (group means): the penalty of the informed
  *      elastic net of TRexGVSSelector.
  *    - K = blockdiag(I - 1_m 1_m^T / p_m) (group centering,
- *      TikPenaltyStructure::GROUP_CENTERING): the members of a group share
+ *      TikhonovPenaltyStructure::GROUP_CENTERING): the members of a group share
  *      a coefficient.
  *    - a banded matrix or a graph Laplacian: neighbouring coefficients are
  *      smooth.

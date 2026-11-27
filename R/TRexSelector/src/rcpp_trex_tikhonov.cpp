@@ -55,9 +55,9 @@ TRexTikhonovControl parse_tikhonov_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("penalty_structure")) {
         std::string ps = control["penalty_structure"];
         if (ps == "SPARSE_GENERAL") {
-            params.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+            params.penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
         } else if (ps == "GROUP_CENTERING") {
-            params.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+            params.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
         } else {
             Rcpp::stop("Unknown penalty_structure: '" + ps +
                        "'. Use 'SPARSE_GENERAL' or 'GROUP_CENTERING'.");
@@ -71,15 +71,15 @@ TRexTikhonovControl parse_tikhonov_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("lambda2_method")) {
         std::string method_str = control["lambda2_method"];
         if (method_str == "CV_1SE_IEN_CCD") {
-            params.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+            params.lambda2_method = TikhonovLambda2Method::CV_1SE_IEN_CCD;
         } else if (method_str == "CV_MIN_IEN_CCD") {
-            params.lambda2_method = TikLambda2Method::CV_MIN_IEN_CCD;
+            params.lambda2_method = TikhonovLambda2Method::CV_MIN_IEN_CCD;
         } else if (method_str == "CV_1SE_TIK_SVD") {
-            params.lambda2_method = TikLambda2Method::CV_1SE_TIK_SVD;
+            params.lambda2_method = TikhonovLambda2Method::CV_1SE_TIK_SVD;
         } else if (method_str == "CV_MIN_TIK_SVD") {
-            params.lambda2_method = TikLambda2Method::CV_MIN_TIK_SVD;
+            params.lambda2_method = TikhonovLambda2Method::CV_MIN_TIK_SVD;
         } else if (method_str == "PILOT_KNEE") {
-            params.lambda2_method = TikLambda2Method::PILOT_KNEE;
+            params.lambda2_method = TikhonovLambda2Method::PILOT_KNEE;
         } else {
             Rcpp::stop("Unknown lambda2_method: '" + method_str +
                        "'. Use 'PILOT_KNEE', 'CV_1SE_IEN_CCD', "

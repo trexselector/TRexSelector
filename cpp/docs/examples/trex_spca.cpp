@@ -91,7 +91,7 @@ int main() {
     doc.begin("thresholded");
     //! [thresholded]
     TRexSPCAControl thr_ctrl;
-    thr_ctrl.mode = SPCAMode::Thresholded;
+    thr_ctrl.mode = SPCAMode::THRESHOLDED;
     thr_ctrl.gvs_ctrl.trex_ctrl.K = 10;
 
     TRexSPCASelector thr(X_map, 2, 0.1, thr_ctrl, 9, false);
@@ -107,7 +107,7 @@ int main() {
     fs::create_directories(workdir);
     const std::string path = (workdir / "X.bin").string();
     {
-        MemoryMappedMatrix<double> file(path, n, p, AccessMode::ReadWrite);
+        MemoryMappedMatrix<double> file(path, n, p, AccessMode::READ_WRITE);
         file.getMap() = X;                                 // writes the design into the file
         Eigen::Map<Eigen::MatrixXd> X_file = file.getMap();
 

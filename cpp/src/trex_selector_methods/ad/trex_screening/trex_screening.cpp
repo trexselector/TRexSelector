@@ -128,8 +128,8 @@ void TRexScreeningSelector::validateScreenDAParameters() const {
 
     // TREX_DA_AR1 and TREX_DA_NN: a threshold of 1 leaves no lag for the window.
     const bool uses_window =
-        trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_AR1 ||
-        trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN;
+        trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_AR1 ||
+        trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_NN;
     if (uses_window && rho_thr >= 1.0) {
         throw std::invalid_argument(
             "TRexScreeningSelector: rho_thr_DA must be in [0, 1) for TREX_DA_AR1 and "
@@ -138,7 +138,7 @@ void TRexScreeningSelector::validateScreenDAParameters() const {
 
     // TREX_DA_BLOCK_EQUI: the block sizes divide p by n_blocks.
     const std::size_t n_blocks = trex_screen_ctrl_.n_blocks;
-    if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_BLOCK_EQUI &&
+    if (trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_BLOCK_EQUI &&
         (n_blocks < 1 || n_blocks > p_)) {
         throw std::invalid_argument(
             "TRexScreeningSelector: n_blocks must be in [1, p] for TREX_DA_BLOCK_EQUI. Got: " +
@@ -184,13 +184,13 @@ tc::TRexResult TRexScreeningSelector::select() {
         const std::string mode =
             trex_screen_ctrl_.use_bootstrap_CI ? "Confidence-Based" : "Ordinary";
         std::string variant = "TRex";
-        if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_AR1) {
+        if (trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_AR1) {
             variant = "DA-AR1";
-        } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_EQUI) {
+        } else if (trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_EQUI) {
             variant = "DA-EQUI";
-        } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_BLOCK_EQUI) {
+        } else if (trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_BLOCK_EQUI) {
             variant = "DA-BLOCK-EQUI";
-        } else if (trex_screen_ctrl_.trex_method == ScreenTRexMethod::TREX_DA_NN) {
+        } else if (trex_screen_ctrl_.trex_method == ScreeningMethod::TREX_DA_NN) {
             variant = "DA-NN";
         }
         printProgress("Starting T-Rex+Screening [" + mode + ", " + variant
@@ -209,7 +209,7 @@ tc::TRexResult TRexScreeningSelector::select() {
     Eigen::VectorXd Phi = exp_results.phi_T_mat.col(0);
 
     // 4. Dependency-Aware adjustment (modifies Phi in-place)
-    if (trex_screen_ctrl_.trex_method != ScreenTRexMethod::TREX) {
+    if (trex_screen_ctrl_.trex_method != ScreeningMethod::TREX) {
         applyDependencyAwareAdjustment(Phi);
     }
 
@@ -342,7 +342,7 @@ er::ExperimentResults TRexScreeningSelector::runScreenExperiments() {
 
     switch (trex_ctrl_.lloop_strategy) {
         case tc::LLoopStrategy::STANDARD: {
-            strategy = er::ExperimentStrategy::Standard;
+            strategy = er::ExperimentStrategy::STANDARD;
             if (!use_mmap) {
                 // Retained solvers would view the stored buffers; screening
                 // runs without warm start, but keep the documented pairing
@@ -358,11 +358,11 @@ er::ExperimentResults TRexScreeningSelector::runScreenExperiments() {
             // Storage-free twin of STANDARD: the identical draws keyed on
             // (k, L step 1), regenerated one D_k at a time in the runner's
             // serial loop and never stored — bit-identical screening results.
-            strategy = er::ExperimentStrategy::Seeded;
+            strategy = er::ExperimentStrategy::SEEDED;
             break;
         }
         case tc::LLoopStrategy::PERMUTATION: {
-            strategy = er::ExperimentStrategy::Permutation;
+            strategy = er::ExperimentStrategy::PERMUTATION;
             // Generate and store the base dummy matrix for row-permutation.
             // Uses the base class's resolved 64-bit `permutation_base_seed_`
             // (NOT a locally re-derived 32-bit draw), so this stored path and
@@ -383,7 +383,7 @@ er::ExperimentResults TRexScreeningSelector::runScreenExperiments() {
             // Nothing is stored, so the DummyGenerator carries no persistent
             // n x p base through the DA / bootstrap tail — the preferred
             // choice at biobank scale.
-            strategy = er::ExperimentStrategy::PermutationSeeded;
+            strategy = er::ExperimentStrategy::PERMUTATION_SEEDED;
             break;
         }
         default:
@@ -586,14 +586,14 @@ void TRexScreeningSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi)
     }
     if (estimate) {
         switch (trex_screen_ctrl_.trex_method) {
-            case ScreenTRexMethod::TREX_DA_AR1:
-            case ScreenTRexMethod::TREX_DA_NN:
+            case ScreeningMethod::TREX_DA_AR1:
+            case ScreeningMethod::TREX_DA_NN:
                 rho = estimateAR1Correlation();
                 break;
-            case ScreenTRexMethod::TREX_DA_EQUI:
+            case ScreeningMethod::TREX_DA_EQUI:
                 rho = estimateEquiCorrelation();
                 break;
-            case ScreenTRexMethod::TREX_DA_BLOCK_EQUI:
+            case ScreeningMethod::TREX_DA_BLOCK_EQUI:
                 rho = estimateBlockEquiCorrelation();
                 break;
             default:
@@ -610,13 +610,13 @@ void TRexScreeningSelector::applyDependencyAwareAdjustment(Eigen::VectorXd& Phi)
     // Compute adjustment deltas
     const Eigen::VectorXd DA_delta = [&]() -> Eigen::VectorXd {
         switch (trex_screen_ctrl_.trex_method) {
-            case ScreenTRexMethod::TREX_DA_AR1:
+            case ScreeningMethod::TREX_DA_AR1:
                 return computeDA_AR1_Delta(Phi, rho);
-            case ScreenTRexMethod::TREX_DA_EQUI:
+            case ScreeningMethod::TREX_DA_EQUI:
                 return computeDA_EQUI_Delta(Phi, rho);
-            case ScreenTRexMethod::TREX_DA_BLOCK_EQUI:
+            case ScreeningMethod::TREX_DA_BLOCK_EQUI:
                 return computeDA_BLOCK_EQUI_Delta(Phi, rho);
-            case ScreenTRexMethod::TREX_DA_NN:
+            case ScreeningMethod::TREX_DA_NN:
                 return computeDA_NN_Delta(Phi, rho);
             default:
                 throw std::runtime_error(

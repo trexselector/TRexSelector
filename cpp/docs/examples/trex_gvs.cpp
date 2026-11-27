@@ -19,7 +19,7 @@
 using trex::trex_selector_methods::ad::trex_gvs::TRexGVSSelector;
 using trex::trex_selector_methods::ad::trex_gvs::TRexGVSControl;
 using trex::trex_selector_methods::ad::trex_gvs::GVSType;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
 
@@ -121,7 +121,7 @@ int main() {
     TRexGVSControl ien_ctrl;
     ien_ctrl.gvs_type = GVSType::IEN;
     ien_ctrl.prior_groups = std::vector<Eigen::Index>(groups.begin(), groups.end());
-    ien_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;
+    ien_ctrl.trex_ctrl.solver_type = TSolverType::TIENET;
     ien_ctrl.trex_ctrl.K = 10;
 
     TRexGVSSelector ien(X_map, y_map, 0.1, ien_ctrl, 5, false);

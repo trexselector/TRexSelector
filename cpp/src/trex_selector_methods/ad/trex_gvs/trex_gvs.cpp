@@ -97,12 +97,12 @@ static tc::TRexControl prepareBaseCtrl(
     q.use_memory_mapping = false;
 
     if (g.gvs_type == GVSType::EN) {
-        const disp::SolverTypeForTRex derived = toSolverType(g.en_solver);
+        const disp::TSolverType derived = toSolverType(g.en_solver);
         const bool en_family =
-            q.solver_type == disp::SolverTypeForTRex::TENET ||
-            q.solver_type == disp::SolverTypeForTRex::TENET_AUG;
+            q.solver_type == disp::TSolverType::TENET ||
+            q.solver_type == disp::TSolverType::TENET_AUG;
         if (en_family &&
-            q.solver_type != disp::SolverTypeForTRex::TENET &&  // neutral default
+            q.solver_type != disp::TSolverType::TENET &&  // neutral default
             q.solver_type != derived) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = EN selects its solver via "
@@ -150,8 +150,8 @@ TRexGVSSelector::TRexGVSSelector(
         // .solver_type from en_solver (throwing on an explicit conflict).
         // What remains to reject here is a non-EN-family solver_type that
         // the derivation deliberately left untouched (e.g. TLARS, TOMP).
-        if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TENET &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TENET_AUG) {
+        if (trex_ctrl_.solver_type != disp::TSolverType::TENET &&
+            trex_ctrl_.solver_type != disp::TSolverType::TENET_AUG) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = EN drives the ENET solver "
                 "family only; select the variant via en_solver "
@@ -164,8 +164,8 @@ TRexGVSSelector::TRexGVSSelector(
         // TIENET (native pathwise LARS-IEN) or TIENET_AUG (group penalty
         // absorbed into the row-augmented system built by TSolverIENETAug).
         // Both solve the same IEN problem family.
-        if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET &&
-            trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIENET_AUG) {
+        if (trex_ctrl_.solver_type != disp::TSolverType::TIENET &&
+            trex_ctrl_.solver_type != disp::TSolverType::TIENET_AUG) {
             throw std::invalid_argument(
                 "TRexGVSSelector: gvs_type = IEN requires solver_type = "
                 "TIENET (native pathwise) or TIENET_AUG (row-augmented)."
@@ -179,13 +179,13 @@ TRexGVSSelector::TRexGVSSelector(
     // surface). The IEN-geometry tuners consume the group structure, so the
     // EN track refuses them here, before any work.
     const bool ien_rule =
-        trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_1SE_IEN_CCD ||
-        trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_MIN_IEN_CCD ||
-        trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_1SE_TIK_SVD ||
-        trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_MIN_TIK_SVD;
+        trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_1SE_IEN_CCD ||
+        trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_MIN_IEN_CCD ||
+        trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_1SE_TIK_SVD ||
+        trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_MIN_TIK_SVD;
     if (trex_gvs_ctrl_.gvs_type == GVSType::IEN) {
-        if (trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_1SE_CCD) {
-            trex_gvs_ctrl_.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+        if (trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_1SE_CCD) {
+            trex_gvs_ctrl_.lambda2_method = GVSLambda2Method::CV_1SE_IEN_CCD;
         }
     } else if (ien_rule) {
         throw std::invalid_argument(
@@ -244,9 +244,9 @@ void TRexGVSSelector::validateGVSParameters() const {
     }
 
     // Reject Ward (non-Euclidean correlation distance).
-    if (trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::Single &&
-        trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::Complete &&
-        trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::Average &&
+    if (trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::SINGLE &&
+        trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::COMPLETE &&
+        trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::AVERAGE &&
         trex_gvs_ctrl_.hc_linkage != hac::LinkageMethod::WPGMA) {
         throw std::invalid_argument(
             "TRexGVSSelector: unsupported linkage method. "
@@ -513,10 +513,10 @@ double TRexGVSSelector::computeLambda2() const {
     // working-scale factor (n-1) applies (X_ columns then have squared norm
     // n-1 instead of 1).
     const bool ien_method =
-        (trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_1SE_IEN_CCD ||
-         trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_MIN_IEN_CCD ||
-         trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_1SE_TIK_SVD ||
-         trex_gvs_ctrl_.lambda2_method == LambdaSelectionMethod::CV_MIN_TIK_SVD);
+        (trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_1SE_IEN_CCD ||
+         trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_MIN_IEN_CCD ||
+         trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_1SE_TIK_SVD ||
+         trex_gvs_ctrl_.lambda2_method == GVSLambda2Method::CV_MIN_TIK_SVD);
     if (ien_method) {
         if (trex_gvs_ctrl_.gvs_type != GVSType::IEN) {
             throw std::invalid_argument(
@@ -531,8 +531,8 @@ double TRexGVSSelector::computeLambda2() const {
                 : 1.0;
 
         switch (trex_gvs_ctrl_.lambda2_method) {
-            case LambdaSelectionMethod::CV_1SE_IEN_CCD:
-            case LambdaSelectionMethod::CV_MIN_IEN_CCD: {
+            case GVSLambda2Method::CV_1SE_IEN_CCD:
+            case GVSLambda2Method::CV_MIN_IEN_CCD: {
                 // 2D (lambda_2 x lambda_1) CV with lambda_1 profiled out;
                 // well-posed in any p/n regime. The lambda_2 grid size is
                 // ctrl.cv_n_lambda2 (NOT cv_n_lambda — the scan is a 2D
@@ -556,7 +556,7 @@ double TRexGVSSelector::computeLambda2() const {
                        trex_gvs_ctrl_.cv_dfmax_ratio);
                 const bool one_se =
                     (trex_gvs_ctrl_.lambda2_method ==
-                     LambdaSelectionMethod::CV_1SE_IEN_CCD);
+                     GVSLambda2Method::CV_1SE_IEN_CCD);
                 lambda2_cv_diag_ = cv.diagnostics(one_se);
                 const double l2 = one_se ? cv.cv_1se() : cv.cv_min();
                 warnIfBoundaryPick(lambda2_cv_diag_,
@@ -564,8 +564,8 @@ double TRexGVSSelector::computeLambda2() const {
                                    l2 * scale_adjust_ien);
                 return l2 * scale_adjust_ien;
             }
-            case LambdaSelectionMethod::CV_1SE_TIK_SVD:
-            case LambdaSelectionMethod::CV_MIN_TIK_SVD: {
+            case GVSLambda2Method::CV_1SE_TIK_SVD:
+            case GVSLambda2Method::CV_MIN_TIK_SVD: {
                 // Analytic lambda_1 = 0 backbone; exact for n > p, but
                 // structurally uninformative once the unpenalized contrast
                 // block can interpolate the training folds (p - M >=
@@ -588,7 +588,7 @@ double TRexGVSSelector::computeLambda2() const {
                 lambda2_cv_diag_.ran = true;
                 const bool one_se =
                     (trex_gvs_ctrl_.lambda2_method ==
-                     LambdaSelectionMethod::CV_1SE_TIK_SVD);
+                     GVSLambda2Method::CV_1SE_TIK_SVD);
                 ms::record_grid_pick(lambda2_cv_diag_,
                                      one_se ? cv.index_1se() : cv.index_min(),
                                      cv.lambdas().size());
@@ -606,7 +606,7 @@ double TRexGVSSelector::computeLambda2() const {
     const char* method_name = "";
     switch (trex_gvs_ctrl_.lambda2_method) {
         // == SVD-based CV (RidgeCV, JacobiSVD direct ridge) =====================
-        case LambdaSelectionMethod::CV_MIN_SVD: {
+        case GVSLambda2Method::CV_MIN_SVD: {
             ms::RidgeCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
@@ -619,7 +619,7 @@ double TRexGVSSelector::computeLambda2() const {
             method_name = "CV_MIN_SVD";
             break;
         }
-        case LambdaSelectionMethod::CV_1SE_SVD: {
+        case GVSLambda2Method::CV_1SE_SVD: {
             // Largest lambda within 1 SE of the CV minimum (SVD path).
             ms::RidgeCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
@@ -635,7 +635,7 @@ double TRexGVSSelector::computeLambda2() const {
         }
 
         // == CCD-based CV (ElasticNetCV, alpha=0, glmnet-faithful) ===========
-        case LambdaSelectionMethod::CV_MIN_CCD: {
+        case GVSLambda2Method::CV_MIN_CCD: {
             ms::ElasticNetCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
             cv.fit(*X_, y_,
@@ -652,7 +652,7 @@ double TRexGVSSelector::computeLambda2() const {
             method_name = "CV_MIN_CCD";
             break;
         }
-        case LambdaSelectionMethod::CV_1SE_CCD: {
+        case GVSLambda2Method::CV_1SE_CCD: {
             // glmnet-faithful 1SE rule via coordinate descent (default). See CV_MIN_CCD.
             ms::ElasticNetCV cv;
             cv.set_num_threads(trex_ctrl_.max_inner_threads);
@@ -670,7 +670,7 @@ double TRexGVSSelector::computeLambda2() const {
         }
         default:
             throw std::invalid_argument(
-                "TRexGVSSelector::computeLambda2: unknown LambdaSelectionMethod.");
+                "TRexGVSSelector::computeLambda2: unknown GVSLambda2Method.");
     }
 
     lambda2_cv_diag_.ran = true;
@@ -828,7 +828,7 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
     const auto T_idx     = static_cast<Eigen::Index>(T_stop);
     const bool ien                           = (trex_gvs_ctrl_.gvs_type == GVSType::IEN);
     const bool ien_native = ien &&
-        (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TIENET);
+        (trex_ctrl_.solver_type == disp::TSolverType::TIENET);
     // EN variants branch on en_solver, the single EN axis (the frozen
     // trex_ctrl_.solver_type was derived from it in prepareBaseCtrl()).
     const bool en_aug   = (trex_gvs_ctrl_.gvs_type == GVSType::EN &&
@@ -841,10 +841,10 @@ TRexGVSSelector::ExpAgg TRexGVSSelector::runKExperiments(
     // augmented-column handling; propagating it keeps the convention coherent
     // (mirrors the base-class conversion in trex.cpp buildSolverConfig()).
     // NONE (user-managed, unit-L2-commensurate by contract) maps to L2.
-    const tsolvers::ad::ScalingMode solver_scaling =
+    const tsolvers::ad::TSolverScalingMode solver_scaling =
         (trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE)
-            ? tsolvers::ad::ScalingMode::ZSCORE
-            : tsolvers::ad::ScalingMode::L2;
+            ? tsolvers::ad::TSolverScalingMode::ZSCORE
+            : tsolvers::ad::TSolverScalingMode::L2;
 
     // Per-experiment phi_T contributions; summed after the parallel section.
     std::vector<Eigen::MatrixXd> phi_T_per_k(K);
@@ -1081,7 +1081,7 @@ void TRexGVSSelector::prepareDummiesForLStep(LStepContext& ctx)
     // The native IEN solver (pathwise LARS-IEN) consumes the center-only
     // D_k directly; only the TIENETAug wrapper takes it raw.
     const bool ien_native = ien &&
-        (trex_ctrl_.solver_type == disp::SolverTypeForTRex::TIENET);
+        (trex_ctrl_.solver_type == disp::TSolverType::TIENET);
 
     // Fresh dummy data invalidates the cached solvers. Clear them BEFORE the
     // dummy buffers they view are reassigned below, so no dangling view

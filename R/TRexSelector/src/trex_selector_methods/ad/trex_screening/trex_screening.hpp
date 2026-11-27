@@ -39,7 +39,7 @@ namespace er = trex::trex_selector_methods::ad::utils::experiment_runner;
  * @brief Variants of the screening: without or with a dependency-aware filter
  *        on the relative occurrences.
  */
-enum class ScreenTRexMethod {
+enum class ScreeningMethod {
     /** @brief Screening without a dependency-aware filter. */
     TREX,
 
@@ -66,6 +66,10 @@ enum class ScreenTRexMethod {
     TREX_DA_NN
 };
 
+/** @brief Old name of ScreeningMethod.
+ *  @deprecated Use ScreeningMethod. */
+using ScreenTRexMethod [[deprecated("Use ScreeningMethod")]] = ScreeningMethod;
+
 
 /** @brief Configuration for T-Rex+Screening specific parameters. */
 struct TRexScreeningControl {
@@ -83,8 +87,8 @@ struct TRexScreeningControl {
     /** @brief Step of the grid over the confidence level, in (0, 1] (default: 0.001). */
     double ci_grid_step = 0.001;
 
-    /** @brief Variant of the screening (default: TREX). See ScreenTRexMethod. */
-    ScreenTRexMethod trex_method = ScreenTRexMethod::TREX;
+    /** @brief Variant of the screening (default: TREX). See ScreeningMethod. */
+    ScreeningMethod trex_method = ScreeningMethod::TREX;
 
     /** @brief Correlation threshold of the dependency-aware variants (default: 0.02).
      *  TREX_DA_AR1: the window around a variable reaches

@@ -120,7 +120,7 @@ TEST(DiskSpace, MemoryMappedMatrixTooLargeThrowsBeforeCreatingTheFile) {
     const std::size_t rows = std::size_t{1} << 20;
     const std::size_t cols = std::size_t{1} << 30;
     EXPECT_THROW((trex::utils::memmap::MemoryMappedMatrix<double>(
-                     file.string(), rows, cols, trex::utils::memmap::AccessMode::ReadWrite)),
+                     file.string(), rows, cols, trex::utils::memmap::AccessMode::READ_WRITE)),
                  std::runtime_error);
     EXPECT_FALSE(fs::exists(file));
     EXPECT_TRUE(fs::is_empty(dir.path()));
@@ -132,7 +132,7 @@ TEST(DiskSpace, MemoryMappedMatrixThatFitsIsCreated) {
     const fs::path file = dir.path() / "small.bin";
     {
         trex::utils::memmap::MemoryMappedMatrix<double> mm(
-            file.string(), 8, 4, trex::utils::memmap::AccessMode::ReadWrite);
+            file.string(), 8, 4, trex::utils::memmap::AccessMode::READ_WRITE);
         mm.getMap().setConstant(1.0);
     }
     EXPECT_EQ(fs::file_size(file), 8u * 4u * sizeof(double));

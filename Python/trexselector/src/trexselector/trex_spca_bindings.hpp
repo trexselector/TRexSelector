@@ -119,10 +119,10 @@ inline void bind_trex_spca(py::module& m) {
 
     py::enum_<SPCAMode>(m, "SPCAMode",
         "Assembly of the sparse loading vector from the selected set.")
-        .value("ActiveSet",   SPCAMode::ActiveSet,
+        .value("ActiveSet",   SPCAMode::ACTIVE_SET,
                "Ridge regression of the component on the selected variables, normalized to unit "
                "length. The T-Rex PCA of the paper.")
-        .value("Thresholded", SPCAMode::Thresholded,
+        .value("Thresholded", SPCAMode::THRESHOLDED,
                "The largest ordinary PCA loadings in absolute value, as many as variables were "
                "selected, normalized to unit length. The T-Rex Thresholded PCA of the paper.")
         .export_values();

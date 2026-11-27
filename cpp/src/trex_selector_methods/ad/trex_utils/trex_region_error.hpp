@@ -50,24 +50,24 @@ public:
      * @note Call inside a catch block. Any thread of the region may call it.
      */
     void capture() noexcept {
-        Kind kind = Kind::Runtime;
+        Kind kind = Kind::RUNTIME_ERROR;
         std::string text;
         try {
             try { throw; }
-            catch (const std::invalid_argument& e) { kind = Kind::InvalidArgument; text = e.what(); }
-            catch (const std::domain_error& e)     { kind = Kind::DomainError;     text = e.what(); }
-            catch (const std::length_error& e)     { kind = Kind::LengthError;     text = e.what(); }
-            catch (const std::out_of_range& e)     { kind = Kind::OutOfRange;      text = e.what(); }
-            catch (const std::logic_error& e)      { kind = Kind::Logic;           text = e.what(); }
-            catch (const std::range_error& e)      { kind = Kind::RangeError;      text = e.what(); }
-            catch (const std::overflow_error& e)   { kind = Kind::Overflow;        text = e.what(); }
-            catch (const std::underflow_error& e)  { kind = Kind::Underflow;       text = e.what(); }
-            catch (const std::bad_alloc&)          { kind = Kind::BadAlloc; }
-            catch (const std::exception& e)        { kind = Kind::Runtime;         text = e.what(); }
-            catch (...) { kind = Kind::Runtime; text = "unknown error in a parallel region"; }
+            catch (const std::invalid_argument& e) { kind = Kind::INVALID_ARGUMENT; text = e.what(); }
+            catch (const std::domain_error& e)     { kind = Kind::DOMAIN_ERROR;     text = e.what(); }
+            catch (const std::length_error& e)     { kind = Kind::LENGTH_ERROR;     text = e.what(); }
+            catch (const std::out_of_range& e)     { kind = Kind::OUT_OF_RANGE;     text = e.what(); }
+            catch (const std::logic_error& e)      { kind = Kind::LOGIC_ERROR;      text = e.what(); }
+            catch (const std::range_error& e)      { kind = Kind::RANGE_ERROR;      text = e.what(); }
+            catch (const std::overflow_error& e)   { kind = Kind::OVERFLOW_ERROR;   text = e.what(); }
+            catch (const std::underflow_error& e)  { kind = Kind::UNDERFLOW_ERROR;  text = e.what(); }
+            catch (const std::bad_alloc&)          { kind = Kind::BAD_ALLOC; }
+            catch (const std::exception& e)        { kind = Kind::RUNTIME_ERROR;    text = e.what(); }
+            catch (...) { kind = Kind::RUNTIME_ERROR; text = "unknown error in a parallel region"; }
         } catch (...) {
             // no memory for the copy of the text
-            kind = Kind::BadAlloc;
+            kind = Kind::BAD_ALLOC;
         }
         #pragma omp critical(trex_region_error)
         {
@@ -88,16 +88,16 @@ public:
     void rethrow() const {
         if (!raised()) { return; }
         switch (kind_) {
-            case Kind::InvalidArgument: throw std::invalid_argument(text_);
-            case Kind::DomainError:     throw std::domain_error(text_);
-            case Kind::LengthError:     throw std::length_error(text_);
-            case Kind::OutOfRange:      throw std::out_of_range(text_);
-            case Kind::Logic:           throw std::logic_error(text_);
-            case Kind::RangeError:      throw std::range_error(text_);
-            case Kind::Overflow:        throw std::overflow_error(text_);
-            case Kind::Underflow:       throw std::underflow_error(text_);
-            case Kind::BadAlloc:        throw std::bad_alloc();
-            case Kind::Runtime:         break;
+            case Kind::INVALID_ARGUMENT: throw std::invalid_argument(text_);
+            case Kind::DOMAIN_ERROR:     throw std::domain_error(text_);
+            case Kind::LENGTH_ERROR:     throw std::length_error(text_);
+            case Kind::OUT_OF_RANGE:     throw std::out_of_range(text_);
+            case Kind::LOGIC_ERROR:      throw std::logic_error(text_);
+            case Kind::RANGE_ERROR:      throw std::range_error(text_);
+            case Kind::OVERFLOW_ERROR:   throw std::overflow_error(text_);
+            case Kind::UNDERFLOW_ERROR:  throw std::underflow_error(text_);
+            case Kind::BAD_ALLOC:        throw std::bad_alloc();
+            case Kind::RUNTIME_ERROR:    break;
         }
         throw std::runtime_error(text_);
     }
@@ -105,12 +105,12 @@ public:
 private:
     /// Standard exception classes that keep their identity across the region.
     enum class Kind {
-        InvalidArgument, DomainError, LengthError, OutOfRange, Logic,
-        RangeError, Overflow, Underflow, BadAlloc, Runtime
+        INVALID_ARGUMENT, DOMAIN_ERROR, LENGTH_ERROR, OUT_OF_RANGE, LOGIC_ERROR,
+        RANGE_ERROR, OVERFLOW_ERROR, UNDERFLOW_ERROR, BAD_ALLOC, RUNTIME_ERROR
     };
 
     std::atomic<bool> raised_{false};
-    Kind kind_ = Kind::Runtime;
+    Kind kind_ = Kind::RUNTIME_ERROR;
     std::string text_;
 };
 

@@ -65,7 +65,7 @@ class TSolverNCGMP : public TSolverBase {
 protected:
 
     /** @brief Variant of the Norm-Corrective GMP solver. */
-    NCGMPVariant variant_{NCGMPVariant::LineSearch};
+    NCGMPVariant variant_{NCGMPVariant::LINE_SEARCH};
 
 public:
     // ==========================================================================
@@ -119,7 +119,7 @@ public:
 
     /** @brief Get the string representation of the solver type. */
     std::string solverTypeToString() const override {
-        return (variant_ == NCGMPVariant::LineSearch) ? "TNCGMP_LineSearch"
+        return (variant_ == NCGMPVariant::LINE_SEARCH) ? "TNCGMP_LineSearch"
                                                       : "TNCGMP_FullyCorrective";
     }
 

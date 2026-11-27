@@ -74,7 +74,7 @@ TEST_F(TRexBiobankScreeningTest, Validation_ThrowsOnMismatchedPhenotypeCalls) {
 /** @brief Standard single execution works cleanly */
 TEST_F(TRexBiobankScreeningTest, Execution_SinglePhenotypeDoesNotThrow) {
     TRexBiobankScreeningControl control;
-    control.trex_screen_ctrl.trex_method = ScreenTRexMethod::TREX;
+    control.trex_screen_ctrl.trex_method = ScreeningMethod::TREX;
 
     // As identified, we must override internal defaults to standard!
     control.trex_screen_ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
@@ -331,11 +331,11 @@ TEST(TRexBiobankScreeningMemoryMappedTest, Execution_ReadsAReadOnlyMemoryMappedY
     const std::string file = (fs::path(::testing::TempDir()) / "biobank_readonly_Y.bin").string();
     fs::remove(file);
     {
-        mm::MemoryMappedMatrix<double> writer(file, n, q, mm::AccessMode::ReadWrite);
+        mm::MemoryMappedMatrix<double> writer(file, n, q, mm::AccessMode::READ_WRITE);
         writer.getMap() = Y;
     }
     {
-        mm::MemoryMappedMatrix<double> mapped(file, n, q, mm::AccessMode::ReadOnly);
+        mm::MemoryMappedMatrix<double> mapped(file, n, q, mm::AccessMode::READ_ONLY);
         auto Y_map = mapped.getReaderMap();
         Eigen::MatrixXd X_run = X;
         Eigen::Map<Eigen::MatrixXd> X_map(X_run.data(), n, p);

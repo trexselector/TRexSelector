@@ -17,10 +17,10 @@
 
 using trex::trex_selector_methods::ad::trex_tikhonov::TRexTikhonovSelector;
 using trex::trex_selector_methods::ad::trex_tikhonov::TRexTikhonovControl;
-using trex::trex_selector_methods::ad::trex_tikhonov::TikPenaltyStructure;
+using trex::trex_selector_methods::ad::trex_tikhonov::TikhonovPenaltyStructure;
 using trex::trex_selector_methods::ad::trex_tikhonov::Lambda2PowerRuleConfig;
 using trex::trex_selector_methods::ad::trex_tikhonov::tikhonov_lambda2_power_rule;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
 
@@ -128,7 +128,7 @@ int main() {
     for (Eigen::Index j = 0; j < p; ++j) groups[j] = j / 10;   // six groups of ten
 
     TRexTikhonovControl gc_ctrl;
-    gc_ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+    gc_ctrl.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
     gc_ctrl.prior_groups = groups;
     gc_ctrl.lambda_2 = 1.0;
     gc_ctrl.trex_ctrl.K = 10;

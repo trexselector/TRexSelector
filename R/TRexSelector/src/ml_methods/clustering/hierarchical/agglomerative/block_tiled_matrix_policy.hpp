@@ -129,12 +129,12 @@ namespace detail {
     inline LanceWilliamsCoefficients compute_LW_coeffs(double n_c, double n_d, double n_L) {
 
         LanceWilliamsCoefficients coeffs;
-        if constexpr (SelectedMethod == LinkageMethod::Average) {
+        if constexpr (SelectedMethod == LinkageMethod::AVERAGE) {
             double total_n_cd = n_c + n_d;
             coeffs.alpha_c = n_c / total_n_cd;
             coeffs.alpha_d = n_d / total_n_cd;
 
-        } else if constexpr (SelectedMethod == LinkageMethod::Complete) {
+        } else if constexpr (SelectedMethod == LinkageMethod::COMPLETE) {
             coeffs.alpha_c = 0.5;
             coeffs.alpha_d = 0.5;
             coeffs.gamma = 0.5;
@@ -143,18 +143,18 @@ namespace detail {
             coeffs.alpha_c = 0.5;
             coeffs.alpha_d = 0.5;
 
-        } else if constexpr (SelectedMethod == LinkageMethod::Centroid) {
+        } else if constexpr (SelectedMethod == LinkageMethod::CENTROID) {
             double total_n_cd = n_c + n_d;
             coeffs.alpha_c = n_c / total_n_cd;
             coeffs.alpha_d = n_d / total_n_cd;
             coeffs.beta = -(n_c * n_d) / (total_n_cd * total_n_cd);
 
-        } else if constexpr (SelectedMethod == LinkageMethod::Median) {
+        } else if constexpr (SelectedMethod == LinkageMethod::MEDIAN) {
             coeffs.alpha_c = 0.5;
             coeffs.alpha_d = 0.5;
             coeffs.beta = -0.25;
 
-        } else if constexpr (SelectedMethod == LinkageMethod::Ward) {
+        } else if constexpr (SelectedMethod == LinkageMethod::WARD) {
             double total_n = n_c + n_d + n_L;
             coeffs.alpha_c = (n_c + n_L) / total_n;
             coeffs.alpha_d = (n_d + n_L) / total_n;

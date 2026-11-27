@@ -31,7 +31,7 @@
  *
  *    Method B — the TRexSPCASelector class with identical control parameters
  *      (EN/TENET, lambda_2 = -1, CV_1SE_CCD, default L2 selector scaling),
- *      both SPCAMode::ActiveSet and SPCAMode::Thresholded.
+ *      both SPCAMode::ACTIVE_SET and SPCAMode::THRESHOLDED.
  *
  *  If class and hand-rolled agree, the TRexSPCASelector class is a faithful
  *  implementation of the legacy recipe and any FDR discrepancy seen in the
@@ -88,8 +88,8 @@ tg::TRexGVSControl make_legacy_gvs_ctrl()
     ctrl.gvs_type              = tg::GVSType::EN;
     ctrl.en_solver             = tg::ENSolverType::TENET;
     ctrl.lambda_2              = -1.0;
-    ctrl.lambda2_method        = tg::LambdaSelectionMethod::CV_1SE_CCD;
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TENET;
+    ctrl.lambda2_method        = tg::GVSLambda2Method::CV_1SE_CCD;
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TENET;
     return ctrl;
 }
 
@@ -187,7 +187,7 @@ SPCASingleResult run_class(const Eigen::MatrixXd& Xc,
     ctrl.mode                    = mode;
     ctrl.en_solver               = ENSolverType::TENET;
     ctrl.gvs_ctrl.lambda_2       = -1.0;
-    ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+    ctrl.gvs_ctrl.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
     // Selector scaling: library default (L2) — matches the legacy lm_dummy.R
     // column centering + L2 normalization. NO demo-level z-scoring anywhere.
 
@@ -260,9 +260,9 @@ int main(int argc, char** argv)
         hr_thr[static_cast<std::size_t>(mc)] = hr.thr;
 
         cl_act[static_cast<std::size_t>(mc)] =
-            run_class(Xc, dat.V, M, tFDR, SPCAMode::ActiveSet);
+            run_class(Xc, dat.V, M, tFDR, SPCAMode::ACTIVE_SET);
         cl_thr[static_cast<std::size_t>(mc)] =
-            run_class(Xc, dat.V, M, tFDR, SPCAMode::Thresholded);
+            run_class(Xc, dat.V, M, tFDR, SPCAMode::THRESHOLDED);
 
         if ((mc + 1) % 25 == 0) {
             #pragma omp critical

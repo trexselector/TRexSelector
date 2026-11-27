@@ -307,14 +307,14 @@ int main(int argc, char** argv)
             gvs_ctrl.lambda_2 = it->second;            // fixed: removes CV-fold RNG
         } else {
             gvs_ctrl.lambda_2       = -1.0;            // <0 sentinel: auto-compute via CV
-            gvs_ctrl.lambda2_method = tg::LambdaSelectionMethod::CV_1SE_CCD;
+            gvs_ctrl.lambda2_method = tg::GVSLambda2Method::CV_1SE_CCD;
             gvs_ctrl.cv_n_folds     = 10;
             gvs_ctrl.cv_seed        = seed_base + mc;  // deterministic folds
         }
 
         tc::TRexControl trex_ctrl;
         trex_ctrl.solver_type   = trex::trex_selector_methods::ad::utils::solver_dispatch::
-                                      SolverTypeForTRex::TENET_AUG;
+                                      TSolverType::TENET_AUG;
         trex_ctrl.scaling_mode  = zscore ? dn::ScalingMode::ZSCORE : dn::ScalingMode::L2;
         if (no_stagnation) {
             trex_ctrl.tloop_stagnation_stop = false;  // run full T-loop like R

@@ -101,17 +101,17 @@ public:
  * @param m The Python module to bind against.
  */
 inline void bind_trex_screen(py::module& m) {
-    py::enum_<ScreenTRexMethod>(m, "ScreenTRexMethod", "Variants of the screening: without or with a "
+    py::enum_<ScreeningMethod>(m, "ScreenTRexMethod", "Variants of the screening: without or with a "
         "dependency-aware filter on the relative occurrences.")
-        .value("TREX", ScreenTRexMethod::TREX, "Screening without a dependency-aware filter.")
-        .value("TREX_DA_AR1", ScreenTRexMethod::TREX_DA_AR1, "Screening with the dependency-aware filter for a "
+        .value("TREX", ScreeningMethod::TREX, "Screening without a dependency-aware filter.")
+        .value("TREX_DA_AR1", ScreeningMethod::TREX_DA_AR1, "Screening with the dependency-aware filter for a "
             "first-order autoregressive dependency: a variable is compared with the neighbors inside the AR(1) "
             "window.")
-        .value("TREX_DA_EQUI", ScreenTRexMethod::TREX_DA_EQUI, "Screening with the dependency-aware filter for "
+        .value("TREX_DA_EQUI", ScreeningMethod::TREX_DA_EQUI, "Screening with the dependency-aware filter for "
             "equi-correlated variables: a variable is compared with all other variables.")
-        .value("TREX_DA_BLOCK_EQUI", ScreenTRexMethod::TREX_DA_BLOCK_EQUI, "Screening with the dependency-aware "
+        .value("TREX_DA_BLOCK_EQUI", ScreeningMethod::TREX_DA_BLOCK_EQUI, "Screening with the dependency-aware "
             "filter for block equi-correlated variables: the same comparison inside contiguous blocks.")
-        .value("TREX_DA_NN", ScreenTRexMethod::TREX_DA_NN, "Screening with the dependency-aware filter of the "
+        .value("TREX_DA_NN", ScreeningMethod::TREX_DA_NN, "Screening with the dependency-aware filter of the "
             "nearest neighbors: a variable is compared with the neighbors inside the AR(1) window whose sample "
             "correlation reaches rho_thr_DA, and a variable without such a neighbor keeps its relative "
             "occurrence. With a threshold at or above the correlation of the data no neighbor is left, and the "

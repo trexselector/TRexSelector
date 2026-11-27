@@ -144,7 +144,7 @@ public:
      * mathematically optimal engine.
      *
      * @note SciPy Equivalence:
-     * - Metrics: `DistanceMetric::Euclidean` calculates squared distances (equivalent
+     * - Metrics: `DistanceMetric::EUCLIDEAN` calculates squared distances (equivalent
      *   to SciPy's `metric='sqeuclidean'`).
      * - Inversions: Standard SciPy preserves non-monotonic inversions for methods like
      *   Centroid and Median. This framework currently enforces strict distance
@@ -182,7 +182,7 @@ public:
         // -----------------------------------------------------------------------
         // PATH 1: SINGLE LINKAGE (SLINK Engine, O(N) Space)
         // -----------------------------------------------------------------------
-        if constexpr (Method == LinkageMethod::Single) {
+        if constexpr (Method == LinkageMethod::SINGLE) {
             SLINK<MatrixType, DistancePolicyType> slink(data, n_threads);
             slink.cluster();
 
@@ -194,10 +194,10 @@ public:
         // -----------------------------------------------------------------------
         // PATH 2: UPGMA & WARD
         // -----------------------------------------------------------------------
-        else if constexpr (Method == LinkageMethod::Average || Method == LinkageMethod::Ward) {
+        else if constexpr (Method == LinkageMethod::AVERAGE || Method == LinkageMethod::WARD) {
 
-            if constexpr (DistancePolicyType::Metric == DistanceMetric::Correlation_LSH_Approx
-                          && Method == LinkageMethod::Ward) {
+            if constexpr (DistancePolicyType::Metric == DistanceMetric::CORRELATION_LSH_APPROX
+                          && Method == LinkageMethod::WARD) {
                 // Ward + LSH_Approx ONLY: Ward distance is a function of centroids, so the
                 // geometric centroid update in 64D SimHash space is mathematically valid.
                 // Do NOT add Average here — the geometric centroid update does NOT implement
@@ -212,9 +212,9 @@ public:
                 // Average (all metrics), or Ward with non-LSH_Approx metrics:
                 // use the exact Lance-Williams Matrix Engine.
                 // Ward's LW recurrence is only valid on squared Euclidean distances.
-                static_assert(Method != LinkageMethod::Ward ||
-                              DistancePolicyType::Metric == DistanceMetric::Euclidean,
-                              "Ward linkage requires DistanceMetric::Euclidean "
+                static_assert(Method != LinkageMethod::WARD ||
+                              DistancePolicyType::Metric == DistanceMetric::EUCLIDEAN,
+                              "Ward linkage requires DistanceMetric::EUCLIDEAN "
                               "(squared Euclidean); other exact metrics are not valid "
                               "in the Lance-Williams recurrence for Ward.");
                 using Policy = BlockTiledMatrixPolicy<MatrixType, DistancePolicyType, Method>;
@@ -227,7 +227,7 @@ public:
         // -----------------------------------------------------------------------
         // PATH 3: LANCE-WILLIAMS MATRIX METHODS (Disk-Bound NVMe, O(N^2) Space)
         // -----------------------------------------------------------------------
-        else if constexpr (Method == LinkageMethod::Complete ||
+        else if constexpr (Method == LinkageMethod::COMPLETE ||
                            Method == LinkageMethod::WPGMA) {
             using Policy = BlockTiledMatrixPolicy<MatrixType, DistancePolicyType, Method>;
 
@@ -238,11 +238,11 @@ public:
                                                             num_objs);
         }
 
-        else if constexpr (Method == LinkageMethod::Centroid || Method == LinkageMethod::Median) {
+        else if constexpr (Method == LinkageMethod::CENTROID || Method == LinkageMethod::MEDIAN) {
             // Non-reducible methods MUST use the O(1) Matrix Policy to survive GenericLinkage.
             // Their LW recurrences are only valid on squared Euclidean distances.
-            static_assert(DistancePolicyType::Metric == DistanceMetric::Euclidean,
-                          "Centroid/Median linkage requires DistanceMetric::Euclidean "
+            static_assert(DistancePolicyType::Metric == DistanceMetric::EUCLIDEAN,
+                          "Centroid/Median linkage requires DistanceMetric::EUCLIDEAN "
                           "(squared Euclidean); the Lance-Williams centroid/median "
                           "recurrences are not valid for other metrics.");
             using Policy = BlockTiledMatrixPolicy<MatrixType, DistancePolicyType, Method>;

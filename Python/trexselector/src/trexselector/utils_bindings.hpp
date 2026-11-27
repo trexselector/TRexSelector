@@ -39,8 +39,8 @@ inline void bind_utils_module(py::module& m) {
     using trex::utils::memmap::MemoryMappedMatrix;
 
     py::enum_<AccessMode>(m, "AccessMode")
-        .value("ReadOnly", AccessMode::ReadOnly)
-        .value("ReadWrite", AccessMode::ReadWrite)
+        .value("ReadOnly", AccessMode::READ_ONLY)
+        .value("ReadWrite", AccessMode::READ_WRITE)
         .export_values();
 
     py::class_<MemoryMappedMatrix<double>>(m, "MemoryMappedMatrix",
@@ -69,7 +69,7 @@ inline void bind_utils_module(py::module& m) {
 
         .def(py::init<const std::string&, std::size_t, std::size_t, AccessMode>(),
              py::arg("filename"), py::arg("rows"), py::arg("cols"),
-             py::arg("mode") = AccessMode::ReadWrite)
+             py::arg("mode") = AccessMode::READ_WRITE)
 
         .def("rows", &MemoryMappedMatrix<double>::rows)
         .def("cols", &MemoryMappedMatrix<double>::cols)
@@ -112,7 +112,7 @@ inline void bind_utils_module(py::module& m) {
 
         // Expose zero-copy numpy array mapped to the memory
         .def("to_numpy", [](MemoryMappedMatrix<double>& mmap_mat) -> py::array_t<double> {
-            const bool read_only = mmap_mat.mode() == AccessMode::ReadOnly;
+            const bool read_only = mmap_mat.mode() == AccessMode::READ_ONLY;
             auto map = mmap_mat.getMapFor(!read_only);
             // Create a NumPy array sharing the buffer, with Fortran (column-major) strides
             py::array_t<double> view(
@@ -220,7 +220,7 @@ inline void bind_utils_module(py::module& m) {
         py::array_t<double, py::array::f_style | py::array::forcecast> f_arr(arr);
         py::buffer_info f_buf = f_arr.request();
 
-        MemoryMappedMatrix<double> mmap(filename, rows, cols, AccessMode::ReadWrite);
+        MemoryMappedMatrix<double> mmap(filename, rows, cols, AccessMode::READ_WRITE);
         auto map = mmap.getMap();
         std::memcpy(map.data(), f_buf.ptr, rows * cols * sizeof(double));
     }, py::arg("array"),

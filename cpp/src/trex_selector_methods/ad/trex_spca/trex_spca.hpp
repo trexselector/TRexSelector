@@ -10,8 +10,8 @@
  * @brief T-Rex sparse PCA selector (T-Rex+SPCA).
  *
  * @details
- *  The two methods of the paper: the T-Rex PCA (SPCAMode::ActiveSet) and the
- *  T-Rex Thresholded PCA (SPCAMode::Thresholded). A T-Rex+GVS run with the
+ *  The two methods of the paper: the T-Rex PCA (SPCAMode::ACTIVE_SET) and the
+ *  T-Rex Thresholded PCA (SPCAMode::THRESHOLDED). A T-Rex+GVS run with the
  *  elastic net selects the variables of each component.
  *
  *  Implementations are in trex_spca.cpp.
@@ -52,11 +52,15 @@ namespace std_scaler = trex::ml_methods::scaler_methods;
 enum class SPCAMode {
     /** @brief Ridge regression of the component z_m on the selected columns
      *  X_{A_m}, normalized to unit length. The T-Rex PCA of the paper. */
-    ActiveSet,
+    ACTIVE_SET,
 
     /** @brief The |A_m| largest ordinary PCA loadings in absolute value,
      *  normalized to unit length. The T-Rex Thresholded PCA of the paper. */
-    Thresholded
+    THRESHOLDED,
+
+    // old names, kept for one release
+    ActiveSet [[deprecated("Use ACTIVE_SET")]] = ACTIVE_SET,
+    Thresholded [[deprecated("Use THRESHOLDED")]] = THRESHOLDED
 };
 
 
@@ -115,7 +119,7 @@ struct TRexSPCAControl {
     // ====================================
 
     /** @brief Assembly of the sparse loading vectors (default: ActiveSet). */
-    SPCAMode mode = SPCAMode::ActiveSet;
+    SPCAMode mode = SPCAMode::ACTIVE_SET;
 
     /** @brief Ridge penalty of the loading assembly in ActiveSet mode
      *  (default: 1e-6), in the regression

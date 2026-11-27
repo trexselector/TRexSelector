@@ -33,7 +33,7 @@ void preprocessMatStatistics(
     Eigen::VectorXd& meansx,
     Eigen::VectorXd& normsx,
     std::vector<std::size_t>& dropped_indices,
-    ScalingMode mode,
+    TSolverScalingMode mode,
     int n_threads
 ) {
     Eigen::Index nrows = X.rows();
@@ -47,7 +47,7 @@ void preprocessMatStatistics(
     // (= L2-norm / sqrt(n - 1)); this factor is identical for every column, so
     // it is computed once. For unit-L2 scaling the factor is 1.
     const double sd_factor =
-        (mode == ScalingMode::ZSCORE && nrows > 1)
+        (mode == TSolverScalingMode::ZSCORE && nrows > 1)
             ? std::sqrt(static_cast<double>(nrows - 1))
             : 1.0;
 

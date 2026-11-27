@@ -65,20 +65,20 @@ TEST(AgglomerativeGuardsTest, NonFiniteInputIsRejectedAtEveryEngine) {
                              -std::numeric_limits<double>::infinity()}) {
         Eigen::MatrixXd data = fivePoints();
         data(1, 2) = bad;
-        EXPECT_THROW((run<DistanceMetric::Euclidean, LinkageMethod::Single>(data)),
+        EXPECT_THROW((run<DistanceMetric::EUCLIDEAN, LinkageMethod::SINGLE>(data)),
                      std::invalid_argument);
-        EXPECT_THROW((run<DistanceMetric::Correlation, LinkageMethod::Average>(data)),
+        EXPECT_THROW((run<DistanceMetric::CORRELATION, LinkageMethod::AVERAGE>(data)),
                      std::invalid_argument);
-        EXPECT_THROW((run<DistanceMetric::Euclidean, LinkageMethod::Ward>(data)),
+        EXPECT_THROW((run<DistanceMetric::EUCLIDEAN, LinkageMethod::WARD>(data)),
                      std::invalid_argument);
-        EXPECT_THROW((run<DistanceMetric::Euclidean, LinkageMethod::Centroid>(data)),
+        EXPECT_THROW((run<DistanceMetric::EUCLIDEAN, LinkageMethod::CENTROID>(data)),
                      std::invalid_argument);
     }
     // The message names the entry.
     Eigen::MatrixXd data = fivePoints();
     data(1, 2) = std::numeric_limits<double>::quiet_NaN();
     try {
-        (void)run<DistanceMetric::Euclidean, LinkageMethod::Single>(data);
+        (void)run<DistanceMetric::EUCLIDEAN, LinkageMethod::SINGLE>(data);
         FAIL() << "expected std::invalid_argument";
     } catch (const std::invalid_argument& e) {
         EXPECT_NE(std::string(e.what()).find("row 1, column 2"), std::string::npos) << e.what();
@@ -95,7 +95,7 @@ TEST(AgglomerativeGuardsTest, ZeroNormColumnIsMaximallyDissimilar) {
             3.0, 2.9, -3.0, 0.0,
             4.0, 4.2, -4.0, 0.0;
     std::vector<MergeStep> merges;
-    EXPECT_NO_THROW(merges = (run<DistanceMetric::Correlation, LinkageMethod::Average>(data)));
+    EXPECT_NO_THROW(merges = (run<DistanceMetric::CORRELATION, LinkageMethod::AVERAGE>(data)));
     ASSERT_EQ(merges.size(), 3u);
     EXPECT_DOUBLE_EQ(merges.back().distance, 1.0);
     const auto labels = DendrogramUtils::cut_tree(merges, 4, 2);
@@ -108,7 +108,7 @@ TEST(AgglomerativeGuardsTest, ZeroNormColumnIsMaximallyDissimilar) {
 
 /** @brief Every malformed shape of a merge matrix throws before indexing. */
 TEST(AgglomerativeGuardsTest, CutTreeRejectsMalformedMerges) {
-    const auto merges = run<DistanceMetric::Euclidean, LinkageMethod::Single>(fivePoints());
+    const auto merges = run<DistanceMetric::EUCLIDEAN, LinkageMethod::SINGLE>(fivePoints());
     ASSERT_EQ(merges.size(), 4u);
     // Sanity: the well-formed matrix cuts.
     EXPECT_NO_THROW(DendrogramUtils::cut_tree(merges, 5, 2));
@@ -176,8 +176,8 @@ TEST(AgglomerativeGuardsTest, RamBufferBeyondPhysicalMemoryIsRefused) {
     EXPECT_GT(physical, 256 * (std::size_t{1} << 20));
     const Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1, 1'000'000);
     using Policy = BlockTiledMatrixPolicy<
-        Eigen::MatrixXd, DistancePolicy<Eigen::MatrixXd, DistanceMetric::Euclidean>,
-        LinkageMethod::Average>;
+        Eigen::MatrixXd, DistancePolicy<Eigen::MatrixXd, DistanceMetric::EUCLIDEAN>,
+        LinkageMethod::AVERAGE>;
     EXPECT_THROW([&] { Policy policy(data, /*use_mmap=*/false, /*verbose=*/false); }(),
                  std::runtime_error);
 }

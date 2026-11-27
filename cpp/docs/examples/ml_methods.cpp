@@ -168,8 +168,8 @@ int main() {
 
     // The engine clusters the columns of the matrix it is given
     const Eigen::MatrixXd Zt = Z.transpose();
-    using Euclid = hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::Euclidean>;
-    constexpr auto ward = hac::LinkageMethod::Ward;
+    using Euclid = hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::EUCLIDEAN>;
+    constexpr auto ward = hac::LinkageMethod::WARD;
     std::vector<hac::MergeStep> merges =
         hac::AgglomerativeClustering::cluster<Eigen::MatrixXd, Euclid, ward>(
             Zt, /*use_mmap=*/false, /*verbose=*/false);
@@ -185,8 +185,8 @@ int main() {
     doc.begin("hac-vars");
     //! [hac-vars]
     // The design itself clusters its columns, the variables, by correlation distance
-    using Corr = hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::Correlation>;
-    constexpr auto single = hac::LinkageMethod::Single;
+    using Corr = hac::DistancePolicy<Eigen::MatrixXd, hac::DistanceMetric::CORRELATION>;
+    constexpr auto single = hac::LinkageMethod::SINGLE;
     std::vector<hac::MergeStep> link_vars =
         hac::AgglomerativeClustering::cluster<Eigen::MatrixXd, Corr, single>(X, false, false);
     std::vector<Eigen::Index> var_labels = hac::DendrogramUtils::cut_tree(link_vars, p, 5);

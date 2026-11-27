@@ -201,7 +201,7 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
     });
     Eigen::MatrixXd ncg_fc_path = fit([](auto& Xm, auto& Dm, auto& ym) {
         return TSolverNCGMP(Xm, Dm, ym,
-            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FULLY_CORRECTIVE});
     });
     ASSERT_EQ(omp_path.cols(), ncg_fc_path.cols());
     EXPECT_TRUE(omp_path.isApprox(ncg_fc_path, 1e-12))
@@ -235,7 +235,7 @@ TEST_F(TSolverExecutionTest, NCGMPVariantsMatchMPAndOMP) {
     });
     const auto [fc_actions, fc_full] = full([](auto& Xm, auto& Dm, auto& ym) {
         return TSolverNCGMP(Xm, Dm, ym,
-            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+            trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FULLY_CORRECTIVE});
     });
     EXPECT_EQ(omp_actions, fc_actions);
     ASSERT_EQ(omp_full.cols(), fc_full.cols());
@@ -257,7 +257,7 @@ TEST_F(TSolverExecutionTest, TNCGMPFullyCorrectiveExecutesAndStaysAligned) {
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
 
     TSolverNCGMP solver(X_map, D_map, y_map,
-        trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FullyCorrective});
+        trex::tsolvers::ad::TSolverOptions{.ncgmp_variant = NCGMPVariant::FULLY_CORRECTIVE});
     solver.executeStep(4, true);
 
     EXPECT_GT(solver.getNumSteps(), 0u);
@@ -853,7 +853,7 @@ TEST(ExchangeableTieBand, EveryGreedySolverDrawsItsPickFromTheTieSet) {
     expectBandDrawsFromTheCluster<TSolverMP>("TMP");
     expectBandDrawsFromTheCluster<TSolverNCGMP>("TNCGMP, line search");
     trex::tsolvers::ad::TSolverOptions corrective;
-    corrective.ncgmp_variant = trex::tsolvers::ad::NCGMPVariant::FullyCorrective;
+    corrective.ncgmp_variant = trex::tsolvers::ad::NCGMPVariant::FULLY_CORRECTIVE;
     expectBandDrawsFromTheCluster<TSolverNCGMP>("TNCGMP, fully corrective", corrective);
     expectBandDrawsFromTheCluster<TSolverAFS>("TAFS");
 }

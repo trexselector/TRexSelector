@@ -119,14 +119,14 @@ std::size_t countOf(const std::string& hay, const std::string& needle) {
     return n;
 }
 
-TRexGVSControl gvsIenControl(LambdaSelectionMethod method) {
+TRexGVSControl gvsIenControl(GVSLambda2Method method) {
     TRexGVSControl ctrl;
     ctrl.gvs_type       = GVSType::IEN;
     ctrl.lambda_2       = -1.0;
     ctrl.lambda2_method = method;
     ctrl.cv_n_lambda2   = 10;
     ctrl.cv_n_lambda1   = 20;
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;
+    ctrl.trex_ctrl.solver_type = TSolverType::TIENET;
     ctrl.trex_ctrl.K = 3;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
     return ctrl;
@@ -157,7 +157,7 @@ GvsRun runGvs(Design& d, const TRexGVSControl& ctrl) {
 TEST(Lambda2Guard, GvsIenPureNoiseIsABoundaryPickAndWarnsOnce) {
 #ifndef CRAN_BUILD
     Design d(150, 40, 0.75, /*signal=*/false, 7);
-    const GvsRun r = runGvs(d, gvsIenControl(LambdaSelectionMethod::CV_1SE_IEN_CCD));
+    const GvsRun r = runGvs(d, gvsIenControl(GVSLambda2Method::CV_1SE_IEN_CCD));
 
     EXPECT_TRUE(r.diag.ran);
     EXPECT_EQ(r.diag.grid_size, 10);
@@ -184,8 +184,8 @@ TEST(Lambda2Guard, GvsIenPureNoiseIsABoundaryPickAndWarnsOnce) {
 
 TEST(Lambda2Guard, GvsIenSignalDesignWarnsIffBoundaryPick) {
 #ifndef CRAN_BUILD
-    for (auto method : {LambdaSelectionMethod::CV_1SE_IEN_CCD,
-                        LambdaSelectionMethod::CV_MIN_IEN_CCD}) {
+    for (auto method : {GVSLambda2Method::CV_1SE_IEN_CCD,
+                        GVSLambda2Method::CV_MIN_IEN_CCD}) {
         Design d(150, 40, 0.75, /*signal=*/true, 7);
         const GvsRun r = runGvs(d, gvsIenControl(method));
         EXPECT_TRUE(r.diag.ran);
@@ -203,15 +203,15 @@ TEST(Lambda2Guard, GvsIenSignalDesignWarnsIffBoundaryPick) {
 
 TEST(Lambda2Guard, GvsEnTrackRecordsTheGridPickAndWarnsIffAtEdge) {
 #ifndef CRAN_BUILD
-    for (auto method : {LambdaSelectionMethod::CV_1SE_CCD, LambdaSelectionMethod::CV_MIN_CCD,
-                        LambdaSelectionMethod::CV_1SE_SVD, LambdaSelectionMethod::CV_MIN_SVD}) {
+    for (auto method : {GVSLambda2Method::CV_1SE_CCD, GVSLambda2Method::CV_MIN_CCD,
+                        GVSLambda2Method::CV_1SE_SVD, GVSLambda2Method::CV_MIN_SVD}) {
         Design d(150, 40, 0.75, /*signal=*/true, 7);
         TRexGVSControl ctrl;
         ctrl.gvs_type       = GVSType::EN;
         ctrl.lambda_2       = -1.0;
         ctrl.lambda2_method = method;
         ctrl.cv_n_lambda    = 50;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+        ctrl.trex_ctrl.solver_type = TSolverType::TENET;
         ctrl.trex_ctrl.K = 3;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         const GvsRun r = runGvs(d, ctrl);
@@ -233,7 +233,7 @@ TEST(Lambda2Guard, GvsEnTrackRecordsTheGridPickAndWarnsIffAtEdge) {
 TEST(Lambda2Guard, GvsFixedLambda2NeverWarns) {
 #ifndef CRAN_BUILD
     Design d(150, 40, 0.75, /*signal=*/false, 7);
-    auto ctrl = gvsIenControl(LambdaSelectionMethod::CV_1SE_IEN_CCD);
+    auto ctrl = gvsIenControl(GVSLambda2Method::CV_1SE_IEN_CCD);
     ctrl.lambda_2 = 1.0;
     const GvsRun r = runGvs(d, ctrl);
     EXPECT_FALSE(r.diag.ran);
@@ -255,12 +255,12 @@ TEST(Lambda2Guard, TikhonovIenPureNoiseIsABoundaryPickAndWarnsOnce) {
     for (Eigen::Index j = 0; j < p; ++j) { groups[static_cast<std::size_t>(j)] = j / 5; }
 
     TRexTikhonovControl ctrl;
-    ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+    ctrl.penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;
     ctrl.cluster_dummies   = true;
     ctrl.lambda_2          = -1.0;
-    ctrl.lambda2_method    = TikLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.lambda2_method    = TikhonovLambda2Method::CV_1SE_IEN_CCD;
     ctrl.cv_n_lambda2      = 10;
     ctrl.cv_n_lambda1      = 20;
     ctrl.trex_ctrl.K = 3;
@@ -297,7 +297,7 @@ TEST(Lambda2Guard, TikhonovIenPureNoiseIsABoundaryPickAndWarnsOnce) {
 TEST(Lambda2Guard, GvsDfmaxRatioDefaultIsExplicitPointEightAndLargerRaisesTheCap) {
 #ifndef CRAN_BUILD
     const Eigen::Index n = 60, p = 80;
-    auto ctrl = gvsIenControl(LambdaSelectionMethod::CV_1SE_IEN_CCD);
+    auto ctrl = gvsIenControl(GVSLambda2Method::CV_1SE_IEN_CCD);
     EXPECT_DOUBLE_EQ(ctrl.cv_dfmax_ratio, 0.8);
 
     Design d_default(n, p, 0.75, /*signal=*/true, 11);
@@ -342,7 +342,7 @@ TEST(Lambda2Guard, GvsNonFiniteDfmaxRatioThrows) {
         Design d(60, 20, 0.75, /*signal=*/true, 11);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-        auto ctrl = gvsIenControl(LambdaSelectionMethod::CV_1SE_IEN_CCD);
+        auto ctrl = gvsIenControl(GVSLambda2Method::CV_1SE_IEN_CCD);
         ctrl.cv_dfmax_ratio = bad;
         EXPECT_THROW({ TRexGVSSelector sel(Xm, ym, 0.2, ctrl, 42, false); },
                      std::invalid_argument) << "cv_dfmax_ratio = " << bad;
@@ -351,7 +351,7 @@ TEST(Lambda2Guard, GvsNonFiniteDfmaxRatioThrows) {
     Design d(60, 20, 0.75, /*signal=*/true, 11);
     Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
     Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
-    auto ctrl = gvsIenControl(LambdaSelectionMethod::CV_1SE_IEN_CCD);
+    auto ctrl = gvsIenControl(GVSLambda2Method::CV_1SE_IEN_CCD);
     ctrl.cv_dfmax_ratio = -1.0;
     EXPECT_NO_THROW({ TRexGVSSelector sel(Xm, ym, 0.2, ctrl, 42, false); });
 }
@@ -364,12 +364,12 @@ TEST(Lambda2Guard, TikhonovDfmaxRatioReachesTheTunerAndNonFiniteThrows) {
     for (Eigen::Index j = 0; j < p; ++j) { groups[static_cast<std::size_t>(j)] = j / 5; }
 
     TRexTikhonovControl ctrl;
-    ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+    ctrl.penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;
     ctrl.cluster_dummies   = true;
     ctrl.lambda_2          = -1.0;
-    ctrl.lambda2_method    = TikLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.lambda2_method    = TikhonovLambda2Method::CV_1SE_IEN_CCD;
     ctrl.cv_n_lambda2      = 10;
     ctrl.cv_n_lambda1      = 20;
     ctrl.trex_ctrl.K = 3;

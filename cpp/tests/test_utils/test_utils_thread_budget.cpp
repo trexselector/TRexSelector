@@ -224,11 +224,11 @@ TEST(ThreadBudget, ClusteringDefaultsToOneThreadAndTakesABudget) {
     const Eigen::Index rows = 6000;
     const Eigen::Index objs = 250;
     Eigen::MatrixXd data = Eigen::MatrixXd::Random(rows, objs);
-    using Policy = agg::DistancePolicy<Eigen::MatrixXd, agg::DistanceMetric::Euclidean>;
+    using Policy = agg::DistancePolicy<Eigen::MatrixXd, agg::DistanceMetric::EUCLIDEAN>;
     {
         ProbeScope probe;
         (void)agg::AgglomerativeClustering::cluster<Eigen::MatrixXd, Policy,
-                                                   agg::LinkageMethod::Average>(
+                                                   agg::LinkageMethod::AVERAGE>(
             data, /*use_mmap=*/false, /*verbose=*/false);
         EXPECT_LE(omp::team_probe::max_team(), 1);
     }
@@ -236,7 +236,7 @@ TEST(ThreadBudget, ClusteringDefaultsToOneThreadAndTakesABudget) {
     {
         ProbeScope probe;
         (void)agg::AgglomerativeClustering::cluster<Eigen::MatrixXd, Policy,
-                                                   agg::LinkageMethod::Average>(
+                                                   agg::LinkageMethod::AVERAGE>(
             data, /*use_mmap=*/false, /*verbose=*/false, /*n_threads=*/4);
         EXPECT_GE(omp::team_probe::max_team(), 2);
     }

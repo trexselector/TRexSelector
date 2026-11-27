@@ -40,7 +40,7 @@ using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_core::TRexResult;
 using trex::trex_selector_methods::ad::trex_core::LLoopStrategy;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 using trex::trex_selector_methods::ad::utils::dummy_generator::DummyGenerator;
 
 namespace {
@@ -62,7 +62,7 @@ std::vector<std::size_t> runSelection(LLoopStrategy strategy, int seed) {
     TRexControl ctrl;
     ctrl.K = 10;
     ctrl.max_dummy_multiplier = 3;
-    ctrl.solver_type = SolverTypeForTRex::TLARS;
+    ctrl.solver_type = TSolverType::TLARS;
     ctrl.lloop_strategy = strategy;
 
     TRexSelector sel(X_map, y_map, /*tFDR=*/0.1, ctrl, seed, /*verbose=*/false);
@@ -153,7 +153,7 @@ TRexResult runResult(LLoopStrategy strategy, int seed, bool mmap = false) {
     TRexControl ctrl;
     ctrl.K = 10;
     ctrl.max_dummy_multiplier = 3;
-    ctrl.solver_type = SolverTypeForTRex::TLARS;
+    ctrl.solver_type = TSolverType::TLARS;
     ctrl.lloop_strategy = strategy;
     ctrl.use_memory_mapping = mmap;
 

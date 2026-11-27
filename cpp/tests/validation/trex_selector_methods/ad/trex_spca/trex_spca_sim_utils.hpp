@@ -90,7 +90,7 @@ namespace spca_sim {
 
 // Namespace aliases
 namespace pca_ns = trex::ml_methods::pca;
-using trex::trex_selector_methods::ad::trex_gvs::LambdaSelectionMethod;
+using trex::trex_selector_methods::ad::trex_gvs::GVSLambda2Method;
 using trex::trex_selector_methods::ad::trex_gvs::ENSolverType;
 using trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode;
 using trex::trex_selector_methods::ad::trex_spca::TRexSPCASelector;
@@ -509,7 +509,7 @@ inline SPCAGridPointResult run_mc_trials_trex_spca(
         // the base control parameters live under gvs_ctrl.trex_ctrl (GVS
         // sub-selector), avoiding a duplicate/out-of-sync copy.
         ctrl.gvs_ctrl.trex_ctrl.scaling_mode = scaling_mode;
-        ctrl.gvs_ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+        ctrl.gvs_ctrl.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
         ctrl.gvs_ctrl.lambda_2       = lambda_2;   // < 0: auto-compute via CV; 0: no ridge; > 0: fixed
 
         Eigen::Map<Eigen::MatrixXd> X_map(dat.X.data(), dat.X.rows(), dat.X.cols());

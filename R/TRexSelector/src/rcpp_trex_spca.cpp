@@ -36,9 +36,9 @@ TRexSPCAControl parse_spca_control(const Rcpp::List& spca_ctrl_list) {
     if (spca_ctrl_list.containsElementNamed("mode")) {
         std::string mode_str = spca_ctrl_list["mode"];
         if (mode_str == "ActiveSet") {
-            ctrl.mode = SPCAMode::ActiveSet;
+            ctrl.mode = SPCAMode::ACTIVE_SET;
         } else if (mode_str == "Thresholded") {
-            ctrl.mode = SPCAMode::Thresholded;
+            ctrl.mode = SPCAMode::THRESHOLDED;
         } else {
             Rcpp::stop("Unknown SPCAMode: '" + mode_str +
                        "'. Use 'ActiveSet' or 'Thresholded'.");
@@ -88,13 +88,13 @@ TRexSPCAControl parse_spca_control(const Rcpp::List& spca_ctrl_list) {
     if (spca_ctrl_list.containsElementNamed("lambda2_method")) {
         std::string method_str = spca_ctrl_list["lambda2_method"];
         if (method_str == "CV_1SE_SVD") {
-            ctrl.gvs_ctrl.lambda2_method = tg::LambdaSelectionMethod::CV_1SE_SVD;
+            ctrl.gvs_ctrl.lambda2_method = tg::GVSLambda2Method::CV_1SE_SVD;
         } else if (method_str == "CV_MIN_SVD") {
-            ctrl.gvs_ctrl.lambda2_method = tg::LambdaSelectionMethod::CV_MIN_SVD;
+            ctrl.gvs_ctrl.lambda2_method = tg::GVSLambda2Method::CV_MIN_SVD;
         } else if (method_str == "CV_1SE_CCD") {
-            ctrl.gvs_ctrl.lambda2_method = tg::LambdaSelectionMethod::CV_1SE_CCD;
+            ctrl.gvs_ctrl.lambda2_method = tg::GVSLambda2Method::CV_1SE_CCD;
         } else if (method_str == "CV_MIN_CCD") {
-            ctrl.gvs_ctrl.lambda2_method = tg::LambdaSelectionMethod::CV_MIN_CCD;
+            ctrl.gvs_ctrl.lambda2_method = tg::GVSLambda2Method::CV_MIN_CCD;
         } else {
             Rcpp::stop("Unknown lambda2_method: '" + method_str +
                        "'. Use 'CV_1SE_SVD', 'CV_MIN_SVD', 'CV_1SE_CCD', or 'CV_MIN_CCD'.");
@@ -209,7 +209,7 @@ Rcpp::List trex_spca_select_mmap(
     bool verbose
 ) {
     // The selector centers the design in every run, whatever the scaling mode.
-    if (X_ptr->mode() == trex::utils::memmap::AccessMode::ReadOnly) {
+    if (X_ptr->mode() == trex::utils::memmap::AccessMode::READ_ONLY) {
         Rcpp::stop("TRexSPCASelector centers the design in place and restores it on return, "
                    "so an mmap_matrix must be open in \"readwrite\" mode.");
     }

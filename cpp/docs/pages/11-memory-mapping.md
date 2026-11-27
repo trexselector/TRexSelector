@@ -31,7 +31,7 @@ map writes the file. The headers and names of this page:
 
 The handle supports the element access one needs to inspect and to edit the file, and the map gives
 the block access of Eigen. Reading through the map touches the pages of the file, the library never
-copies the design. A file opened in `AccessMode::ReadOnly` refuses element writes with an exception.
+copies the design. A file opened in `AccessMode::READ_ONLY` refuses element writes with an exception.
 
 \snippet{trimleft} memory_mapping.cpp access
 \output{memory_mapping.access.txt}
@@ -48,7 +48,7 @@ column-major order, so writing one column after another with an output stream pr
 
 The selectors take the `Eigen::Map` of the handle where they take `X`. A selector centers and scales
 the design in place and restores it when `select()` returns, so the file must be open in
-`AccessMode::ReadWrite` (the page \ref no_copies "Working without data copies" has the contract).
+`AccessMode::READ_WRITE` (the page \ref no_copies "Working without data copies" has the contract).
 
 \snippet{trimleft} memory_mapping.cpp select
 \output{memory_mapping.select.txt}
@@ -68,8 +68,8 @@ several processes use one design at once.
 
 ### A read-only file
 
-The default mode `AccessMode::ReadWrite` serves every use and is the one the examples of this guide
-work with. A file opened in `AccessMode::ReadOnly` serves where nothing is written into it. For the
+The default mode `AccessMode::READ_WRITE` serves every use and is the one the examples of this guide
+work with. A file opened in `AccessMode::READ_ONLY` serves where nothing is written into it. For the
 selectors that is `ScalingMode::NONE`, under which a selector takes the design as supplied. The file then
 holds the design the selector works on, centered and scaled beforehand, and `centerY()` with
 `centerAndL2NormalizeX()` applies exactly the preprocessing of the selector. `getMap()` of a
@@ -81,7 +81,7 @@ none of them writes into it.
 \snippet{trimleft} memory_mapping.cpp readonly
 \output{memory_mapping.readonly.txt}
 
-TRexSPCASelector centers the design in every run, so it needs `AccessMode::ReadWrite` under every scaling
+TRexSPCASelector centers the design in every run, so it needs `AccessMode::READ_WRITE` under every scaling
 mode.
 
 ## T-solvers and ML methods
@@ -90,7 +90,7 @@ A T-solver binds a memory-mapped `X` and a memory-mapped `D` as it binds a matri
 scalers transform the file in place, the low-memory engines of the regressions read it in place, and
 the clustering accepts it as data. The access mode follows the same rule as for the selectors. A
 T-solver with `normalize = true` or `intercept = true` and the scalers write into the file and need
-`AccessMode::ReadWrite`, while a T-solver with both options off and the fits of the regressions only
+`AccessMode::READ_WRITE`, while a T-solver with both options off and the fits of the regressions only
 read it and take a read-only file, for `X` and for `D`.
 `TSolverOptions::writesDesign()` tells the two kinds of solver apart.
 

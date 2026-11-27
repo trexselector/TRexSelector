@@ -76,7 +76,7 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     // ---- Penalty matrix / structure ---------------------------------------
     const auto p_idx = static_cast<Eigen::Index>(p_);
     const bool group_centering = trex_tik_ctrl_.penalty_structure ==
-                                 TikPenaltyStructure::GROUP_CENTERING;
+                                 TikhonovPenaltyStructure::GROUP_CENTERING;
     if (group_centering) {
         // Groups are REQUIRED (they define K_GC). K is built internally
         // when absent.
@@ -122,7 +122,7 @@ TRexTikhonovSelector::TRexTikhonovSelector(
     // p x p sparse matrix without nonzeros, which every consumer handles;
     // only the user-supplied SPARSE_GENERAL route requires a non-empty K.
     const bool zero_K_from_singleton_groups =
-        trex_tik_ctrl_.penalty_structure == TikPenaltyStructure::GROUP_CENTERING
+        trex_tik_ctrl_.penalty_structure == TikhonovPenaltyStructure::GROUP_CENTERING
         && trex_tik_ctrl_.tikhonov_K.nonZeros() == 0;
     if (trex_tik_ctrl_.tikhonov_K.nonZeros() == 0 &&
         !zero_K_from_singleton_groups) {
@@ -149,7 +149,7 @@ TRexTikhonovSelector::TRexTikhonovSelector(
 
     // ---- Solver gate ------------------------------------------------------
     // TIKNET, the homotopy solver, is the one solver of the selector.
-    if (trex_ctrl_.solver_type != disp::SolverTypeForTRex::TIKNET) {
+    if (trex_ctrl_.solver_type != disp::TSolverType::TIKNET) {
         throw std::invalid_argument(
             "TRexTikhonovSelector: solver_type must be TIKNET, the "
             "solver of the general Tikhonov penalty.");
@@ -184,9 +184,9 @@ TRexTikhonovSelector::TRexTikhonovSelector(
                     std::to_string(trex_tik_ctrl_.corr_max));
             }
             const hac::LinkageMethod linkage = trex_tik_ctrl_.hc_linkage;
-            if (linkage != hac::LinkageMethod::Single &&
-                linkage != hac::LinkageMethod::Complete &&
-                linkage != hac::LinkageMethod::Average &&
+            if (linkage != hac::LinkageMethod::SINGLE &&
+                linkage != hac::LinkageMethod::COMPLETE &&
+                linkage != hac::LinkageMethod::AVERAGE &&
                 linkage != hac::LinkageMethod::WPGMA) {
                 throw std::invalid_argument(
                     "TRexTikhonovSelector: unsupported linkage method. "
@@ -258,8 +258,8 @@ TRexTikhonovSelector::TRexTikhonovSelector(
                 std::to_string(folds));
         }
         const bool ien_rule =
-            trex_tik_ctrl_.lambda2_method == TikLambda2Method::CV_1SE_IEN_CCD ||
-            trex_tik_ctrl_.lambda2_method == TikLambda2Method::CV_MIN_IEN_CCD;
+            trex_tik_ctrl_.lambda2_method == TikhonovLambda2Method::CV_1SE_IEN_CCD ||
+            trex_tik_ctrl_.lambda2_method == TikhonovLambda2Method::CV_MIN_IEN_CCD;
         if (ien_rule && (trex_tik_ctrl_.cv_n_lambda2 < 1 ||
                          trex_tik_ctrl_.cv_n_lambda1 < 1)) {
             throw std::invalid_argument(
@@ -490,8 +490,8 @@ double TRexTikhonovSelector::computeLambda2() const {
         trex_ctrl_.scaling_mode == dn::ScalingMode::ZSCORE, n_);
 
     switch (trex_tik_ctrl_.lambda2_method) {
-        case TikLambda2Method::CV_1SE_IEN_CCD:
-        case TikLambda2Method::CV_MIN_IEN_CCD: {
+        case TikhonovLambda2Method::CV_1SE_IEN_CCD:
+        case TikhonovLambda2Method::CV_MIN_IEN_CCD: {
             // 2D (lambda_2 x lambda_1) CV with lambda_1 profiled out;
             // well-posed in any p/n regime. The lambda_2 grid size is
             // ctrl.cv_n_lambda2; the nuisance lambda_1 path length is
@@ -513,7 +513,7 @@ double TRexTikhonovSelector::computeLambda2() const {
                    trex_tik_ctrl_.cv_dfmax_ratio);
             const bool one_se =
                 (trex_tik_ctrl_.lambda2_method ==
-                 TikLambda2Method::CV_1SE_IEN_CCD);
+                 TikhonovLambda2Method::CV_1SE_IEN_CCD);
             lambda2_cv_diag_ = cv.diagnostics(one_se);
             const double l2 = one_se ? cv.cv_1se() : cv.cv_min();
             warnIfBoundaryPick(lambda2_cv_diag_,
@@ -521,8 +521,8 @@ double TRexTikhonovSelector::computeLambda2() const {
                                l2 * scale_adjust);
             return l2 * scale_adjust;
         }
-        case TikLambda2Method::CV_1SE_TIK_SVD:
-        case TikLambda2Method::CV_MIN_TIK_SVD: {
+        case TikhonovLambda2Method::CV_1SE_TIK_SVD:
+        case TikhonovLambda2Method::CV_MIN_TIK_SVD: {
             // Analytic lambda_1 = 0 backbone; refused when the unpenalized
             // null-space block interpolates the training folds (any pick
             // there is floor-driven).
@@ -544,7 +544,7 @@ double TRexTikhonovSelector::computeLambda2() const {
             lambda2_cv_diag_.ran = true;
             const bool one_se =
                 (trex_tik_ctrl_.lambda2_method ==
-                 TikLambda2Method::CV_1SE_TIK_SVD);
+                 TikhonovLambda2Method::CV_1SE_TIK_SVD);
             ms::record_grid_pick(lambda2_cv_diag_,
                                  one_se ? cv.index_1se() : cv.index_min(),
                                  cv.lambdas().size());
@@ -554,13 +554,13 @@ double TRexTikhonovSelector::computeLambda2() const {
                                l2 * scale_adjust);
             return l2 * scale_adjust;
         }
-        case TikLambda2Method::PILOT_KNEE:
+        case TikhonovLambda2Method::PILOT_KNEE:
             throw std::logic_error(
                 "TRexTikhonovSelector::computeLambda2: the pilot rule is "
                 "resolved by runLambda2Pilot(), not here.");
     }
     throw std::invalid_argument(
-        "TRexTikhonovSelector::computeLambda2: unknown TikLambda2Method.");
+        "TRexTikhonovSelector::computeLambda2: unknown TikhonovLambda2Method.");
 }
 
 
@@ -570,7 +570,7 @@ double TRexTikhonovSelector::computeLambda2() const {
 
 bool TRexTikhonovSelector::pilotRequested() const noexcept {
     return trex_tik_ctrl_.lambda_2 < 0.0 &&
-           trex_tik_ctrl_.lambda2_method == TikLambda2Method::PILOT_KNEE;
+           trex_tik_ctrl_.lambda2_method == TikhonovLambda2Method::PILOT_KNEE;
 }
 
 
@@ -651,7 +651,7 @@ double TRexTikhonovSelector::runLambda2Pilot() {
         lambda2_ = grid[g];   // buildRunnerConfig() injects it into the solver
         er::ExperimentRunnerConfig cfg = buildRunnerConfig(
             L_0, T_pilot, /*use_warm_start=*/false,
-            er::ExperimentStrategy::Standard, /*seed_factor=*/tag,
+            er::ExperimentStrategy::STANDARD, /*seed_factor=*/tag,
             /*existing_cols_on_disk=*/0);
         cfg.K = K_pilot;   // the runner aggregates by 1 / cfg.K
         const er::ExperimentResults exp = experiment_runner_->run(cfg);

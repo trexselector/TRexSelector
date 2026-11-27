@@ -99,8 +99,8 @@ TSolverOptions parse_solver_options(const Rcpp::List& o) {
     if (has("verbose"))   opts.verbose   = Rcpp::as<bool>(o["verbose"]);
     if (has("scaling_mode")) {
         const std::string m = Rcpp::as<std::string>(o["scaling_mode"]);
-        if (m == "L2")          opts.scaling_mode = ScalingMode::L2;
-        else if (m == "ZSCORE") opts.scaling_mode = ScalingMode::ZSCORE;
+        if (m == "L2")          opts.scaling_mode = TSolverScalingMode::L2;
+        else if (m == "ZSCORE") opts.scaling_mode = TSolverScalingMode::ZSCORE;
         else Rcpp::stop("tsolver_options: scaling_mode must be \"L2\" or \"ZSCORE\"; got " + m);
     }
     if (has("tol"))            opts.tol            = Rcpp::as<double>(o["tol"]);
@@ -112,8 +112,8 @@ TSolverOptions parse_solver_options(const Rcpp::List& o) {
     if (has("rho_afs"))        opts.rho_afs        = Rcpp::as<double>(o["rho_afs"]);
     if (has("ncgmp_variant")) {
         const std::string v = Rcpp::as<std::string>(o["ncgmp_variant"]);
-        if (v == "line_search")           opts.ncgmp_variant = NCGMPVariant::LineSearch;
-        else if (v == "fully_corrective") opts.ncgmp_variant = NCGMPVariant::FullyCorrective;
+        if (v == "line_search")           opts.ncgmp_variant = NCGMPVariant::LINE_SEARCH;
+        else if (v == "fully_corrective") opts.ncgmp_variant = NCGMPVariant::FULLY_CORRECTIVE;
         else Rcpp::stop("tsolver_options: ncgmp_variant must be \"line_search\" or \"fully_corrective\"; got " + v);
     }
     if (has("tenet_aug_use_lars")) opts.tenet_aug_use_lars = Rcpp::as<bool>(o["tenet_aug_use_lars"]);

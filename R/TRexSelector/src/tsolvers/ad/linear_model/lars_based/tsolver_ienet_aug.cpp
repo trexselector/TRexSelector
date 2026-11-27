@@ -65,7 +65,7 @@ Eigen::MatrixXd TSolverIENETAug::buildGroupBlock(
 
 void TSolverIENETAug::centerAndScaleColumns(Eigen::MatrixXd& A,
                                              double eps,
-                                             ScalingMode scaling_mode,
+                                             TSolverScalingMode scaling_mode,
                                              bool center,
                                              bool scale)
 {
@@ -75,7 +75,7 @@ void TSolverIENETAug::centerAndScaleColumns(Eigen::MatrixXd& A,
     // z-score divides by the sample SD = ||x_c|| / sqrt(rows - 1); fall back
     // to plain L2 if rows < 2. Mirrors the shared data-normalizer convention.
     const double sd_factor =
-        (scaling_mode == ScalingMode::ZSCORE && n_rows > 1)
+        (scaling_mode == TSolverScalingMode::ZSCORE && n_rows > 1)
             ? std::sqrt(static_cast<double>(n_rows - 1))
             : 1.0;
 
@@ -105,7 +105,7 @@ void TSolverIENETAug::buildInnerSolver(bool normalize,
                                         bool intercept,
                                         bool precentered,
                                         bool verbose,
-                                        ScalingMode scaling_mode,
+                                        TSolverScalingMode scaling_mode,
                                         long long tie_seed, int n_threads) {
     TSolverOptions inner;
     inner.normalize    = normalize;
@@ -144,7 +144,7 @@ TSolverIENETAug::TSolverIENETAug(
     const bool        intercept      = options.intercept;
     const bool        precentered    = options.precentered;
     const bool        verbose        = options.verbose;
-    const ScalingMode scaling_mode   = options.scaling_mode;
+    const TSolverScalingMode scaling_mode   = options.scaling_mode;
     const bool        use_lars_inner = options.tenet_aug_use_lars;
     eps_ = options.tol;
     // The wrapper builds its base by hand: the budget is set here and on the inner solver
@@ -236,7 +236,7 @@ TSolverIENETAug::TSolverIENETAug(
 
         // Standardize the DATA blocks FIRST (family convention: X is
         // L2-normalized once, D likewise, y centered — honoring the caller's
-        // normalize/intercept flags and ScalingMode), THEN append the
+        // normalize/intercept flags and TSolverScalingMode), THEN append the
         // group-ridge rows. The augmented columns are NOT re-normalized:
         // rescaling them divides data and penalty rows by
         // sqrt(||x_j||^2 + lambda2/p_m), i.e. a per-column reweighting of

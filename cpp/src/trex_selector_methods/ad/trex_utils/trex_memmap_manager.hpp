@@ -136,7 +136,7 @@ public:
             // Instantiate the matrix in ReadWrite mode so it can be populated
             D_memmaps_.push_back(std::make_unique<mm::MemoryMappedMatrix<double>>(
                 file_path.string(), n_, max_dummies_,
-                mm::AccessMode::ReadWrite
+                mm::AccessMode::READ_WRITE
             ));
         }
 

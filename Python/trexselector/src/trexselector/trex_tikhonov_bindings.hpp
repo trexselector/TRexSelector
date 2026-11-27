@@ -157,21 +157,21 @@ public:
  *          bind_trex_gvs must have registered Lambda2CVDiagnostics before).
  */
 inline void bind_trex_tikhonov(py::module& m) {
-    py::enum_<tik::TikLambda2Method>(m, "TikLambda2Method",
+    py::enum_<tik::TikhonovLambda2Method>(m, "TikLambda2Method",
         "Rule that chooses lambda_2 when no value is supplied (tik_control.lambda_2 < 0). The pilot rule reads it "
             "off a few random experiments per value of pilot_grid. The four cross-validation rules tune on the "
             "normalized data before the random experiments. Every rule reports its pick on the working scale of "
             "the run. The knee of the full selection profile is tikhonov_lambda2_power_rule().")
-        .value("CV_1SE_IEN_CCD", tik::TikLambda2Method::CV_1SE_IEN_CCD, "Cross-validation with the lambda_1 path "
+        .value("CV_1SE_IEN_CCD", tik::TikhonovLambda2Method::CV_1SE_IEN_CCD, "Cross-validation with the lambda_1 path "
             "profiled out per lambda_2 candidate, 1-SE rule. Well-posed for every p and n.")
-        .value("CV_MIN_IEN_CCD", tik::TikLambda2Method::CV_MIN_IEN_CCD, "Cross-validation with the lambda_1 path "
+        .value("CV_MIN_IEN_CCD", tik::TikhonovLambda2Method::CV_MIN_IEN_CCD, "Cross-validation with the lambda_1 path "
             "profiled out, minimum rule.")
-        .value("CV_1SE_TIK_SVD", tik::TikLambda2Method::CV_1SE_TIK_SVD, "Analytic ridge cross-validation "
+        .value("CV_1SE_TIK_SVD", tik::TikhonovLambda2Method::CV_1SE_TIK_SVD, "Analytic ridge cross-validation "
             "(lambda_1 = 0), 1-SE rule. Exact for n > p, refused when the unpenalized null space interpolates the "
             "training folds.")
-        .value("CV_MIN_TIK_SVD", tik::TikLambda2Method::CV_MIN_TIK_SVD, "Analytic ridge cross-validation "
+        .value("CV_MIN_TIK_SVD", tik::TikhonovLambda2Method::CV_MIN_TIK_SVD, "Analytic ridge cross-validation "
             "(lambda_1 = 0), minimum rule.")
-        .value("PILOT_KNEE",     tik::TikLambda2Method::PILOT_KNEE,     "The pilot rule (default): a few random "
+        .value("PILOT_KNEE",     tik::TikhonovLambda2Method::PILOT_KNEE,     "The pilot rule (default): a few random "
             "experiments per value of pilot_grid, then the smallest lambda_2 whose count is within "
             "pilot_knee_tolerance of the largest.")
         .export_values();
@@ -189,11 +189,11 @@ inline void bind_trex_tikhonov(py::module& m) {
             "prior_groups.")
         .export_values();
 
-    py::enum_<tik::TikPenaltyStructure>(m, "TikPenaltyStructure",
+    py::enum_<tik::TikhonovPenaltyStructure>(m, "TikPenaltyStructure",
         "Structural form of the Tikhonov penalty.")
-        .value("SPARSE_GENERAL",  tik::TikPenaltyStructure::SPARSE_GENERAL,  "tik_control.tikhonov_K is the p x p PSD "
-            "penalty matrix (a scipy.sparse matrix or a dense array).")
-        .value("GROUP_CENTERING", tik::TikPenaltyStructure::GROUP_CENTERING, "K = blockdiag(I - J/p_m) over "
+        .value("SPARSE_GENERAL",  tik::TikhonovPenaltyStructure::SPARSE_GENERAL,
+            "tik_control.tikhonov_K is the p x p PSD penalty matrix (a scipy.sparse matrix or a dense array).")
+        .value("GROUP_CENTERING", tik::TikhonovPenaltyStructure::GROUP_CENTERING, "K = blockdiag(I - J/p_m) over "
             "prior_groups: the members of a group share a coefficient. The groups are required, and tikhonov_K "
             "may be left out.")
         .export_values();

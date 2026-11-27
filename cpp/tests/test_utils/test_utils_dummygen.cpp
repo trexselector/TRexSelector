@@ -46,30 +46,30 @@ TEST(DummyGenTest, MixSeedDeterminism) {
 TEST(DummyGenTest, DistributionFactories) {
     // Normal Check
     auto norm = DummyDistribution::Normal();
-    EXPECT_EQ(norm.type, DummyDistribution::Type::Normal);
+    EXPECT_EQ(norm.type, DummyDistribution::Type::NORMAL);
 
     // Uniform check (valid and invalid)
     auto uni = DummyDistribution::Uniform(2.0);
-    EXPECT_EQ(uni.type, DummyDistribution::Type::Uniform);
+    EXPECT_EQ(uni.type, DummyDistribution::Type::UNIFORM);
     EXPECT_DOUBLE_EQ(uni.uniform_a, 2.0);
     EXPECT_THROW(DummyDistribution::Uniform(-1.0), std::invalid_argument);
 
     // Student T check
     auto t = DummyDistribution::StudentT(4.0);
-    EXPECT_EQ(t.type, DummyDistribution::Type::StudentT);
+    EXPECT_EQ(t.type, DummyDistribution::Type::STUDENT_T);
     EXPECT_DOUBLE_EQ(t.student_t_df, 4.0);
     EXPECT_THROW(DummyDistribution::StudentT(0.0), std::invalid_argument);
 
     // Laplace check
     auto lap = DummyDistribution::Laplace(1.0, 2.0);
-    EXPECT_EQ(lap.type, DummyDistribution::Type::Laplace);
+    EXPECT_EQ(lap.type, DummyDistribution::Type::LAPLACE);
     EXPECT_DOUBLE_EQ(lap.laplace_location, 1.0);
     EXPECT_DOUBLE_EQ(lap.laplace_scale, 2.0);
     EXPECT_THROW(DummyDistribution::Laplace(0.0, -1.0), std::invalid_argument);
 
     // Constrained Sparse Rademacher check
     auto csr = DummyDistribution::ConstrainedSparseRademacher(0.5);
-    EXPECT_EQ(csr.type, DummyDistribution::Type::ConstrainedSparseRademacher);
+    EXPECT_EQ(csr.type, DummyDistribution::Type::CONSTRAINED_SPARSE_RADEMACHER);
     EXPECT_DOUBLE_EQ(csr.constrained_sparse_rademacher_s, 0.5);
     EXPECT_THROW(DummyDistribution::ConstrainedSparseRademacher(1.5), std::invalid_argument);
     EXPECT_THROW(DummyDistribution::ConstrainedSparseRademacher(-0.1), std::invalid_argument);

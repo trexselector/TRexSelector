@@ -38,10 +38,14 @@ namespace trex::tsolvers::ad::solver_utils::preprocessing {
  *  Because the divisor stored in `normsx` is the value actually used, the
  *  restore and beta de-normalization paths are identical for both modes.
  */
-enum class ScalingMode {
+enum class TSolverScalingMode {
     L2,      /* Divide centered columns by their L2-norm (unit-L2). */
     ZSCORE   /* Divide centered columns by their sample SD (unit variance). */
 };
+
+/** @brief Old name of TSolverScalingMode.
+ *  @deprecated Use TSolverScalingMode. */
+using ScalingMode [[deprecated("Use TSolverScalingMode")]] = TSolverScalingMode;
 
 // =============================================================================
 
@@ -55,9 +59,9 @@ enum class ScalingMode {
  *
  * @param[out] meansx Populated with column means.
  * @param[out] normsx Populated with the divisor actually applied per column
- *             (L2-norm for ScalingMode::L2, sample SD for ScalingMode::ZSCORE).
+ *             (L2-norm for TSolverScalingMode::L2, sample SD for TSolverScalingMode::ZSCORE).
  * @param[in,out] dropped_indices Appended with indices of zero-variance columns.
- * @param mode Column-scaling convention (default: ScalingMode::L2).
+ * @param mode Column-scaling convention (default: TSolverScalingMode::L2).
  * @param n_threads Threads of the column passes (default 1, serial); the
  *        caller applies its work threshold before passing a budget.
  */
@@ -69,7 +73,7 @@ void preprocessMatStatistics(
     Eigen::VectorXd& meansx,
     Eigen::VectorXd& normsx,
     std::vector<std::size_t>& dropped_indices,
-    ScalingMode mode = ScalingMode::L2,
+    TSolverScalingMode mode = TSolverScalingMode::L2,
     int n_threads = 1
 );
 

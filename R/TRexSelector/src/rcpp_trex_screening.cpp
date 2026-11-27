@@ -44,15 +44,15 @@ TRexScreeningControl parse_screen_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("trex_method")) {
         std::string method = control["trex_method"];
         if (method == "TREX") {
-            params.trex_method = ScreenTRexMethod::TREX;
+            params.trex_method = ScreeningMethod::TREX;
         } else if (method == "TREX_DA_AR1") {
-            params.trex_method = ScreenTRexMethod::TREX_DA_AR1;
+            params.trex_method = ScreeningMethod::TREX_DA_AR1;
         } else if (method == "TREX_DA_EQUI") {
-            params.trex_method = ScreenTRexMethod::TREX_DA_EQUI;
+            params.trex_method = ScreeningMethod::TREX_DA_EQUI;
         } else if (method == "TREX_DA_BLOCK_EQUI") {
-            params.trex_method = ScreenTRexMethod::TREX_DA_BLOCK_EQUI;
+            params.trex_method = ScreeningMethod::TREX_DA_BLOCK_EQUI;
         } else if (method == "TREX_DA_NN") {
-            params.trex_method = ScreenTRexMethod::TREX_DA_NN;
+            params.trex_method = ScreeningMethod::TREX_DA_NN;
         } else {
             Rcpp::stop("Unknown ScreenTRexMethod: " + method);
         }

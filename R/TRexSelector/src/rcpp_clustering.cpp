@@ -106,48 +106,48 @@ std::vector<MergeStep> internal_dispatch_linkage(
     using DP = DistancePolicy<TransposedType, Metric>;
 
     switch (method) {
-        case LinkageMethod::Ward:
+        case LinkageMethod::WARD:
             // Ward's Lance-Williams recurrence is only valid for (squared)
             // Euclidean geometry; other combinations are rejected at compile
             // time by the dispatcher, so only instantiate the valid ones.
             // Correlation_LSH_Approx is the one supported exception: the core
             // dispatcher routes it to ProjectedGeometricUpdatePolicy (Ward in
             // 64-D SimHash-projected Euclidean space).
-            if constexpr (Metric == DistanceMetric::Euclidean ||
-                          Metric == DistanceMetric::Correlation_LSH_Approx) {
+            if constexpr (Metric == DistanceMetric::EUCLIDEAN ||
+                          Metric == DistanceMetric::CORRELATION_LSH_APPROX) {
                 return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Ward>(transposed, use_mmap, verbose, n_threads);
+                                                LinkageMethod::WARD>(transposed, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument(
                     "Ward linkage strictly requires Euclidean distance "
                     "(exception: Correlation_LSH_Approx, which runs Ward in a "
                     "SimHash-projected Euclidean space).");
             }
-        case LinkageMethod::Average:
+        case LinkageMethod::AVERAGE:
             return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Average>(transposed, use_mmap, verbose, n_threads);
-        case LinkageMethod::Complete:
+                                                LinkageMethod::AVERAGE>(transposed, use_mmap, verbose, n_threads);
+        case LinkageMethod::COMPLETE:
             return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Complete>(transposed, use_mmap, verbose, n_threads);
-        case LinkageMethod::Single:
+                                                LinkageMethod::COMPLETE>(transposed, use_mmap, verbose, n_threads);
+        case LinkageMethod::SINGLE:
             return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Single>(transposed, use_mmap, verbose, n_threads);
+                                                LinkageMethod::SINGLE>(transposed, use_mmap, verbose, n_threads);
         case LinkageMethod::WPGMA:
             return AgglomerativeClustering::cluster<TransposedType, DP,
                                                 LinkageMethod::WPGMA>(transposed, use_mmap, verbose, n_threads);
-        case LinkageMethod::Median:
+        case LinkageMethod::MEDIAN:
             // Median/Centroid recurrences likewise require Euclidean geometry
-            if constexpr (Metric == DistanceMetric::Euclidean) {
+            if constexpr (Metric == DistanceMetric::EUCLIDEAN) {
                 return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Median>(transposed, use_mmap, verbose, n_threads);
+                                                LinkageMethod::MEDIAN>(transposed, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument(
                     "Median linkage strictly requires Euclidean distance.");
             }
-        case LinkageMethod::Centroid:
-            if constexpr (Metric == DistanceMetric::Euclidean) {
+        case LinkageMethod::CENTROID:
+            if constexpr (Metric == DistanceMetric::EUCLIDEAN) {
                 return AgglomerativeClustering::cluster<TransposedType, DP,
-                                                LinkageMethod::Centroid>(transposed, use_mmap, verbose, n_threads);
+                                                LinkageMethod::CENTROID>(transposed, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument(
                     "Centroid linkage strictly requires Euclidean distance.");
@@ -206,25 +206,25 @@ NumericMatrix rcpp_agglomerative_cluster(
     std::vector<MergeStep> merges;
 
     switch (metric) {
-        case DistanceMetric::Euclidean:
+        case DistanceMetric::EUCLIDEAN:
             merges = internal_dispatch_linkage<TransposedType,
-                                DistanceMetric::Euclidean>(transposed, method, use_mmap, verbose, n_threads);
+                                DistanceMetric::EUCLIDEAN>(transposed, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation:
+        case DistanceMetric::CORRELATION:
             merges = internal_dispatch_linkage<TransposedType,
-                                DistanceMetric::Correlation>(transposed, method, use_mmap, verbose, n_threads);
+                                DistanceMetric::CORRELATION>(transposed, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Manhattan:
+        case DistanceMetric::MANHATTAN:
             merges = internal_dispatch_linkage<TransposedType,
-                                DistanceMetric::Manhattan>(transposed, method, use_mmap, verbose, n_threads);
+                                DistanceMetric::MANHATTAN>(transposed, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation_LSH_Filter:
+        case DistanceMetric::CORRELATION_LSH_FILTER:
             merges = internal_dispatch_linkage<TransposedType,
-                            DistanceMetric::Correlation_LSH_Filter>(transposed, method, use_mmap, verbose, n_threads);
+                            DistanceMetric::CORRELATION_LSH_FILTER>(transposed, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation_LSH_Approx:
+        case DistanceMetric::CORRELATION_LSH_APPROX:
             merges = internal_dispatch_linkage<TransposedType,
-                            DistanceMetric::Correlation_LSH_Approx>(transposed, method, use_mmap, verbose, n_threads);
+                            DistanceMetric::CORRELATION_LSH_APPROX>(transposed, method, use_mmap, verbose, n_threads);
             break;
         default:
             stop("Unknown DistanceMetric specified.");
@@ -274,33 +274,33 @@ NumericMatrix rcpp_agglomerative_cluster_mmap(
     std::vector<MergeStep> merges;
 
     switch (metric) {
-        case DistanceMetric::Euclidean:
+        case DistanceMetric::EUCLIDEAN:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Euclidean>(
+                        DistanceMetric::EUCLIDEAN>(
                             transposed, method, /*use_mmap=*/true, verbose, n_threads
                         );
             break;
-        case DistanceMetric::Correlation:
+        case DistanceMetric::CORRELATION:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Correlation>(
+                        DistanceMetric::CORRELATION>(
                             transposed, method, /*use_mmap=*/true, verbose, n_threads
                         );
             break;
-        case DistanceMetric::Manhattan:
+        case DistanceMetric::MANHATTAN:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Manhattan>(
+                        DistanceMetric::MANHATTAN>(
                             transposed, method, /*use_mmap=*/true, verbose, n_threads
                         );
             break;
-        case DistanceMetric::Correlation_LSH_Filter:
+        case DistanceMetric::CORRELATION_LSH_FILTER:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Correlation_LSH_Filter>(
+                        DistanceMetric::CORRELATION_LSH_FILTER>(
                             transposed, method, /*use_mmap=*/true, verbose, n_threads
                         );
             break;
-        case DistanceMetric::Correlation_LSH_Approx:
+        case DistanceMetric::CORRELATION_LSH_APPROX:
             merges = internal_dispatch_linkage<TransposedType,
-                            DistanceMetric::Correlation_LSH_Approx>(
+                            DistanceMetric::CORRELATION_LSH_APPROX>(
                                 transposed, method, /*use_mmap=*/true, verbose, n_threads
                             );
             break;

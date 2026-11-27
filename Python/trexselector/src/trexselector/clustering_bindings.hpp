@@ -117,46 +117,46 @@ std::vector<MergeStep> internal_dispatch_linkage(
     using DistPol = DistancePolicy<TransposedType, MetricEnum>;
 
     switch (method) {
-        case LinkageMethod::Ward:
+        case LinkageMethod::WARD:
             // Ward strictly requires Euclidean spatial geometry.
             // Correlation_LSH_Approx is the one supported exception: the core
             // dispatcher routes it to ProjectedGeometricUpdatePolicy (Ward in
             // 64-D SimHash-projected Euclidean space).
-            if constexpr (MetricEnum == DistanceMetric::Euclidean ||
-                          MetricEnum == DistanceMetric::Correlation_LSH_Approx) {
+            if constexpr (MetricEnum == DistanceMetric::EUCLIDEAN ||
+                          MetricEnum == DistanceMetric::CORRELATION_LSH_APPROX) {
                 return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                        LinkageMethod::Ward>(transposed_data, use_mmap, verbose, n_threads);
+                        LinkageMethod::WARD>(transposed_data, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument(
                     "Ward linkage strictly requires Euclidean distance "
                     "(exception: Correlation_LSH_Approx, which runs Ward in a "
                     "SimHash-projected Euclidean space).");
             }
-        case LinkageMethod::Average:
+        case LinkageMethod::AVERAGE:
             return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                    LinkageMethod::Average>(transposed_data, use_mmap, verbose, n_threads);
-        case LinkageMethod::Complete:
+                    LinkageMethod::AVERAGE>(transposed_data, use_mmap, verbose, n_threads);
+        case LinkageMethod::COMPLETE:
             return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                    LinkageMethod::Complete>(transposed_data, use_mmap, verbose, n_threads);
-        case LinkageMethod::Single:
+                    LinkageMethod::COMPLETE>(transposed_data, use_mmap, verbose, n_threads);
+        case LinkageMethod::SINGLE:
             return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                     LinkageMethod::Single>(transposed_data, use_mmap, verbose, n_threads);
+                     LinkageMethod::SINGLE>(transposed_data, use_mmap, verbose, n_threads);
         case LinkageMethod::WPGMA:
             return AgglomerativeClustering::cluster<TransposedType, DistPol,
                      LinkageMethod::WPGMA>(transposed_data, use_mmap, verbose, n_threads);
-        case LinkageMethod::Median:
+        case LinkageMethod::MEDIAN:
             // Median strictly requires (squared) Euclidean geometry
-            if constexpr (MetricEnum == DistanceMetric::Euclidean) {
+            if constexpr (MetricEnum == DistanceMetric::EUCLIDEAN) {
                 return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                         LinkageMethod::Median>(transposed_data, use_mmap, verbose, n_threads);
+                         LinkageMethod::MEDIAN>(transposed_data, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument("Median linkage strictly requires Euclidean distance.");
             }
-        case LinkageMethod::Centroid:
+        case LinkageMethod::CENTROID:
             // Centroid strictly requires (squared) Euclidean geometry
-            if constexpr (MetricEnum == DistanceMetric::Euclidean) {
+            if constexpr (MetricEnum == DistanceMetric::EUCLIDEAN) {
                 return AgglomerativeClustering::cluster<TransposedType, DistPol,
-                         LinkageMethod::Centroid>(transposed_data, use_mmap, verbose, n_threads);
+                         LinkageMethod::CENTROID>(transposed_data, use_mmap, verbose, n_threads);
             } else {
                 throw std::invalid_argument("Centroid linkage strictly requires Euclidean distance.");
             }
@@ -202,25 +202,25 @@ inline Eigen::MatrixXd py_agglomerative_cluster(
     std::vector<MergeStep> merges;
 
     switch (metric) {
-        case DistanceMetric::Euclidean:
+        case DistanceMetric::EUCLIDEAN:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Euclidean>(transposed_data, method, use_mmap, verbose, n_threads);
+                        DistanceMetric::EUCLIDEAN>(transposed_data, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation:
+        case DistanceMetric::CORRELATION:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Correlation>(transposed_data, method, use_mmap, verbose, n_threads);
+                        DistanceMetric::CORRELATION>(transposed_data, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Manhattan:
+        case DistanceMetric::MANHATTAN:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Manhattan>(transposed_data, method, use_mmap, verbose, n_threads);
+                        DistanceMetric::MANHATTAN>(transposed_data, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation_LSH_Filter:
+        case DistanceMetric::CORRELATION_LSH_FILTER:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Correlation_LSH_Filter>(transposed_data, method, use_mmap, verbose, n_threads);
+                        DistanceMetric::CORRELATION_LSH_FILTER>(transposed_data, method, use_mmap, verbose, n_threads);
             break;
-        case DistanceMetric::Correlation_LSH_Approx:
+        case DistanceMetric::CORRELATION_LSH_APPROX:
             merges = internal_dispatch_linkage<TransposedType,
-                        DistanceMetric::Correlation_LSH_Approx>(transposed_data, method, use_mmap, verbose, n_threads);
+                        DistanceMetric::CORRELATION_LSH_APPROX>(transposed_data, method, use_mmap, verbose, n_threads);
             break;
         default:
             throw std::invalid_argument("Unknown DistanceMetric");
@@ -278,13 +278,13 @@ inline void bind_clustering(py::module_& m) {
         "  I. Hierarchical Systems,\" Comput. J., vol. 9, pp. 373-380, 1967.\n"
         "D. Müllner, \"Modern Hierarchical, Agglomerative Clustering Algorithms,\" arXiv:1109.2378,\n"
         "  2011.\n")
-        .value("Ward", LinkageMethod::Ward)
-        .value("Average", LinkageMethod::Average)
-        .value("Complete", LinkageMethod::Complete)
-        .value("Single", LinkageMethod::Single)
+        .value("Ward", LinkageMethod::WARD)
+        .value("Average", LinkageMethod::AVERAGE)
+        .value("Complete", LinkageMethod::COMPLETE)
+        .value("Single", LinkageMethod::SINGLE)
         .value("WPGMA", LinkageMethod::WPGMA)
-        .value("Median", LinkageMethod::Median)
-        .value("Centroid", LinkageMethod::Centroid)
+        .value("Median", LinkageMethod::MEDIAN)
+        .value("Centroid", LinkageMethod::CENTROID)
         .export_values();
 
     py::enum_<DistanceMetric>(m, "DistanceMetric",
@@ -299,17 +299,17 @@ inline void bind_clustering(py::module_& m) {
         "  Dimensionality,\" in Proc. 30th ACM Symp. Theory Comput. (STOC), 1998, pp. 604-613.\n"
         "P. Li, T. J. Hastie, and K. W. Church, \"Very Sparse Random Projections,\" in Proc. ACM\n"
         "  SIGKDD Int. Conf. Knowl. Discovery Data Mining (KDD), 2006.\n")
-        .value("Euclidean", DistanceMetric::Euclidean)
-        .value("Correlation", DistanceMetric::Correlation)
-        .value("Manhattan", DistanceMetric::Manhattan)
-        .value("Correlation_LSH_Filter", DistanceMetric::Correlation_LSH_Filter)
-        .value("Correlation_LSH_Approx", DistanceMetric::Correlation_LSH_Approx)
+        .value("Euclidean", DistanceMetric::EUCLIDEAN)
+        .value("Correlation", DistanceMetric::CORRELATION)
+        .value("Manhattan", DistanceMetric::MANHATTAN)
+        .value("Correlation_LSH_Filter", DistanceMetric::CORRELATION_LSH_FILTER)
+        .value("Correlation_LSH_Approx", DistanceMetric::CORRELATION_LSH_APPROX)
         .export_values();
 
     m.def("agglomerative_cluster", &py_agglomerative_cluster,
           py::arg("data"),
           py::arg("method"),
-          py::arg("metric") = DistanceMetric::Euclidean,
+          py::arg("metric") = DistanceMetric::EUCLIDEAN,
           py::arg("use_mmap") = false,
           py::arg("verbose") = false,
           py::arg("n_threads") = py::none(),

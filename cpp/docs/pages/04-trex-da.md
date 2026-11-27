@@ -66,7 +66,7 @@ of highly correlated variables, as they are characteristic for stock returns. Th
 method is made for variables that all share one correlation.
 
 The binary tree method clusters the variables by correlation distance with the linkage `hc_linkage`
-(`LinkageMethod::Single` by default), evaluates the FDP estimate at `hc_grid_length` correlation
+(`LinkageMethod::SINGLE` by default), evaluates the FDP estimate at `hc_grid_length` correlation
 thresholds (the default `0` lets the core take \f$\min(20, p)\f$ points) and keeps the threshold
 `rho_thresh`.
 

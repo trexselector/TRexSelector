@@ -72,11 +72,11 @@ the pages it needs and the file keeps the data, so the working set of a run is t
 buffers, never a copy of the design. The accessor `getMap()` of the handle is a view of the mapping
 as well, and the element access reads from the file, so no accessor copies the design either.
 
-A file opened in `AccessMode::ReadOnly` cannot be written, so it serves exactly the code that only
+A file opened in `AccessMode::READ_ONLY` cannot be written, so it serves exactly the code that only
 reads. That is a selector under `ScalingMode::NONE`, which takes the design as supplied, a T-solver
 that is a reader, and the fits of the regressions. A selector under `ScalingMode::L2` or
 `ScalingMode::ZSCORE`, a writer among the T-solvers, the in-place scalers and TRexSPCASelector write into
-the design and need `AccessMode::ReadWrite`. The handle keeps the two apart. Its `getMap()` is
+the design and need `AccessMode::READ_WRITE`. The handle keeps the two apart. Its `getMap()` is
 refused for a read-only file, and `getReaderMap()` is the `Eigen::Map` for code that only reads.
 
 ## The low-memory engines

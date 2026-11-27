@@ -40,7 +40,7 @@ TEST(MemMapTest, WriteAndRead) {
     // 1. Create and Write
     {
         trex::utils::memmap::MemoryMappedMatrix<double> mm_write(
-            temp_file, rows, cols, trex::utils::memmap::AccessMode::ReadWrite
+            temp_file, rows, cols, trex::utils::memmap::AccessMode::READ_WRITE
         );
 
         EXPECT_EQ(mm_write.rows(), rows);
@@ -57,7 +57,7 @@ TEST(MemMapTest, WriteAndRead) {
     // 2. Open and Read
     {
         const trex::utils::memmap::MemoryMappedMatrix<double> mm_read(
-            temp_file, rows, cols, trex::utils::memmap::AccessMode::ReadOnly
+            temp_file, rows, cols, trex::utils::memmap::AccessMode::READ_ONLY
         );
 
         const auto mat = mm_read.getMap();
@@ -86,7 +86,7 @@ TEST(MemMapTest, SerializationCompatibility) {
     // 1. Write random data to mem map
     {
         trex::utils::memmap::MemoryMappedMatrix<double> mm_write(
-            temp_file, rows, cols, trex::utils::memmap::AccessMode::ReadWrite
+            temp_file, rows, cols, trex::utils::memmap::AccessMode::READ_WRITE
         );
         auto mat = mm_write.getMap();
         mat = original_matrix;
@@ -96,7 +96,7 @@ TEST(MemMapTest, SerializationCompatibility) {
     std::stringstream string_stream;
     {
         const trex::utils::memmap::MemoryMappedMatrix<double> mm_read(
-            temp_file, rows, cols, trex::utils::memmap::AccessMode::ReadOnly
+            temp_file, rows, cols, trex::utils::memmap::AccessMode::READ_ONLY
         );
         const auto mapped_data = mm_read.getMap();
 
@@ -136,7 +136,7 @@ TEST(MemMapTest, SafeDeletion) {
     // Create a memory mapped matrix and force it out of scope
     {
         trex::utils::memmap::MemoryMappedMatrix<double> mm(
-            temp_file, rows, cols, trex::utils::memmap::AccessMode::ReadWrite
+            temp_file, rows, cols, trex::utils::memmap::AccessMode::READ_WRITE
         );
 
         // Touch the map
@@ -169,15 +169,15 @@ TEST(MemMapTest, ReadOnlyFileHandsOutAReaderMap) {
     const Eigen::Index cols = 3;
 
     {
-        MemoryMappedMatrix<double> writer(temp_file, rows, cols, AccessMode::ReadWrite);
-        EXPECT_EQ(writer.mode(), AccessMode::ReadWrite);
+        MemoryMappedMatrix<double> writer(temp_file, rows, cols, AccessMode::READ_WRITE);
+        EXPECT_EQ(writer.mode(), AccessMode::READ_WRITE);
         writer.getMapFor(true).setConstant(2.5);
         writer.getMapFor(true)(1, 2) = -7.0;
         EXPECT_DOUBLE_EQ(writer.getReaderMap()(1, 2), -7.0);
     }
     {
-        MemoryMappedMatrix<double> reader(temp_file, rows, cols, AccessMode::ReadOnly);
-        EXPECT_EQ(reader.mode(), AccessMode::ReadOnly);
+        MemoryMappedMatrix<double> reader(temp_file, rows, cols, AccessMode::READ_ONLY);
+        EXPECT_EQ(reader.mode(), AccessMode::READ_ONLY);
 
         EXPECT_THROW(reader.getMap(), std::runtime_error);
         EXPECT_THROW(reader.getMapFor(true), std::runtime_error);

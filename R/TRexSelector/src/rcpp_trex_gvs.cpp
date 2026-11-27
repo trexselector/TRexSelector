@@ -51,21 +51,21 @@ TRexGVSControl parse_gvs_parameter(const Rcpp::List& control) {
     if (control.containsElementNamed("lambda2_method")) {
         std::string method_str = control["lambda2_method"];
         if (method_str == "CV_1SE_SVD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_1SE_SVD;
+            params.lambda2_method = GVSLambda2Method::CV_1SE_SVD;
         } else if (method_str == "CV_MIN_SVD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_MIN_SVD;
+            params.lambda2_method = GVSLambda2Method::CV_MIN_SVD;
         } else if (method_str == "CV_1SE_CCD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_1SE_CCD;
+            params.lambda2_method = GVSLambda2Method::CV_1SE_CCD;
         } else if (method_str == "CV_MIN_CCD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_MIN_CCD;
+            params.lambda2_method = GVSLambda2Method::CV_MIN_CCD;
         } else if (method_str == "CV_1SE_IEN_CCD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+            params.lambda2_method = GVSLambda2Method::CV_1SE_IEN_CCD;
         } else if (method_str == "CV_MIN_IEN_CCD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_MIN_IEN_CCD;
+            params.lambda2_method = GVSLambda2Method::CV_MIN_IEN_CCD;
         } else if (method_str == "CV_1SE_TIK_SVD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_1SE_TIK_SVD;
+            params.lambda2_method = GVSLambda2Method::CV_1SE_TIK_SVD;
         } else if (method_str == "CV_MIN_TIK_SVD") {
-            params.lambda2_method = LambdaSelectionMethod::CV_MIN_TIK_SVD;
+            params.lambda2_method = GVSLambda2Method::CV_MIN_TIK_SVD;
         } else {
             Rcpp::stop("Unknown lambda2_method: '" + method_str +
                        "'. Use 'CV_1SE_SVD', 'CV_MIN_SVD', 'CV_1SE_CCD', "

@@ -623,7 +623,7 @@ py::class_<PySolverWrapper<Solver>> bind_tikhonov_tsolver(py::module& m, const s
 inline void bind_solver_options(py::module& m) {
     using trex::tsolvers::ad::TSolverOptions;
     using trex::tsolvers::ad::NCGMPVariant;
-    using ScalingMode = trex::tsolvers::ad::ScalingMode;
+    using trex::tsolvers::ad::TSolverScalingMode;
 
     py::class_<TSolverOptions> cls(m, "SolverOptions",
         "Every T-solver input except the data X, D and y. Each solver reads the fields it "
@@ -705,16 +705,16 @@ inline void bind_solver_options(py::module& m) {
  */
 inline void bind_tsolvers_module(py::module& m) {
 
-    using ScalingMode = trex::tsolvers::ad::solver_utils::preprocessing::ScalingMode;
+    using trex::tsolvers::ad::solver_utils::preprocessing::TSolverScalingMode;
 
     // Column-scaling convention used by all solver constructors. This is the
-    // solver-side enum (solver_utils::preprocessing::ScalingMode); the
+    // solver-side enum (solver_utils::preprocessing::TSolverScalingMode); the
     // selector-level trex_selector_methods.ScalingMode mirrors it.
-    py::enum_<ScalingMode>(m, "ScalingMode",
+    py::enum_<TSolverScalingMode>(m, "ScalingMode",
                            "Column scaling convention applied by the solver after centering.")
-        .value("L2", ScalingMode::L2,
+        .value("L2", TSolverScalingMode::L2,
                "Divide each centered column by its L2 norm (unit L2 norm).")
-        .value("ZSCORE", ScalingMode::ZSCORE,
+        .value("ZSCORE", TSolverScalingMode::ZSCORE,
                "Divide each centered column by its sample SD (n-1).")
         .export_values();
 
@@ -729,10 +729,10 @@ inline void bind_tsolvers_module(py::module& m) {
      */
     py::enum_<trex::tsolvers::ad::NCGMPVariant>(m_omp, "NCGMPVariant")
         .value("LineSearch",
-               trex::tsolvers::ad::NCGMPVariant::LineSearch,
+               trex::tsolvers::ad::NCGMPVariant::LINE_SEARCH,
                "Computes updates using standard backtracking / exact line search.")
         .value("FullyCorrective",
-              trex::tsolvers::ad::NCGMPVariant::FullyCorrective,
+              trex::tsolvers::ad::NCGMPVariant::FULLY_CORRECTIVE,
               "Computes fully corrective projections for all active set members at each step.")
         .export_values();
 

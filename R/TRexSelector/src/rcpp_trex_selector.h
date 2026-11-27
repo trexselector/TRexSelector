@@ -196,9 +196,9 @@ parse_hc_linkage(std::string name, const std::string& owner) {
     namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
     std::transform(name.begin(), name.end(), name.begin(),
                    [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (name == "single")   { return hac::LinkageMethod::Single; }
-    if (name == "complete") { return hac::LinkageMethod::Complete; }
-    if (name == "average")  { return hac::LinkageMethod::Average; }
+    if (name == "single")   { return hac::LinkageMethod::SINGLE; }
+    if (name == "complete") { return hac::LinkageMethod::COMPLETE; }
+    if (name == "average")  { return hac::LinkageMethod::AVERAGE; }
     if (name == "wpgma")    { return hac::LinkageMethod::WPGMA; }
     Rcpp::stop("Unsupported linkage method for " + owner + ": " + name +
                "\nSupported: single, complete, average, wpgma.");

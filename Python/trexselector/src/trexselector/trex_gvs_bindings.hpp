@@ -186,22 +186,22 @@ inline void bind_trex_gvs(py::module& m) {
             ""
             "or profile_at_edge: the selector warned once and returned the pick unchanged.");
 
-    py::enum_<LambdaSelectionMethod>(m, "LambdaSelectionMethod", "Rule for auto-selecting the ridge parameter lambda_2 "
+    py::enum_<GVSLambda2Method>(m, "LambdaSelectionMethod", "Rule for auto-selecting the ridge parameter lambda_2 "
         "when lambda_2 < 0.")
-        .value("CV_1SE_SVD", LambdaSelectionMethod::CV_1SE_SVD, "JacobiSVD ridge CV, 1-SE rule.")
-        .value("CV_MIN_SVD", LambdaSelectionMethod::CV_MIN_SVD, "JacobiSVD ridge CV, minimum-CV-error rule.")
-        .value("CV_1SE_CCD", LambdaSelectionMethod::CV_1SE_CCD, "Coordinate-descent ridge CV, glmnet-faithful 1-SE "
+        .value("CV_1SE_SVD", GVSLambda2Method::CV_1SE_SVD, "JacobiSVD ridge CV, 1-SE rule.")
+        .value("CV_MIN_SVD", GVSLambda2Method::CV_MIN_SVD, "JacobiSVD ridge CV, minimum-CV-error rule.")
+        .value("CV_1SE_CCD", GVSLambda2Method::CV_1SE_CCD, "Coordinate-descent ridge CV, glmnet-faithful 1-SE "
             "rule "
             "(default).")
-        .value("CV_MIN_CCD", LambdaSelectionMethod::CV_MIN_CCD, "Coordinate-descent ridge CV, glmnet-faithful minimum "
+        .value("CV_MIN_CCD", GVSLambda2Method::CV_MIN_CCD, "Coordinate-descent ridge CV, glmnet-faithful minimum "
             "rule.")
-        .value("CV_1SE_IEN_CCD", LambdaSelectionMethod::CV_1SE_IEN_CCD, "IEN-geometry coordinate-descent CV (lambda1 "
+        .value("CV_1SE_IEN_CCD", GVSLambda2Method::CV_1SE_IEN_CCD, "IEN-geometry coordinate-descent CV (lambda1 "
             "profiled, group-consuming), 1-SE rule. IEN default.")
-        .value("CV_MIN_IEN_CCD", LambdaSelectionMethod::CV_MIN_IEN_CCD, "IEN-geometry coordinate-descent CV (lambda1 "
+        .value("CV_MIN_IEN_CCD", GVSLambda2Method::CV_MIN_IEN_CCD, "IEN-geometry coordinate-descent CV (lambda1 "
             "profiled, group-consuming), minimum rule.")
-        .value("CV_1SE_TIK_SVD", LambdaSelectionMethod::CV_1SE_TIK_SVD, "Generalized-Tikhonov SVD ridge CV (IEN "
+        .value("CV_1SE_TIK_SVD", GVSLambda2Method::CV_1SE_TIK_SVD, "Generalized-Tikhonov SVD ridge CV (IEN "
             "geometry), 1-SE rule.")
-        .value("CV_MIN_TIK_SVD", LambdaSelectionMethod::CV_MIN_TIK_SVD, "Generalized-Tikhonov SVD ridge CV (IEN "
+        .value("CV_MIN_TIK_SVD", GVSLambda2Method::CV_MIN_TIK_SVD, "Generalized-Tikhonov SVD ridge CV (IEN "
             "geometry), minimum rule.")
         .export_values();
 

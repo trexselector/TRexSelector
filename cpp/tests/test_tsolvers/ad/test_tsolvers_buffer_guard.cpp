@@ -60,7 +60,7 @@ using trex::tsolvers::ad::TSolverOptions;
 using trex::ml_methods::scaler_methods::LpNormScaler;
 using trex::trex_selector_methods::ad::trex_core::TRexSelector;
 using trex::trex_selector_methods::ad::trex_core::TRexControl;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 namespace bufreg = trex::tsolvers::ad::solver_utils::buffer_registry;
 namespace datagen = trex::utils::datageneration::datagen;
 namespace fs = std::filesystem;
@@ -436,7 +436,7 @@ TEST_F(TSolverBufferGuardTest, SelectorAndWriterSolverShareTheRegistry) {
     TRexControl ctrl;
     ctrl.K = 5;
     ctrl.max_dummy_multiplier = 2;
-    ctrl.solver_type = SolverTypeForTRex::TLARS;
+    ctrl.solver_type = TSolverType::TLARS;
 
     {
         TRexSelector sel(Xm, ym, /*tFDR=*/0.2, ctrl, /*seed=*/7, /*verbose=*/false);

@@ -55,27 +55,27 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnSolverMismatch) {
 
     // EN requires TENET. Giving it TLASSO should throw.
     gvs_params.gvs_type = GVSType::EN;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TLASSO;
     EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, gvs_params),
                  std::invalid_argument);
 
     // IEN requires TIENET or TIENET_AUG. Giving it TENET should throw.
     gvs_params.gvs_type = GVSType::IEN;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TENET;
     EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, gvs_params),
                  std::invalid_argument);
 
     // ... and so should the pre-rework TLASSO requirement.
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TLASSO;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TLASSO;
     EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, gvs_params),
                  std::invalid_argument);
 
     // IEN + TIENET_AUG constructs.
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TIENET_AUG;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TIENET_AUG;
     EXPECT_NO_THROW(TRexGVSSelector(X_map, y_map, 0.1, gvs_params));
 
     // IEN + TIENET (native pathwise) constructs.
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TIENET;
     EXPECT_NO_THROW(TRexGVSSelector(X_map, y_map, 0.1, gvs_params));
 }
 
@@ -98,7 +98,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
         TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = ENSolverType::TENET_AUG;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
+        ctrl.trex_ctrl.solver_type = TSolverType::TENET_AUG;
         EXPECT_NO_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl));
     }
 
@@ -107,7 +107,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
         TRexGVSControl ctrl;
         ctrl.gvs_type  = GVSType::EN;
         ctrl.en_solver = ENSolverType::TENET;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET_AUG;
+        ctrl.trex_ctrl.solver_type = TSolverType::TENET_AUG;
         EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.1, ctrl),
                      std::invalid_argument);
     }
@@ -117,7 +117,7 @@ TEST_F(TRexGVSTest, Validation_EnSolverIsTheSingleENAxis) {
 /** @brief Construct a new test f object to validate permutation L-Loop constraints. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnPermutationLLoop) {
     TRexGVSControl gvs_params;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TENET;
 
     // Permutation is mechanically invalid for GVS MVN dummies
     gvs_params.trex_ctrl.lloop_strategy = LLoopStrategy::PERMUTATION;
@@ -133,7 +133,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnPermutationLLoop) {
 /** @brief Construct a new test f object to validate GVS-specific controls. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnInvalidGVSParameters) {
     TRexGVSControl gvs_params;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET; // Default to valid
+    gvs_params.trex_ctrl.solver_type = TSolverType::TENET; // Default to valid
 
     // Invalid corr_max
     gvs_params.corr_max = 1.5;
@@ -162,7 +162,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnInvalidGVSParameters) {
 /** @brief Test that unsupported solver types (e.g., TLARS) are rejected. */
 TEST_F(TRexGVSTest, Validation_ThrowsOnUnsupportedSolver_TLARS) {
     TRexGVSControl gvs_params;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TLARS; // TLARS is illegal for GVS
+    gvs_params.trex_ctrl.solver_type = TSolverType::TLARS; // TLARS is illegal for GVS
 
     // Test rejection for EN
     gvs_params.gvs_type = GVSType::EN;
@@ -202,7 +202,7 @@ TEST_F(TRexGVSTest, DataIntegrity_XRestoredAfterSelect) {
     gvs_params.gvs_type = GVSType::EN;
     gvs_params.trex_ctrl.K = 3;
     gvs_params.trex_ctrl.max_dummy_multiplier = 2;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TENET;
 
     TRexGVSSelector selector(X_map, y_map, 0.1, gvs_params, 42, false);
     selector.select();
@@ -221,7 +221,7 @@ TEST_F(TRexGVSTest, DataIntegrity_XRestoredOnDestruction) {
     gvs_params.gvs_type = GVSType::EN;
     gvs_params.trex_ctrl.K = 3;
     gvs_params.trex_ctrl.max_dummy_multiplier = 2;
-    gvs_params.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_params.trex_ctrl.solver_type = TSolverType::TENET;
 
     {
         TRexGVSSelector selector(X_map, y_map, 0.1, gvs_params, 42, false);
@@ -281,11 +281,11 @@ struct GroupedData {
  *  planted active groups are recovered with few false selections. */
 void run_gvs_select_e2e(GVSType gvs_type,
                         ENSolverType en_solver,
-                        SolverTypeForTRex solver_type,
+                        TSolverType solver_type,
                         bool use_lars_inner = false,
                         double fixed_lambda2 = -1.0,
-                        LambdaSelectionMethod lambda2_method =
-                            LambdaSelectionMethod::CV_1SE_CCD) {
+                        GVSLambda2Method lambda2_method =
+                            GVSLambda2Method::CV_1SE_CCD) {
     const Eigen::Index n = 150, p = 40;
     GroupedData d(n, p, 0.75, 1.0, 7);
     Eigen::Map<Eigen::MatrixXd> X_map(d.X.data(), d.X.rows(), d.X.cols());
@@ -335,21 +335,21 @@ void run_gvs_select_e2e(GVSType gvs_type,
 /** @brief EN with the Gram-based TENET solver recovers the planted groups. */
 TEST_F(TRexGVSTest, EndToEnd_EN_TENET) {
     run_gvs_select_e2e(GVSType::EN, ENSolverType::TENET,
-                       SolverTypeForTRex::TENET);
+                       TSolverType::TENET);
 }
 
 /** @brief EN with the augmented-LASSO TENETAug solver recovers the planted
  *  groups. */
 TEST_F(TRexGVSTest, EndToEnd_EN_TENETAug) {
     run_gvs_select_e2e(GVSType::EN, ENSolverType::TENET_AUG,
-                       SolverTypeForTRex::TENET_AUG);
+                       TSolverType::TENET_AUG);
 }
 
 /** @brief EN-aug with the pure-LARS inner solver (R type="lar" parity flag)
  *  recovers the planted groups — also exercises tenet_aug_use_lars. */
 TEST_F(TRexGVSTest, EndToEnd_EN_TENETAug_LarsInner) {
     run_gvs_select_e2e(GVSType::EN, ENSolverType::TENET_AUG,
-                       SolverTypeForTRex::TENET_AUG, /*use_lars_inner=*/true);
+                       TSolverType::TENET_AUG, /*use_lars_inner=*/true);
 }
 
 /** @brief IEN (TIENETAug solver) recovers the planted groups.
@@ -364,7 +364,7 @@ TEST_F(TRexGVSTest, EndToEnd_EN_TENETAug_LarsInner) {
  *  of the IEN track, inherited from the reference (see computeLambda2()). */
 TEST_F(TRexGVSTest, EndToEnd_IEN_TIENETAug) {
     run_gvs_select_e2e(GVSType::IEN, ENSolverType::TENET,
-                       SolverTypeForTRex::TIENET_AUG,
+                       TSolverType::TIENET_AUG,
                        /*use_lars_inner=*/false, /*fixed_lambda2=*/1.0);
 }
 
@@ -372,7 +372,7 @@ TEST_F(TRexGVSTest, EndToEnd_IEN_TIENETAug) {
  *  groups (same lambda_2 pinning rationale as the TIENETAug test above). */
 TEST_F(TRexGVSTest, EndToEnd_IEN_TIENET) {
     run_gvs_select_e2e(GVSType::IEN, ENSolverType::TENET,
-                       SolverTypeForTRex::TIENET,
+                       TSolverType::TIENET,
                        /*use_lars_inner=*/false, /*fixed_lambda2=*/1.0);
 }
 
@@ -383,7 +383,7 @@ TEST_F(TRexGVSTest, EndToEnd_IEN_TIENET) {
  *  (TIENET, pinned lambda_2). */
 TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
 
-    auto run_with = [&](GVSType gvs_type, SolverTypeForTRex solver_type,
+    auto run_with = [&](GVSType gvs_type, TSolverType solver_type,
                         double fixed_lambda2, bool use_mmap) {
         const Eigen::Index n = 150, p = 40;
         GroupedData d(n, p, 0.75, 1.0, 7);
@@ -404,18 +404,18 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
 
     {
         const auto mem  = run_with(GVSType::EN,
-                                   SolverTypeForTRex::TENET, 1.0, false);
+                                   TSolverType::TENET, 1.0, false);
         const auto mmap = run_with(GVSType::EN,
-                                   SolverTypeForTRex::TENET, 1.0, true);
+                                   TSolverType::TENET, 1.0, true);
         ASSERT_EQ(mem.size(), mmap.size());
         EXPECT_TRUE((mem.array() == mmap.array()).all())
             << "EN: memory-mapped GVS selection differs from in-memory.";
     }
     {
         const auto mem  = run_with(GVSType::IEN,
-                                   SolverTypeForTRex::TIENET, 1.0, false);
+                                   TSolverType::TIENET, 1.0, false);
         const auto mmap = run_with(GVSType::IEN,
-                                   SolverTypeForTRex::TIENET, 1.0, true);
+                                   TSolverType::TIENET, 1.0, true);
         ASSERT_EQ(mem.size(), mmap.size());
         EXPECT_TRUE((mem.array() == mmap.array()).all())
             << "IEN/TIENET: memory-mapped GVS selection differs from "
@@ -430,18 +430,18 @@ TEST_F(TRexGVSTest, MemmapMatchesInMemory) {
  *  and collapsed the selection (see EndToEnd_IEN_TIENETAug's rationale). */
 TEST_F(TRexGVSTest, EndToEnd_IEN_AutoLambda2_IenCcd) {
     run_gvs_select_e2e(GVSType::IEN, ENSolverType::TENET,
-                       SolverTypeForTRex::TIENET,
+                       TSolverType::TIENET,
                        /*use_lars_inner=*/false, /*fixed_lambda2=*/-1.0,
-                       LambdaSelectionMethod::CV_1SE_IEN_CCD);
+                       GVSLambda2Method::CV_1SE_IEN_CCD);
 }
 
 /** @brief Auto-lambda_2 via the analytic Tikhonov backbone (n > p here, so
  *  the contrast block cannot interpolate and the curve is informative). */
 TEST_F(TRexGVSTest, EndToEnd_IEN_AutoLambda2_TikSvd) {
     run_gvs_select_e2e(GVSType::IEN, ENSolverType::TENET,
-                       SolverTypeForTRex::TIENET,
+                       TSolverType::TIENET,
                        /*use_lars_inner=*/false, /*fixed_lambda2=*/-1.0,
-                       LambdaSelectionMethod::CV_1SE_TIK_SVD);
+                       GVSLambda2Method::CV_1SE_TIK_SVD);
 }
 
 
@@ -455,8 +455,8 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnIenLambdaMethodForEN) {
 
     TRexGVSControl ctrl;
     ctrl.gvs_type = GVSType::EN;
-    ctrl.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    ctrl.lambda2_method = GVSLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.trex_ctrl.solver_type = TSolverType::TENET;
     ctrl.trex_ctrl.K = 3;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
 
@@ -470,7 +470,7 @@ TEST_F(TRexGVSTest, Validation_ThrowsOnIenLambdaMethodForEN) {
 TEST_F(TRexGVSTest, EndToEnd_TIENETMatchesTIENETAug) {
     const Eigen::Index n = 150, p = 40;
 
-    auto run_variant = [&](SolverTypeForTRex st) {
+    auto run_variant = [&](TSolverType st) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -484,8 +484,8 @@ TEST_F(TRexGVSTest, EndToEnd_TIENETMatchesTIENETAug) {
         return trex.select().selected_var;
     };
 
-    const Eigen::VectorXi sel_native = run_variant(SolverTypeForTRex::TIENET);
-    const Eigen::VectorXi sel_aug    = run_variant(SolverTypeForTRex::TIENET_AUG);
+    const Eigen::VectorXi sel_native = run_variant(TSolverType::TIENET);
+    const Eigen::VectorXi sel_aug    = run_variant(TSolverType::TIENET_AUG);
 
     EXPECT_TRUE((sel_native.array() == sel_aug.array()).all())
         << "TIENET and TIENETAug selected different variable sets.\n"
@@ -500,7 +500,7 @@ TEST_F(TRexGVSTest, EndToEnd_TIENETMatchesTIENETAug) {
 TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET) {
     const Eigen::Index n = 150, p = 40;
 
-    auto run_variant = [&](ENSolverType en_solver, SolverTypeForTRex st) {
+    auto run_variant = [&](ENSolverType en_solver, TSolverType st) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -515,9 +515,9 @@ TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET) {
     };
 
     const Eigen::VectorXi sel_tenet =
-        run_variant(ENSolverType::TENET, SolverTypeForTRex::TENET);
+        run_variant(ENSolverType::TENET, TSolverType::TENET);
     const Eigen::VectorXi sel_aug =
-        run_variant(ENSolverType::TENET_AUG, SolverTypeForTRex::TENET_AUG);
+        run_variant(ENSolverType::TENET_AUG, TSolverType::TENET_AUG);
 
     EXPECT_TRUE((sel_tenet.array() == sel_aug.array()).all())
         << "TENET and TENETAug selected different variable sets.";
@@ -544,7 +544,7 @@ TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET_FixedLambda2) {
             yd(i) = 3.0 * Xd(i, 0) - 2.0 * Xd(i, 1) + 2.0 * Xd(i, 4) + N01(rng);
     }
 
-    auto run_variant = [&](ENSolverType en_solver, SolverTypeForTRex st) {
+    auto run_variant = [&](ENSolverType en_solver, TSolverType st) {
         Eigen::Map<Eigen::MatrixXd> Xm(Xd.data(), Xd.rows(), Xd.cols());
         Eigen::Map<Eigen::VectorXd> ym(yd.data(), yd.size());
         TRexGVSControl ctrl;
@@ -559,9 +559,9 @@ TEST_F(TRexGVSTest, EndToEnd_TENETAugMatchesTENET_FixedLambda2) {
     };
 
     const Eigen::VectorXi sel_tenet =
-        run_variant(ENSolverType::TENET, SolverTypeForTRex::TENET);
+        run_variant(ENSolverType::TENET, TSolverType::TENET);
     const Eigen::VectorXi sel_aug =
-        run_variant(ENSolverType::TENET_AUG, SolverTypeForTRex::TENET_AUG);
+        run_variant(ENSolverType::TENET_AUG, TSolverType::TENET_AUG);
 
     EXPECT_TRUE((sel_tenet.array() == sel_aug.array()).all())
         << "TENET and TENETAug diverged at fixed lambda_2 = 0.1.\n"
@@ -583,7 +583,7 @@ Eigen::VectorXi run_gvs_with_mode(
     const GroupedData& d,
     trex::trex_selector_methods::ad::utils::data_normalizer::ScalingMode mode,
     ENSolverType en_solver,
-    SolverTypeForTRex st,
+    TSolverType st,
     int seed) {
 
     Eigen::MatrixXd Xc = d.X;
@@ -616,7 +616,7 @@ TEST_F(TRexGVSTest, EndToEnd_EN_TENET_ZScore) {
 
     const Eigen::VectorXi sel = run_gvs_with_mode(
         d, dnm::ScalingMode::ZSCORE,
-        ENSolverType::TENET, SolverTypeForTRex::TENET, 42);
+        ENSolverType::TENET, TSolverType::TENET, 42);
 
     int hits = 0, false_sel = 0;
     for (Eigen::Index j = 0; j < sel.size(); ++j) {
@@ -637,9 +637,9 @@ TEST_F(TRexGVSTest, ScalingModeParity_EN_AutoLambda2) {
     namespace dnm = trex::trex_selector_methods::ad::utils::data_normalizer;
     GroupedData d(150, 40, 0.75, 1.0, 7);
 
-    const std::pair<ENSolverType, SolverTypeForTRex> variants[] = {
-        {ENSolverType::TENET,     SolverTypeForTRex::TENET},
-        {ENSolverType::TENET_AUG, SolverTypeForTRex::TENET_AUG},
+    const std::pair<ENSolverType, TSolverType> variants[] = {
+        {ENSolverType::TENET,     TSolverType::TENET},
+        {ENSolverType::TENET_AUG, TSolverType::TENET_AUG},
     };
     for (const auto& [en_solver, st] : variants) {
         const Eigen::VectorXi sel_l2 =
@@ -670,7 +670,7 @@ TEST_F(TRexGVSTest, ScalingModeParity_IEN_FixedLambda2) {
     const double lambda2_l2 = 1.0;
 
     auto run_ien = [&](dnm::ScalingMode mode, double lambda2,
-                       SolverTypeForTRex st) {
+                       TSolverType st) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
@@ -685,8 +685,8 @@ TEST_F(TRexGVSTest, ScalingModeParity_IEN_FixedLambda2) {
         return trex.select().selected_var;
     };
 
-    for (SolverTypeForTRex st : {SolverTypeForTRex::TIENET,
-                                 SolverTypeForTRex::TIENET_AUG}) {
+    for (TSolverType st : {TSolverType::TIENET,
+                                 TSolverType::TIENET_AUG}) {
         const Eigen::VectorXi sel_l2 =
             run_ien(dnm::ScalingMode::L2, lambda2_l2, st);
         const Eigen::VectorXi sel_z =
@@ -731,9 +731,9 @@ TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
 
     // Clustering: the linkage in lower case
     const std::pair<hac::LinkageMethod, const char*> linkages[] = {
-        {hac::LinkageMethod::Single, "single"},
-        {hac::LinkageMethod::Complete, "complete"},
-        {hac::LinkageMethod::Average, "average"},
+        {hac::LinkageMethod::SINGLE, "single"},
+        {hac::LinkageMethod::COMPLETE, "complete"},
+        {hac::LinkageMethod::AVERAGE, "average"},
         {hac::LinkageMethod::WPGMA, "wpgma"},
     };
     for (const auto& [linkage, name] : linkages) {
@@ -753,7 +753,7 @@ TEST_F(TRexGVSTest, Result_NamesTheOriginOfTheGroups) {
 TEST(TRexGVSLambda2Rule, DefaultResolvesByTrack) {
     const Eigen::Index n = 150, p = 40;
     GroupedData d(n, p, 0.75, 1.0, 7);
-    auto run = [&](LambdaSelectionMethod method) {
+    auto run = [&](GVSLambda2Method method) {
         Eigen::MatrixXd X = d.X;
         Eigen::VectorXd y = d.y;
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
@@ -761,15 +761,15 @@ TEST(TRexGVSLambda2Rule, DefaultResolvesByTrack) {
         TRexGVSControl ctrl;
         ctrl.gvs_type = GVSType::IEN;
         ctrl.lambda2_method = method;
-        ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIENET;
+        ctrl.trex_ctrl.solver_type = TSolverType::TIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         TRexGVSSelector trex(X_map, y_map, 0.2, ctrl, 42, false);
         const auto res = trex.select();
         return std::make_pair(trex.getGVSResult().lambda2_used, Eigen::VectorXi(res.selected_var));
     };
-    const auto by_default = run(LambdaSelectionMethod::CV_1SE_CCD);
-    const auto explicit_ien = run(LambdaSelectionMethod::CV_1SE_IEN_CCD);
+    const auto by_default = run(GVSLambda2Method::CV_1SE_CCD);
+    const auto explicit_ien = run(GVSLambda2Method::CV_1SE_IEN_CCD);
     EXPECT_DOUBLE_EQ(by_default.first, explicit_ien.first);
     EXPECT_TRUE((by_default.second.array() == explicit_ien.second.array()).all());
 
@@ -779,7 +779,7 @@ TEST(TRexGVSLambda2Rule, DefaultResolvesByTrack) {
     Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());
     TRexGVSControl en;
     en.gvs_type = GVSType::EN;
-    en.lambda2_method = LambdaSelectionMethod::CV_1SE_IEN_CCD;
+    en.lambda2_method = GVSLambda2Method::CV_1SE_IEN_CCD;
     EXPECT_THROW(TRexGVSSelector(X_map, y_map, 0.2, en, 42, false), std::invalid_argument);
 }
 

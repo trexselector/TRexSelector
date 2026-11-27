@@ -45,7 +45,7 @@ using namespace trex::trex_selector_methods::ad::trex_tikhonov;
 using namespace trex::trex_selector_methods::ad::trex_core;
 namespace gvs = trex::trex_selector_methods::ad::trex_gvs;
 namespace ms  = trex::ml_methods::model_selection;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 
 // ========================================================================================
 
@@ -124,11 +124,11 @@ TRexControl baseControl()
 TRexTikhonovControl centeringControl(const std::vector<Eigen::Index>& groups)
 {
     TRexTikhonovControl ctrl;
-    ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+    ctrl.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
     ctrl.prior_groups      = groups;
     ctrl.cluster_dummies   = true;
     ctrl.trex_ctrl         = baseControl();
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIKNET;
+    ctrl.trex_ctrl.solver_type = TSolverType::TIKNET;
     return ctrl;
 }
 
@@ -136,12 +136,12 @@ TRexTikhonovControl centeringControl(const std::vector<Eigen::Index>& groups)
 TRexTikhonovControl groupMeanControl(const std::vector<Eigen::Index>& groups)
 {
     TRexTikhonovControl ctrl;
-    ctrl.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+    ctrl.penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
     ctrl.tikhonov_K        = groupMeanK(groups);
     ctrl.prior_groups      = groups;
     ctrl.cluster_dummies   = true;
     ctrl.trex_ctrl         = baseControl();
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TIKNET;
+    ctrl.trex_ctrl.solver_type = TSolverType::TIKNET;
     return ctrl;
 }
 
@@ -352,7 +352,7 @@ TEST(TikLambda2PowerRule, GridMeansTheSameShrinkageUnderZscore) {
     gvs::TRexGVSControl gvs_l2;
     gvs_l2.prior_groups = d.groups;
     gvs_l2.trex_ctrl    = baseControl();
-    gvs_l2.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_l2.trex_ctrl.solver_type = TSolverType::TENET;
     auto gvs_z = gvs_l2;
     gvs_z.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
     const auto ga = gvs_lambda2_power_rule(d.X, d.y, 0.1, gvs_l2, 2026, cfg);
@@ -377,7 +377,7 @@ TEST(TikLambda2PowerRule, NegativeSeedIsRefused) {
     gvs::TRexGVSControl gvs_ctrl;
     gvs_ctrl.prior_groups = d.groups;
     gvs_ctrl.trex_ctrl    = baseControl();
-    gvs_ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    gvs_ctrl.trex_ctrl.solver_type = TSolverType::TENET;
     EXPECT_THROW(gvs_lambda2_power_rule(d.X, d.y, 0.1, gvs_ctrl, -1, cfg), std::invalid_argument);
 
     EXPECT_NO_THROW(tikhonov_lambda2_power_rule(d.X, d.y, 0.1, centeringControl(d.groups), 0, cfg));
@@ -392,7 +392,7 @@ TEST(TikLambda2PowerRule, Gvs_ElasticNetRuleRuns) {
     ctrl.en_solver    = gvs::ENSolverType::TENET;
     ctrl.prior_groups = d.groups;
     ctrl.trex_ctrl    = baseControl();
-    ctrl.trex_ctrl.solver_type = SolverTypeForTRex::TENET;
+    ctrl.trex_ctrl.solver_type = TSolverType::TENET;
 
     Lambda2PowerRuleConfig cfg;
     cfg.grid = {0.0, 1.0, 10.0};
@@ -468,7 +468,7 @@ TEST(PostSelectionCriteria, OlsRefit_RecoversAndValidates) {
 namespace {
 
 /** @brief A control that requests the pilot rule on a grid. */
-TRexTikhonovControl pilotControl(TRexTikhonovControl ctrl, TikLambda2Method method,
+TRexTikhonovControl pilotControl(TRexTikhonovControl ctrl, TikhonovLambda2Method method,
                                           std::vector<double> grid, std::size_t K_pilot, std::size_t T_pilot = 3)
 {
     ctrl.lambda_2       = -1.0;
@@ -514,7 +514,7 @@ const std::vector<double> kPilotGrid = {0.0, 1.0, 10.0, 100.0};
  *  at the pick carries more true positives than the lasso's. */
 TEST(TikLambda2Pilot, CenteringPrior_PicksPositiveLambda2WithMorePower) {
     const BlockData d = testDesign();
-    const SelectorRun pilot = runSelector(d, pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE,
+    const SelectorRun pilot = runSelector(d, pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE,
                                                           kPilotGrid, 5), 2026);
     ASSERT_TRUE(pilot.pilot.ran);
     EXPECT_GT(pilot.lambda2, 0.0);
@@ -530,7 +530,7 @@ TEST(TikLambda2Pilot, CenteringPrior_PicksPositiveLambda2WithMorePower) {
  *  switches it off. */
 TEST(TikLambda2Pilot, GroupMeanPrior_SwitchedOff) {
     const BlockData d = testDesign();
-    const SelectorRun r = runSelector(d, pilotControl(groupMeanControl(d.groups), TikLambda2Method::PILOT_KNEE,
+    const SelectorRun r = runSelector(d, pilotControl(groupMeanControl(d.groups), TikhonovLambda2Method::PILOT_KNEE,
                                                       {0.0, 10.0, 100.0}, 5), 2026);
     EXPECT_DOUBLE_EQ(r.lambda2, 0.0);
     EXPECT_TRUE(r.pilot.at_lower_end);
@@ -543,7 +543,7 @@ TEST(TikLambda2Pilot, GroupMeanPrior_SwitchedOff) {
 TEST(TikLambda2Pilot, MainRunEqualsFixedLambda2Run) {
     const BlockData d = testDesign();
     for (const bool shared : {false, true}) {
-        auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+        auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
         ctrl.pilot_shared_dummies = shared;
         const SelectorRun pilot = runSelector(d, ctrl, 2026);
 
@@ -565,7 +565,7 @@ TEST(TikLambda2Pilot, GridMeansTheSameShrinkageUnderZscore) {
     const BlockData d = testDesign();
     const double n_minus_1 = static_cast<double>(d.X.rows() - 1);
 
-    auto ctrl_l2 = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto ctrl_l2 = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     auto ctrl_z  = ctrl_l2;
     ctrl_z.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
     const SelectorRun l2 = runSelector(d, ctrl_l2, 2026);
@@ -597,7 +597,7 @@ TEST(TikLambda2Pilot, GridMeansTheSameShrinkageUnderZscore) {
  *  under the other statistics. */
 TEST(TikLambda2Pilot, CalibratedStatistic) {
     const BlockData d = testDesign();
-    auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     const SelectorRun majority = runSelector(d, ctrl, 2026);
     ctrl.pilot_statistic = PilotStatistic::CALIBRATED;
     const SelectorRun calibrated = runSelector(d, ctrl, 2026);
@@ -623,7 +623,7 @@ TEST(TikLambda2Pilot, CvPickIsConvertedUnderZscore) {
     const double n_minus_1 = static_cast<double>(d.X.rows() - 1);
     auto ctrl = centeringControl(d.groups);
     ctrl.lambda_2       = -1.0;
-    ctrl.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.lambda2_method = TikhonovLambda2Method::CV_1SE_IEN_CCD;
     ctrl.cv_seed        = 3;
     const SelectorRun l2 = runSelector(d, ctrl, 2026);
     ctrl.trex_ctrl.scaling_mode = ScalingMode::ZSCORE;
@@ -644,7 +644,7 @@ TEST(TikLambda2Pilot, ScaleFactor) {
 /** @brief The same seed reproduces the pilot and the selection. */
 TEST(TikLambda2Pilot, SeedReproduces) {
     const BlockData d = testDesign();
-    const auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    const auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     const SelectorRun a = runSelector(d, ctrl, 7);
     const SelectorRun b = runSelector(d, ctrl, 7);
     EXPECT_EQ(a.pilot.counts, b.pilot.counts);
@@ -658,7 +658,7 @@ TEST(TikLambda2Pilot, SeedReproduces) {
 TEST(TikLambda2Pilot, PickConsistentWithPickIndex) {
     const BlockData d = testDesign();
     {
-        const SelectorRun r = runSelector(d, pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE,
+        const SelectorRun r = runSelector(d, pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE,
                                                           kPilotGrid, 5), 2026);
         EXPECT_EQ(r.pilot.pick.index, pick_lambda2_index(r.pilot.counts, 1.0).index);
         EXPECT_EQ(r.pilot.index, r.pilot.pick.index);
@@ -681,7 +681,7 @@ TEST(TikLambda2Pilot, PickConsistentWithPickIndex) {
 TEST(TikLambda2Pilot, NullCountsPickSmallestLambda2) {
     const BlockData d(100, 200, 5, 0.7, 0, 1.0, std::sqrt(38.0), 11);
     for (const double tol : {0.0, 1.0}) {
-        auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+        auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
         ctrl.pilot_knee_tolerance = tol;
         const SelectorRun r = runSelector(d, ctrl, 2026);
         for (const std::size_t c : r.pilot.counts) { EXPECT_EQ(c, 0U); }
@@ -692,7 +692,7 @@ TEST(TikLambda2Pilot, NullCountsPickSmallestLambda2) {
 /** @brief The knee tolerance maps as documented. */
 TEST(TikLambda2Pilot, KneeToleranceMaps) {
     const BlockData d = testDesign();
-    auto loose = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto loose = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     loose.pilot_knee_tolerance = 1e9;
     EXPECT_EQ(runSelector(d, loose, 2026).pilot.index, 0U);
 
@@ -706,7 +706,7 @@ TEST(TikLambda2Pilot, KneeToleranceMaps) {
 /** @brief A user value bypasses the pilot. */
 TEST(TikLambda2Pilot, UserLambda2Bypasses) {
     const BlockData d = testDesign();
-    auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     ctrl.lambda_2 = 3.0;
     const SelectorRun r = runSelector(d, ctrl, 2026);
     EXPECT_DOUBLE_EQ(r.lambda2, 3.0);
@@ -723,20 +723,20 @@ TEST(TikLambda2Pilot, Validation) {
         Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
         EXPECT_THROW(TRexTikhonovSelector(Xm, ym, 0.1, ctrl, 1, false), std::invalid_argument);
     };
-    expect_throw(pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, {}, 5));
-    expect_throw(pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, {-1.0, 1.0}, 5));
-    expect_throw(pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 1));
-    auto bad_L = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    expect_throw(pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, {}, 5));
+    expect_throw(pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, {-1.0, 1.0}, 5));
+    expect_throw(pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 1));
+    auto bad_L = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     bad_L.pilot_L_multiplier = 0;
     expect_throw(bad_L);
     bad_L.pilot_L_multiplier = bad_L.trex_ctrl.max_dummy_multiplier + 1;
     expect_throw(bad_L);
-    auto bad_T = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5, 0);
+    auto bad_T = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5, 0);
     expect_throw(bad_T);
-    auto bad_tol = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto bad_tol = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     bad_tol.pilot_knee_tolerance = -1.0;
     expect_throw(bad_tol);
-    auto perm = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto perm = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     perm.cluster_dummies         = false;
     perm.pilot_shared_dummies    = true;
     perm.trex_ctrl.lloop_strategy = LLoopStrategy::PERMUTATION;
@@ -772,7 +772,7 @@ TEST(TikLambda2Pilot, GroupMajorityCountPure) {
  *  the pick; refused without a partition or with a fraction outside (0, 1]. */
 TEST(TikLambda2Pilot, GroupMajorityStatistic) {
     const BlockData d = testDesign();
-    auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     ctrl.pilot_statistic = PilotStatistic::GROUP_MAJORITY;
     const SelectorRun r = runSelector(d, ctrl, 2026);
     ASSERT_TRUE(r.pilot.ran);
@@ -804,7 +804,7 @@ TEST(TikLambda2Pilot, GroupMajorityStatistic) {
         EXPECT_THROW(TRexTikhonovSelector(Xm, ym, 0.1, c, 1, false), std::invalid_argument);
     };
     auto no_groups = ctrl;
-    no_groups.penalty_structure = TikPenaltyStructure::SPARSE_GENERAL;
+    no_groups.penalty_structure = TikhonovPenaltyStructure::SPARSE_GENERAL;
     no_groups.tikhonov_K        = groupMeanK(d.groups);
     no_groups.prior_groups.clear();
     no_groups.cluster_dummies   = false;
@@ -820,7 +820,7 @@ TEST(TikLambda2Pilot, GroupMajorityStatistic) {
  *  seed, without the main selection. */
 TEST(TikLambda2Pilot, RunPilotOnly) {
     const BlockData d = testDesign();
-    const auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    const auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     const SelectorRun full = runSelector(d, ctrl, 2026);
 
     Eigen::MatrixXd X = d.X;
@@ -842,7 +842,7 @@ TEST(TikLambda2Pilot, RunPilotOnly) {
  *  and the record of the run alone. */
 TEST(TikLambda2Pilot, RunPilotOnlyAndSelectExcludeEachOther) {
     const BlockData d = testDesign();
-    const auto ctrl = pilotControl(centeringControl(d.groups), TikLambda2Method::PILOT_KNEE, kPilotGrid, 5);
+    const auto ctrl = pilotControl(centeringControl(d.groups), TikhonovLambda2Method::PILOT_KNEE, kPilotGrid, 5);
     Eigen::VectorXd y = d.y;
     Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
 

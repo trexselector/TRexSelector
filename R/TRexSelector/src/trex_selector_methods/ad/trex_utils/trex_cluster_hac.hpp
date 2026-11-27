@@ -51,9 +51,9 @@ namespace hac = trex::ml_methods::clustering::hierarchical::agglomerative;
  */
 inline const char* linkageName(hac::LinkageMethod linkage) noexcept {
     switch (linkage) {
-        case hac::LinkageMethod::Single:   return "single";
-        case hac::LinkageMethod::Complete: return "complete";
-        case hac::LinkageMethod::Average:  return "average";
+        case hac::LinkageMethod::SINGLE:   return "single";
+        case hac::LinkageMethod::COMPLETE: return "complete";
+        case hac::LinkageMethod::AVERAGE:  return "average";
         case hac::LinkageMethod::WPGMA:    return "wpgma";
         default:                           return "unknown";
     }
@@ -78,18 +78,18 @@ inline std::vector<hac::MergeStep> runCorrelationHAC(
     bool verbose)
 {
     using MapType = Eigen::Map<Eigen::MatrixXd>;
-    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::Correlation>;
+    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::CORRELATION>;
 
     switch (linkage) {
-        case hac::LinkageMethod::Single:
+        case hac::LinkageMethod::SINGLE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Single>(X, /*use_mmap=*/false, verbose);
-        case hac::LinkageMethod::Complete:
+                MapType, CorrDist, hac::LinkageMethod::SINGLE>(X, /*use_mmap=*/false, verbose);
+        case hac::LinkageMethod::COMPLETE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Complete>(X, /*use_mmap=*/false, verbose);
-        case hac::LinkageMethod::Average:
+                MapType, CorrDist, hac::LinkageMethod::COMPLETE>(X, /*use_mmap=*/false, verbose);
+        case hac::LinkageMethod::AVERAGE:
             return hac::AgglomerativeClustering::cluster<
-                MapType, CorrDist, hac::LinkageMethod::Average>(X, /*use_mmap=*/false, verbose);
+                MapType, CorrDist, hac::LinkageMethod::AVERAGE>(X, /*use_mmap=*/false, verbose);
         case hac::LinkageMethod::WPGMA:
             return hac::AgglomerativeClustering::cluster<
                 MapType, CorrDist, hac::LinkageMethod::WPGMA>(X, /*use_mmap=*/false, verbose);

@@ -197,7 +197,7 @@ TEST(TRexThreadDeterminismTest, ScreeningSelector) {
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
             scr::TRexScreeningControl ctrl;
-            ctrl.trex_method = scr::ScreenTRexMethod::TREX;
+            ctrl.trex_method = scr::ScreeningMethod::TREX;
             applySetting(ctrl.trex_ctrl, s);
             ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
             scr::TRexScreeningSelector sel(Xm, ym, ctrl, 42, false);
@@ -221,7 +221,7 @@ TEST(TRexThreadDeterminismTest, BiobankScreeningSelector) {
             Eigen::Map<Eigen::MatrixXd> Xm(X.data(), X.rows(), X.cols());
             Eigen::Map<Eigen::VectorXd> ym(y.data(), y.size());
             bio::TRexBiobankScreeningControl ctrl;
-            ctrl.trex_screen_ctrl.trex_method = scr::ScreenTRexMethod::TREX;
+            ctrl.trex_screen_ctrl.trex_method = scr::ScreeningMethod::TREX;
             applySetting(ctrl.trex_screen_ctrl.trex_ctrl, s);
             ctrl.trex_screen_ctrl.trex_ctrl.lloop_strategy = LLoopStrategy::STANDARD;
             bio::TRexBiobankScreeningSelector sel(Xm, ym, ctrl, 42, false);

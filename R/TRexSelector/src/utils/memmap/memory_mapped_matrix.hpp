@@ -36,8 +36,12 @@ namespace trex::utils::memmap {
  * - ReadWrite: Open the file in read-write mode
  */
 enum class AccessMode {
-    ReadOnly,
-    ReadWrite
+    READ_ONLY,
+    READ_WRITE,
+
+    // old names, kept for one release
+    ReadOnly [[deprecated("Use READ_ONLY")]] = READ_ONLY,
+    ReadWrite [[deprecated("Use READ_WRITE")]] = READ_WRITE
 };
 
 
@@ -85,7 +89,7 @@ public:
         const std::string& filename,
         std::size_t rows,
         std::size_t cols,
-        AccessMode mode = AccessMode::ReadWrite
+        AccessMode mode = AccessMode::READ_WRITE
     );
 
     /** @brief Destructor: closes the memory-mapped file */

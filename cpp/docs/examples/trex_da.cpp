@@ -20,7 +20,7 @@ using trex::trex_selector_methods::ad::trex_core::TRexControl;
 using trex::trex_selector_methods::ad::trex_da::TRexDASelector;
 using trex::trex_selector_methods::ad::trex_da::TRexDAControl;
 using trex::trex_selector_methods::ad::trex_da::DAMethod;
-using trex::trex_selector_methods::ad::utils::solver_dispatch::SolverTypeForTRex;
+using trex::trex_selector_methods::ad::utils::solver_dispatch::TSolverType;
 namespace rates = trex::utils::eval::rates;
 //! [includes]
 
@@ -134,7 +134,7 @@ int main() {
     doc.begin("greedy");
     //! [greedy]
     TRexControl greedy_ctrl;
-    greedy_ctrl.solver_type = SolverTypeForTRex::TOMP;
+    greedy_ctrl.solver_type = TSolverType::TOMP;
     greedy_ctrl.K = 10;
 
     TRexDAControl bt_ctrl;

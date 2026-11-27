@@ -63,7 +63,7 @@ TEST(CheckedArithTest, MemoryMappedMatrixRejectsOverflowBeforeTouchingTheFile) {
     EXPECT_THROW(
         trex::utils::memmap::MemoryMappedMatrix<double>(
             path, (std::size_t{1} << 61) + 1, 8,
-            trex::utils::memmap::AccessMode::ReadWrite),
+            trex::utils::memmap::AccessMode::READ_WRITE),
         std::overflow_error);
     EXPECT_FALSE(std::filesystem::exists(path));
 }

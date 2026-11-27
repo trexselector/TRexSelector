@@ -123,8 +123,8 @@ int main(int argc, char** argv) {
         ctrl.en_solver             = use_aug ? tg::ENSolverType::TENET_AUG
                                              : tg::ENSolverType::TENET;
         ctrl.lambda_2              = lam[static_cast<std::size_t>(mc)];
-        ctrl.trex_ctrl.solver_type = use_aug ? disp::SolverTypeForTRex::TENET_AUG
-                                             : disp::SolverTypeForTRex::TENET;
+        ctrl.trex_ctrl.solver_type = use_aug ? disp::TSolverType::TENET_AUG
+                                             : disp::TSolverType::TENET;
 
         Eigen::Map<Eigen::MatrixXd> X_map(X.data(), X.rows(), X.cols());
         Eigen::Map<Eigen::VectorXd> y_map(y.data(), y.size());

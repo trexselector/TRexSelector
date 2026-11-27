@@ -272,29 +272,29 @@ inline void bind_trex_core(py::module& m_tsm) {
             "re-derived from the seed per experiment and bit-identical to STANDARD for the same seed; nothing stored.")
         .export_values();
 
-    // Bind SolverTypeForTRex enum
-    py::enum_<disp::SolverTypeForTRex>(m_tsm, "SolverTypeForTRex", "Solver algorithm variants available for T-Rex.")
-        .value("TLARS",      disp::SolverTypeForTRex::TLARS,      "Terminating LARS.")
-        .value("TLASSO",     disp::SolverTypeForTRex::TLASSO,     "Terminating LASSO.")
-        .value("TENET",      disp::SolverTypeForTRex::TENET,      "Terminating Elastic Net.")
-        .value("TSTEPWISE",  disp::SolverTypeForTRex::TSTEPWISE,  "Terminating Stepwise.")
-        .value("TSTAGEWISE", disp::SolverTypeForTRex::TSTAGEWISE, "Terminating Stagewise.")
-        .value("TOMP",       disp::SolverTypeForTRex::TOMP,       "Terminating OMP.")
-        .value("TGP",        disp::SolverTypeForTRex::TGP,        "Terminating Gradient Pursuit.")
-        .value("TACGP",      disp::SolverTypeForTRex::TACGP,      "Terminating Approximate Conjugate Gradient Pursuit.")
-        .value("TMP",        disp::SolverTypeForTRex::TMP,        "Terminating Matching Pursuit.")
-        .value("TNCGMP",     disp::SolverTypeForTRex::TNCGMP,     "Terminating Norm-Corrected Generalized Matching "
+    // Bind TSolverType enum
+    py::enum_<disp::TSolverType>(m_tsm, "SolverTypeForTRex", "Solver algorithm variants available for T-Rex.")
+        .value("TLARS",      disp::TSolverType::TLARS,      "Terminating LARS.")
+        .value("TLASSO",     disp::TSolverType::TLASSO,     "Terminating LASSO.")
+        .value("TENET",      disp::TSolverType::TENET,      "Terminating Elastic Net.")
+        .value("TSTEPWISE",  disp::TSolverType::TSTEPWISE,  "Terminating Stepwise.")
+        .value("TSTAGEWISE", disp::TSolverType::TSTAGEWISE, "Terminating Stagewise.")
+        .value("TOMP",       disp::TSolverType::TOMP,       "Terminating OMP.")
+        .value("TGP",        disp::TSolverType::TGP,        "Terminating Gradient Pursuit.")
+        .value("TACGP",      disp::TSolverType::TACGP,      "Terminating Approximate Conjugate Gradient Pursuit.")
+        .value("TMP",        disp::TSolverType::TMP,        "Terminating Matching Pursuit.")
+        .value("TNCGMP",     disp::TSolverType::TNCGMP,     "Terminating Norm-Corrected Generalized Matching "
             "Pursuit.")
-        .value("TOOLS",      disp::SolverTypeForTRex::TOOLS,      "Terminating Orthogonal Least Squares.")
-        .value("TAFS",       disp::SolverTypeForTRex::TAFS,       "Terminating AFS.")
-        .value("TENET_AUG",  disp::SolverTypeForTRex::TENET_AUG,  "Terminating Elastic Net via augmented LASSO; "
+        .value("TOOLS",      disp::TSolverType::TOOLS,      "Terminating Orthogonal Least Squares.")
+        .value("TAFS",       disp::TSolverType::TAFS,       "Terminating AFS.")
+        .value("TENET_AUG",  disp::TSolverType::TENET_AUG,  "Terminating Elastic Net via augmented LASSO; "
             "accepted wherever TENET runs (LASSO inner path standard, LARS via tenet_aug_use_lars).")
-        .value("TIENET",     disp::SolverTypeForTRex::TIENET,     "Terminating Informed Elastic Net, native pathwise "
+        .value("TIENET",     disp::TSolverType::TIENET,     "Terminating Informed Elastic Net, native pathwise "
             "(GVS-only, gvs_type=IEN; IEN default).")
-        .value("TIENET_AUG", disp::SolverTypeForTRex::TIENET_AUG, "Terminating Informed Elastic Net via augmented "
+        .value("TIENET_AUG", disp::TSolverType::TIENET_AUG, "Terminating Informed Elastic Net via augmented "
             "LASSO "
             "(GVS-only, gvs_type=IEN).")
-        .value("TIKNET",     disp::SolverTypeForTRex::TIKNET,     "Terminating Tikhonov Net, native pathwise "
+        .value("TIKNET",     disp::TSolverType::TIKNET,     "Terminating Tikhonov Net, native pathwise "
             "(sparse-K, "
             "FOLDED; TRexTikhonovSelector only).")
         .export_values();
@@ -336,17 +336,17 @@ inline void bind_trex_core(py::module& m_tsm) {
 
     py::enum_<dg::DummyDistribution::Type>(dummy_dist, "Type",
         "Dummy distribution type enumeration.")
-        .value("Normal",                      dg::DummyDistribution::Type::Normal)
-        .value("Uniform",                     dg::DummyDistribution::Type::Uniform)
-        .value("Rademacher",                  dg::DummyDistribution::Type::Rademacher)
-        .value("StudentT",                    dg::DummyDistribution::Type::StudentT)
-        .value("Laplace",                     dg::DummyDistribution::Type::Laplace)
-        .value("Gumbel",                      dg::DummyDistribution::Type::Gumbel)
-        .value("Triangle",                    dg::DummyDistribution::Type::Triangle)
-        .value("UniformSphere",               dg::DummyDistribution::Type::UniformSphere)
-        .value("Mammen",                      dg::DummyDistribution::Type::Mammen)
-        .value("ConstrainedSparseRademacher", dg::DummyDistribution::Type::ConstrainedSparseRademacher)
-        .value("Logistic",                    dg::DummyDistribution::Type::Logistic)
+        .value("Normal",                      dg::DummyDistribution::Type::NORMAL)
+        .value("Uniform",                     dg::DummyDistribution::Type::UNIFORM)
+        .value("Rademacher",                  dg::DummyDistribution::Type::RADEMACHER)
+        .value("StudentT",                    dg::DummyDistribution::Type::STUDENT_T)
+        .value("Laplace",                     dg::DummyDistribution::Type::LAPLACE)
+        .value("Gumbel",                      dg::DummyDistribution::Type::GUMBEL)
+        .value("Triangle",                    dg::DummyDistribution::Type::TRIANGLE)
+        .value("UniformSphere",               dg::DummyDistribution::Type::UNIFORM_SPHERE)
+        .value("Mammen",                      dg::DummyDistribution::Type::MAMMEN)
+        .value("ConstrainedSparseRademacher", dg::DummyDistribution::Type::CONSTRAINED_SPARSE_RADEMACHER)
+        .value("Logistic",                    dg::DummyDistribution::Type::LOGISTIC)
         .export_values();
 
     dummy_dist

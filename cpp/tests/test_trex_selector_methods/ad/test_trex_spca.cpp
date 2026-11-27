@@ -48,7 +48,7 @@ protected:
     Eigen::Map<Eigen::MatrixXd> X_map;
 
     /** @brief Returns a TRexSPCAControl tuned for fast unit testing. */
-    static TRexSPCAControl fast_ctrl(SPCAMode mode = SPCAMode::ActiveSet) {
+    static TRexSPCAControl fast_ctrl(SPCAMode mode = SPCAMode::ACTIVE_SET) {
         TRexSPCAControl ctrl;
         ctrl.mode                           = mode;
         ctrl.lambda2_ridge_loadings         = 1e-6;
@@ -129,7 +129,7 @@ protected:
         EXPECT_LE((result.Z - Z_expected).norm(),
                   1e-10 * std::max(1.0, Z_expected.norm()))
             << "Z != X_centered * V for mode "
-            << (mode == SPCAMode::ActiveSet ? "ActiveSet" : "Thresholded");
+            << (mode == SPCAMode::ACTIVE_SET ? "ActiveSet" : "Thresholded");
 
         for (Eigen::Index m = 0; m < M; ++m) {
             const double norm_m = result.V.col(m).norm();
@@ -148,7 +148,7 @@ protected:
 /** @brief ActiveSet mode runs without throwing on valid inputs. */
 TEST_F(TRexSPCATest, Execution_ActiveSetModeDoesNotThrow) {
     EXPECT_NO_THROW({
-        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::ActiveSet), seed);
+        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::ACTIVE_SET), seed);
         spca.select();
     });
 }
@@ -157,7 +157,7 @@ TEST_F(TRexSPCATest, Execution_ActiveSetModeDoesNotThrow) {
 /** @brief Thresholded mode runs without throwing on valid inputs. */
 TEST_F(TRexSPCATest, Execution_ThresholdedModeDoesNotThrow) {
     EXPECT_NO_THROW({
-        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::Thresholded), seed);
+        TRexSPCASelector spca(X_map, M, 0.2, fast_ctrl(SPCAMode::THRESHOLDED), seed);
         spca.select();
     });
 }
@@ -250,7 +250,7 @@ TEST_F(TRexSPCATest, ExplainedVariance_CumulativeMonotoneInUnitInterval) {
 
 /** @brief ActiveSet mode: Z == X_centered * V and V columns are unit-norm. */
 TEST_F(TRexSPCATest, Scores_MatchCenteredXTimesV_ActiveSet) {
-    expectScoresMatchCenteredXTimesV(SPCAMode::ActiveSet);
+    expectScoresMatchCenteredXTimesV(SPCAMode::ACTIVE_SET);
 }
 
 
@@ -258,7 +258,7 @@ TEST_F(TRexSPCATest, Scores_MatchCenteredXTimesV_ActiveSet) {
  *         support of V differs from the GVS active set (regression test for
  *         the score loop formerly iterating over the active set only). */
 TEST_F(TRexSPCATest, Scores_MatchCenteredXTimesV_Thresholded) {
-    expectScoresMatchCenteredXTimesV(SPCAMode::Thresholded);
+    expectScoresMatchCenteredXTimesV(SPCAMode::THRESHOLDED);
 }
 
 
@@ -352,7 +352,7 @@ TEST_F(TRexSPCATest, Exceptions_TargetFDROutsideUnitInterval) {
 /** @brief The rules of the informed elastic net for lambda_2 are refused at
  *         construction, and the four rules of the elastic net are accepted. */
 TEST_F(TRexSPCATest, Exceptions_IENRulesRejectedAtConstruction) {
-    using Rule = tg::LambdaSelectionMethod;
+    using Rule = tg::GVSLambda2Method;
     for (const Rule rule : {Rule::CV_1SE_IEN_CCD, Rule::CV_MIN_IEN_CCD,
                             Rule::CV_1SE_TIK_SVD, Rule::CV_MIN_TIK_SVD}) {
         TRexSPCAControl ctrl = fast_ctrl();
@@ -442,7 +442,7 @@ TEST_F(TRexSPCATest, ExplainedVariance_CumulativeIsFractionOfTotalVariance) {
 TEST_F(TRexSPCATest, Loadings_ThresholdedKeepsAsManyEntriesAsSelected) {
     Eigen::MatrixXd Xf = plantedFactorX();
     Eigen::Map<Eigen::MatrixXd> Xf_map(Xf.data(), n_f, p_f);
-    TRexSPCASelector spca(Xf_map, M, 0.1, fast_ctrl(SPCAMode::Thresholded), seed);
+    TRexSPCASelector spca(Xf_map, M, 0.1, fast_ctrl(SPCAMode::THRESHOLDED), seed);
     const TRexSPCAResult result = spca.select();
 
     for (Eigen::Index m = 0; m < M; ++m) {

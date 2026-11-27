@@ -46,7 +46,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     const std::string path = (workdir / "design.bin").string();
 
     // The constructor creates the file of n * p doubles, the map writes into it
-    MappedMatrix mm(path, n, p, AccessMode::ReadWrite);
+    MappedMatrix mm(path, n, p, AccessMode::READ_WRITE);
     mm.getMap() = X;
     std::cout << mm.rows() << " x " << mm.cols() << '\n';
     std::cout << std::boolalpha
@@ -63,7 +63,7 @@ void run(DocSections& doc, const fs::path& workdir) {
     mm(0, 0) = X(0, 0);
     std::cout << (view - X).cwiseAbs().maxCoeff() << '\n';
 
-    MappedMatrix ro(path, n, p, AccessMode::ReadOnly);
+    MappedMatrix ro(path, n, p, AccessMode::READ_ONLY);
     try {
         ro(0, 0) = 0.0;
     } catch (const std::runtime_error& e) {
@@ -85,7 +85,7 @@ void run(DocSections& doc, const fs::path& workdir) {
             out.write(reinterpret_cast<const char*>(column.data()), bytes);
         }
     }
-    MappedMatrix big(path2, n, p, AccessMode::ReadWrite);
+    MappedMatrix big(path2, n, p, AccessMode::READ_WRITE);
 
     std::mt19937_64 gen_2(1002);
     std::normal_distribution<double> normal_2(0.0, 1.0);
@@ -123,11 +123,11 @@ void run(DocSections& doc, const fs::path& workdir) {
     dn::centerAndL2NormalizeX(X_pre, params);
     const std::string path_pre = (workdir / "design_pre.bin").string();
     {
-        MappedMatrix writer(path_pre, n, p, AccessMode::ReadWrite);
+        MappedMatrix writer(path_pre, n, p, AccessMode::READ_WRITE);
         writer.getMap() = X_pre;
     }
 
-    MappedMatrix pre_ro(path_pre, n, p, AccessMode::ReadOnly);
+    MappedMatrix pre_ro(path_pre, n, p, AccessMode::READ_ONLY);
     Eigen::Map<Eigen::VectorXd> y_pre_map(y_pre.data(), n);
     TRexControl none = ctrl;
     none.scaling_mode = dn::ScalingMode::NONE;

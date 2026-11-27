@@ -161,7 +161,7 @@ int main(int argc, char** argv)
     std::cout << "  p (objects) = " << p << "   datasets = " << num << "\n\n";
 
     using MapType  = Eigen::Map<Eigen::MatrixXd>;
-    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::Correlation>;
+    using CorrDist = hac::DistancePolicy<MapType, hac::DistanceMetric::CORRELATION>;
 
     const double HEIGHT_TOL = 1e-9;
     double worst_height = 0.0;
@@ -182,7 +182,7 @@ int main(int argc, char** argv)
         // ----- C++ single-linkage dendrogram -----
         const std::vector<hac::MergeStep> merges =
             hac::AgglomerativeClustering::cluster<MapType, CorrDist,
-                                                  hac::LinkageMethod::Single>(X_map);
+                                                  hac::LinkageMethod::SINGLE>(X_map);
 
         // (1) merge heights (already ascending by construction)
         std::vector<double> cpp_h;

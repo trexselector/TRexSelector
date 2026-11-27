@@ -144,18 +144,18 @@ TEST_F(TRexTikhonovTest, Validation_ThrowsOnBadKOrSolver) {
 
     // Correct K, wrong solver.
     ctrl.tikhonov_K = identityK(10);
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TLARS;
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TLARS;
     EXPECT_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl),
                  std::invalid_argument);
 
     // Correct K: the default solver, TIKNET, constructs.
-    EXPECT_EQ(TRexTikhonovControl().trex_ctrl.solver_type, disp::SolverTypeForTRex::TIKNET);
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
+    EXPECT_EQ(TRexTikhonovControl().trex_ctrl.solver_type, disp::TSolverType::TIKNET);
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TIKNET;
     EXPECT_NO_THROW(TRexTikhonovSelector(X_map, y_map, 0.1, ctrl));
 
     // A refused solver leaves X alone, and the message names TIKNET.
     const Eigen::MatrixXd X_before = X;
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TLARS;
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TLARS;
     try {
         TRexTikhonovSelector refused(X_map, y_map, 0.1, ctrl);
         FAIL() << "TLARS was accepted";
@@ -242,8 +242,8 @@ TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
     };
 
     // The linkage: used when the selector clusters the variables itself.
-    for (const auto linkage : {hac::LinkageMethod::Ward, hac::LinkageMethod::Median,
-                               hac::LinkageMethod::Centroid}) {
+    for (const auto linkage : {hac::LinkageMethod::WARD, hac::LinkageMethod::MEDIAN,
+                               hac::LinkageMethod::CENTROID}) {
         auto ctrl = base();
         ctrl.hc_linkage = linkage;
         refused(ctrl);
@@ -253,8 +253,8 @@ TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
         ctrl.cluster_dummies = false;                         // i.i.d. dummies: no clustering
         accepted(ctrl);
     }
-    for (const auto linkage : {hac::LinkageMethod::Single, hac::LinkageMethod::Complete,
-                               hac::LinkageMethod::Average, hac::LinkageMethod::WPGMA}) {
+    for (const auto linkage : {hac::LinkageMethod::SINGLE, hac::LinkageMethod::COMPLETE,
+                               hac::LinkageMethod::AVERAGE, hac::LinkageMethod::WPGMA}) {
         auto ctrl = base();
         ctrl.hc_linkage = linkage;
         accepted(ctrl);
@@ -263,7 +263,7 @@ TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
     // The sizes of the cross-validation: used when a CV rule chooses lambda_2.
     auto cv = base();
     cv.lambda_2 = -1.0;
-    cv.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+    cv.lambda2_method = TikhonovLambda2Method::CV_1SE_IEN_CCD;
     accepted(cv);
     for (const int folds : {0, 1, 31}) {                      // n = 30
         auto ctrl = cv;
@@ -273,7 +273,7 @@ TEST_F(TRexTikhonovTest, Validation_LinkageAndCvSizesAreCheckedAtConstruction) {
     { auto ctrl = cv; ctrl.cv_n_lambda2 = 0; refused(ctrl); }
     { auto ctrl = cv; ctrl.cv_n_lambda1 = 0; refused(ctrl); }
     { auto ctrl = cv; ctrl.cv_n_lambda = 0; accepted(ctrl); }  // the SVD grid is not used
-    cv.lambda2_method = TikLambda2Method::CV_MIN_TIK_SVD;
+    cv.lambda2_method = TikhonovLambda2Method::CV_MIN_TIK_SVD;
     { auto ctrl = cv; ctrl.cv_n_lambda = 0; refused(ctrl); }
     { auto ctrl = cv; ctrl.cv_n_lambda2 = 0; accepted(ctrl); } // the IEN grid is not used
 
@@ -296,7 +296,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_SuppliedMatrixMustBeTheCenteringMatrix) 
     const std::vector<Eigen::Index> other  = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1};
     const auto control = [&](const Eigen::SparseMatrix<double>& K) {
         TRexTikhonovControl ctrl;
-        ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+        ctrl.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
         ctrl.prior_groups      = groups;
         ctrl.tikhonov_K        = K;
         ctrl.lambda_2          = 1.0;
@@ -403,7 +403,7 @@ TEST_F(TRexTikhonovTest, DummyClusters_AreReported) {
     Eigen::MatrixXd Xc = d.X.rowwise() - d.X.colwise().mean();
     Xc.colwise().normalize();
     const Eigen::MatrixXd corr = Xc.transpose() * Xc;
-    for (const auto linkage : {hac::LinkageMethod::Single, hac::LinkageMethod::Complete}) {
+    for (const auto linkage : {hac::LinkageMethod::SINGLE, hac::LinkageMethod::COMPLETE}) {
         auto found_ctrl = control();
         found_ctrl.hc_linkage = linkage;
         found_ctrl.corr_max   = 0.5;
@@ -417,7 +417,7 @@ TEST_F(TRexTikhonovTest, DummyClusters_AreReported) {
             ++size[static_cast<std::size_t>(found.groups_vec(j))];
         }
         for (const std::size_t s : size) { EXPECT_GE(s, 1U); }
-        if (linkage == hac::LinkageMethod::Single) {
+        if (linkage == hac::LinkageMethod::SINGLE) {
             EXPECT_EQ(found.hc_method_used, "single");
             for (Eigen::Index a = 0; a < p; ++a) {
                 for (Eigen::Index b = a + 1; b < p; ++b) {
@@ -503,7 +503,7 @@ TEST_F(TRexTikhonovTest, Equivalence_ZeroLambda2MatchesLassoBaseRun) {
         Eigen::Map<Eigen::VectorXd> ym(yd.data(), yd.size());
 
         TRexControl ctrl;
-        ctrl.solver_type = disp::SolverTypeForTRex::TLASSO;
+        ctrl.solver_type = disp::TSolverType::TLASSO;
         ctrl.K = 20;
         ctrl.max_dummy_multiplier = 2;
         TRexSelector trex(Xm, ym, 0.3, ctrl, 42, false);
@@ -628,7 +628,7 @@ TEST_F(TRexTikhonovTest, AutoLambda2_TikSvdResolvesAndRuns) {
     TRexTikhonovControl ctrl;
     ctrl.tikhonov_K     = groupMeanK(p, 5);
     ctrl.lambda_2       = -1.0;   // sentinel -> CV
-    ctrl.lambda2_method = TikLambda2Method::CV_1SE_TIK_SVD;
+    ctrl.lambda2_method = TikhonovLambda2Method::CV_1SE_TIK_SVD;
     ctrl.cv_n_folds     = 5;
     ctrl.cv_n_lambda    = 50;
     ctrl.trex_ctrl.K = 3;
@@ -875,7 +875,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen) {
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 1.0;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
+        ctrl.trex_ctrl.solver_type = disp::TSolverType::TIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -945,7 +945,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_Singletons) {
         ctrl.gvs_type     = gvs::GVSType::IEN;
         ctrl.prior_groups = prior_groups;
         ctrl.lambda_2     = 10.0;
-        ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
+        ctrl.trex_ctrl.solver_type = disp::TSolverType::TIENET;
         ctrl.trex_ctrl.K = 5;
         ctrl.trex_ctrl.max_dummy_multiplier = 2;
         gvs::TRexGVSSelector trex(Xm, ym, 0.2, ctrl, 42, false);
@@ -1026,7 +1026,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupKMatchesGvsIen_DemoControl_Lcapp
                 ctrl.gvs_type     = gvs::GVSType::IEN;
                 ctrl.prior_groups = prior_groups;
                 ctrl.lambda_2     = lambda2;
-                ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
+                ctrl.trex_ctrl.solver_type = disp::TSolverType::TIENET;
                 demo_control(ctrl.trex_ctrl, 1);
                 gvs::TRexGVSSelector trex(Xm, ym, 0.1, ctrl, 42, false);
                 return trex.select().selected_var;
@@ -1105,7 +1105,7 @@ TEST_F(TRexTikhonovTest, Equivalence_FoldedGroupK_LGrowth) {
         gvs::TRexGVSControl gc;
         gc.gvs_type = gvs::GVSType::IEN; gc.prior_groups = prior_groups;
         gc.lambda_2 = c.lambda2;
-        gc.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIENET;
+        gc.trex_ctrl.solver_type = disp::TSolverType::TIENET;
         demo_control(gc.trex_ctrl);
         gvs::TRexGVSSelector g(Xm2, ym2, 0.1, gc, 42, false);
 
@@ -1140,7 +1140,7 @@ TEST_F(TRexTikhonovTest, GroupCentering_AllSingletonGroupsIsZeroKLasso) {
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
         TRexTikhonovControl ctrl;
-        ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+        ctrl.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
         ctrl.prior_groups      = singletons;
         ctrl.lambda_2          = lambda2;
         ctrl.trex_ctrl.K = 5;
@@ -1209,7 +1209,7 @@ TEST_F(TRexTikhonovTest, AutoLambda2_IenCcdResolvesAndRuns) {
     TRexTikhonovControl ctrl;
     ctrl.tikhonov_K     = groupMeanK(p, 5);
     ctrl.lambda_2       = -1.0;
-    ctrl.lambda2_method = TikLambda2Method::CV_1SE_IEN_CCD;
+    ctrl.lambda2_method = TikhonovLambda2Method::CV_1SE_IEN_CCD;
     ctrl.cv_n_folds     = 5;
     ctrl.trex_ctrl.K = 3;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
@@ -1233,14 +1233,14 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringMatchesSparseCenteringMatrix)
         prior_groups[static_cast<std::size_t>(j)] = j / 5;
     }
 
-    auto run_with = [&](TikPenaltyStructure structure) {
+    auto run_with = [&](TikhonovPenaltyStructure structure) {
         GroupedData d(n, p, 0.75, 1.0, 7);
         Eigen::Map<Eigen::MatrixXd> Xm(d.X.data(), d.X.rows(), d.X.cols());
         Eigen::Map<Eigen::VectorXd> ym(d.y.data(), d.y.size());
 
         TRexTikhonovControl ctrl;
         ctrl.penalty_structure = structure;
-        if (structure == TikPenaltyStructure::SPARSE_GENERAL) {
+        if (structure == TikhonovPenaltyStructure::SPARSE_GENERAL) {
             ctrl.tikhonov_K =
                 TRexTikhonovSelector::buildGroupCenteringK(prior_groups);
         }   // GROUP_CENTERING: K left empty -> built internally
@@ -1253,9 +1253,9 @@ TEST_F(TRexTikhonovTest, Equivalence_GroupCenteringMatchesSparseCenteringMatrix)
     };
 
     const Eigen::VectorXi sel_sparse =
-        run_with(TikPenaltyStructure::SPARSE_GENERAL);
+        run_with(TikhonovPenaltyStructure::SPARSE_GENERAL);
     const Eigen::VectorXi sel_built =
-        run_with(TikPenaltyStructure::GROUP_CENTERING);
+        run_with(TikhonovPenaltyStructure::GROUP_CENTERING);
 
     ASSERT_EQ(sel_built.size(), sel_sparse.size());
     EXPECT_GT(sel_built.sum(), 0);
@@ -1285,10 +1285,10 @@ TEST_F(TRexTikhonovTest, EndToEnd_TiknetKgcRecoversPlanted) {
     }
 
     TRexTikhonovControl ctrl;
-    ctrl.penalty_structure = TikPenaltyStructure::GROUP_CENTERING;
+    ctrl.penalty_structure = TikhonovPenaltyStructure::GROUP_CENTERING;
     ctrl.prior_groups      = prior_groups;   // defines K_GC + cluster dummies
     ctrl.lambda_2          = 2.0;
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TIKNET;
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TIKNET;
     ctrl.trex_ctrl.K = 5;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
 

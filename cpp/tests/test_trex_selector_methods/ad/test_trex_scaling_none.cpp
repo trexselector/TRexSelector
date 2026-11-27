@@ -486,7 +486,7 @@ DerivedRun runGvs(Eigen::MatrixXd& X, Eigen::VectorXd& y, dn::ScalingMode mode) 
     TRexGVSControl ctrl;
     ctrl.gvs_type = GVSType::EN;
     ctrl.lambda_2 = 0.5;                       // fixed: no CV tuner
-    ctrl.trex_ctrl.solver_type = disp::SolverTypeForTRex::TENET;
+    ctrl.trex_ctrl.solver_type = disp::TSolverType::TENET;
     ctrl.trex_ctrl.K = 5;
     ctrl.trex_ctrl.max_dummy_multiplier = 2;
     ctrl.trex_ctrl.scaling_mode = mode;
@@ -566,7 +566,7 @@ TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
     const std::string file = (fs::path(::testing::TempDir()) / "trex_readonly_design.bin").string();
     fs::remove(file);
     {
-        mm::MemoryMappedMatrix<double> writer(file, design.rows(), design.cols(), mm::AccessMode::ReadWrite);
+        mm::MemoryMappedMatrix<double> writer(file, design.rows(), design.cols(), mm::AccessMode::READ_WRITE);
         writer.getMap() = design;
     }
 
@@ -576,7 +576,7 @@ TEST(ScalingNone, SelectorsReadAReadOnlyMemoryMappedDesign) {
     const SelectorRun reference = runSelector(X_memory, y_memory, dn::ScalingMode::NONE, 0.2, 11, 20);
 
     {
-        mm::MemoryMappedMatrix<double> mapped(file, design.rows(), design.cols(), mm::AccessMode::ReadOnly);
+        mm::MemoryMappedMatrix<double> mapped(file, design.rows(), design.cols(), mm::AccessMode::READ_ONLY);
 
         // The refusal: L2 and ZSCORE standardize the design in place.
         EXPECT_THROW(mapped.getMapFor(dn::writesDesign(dn::ScalingMode::L2)), std::runtime_error);

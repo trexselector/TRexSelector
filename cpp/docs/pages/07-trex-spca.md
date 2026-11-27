@@ -62,8 +62,8 @@ centered design.
 
 TRexSPCAControl sets the inner machinery.
 
-- `mode`: `SPCAMode::ActiveSet` (default) assembles the loading by a ridge regression of the
-  component on the selected variables with penalty `lambda2_ridge_loadings`, `SPCAMode::Thresholded`
+- `mode`: `SPCAMode::ACTIVE_SET` (default) assembles the loading by a ridge regression of the
+  component on the selected variables with penalty `lambda2_ridge_loadings`, `SPCAMode::THRESHOLDED`
   keeps the top \f$|A|\f$ ordinary loadings and normalizes them.
 - `gvs_ctrl.lambda_2` and `gvs_ctrl.lambda2_method`: the elastic-net penalty of the inner group
   selector, fixed or chosen by ridge cross-validation (`CV_1SE_CCD` by default when `lambda_2 < 0`).
@@ -79,10 +79,10 @@ T-Rex+SPCA is defined on the elastic net, and `gvs_ctrl.gvs_type = GVSType::IEN`
 
 ## Memory-mapped data
 
-`X` may be the `getMap()` view of a MemoryMappedMatrix opened in `AccessMode::ReadWrite` (see
+`X` may be the `getMap()` view of a MemoryMappedMatrix opened in `AccessMode::READ_WRITE` (see
 \ref memory_mapping "the memory-mapping page"). It is centered in the file during `select()` and
 restored. The centering happens under every scaling mode, so a file opened in
-`AccessMode::ReadOnly` does not serve. Assigning a matrix to the map writes it into the file.
+`AccessMode::READ_ONLY` does not serve. Assigning a matrix to the map writes it into the file.
 
 \snippet{trimleft} trex_spca.cpp mmap
 \output{trex_spca.mmap.txt}
