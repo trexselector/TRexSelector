@@ -16,6 +16,22 @@
   and `fold_dummy_coupling` of `trex_tikhonov_control()`. A call that passes one of them is an error.
 * The selections of the other solvers do not change.
 
+## Changed
+
+* The help of `TRexDASelector` no longer says that `"FeasibleOnly"` mitigates the FDR excess of BT, NN
+  and prior groups at a very high correlation within the groups. Both rules exceed the target alike
+  there. A greedy solver lowers the excess slightly and does not remove it.
+
+## Deprecated
+
+* `bt_selection_mode` of `trex_da_control()` is deprecated. `"FeasibleOnly"`, the default, is the rule of
+  Algorithm 1 of the dependency-aware T-Rex selector and becomes the only rule. `"RFaithful"` still runs,
+  and `TRexDASelector` raises a deprecation warning for it. It is the rule of the 1.x versions of the
+  package, which lets a cell of the calibration grid win although its FDP estimate exceeds the target.
+  That is not the rule of Algorithm 1, and the FDR control theorem does not cover it. In the simulations
+  behind this step it was in no setting better beyond the noise. It raised the realized FDR and lowered
+  the power, most with NN at low correlation, where it exceeded the target.
+
 # TRexSelector 2.0.3
 
 ## Fixed

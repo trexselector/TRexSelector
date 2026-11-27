@@ -19,6 +19,7 @@
 // trex includes
 #include <trex_selector_methods/ad/trex_da/trex_da.hpp>
 #include "trex_core_bindings.hpp"
+#include "deprecation.hpp"
 
 // =====================================================================================
 
@@ -53,6 +54,11 @@ public:
         int seed,
         bool verbose
     ) {
+        // The deprecated selection mode warns when it reaches the selector.
+        if (da_control.bt_selection_mode == BTSelectionMode::RFaithful) {
+            warn_deprecated("BTSelectionMode.RFaithful", "the default BTSelectionMode.FeasibleOnly");
+        }
+
         this->X_map_ = std::make_unique<Eigen::Map<Eigen::MatrixXd>>(X.data(),
                                                                   X.rows(),
                                                                   X.cols());
@@ -118,12 +124,14 @@ inline void bind_trex_da(py::module& m) {
             "raises ValueError at construction.")
         .export_values();
 
-    py::enum_<BTSelectionMode>(m, "BTSelectionMode", "Which cells of the calibration grid may win the selection of "
-        "the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.")
-        .value("FeasibleOnly", BTSelectionMode::FeasibleOnly, "Only cells whose FDP estimate is at or below the "
-            "target (default), which controls the realized FDR.")
-        .value("RFaithful",    BTSelectionMode::RFaithful,    "Every cell with the largest selection count, as the "
-            "1.x versions of the R package do. Can exceed the target at high within-group correlation.")
+    py::enum_<BTSelectionMode>(m, "BTSelectionMode", "Deprecated. Which cells of the calibration grid may win the "
+        "selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.")
+        .value("FeasibleOnly", BTSelectionMode::FeasibleOnly, "Only cells whose FDP estimate holds the target "
+            "(default). This is the rule of Algorithm 1 of the dependency-aware T-Rex selector.")
+        .value("RFaithful",    BTSelectionMode::RFaithful,    "Deprecated. Every cell with the largest selection "
+            "count, also one whose FDP estimate exceeds the target, as the 1.x versions of the R package do. It is "
+            "not the rule of Algorithm 1, and the FDR control theorem does not cover it. It raises the realized FDR "
+            "and lowers the power, most with NN at low correlation, where it exceeds the target.")
         .export_values();
 
     py::class_<TRexDAControlParameter>(m, "TRexDAControlParameter", "Control parameters for TRexDASelector.")
@@ -145,9 +153,10 @@ inline void bind_trex_da(py::module& m) {
             "and by prior groups. Ward is rejected, because the correlation distance 1 - |cor| is not Euclidean.")
         .def_readwrite("hc_grid_length", &TRexDAControlParameter::hc_grid_length, "Number of correlation "
             "thresholds on the calibration grid of BT, NN and prior groups. 0 (default) takes min(20, p).")
-        .def_readwrite("bt_selection_mode", &TRexDAControlParameter::bt_selection_mode, "Which cells of the "
-            "calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly (default) "
-            "or RFaithful. Ignored by AR1 and EQUI.")
+        .def_readwrite("bt_selection_mode", &TRexDAControlParameter::bt_selection_mode, "Deprecated. Which cells "
+            "of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly "
+            "(default) or RFaithful, which is deprecated and raises a FutureWarning in TRexDASelector. Ignored by "
+            "AR1 and EQUI.")
         .def_readwrite("prior_groups", &TRexDAControlParameter::prior_groups, "Prior grouping constraints (label "
             "vectors of length p); sub-clustering runs within their finest common refinement.")
         .def_readwrite("trex_ctrl", &TRexDAControlParameter::trex_ctrl, "Nested base T-Rex algorithmic control "
@@ -229,11 +238,11 @@ inline void bind_trex_da(py::module& m) {
         "result, whose fdp_hat_mat and phi_mat are empty for these methods.\n"
         "\n"
         "FDR limitation of BT, NN and PRIOR_GROUPS. At a very high correlation within the groups\n"
-        "(about 0.9 and above) and with no independent (\"white\") predictors, the equiangular\n"
-        "solver TLARS can exceed the target FDR, because the true signal and its collinear shadows\n"
-        "become statistically exchangeable. This is inherent to the method, and it also appears in\n"
-        "the 1.x versions of the R package. Mitigate with the default BTSelectionMode.FeasibleOnly\n"
-        "and by preferring a greedy solver (TOMP) in designs with high correlation.\n"
+        "(about 0.9 and above) and with no independent (\"white\") predictors, the selector can\n"
+        "exceed the target FDR, because the true signal and its collinear shadows become\n"
+        "statistically exchangeable. This is inherent to the method, and it also appears in the\n"
+        "1.x versions of the R package. A greedy solver (TOMP) lowers the excess slightly in such\n"
+        "designs and does not remove it.\n"
         "\n"
         "Greedy solvers and the exchangeable-tie band. A greedy solver (TOMP, TOOLS, TGP, TACGP,\n"
         "TMP, TNCGMP, TAFS) picks the top candidate of a correlated cluster deterministically,\n"

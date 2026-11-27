@@ -82,6 +82,14 @@ NULL
   invisible(NULL)
 }
 
+# The deprecated selection mode of BT, NN and prior groups that reaches a selector.
+.warn_bt_selection_mode <- function(da_control) {
+  if (is.list(da_control) && identical(da_control$bt_selection_mode, "RFaithful")) {
+    .warn_deprecated("bt_selection_mode = \"RFaithful\"", "the default \"FeasibleOnly\"")
+  }
+  invisible(NULL)
+}
+
 
 #' @title Apply the T-Rex data normalization to a design
 #'

@@ -56,12 +56,16 @@ heights plus the conservative rho = 1 singleton anchor. The deflation
 therefore acts on tight data-driven neighbourhoods inside the known
 groups, never on the raw groups themselves. (default: \code{NULL}).}
 
-\item{bt_selection_mode}{Which cells of the calibration grid may win the selection
-of the methods BT, NN and prior groups. \code{"FeasibleOnly"} (default) admits
-only cells whose FDP estimate is at or below the target, which controls the
-realized FDR. \code{"RFaithful"} admits every cell with the largest selection
-count, as the 1.x versions of the package do, and can exceed the target at
-high within-group correlation. Ignored by AR1 and EQUI.}
+\item{bt_selection_mode}{Deprecated. Which cells of the calibration grid may win the
+selection of the methods BT, NN and prior groups. \code{"FeasibleOnly"} (default)
+admits only cells whose FDP estimate holds the target. This is the rule of
+Algorithm 1 of the dependency-aware T-Rex selector. \code{"RFaithful"} is
+deprecated and raises a warning in \code{\link{TRexDASelector}}. It admits every
+cell with the largest selection count, also one whose FDP estimate exceeds the
+target, as the 1.x versions of the package do. It is not the rule of Algorithm 1,
+and the FDR control theorem does not cover it. It raises the realized FDR and
+lowers the power, most with NN at low correlation, where it exceeds the target.
+Ignored by AR1 and EQUI.}
 }
 \value{
 A named list for use in TRexDASelector.

@@ -10,13 +10,13 @@ import typing
 __all__: list[str] = ['AR1', 'ActiveSet', 'BT', 'BTSelectionMode', 'BiobankScreenTRexControl', 'BiobankScreenTRexResult', 'CALIBRATED', 'CV_1SE_CCD', 'CV_1SE_IEN_CCD', 'CV_1SE_SVD', 'CV_1SE_TIK_SVD', 'CV_MIN_CCD', 'CV_MIN_IEN_CCD', 'CV_MIN_SVD', 'CV_MIN_TIK_SVD', 'DAMethod', 'DASelectionResult', 'DummyClusters', 'DummyDistribution', 'EN', 'ENSolverType', 'EQUI', 'FeasibleOnly', 'GROUP_CENTERING', 'GROUP_MAJORITY', 'GVSSelectionResult', 'GVSType', 'HCONCAT', 'IEN', 'L2', 'LLoopStrategy', 'Lambda2CVDiagnostics', 'Lambda2PickInfo', 'Lambda2PilotResult', 'Lambda2PowerRuleResult', 'Lambda2Probe', 'LambdaSelectionMethod', 'MAJORITY', 'NN', 'NONE', 'PERMUTATION', 'PERMUTATION_SEEDED', 'PILOT_KNEE', 'PRIOR_GROUPS', 'PilotStatistic', 'RFaithful', 'SEEDED', 'SKIPL', 'SPARSE_GENERAL', 'SPCAMode', 'STANDARD', 'ScalingMode', 'ScreenTRexControlParameter', 'ScreenTRexMethod', 'ScreenTRexSelectionResult', 'SelectionResult', 'SolverHyperparameters', 'SolverTypeForTRex', 'TACGP', 'TAFS', 'TENET', 'TENET_AUG', 'TGP', 'TIENET', 'TIENET_AUG', 'TIKNET', 'TLARS', 'TLASSO', 'TMP', 'TNCGMP', 'TOMP', 'TOOLS', 'TREX', 'TREX_DA_AR1', 'TREX_DA_BLOCK_EQUI', 'TREX_DA_EQUI', 'TREX_DA_NN', 'TRexBiobankScreeningSelector', 'TRexControlParameter', 'TRexDAControlParameter', 'TRexDASelector', 'TRexGVSControlParameter', 'TRexGVSSelector', 'TRexSPCAControlParameter', 'TRexSPCAResult', 'TRexSPCASelector', 'TRexScreeningSelector', 'TRexSelector', 'TRexTikhonovControlParameter', 'TRexTikhonovSelector', 'TSTAGEWISE', 'TSTEPWISE', 'Thresholded', 'TikLambda2Method', 'TikPenaltyStructure', 'ZSCORE', 'build_group_centering_k', 'default_lambda2_grid', 'gamma_to_k', 'gvs_lambda2_power_rule', 'normalize_design', 'tikhonov_lambda2_power_rule']
 class BTSelectionMode:
     """
-    Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.
+    Deprecated. Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS. Ignored by AR1 and EQUI.
     
     Members:
     
-      FeasibleOnly : Only cells whose FDP estimate is at or below the target (default), which controls the realized FDR.
+      FeasibleOnly : Only cells whose FDP estimate holds the target (default). This is the rule of Algorithm 1 of the dependency-aware T-Rex selector.
     
-      RFaithful : Every cell with the largest selection count, as the 1.x versions of the R package do. Can exceed the target at high within-group correlation.
+      RFaithful : Deprecated. Every cell with the largest selection count, also one whose FDP estimate exceeds the target, as the 1.x versions of the R package do. It is not the rule of Algorithm 1, and the FDR control theorem does not cover it. It raises the realized FDR and lowers the power, most with NN at low correlation, where it exceeds the target.
     """
     FeasibleOnly: typing.ClassVar[BTSelectionMode]  # value = <BTSelectionMode.FeasibleOnly: 0>
     RFaithful: typing.ClassVar[BTSelectionMode]  # value = <BTSelectionMode.RFaithful: 1>
@@ -1785,7 +1785,7 @@ class TRexDAControlParameter:
     @property
     def bt_selection_mode(self) -> BTSelectionMode:
         """
-        Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly (default) or RFaithful. Ignored by AR1 and EQUI.
+        Deprecated. Which cells of the calibration grid may win the selection of the methods BT, NN and PRIOR_GROUPS: FeasibleOnly (default) or RFaithful, which is deprecated and raises a FutureWarning in TRexDASelector. Ignored by AR1 and EQUI.
         """
     @bt_selection_mode.setter
     def bt_selection_mode(self, arg0: BTSelectionMode) -> None:
@@ -1900,11 +1900,11 @@ class TRexDASelector(TRexSelector):
     result, whose fdp_hat_mat and phi_mat are empty for these methods.
     
     FDR limitation of BT, NN and PRIOR_GROUPS. At a very high correlation within the groups
-    (about 0.9 and above) and with no independent ("white") predictors, the equiangular
-    solver TLARS can exceed the target FDR, because the true signal and its collinear shadows
-    become statistically exchangeable. This is inherent to the method, and it also appears in
-    the 1.x versions of the R package. Mitigate with the default BTSelectionMode.FeasibleOnly
-    and by preferring a greedy solver (TOMP) in designs with high correlation.
+    (about 0.9 and above) and with no independent ("white") predictors, the selector can
+    exceed the target FDR, because the true signal and its collinear shadows become
+    statistically exchangeable. This is inherent to the method, and it also appears in the
+    1.x versions of the R package. A greedy solver (TOMP) lowers the excess slightly in such
+    designs and does not remove it.
     
     Greedy solvers and the exchangeable-tie band. A greedy solver (TOMP, TOOLS, TGP, TACGP,
     TMP, TNCGMP, TAFS) picks the top candidate of a correlated cluster deterministically,

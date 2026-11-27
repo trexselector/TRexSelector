@@ -274,10 +274,17 @@ test_that("trex_da_control carries bt_selection_mode", {
     selector$select()
     selector
   }
-  default <- run(trex_da_control())
-  feasible <- run(trex_da_control(bt_selection_mode = "FeasibleOnly"))
-  faithful <- run(trex_da_control(bt_selection_mode = "RFaithful"))
+  expect_no_warning(default <- run(trex_da_control()))
+  expect_no_warning(feasible <- run(trex_da_control(bt_selection_mode = "FeasibleOnly")))
   expect_identical(default$selected_var, feasible$selected_var)
+
+  # The deprecated mode still runs, and it warns when it reaches the selector
+  expect_no_warning(deprecated <- trex_da_control(bt_selection_mode = "RFaithful"))
+  w <- tryCatch(run(deprecated), warning = function(w) w)
+  expect_s3_class(w, "deprecatedWarning")
+  expect_identical(conditionMessage(w),
+                   "bt_selection_mode = \"RFaithful\" is deprecated. Use the default \"FeasibleOnly\".")
+  expect_warning(faithful <- run(deprecated), class = "deprecatedWarning")
   expect_length(faithful$selected_var, p)
 
   # A control built by hand reaches the parser, which names the supported values

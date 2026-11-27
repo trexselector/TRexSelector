@@ -53,11 +53,10 @@ threshold are in \code{FDP_hat_array_BT}, \code{Phi_array_BT} and \code{R_array_
 \section{FDR limitation of BT, NN and prior groups}{
 
 At a very high correlation within the groups (about 0.9 and above) and with no independent
-("white") predictors, the equiangular solver \code{"TLARS"} can exceed the target FDR, because
-the true signal and its collinear shadows become statistically exchangeable. This is inherent to
-the method, and it also appears in the 1.x versions of the package. Mitigate with the default
-\code{bt_selection_mode = "FeasibleOnly"} and by preferring a greedy solver (\code{"TOMP"}) in
-designs with high correlation.
+("white") predictors, the selector can exceed the target FDR, because the true signal and its
+collinear shadows become statistically exchangeable. This is inherent to the method, and it also
+appears in the 1.x versions of the package. A greedy solver (\code{"TOMP"}) lowers the excess
+slightly in such designs and does not remove it.
 }
 
 \section{Greedy solvers and the exchangeable-tie band}{

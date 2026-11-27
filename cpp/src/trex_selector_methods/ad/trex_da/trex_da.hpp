@@ -100,17 +100,22 @@ enum class DAMethod {
  *  count over FDP-feasible cells (FDP_hat <= tFDR). This flag controls which
  *  cells may then win the tie-break among those equal to `val_max`. AR1 and
  *  EQUI ignore it.
+ *
+ * @deprecated The option is deprecated. FeasibleOnly becomes the only rule.
  */
 enum class BTSelectionMode {
-    /** @brief Only FDP-feasible cells (FDP_hat <= tFDR) may be selected. This
-     *  controls the realized FDR and is the default. */
+    /** @brief Only cells whose FDP estimate holds the target may win. This is
+     *  the rule of Algorithm 1 of the dependency-aware T-Rex selector and the
+     *  default. */
     FeasibleOnly,
 
-    /** @brief Any cell whose count equals `val_max` may win, including
-     *  FDP-infeasible ones. Reproduces the 1.x versions of the R package
-     *  (`select_var_fun_DA_BT`, which scans the whole R_array), including
-     *  their tendency to inflate the realized FDR at high within-group
-     *  correlation. */
+    /** @brief Deprecated. Every cell with the largest count may win, also one
+     *  whose FDP estimate exceeds the target. This is the rule of the 1.x
+     *  versions of the R package. It is not the rule of Algorithm 1, and the
+     *  FDR control theorem does not cover it. It raises the realized FDR and
+     *  lowers the power, most with NN at low correlation, where it exceeds
+     *  the target.
+     *  @deprecated Use FeasibleOnly. */
     RFaithful
 };
 
@@ -183,10 +188,13 @@ struct TRexDAControlParameter {
     std::vector<std::vector<Eigen::Index>> prior_groups;
 
     /** @brief Candidate-cell policy for the selection of the methods BT, NN
-     *  and PRIOR_GROUPS (default: FeasibleOnly). FeasibleOnly restricts the
-     *  selection to FDP-feasible cells (FDR-controlling); RFaithful reproduces
-     *  the 1.x versions of the R package by also admitting infeasible cells.
-     *  Ignored by AR1 and EQUI. See BTSelectionMode.
+     *  and PRIOR_GROUPS (default: FeasibleOnly). FeasibleOnly admits only
+     *  cells whose FDP estimate holds the target, which is the rule of
+     *  Algorithm 1. RFaithful also admits cells above the target, as the 1.x
+     *  versions of the R package do. Ignored by AR1 and EQUI. See
+     *  BTSelectionMode.
+     *  @deprecated The option is deprecated. FeasibleOnly becomes the only
+     *  rule.
      */
     BTSelectionMode bt_selection_mode = BTSelectionMode::FeasibleOnly;
 
@@ -294,12 +302,11 @@ struct DACorrectionResult {
  *  FDR limitation (BT, NN and PRIOR_GROUPS):
  *  -----------------------------------------
  *  At a very high correlation within the groups (about 0.9 and above) and with no
- *  independent ("white") predictors, the equiangular solver TLARS can exceed the
- *  target FDR, because the true signal and its collinear shadows become
- *  statistically exchangeable. This is inherent to the method, and it also appears
- *  in the 1.x versions of the R package. Mitigate with the default
- *  BTSelectionMode::FeasibleOnly and by preferring a greedy solver (TOMP) in designs
- *  with high correlation.
+ *  independent ("white") predictors, the selector can exceed the target FDR,
+ *  because the true signal and its collinear shadows become statistically
+ *  exchangeable. This is inherent to the method, and it also appears in the 1.x
+ *  versions of the R package. A greedy solver (TOMP) lowers the excess slightly in
+ *  such designs and does not remove it.
  *
  *  Greedy solvers and the exchangeable-tie band:
  *  ---------------------------------------------

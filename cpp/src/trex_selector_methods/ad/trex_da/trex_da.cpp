@@ -1142,9 +1142,9 @@ TRexDASelector::DASelectionResult TRexDASelector::selectVariables_BT(
     // Argmax selection (cf. R's select_var_fun_DA_BT):
     //   1. val_max = max of R over FDP-FEASIBLE cells (FDP_hat <= tFDR).
     //   2. Candidate set among cells whose R count equals val_max — either
-    //      FDP-feasible only (default, FDR-controlling) or ALL cells including
-    //      infeasible ones (RFaithful, reproduces the reference which evaluates
-    //      which(R_array == val_max) over the whole array). See bt_selection_mode.
+    //      FDP-feasible only (default, the rule of Algorithm 1) or ALL cells
+    //      including infeasible ones (RFaithful, deprecated, the 1.x versions
+    //      scan the whole R_array). See bt_selection_mode.
     //   3. Tie-break among candidates: max VV, then max RR (rho), then max TT.
 
     // Step 1: val_max over feasible cells only.
@@ -1177,8 +1177,8 @@ TRexDASelector::DASelectionResult TRexDASelector::selectVariables_BT(
     // Steps 2-3: scan the R_array for cells equal to val_max and pick the winner
     // by tie-break priority max VV -> max RR (rho) -> max TT. Candidate eligibility
     // depends on trex_da_ctrl_.bt_selection_mode: FeasibleOnly (default) restricts to
-    // FDP-feasible cells (FDR-controlling). RFaithful also admits infeasible cells,
-    // reproducing the 1.x versions of the R package (which scan the whole R_array).
+    // FDP-feasible cells (the rule of Algorithm 1). RFaithful (deprecated) also admits
+    // infeasible cells, as the 1.x versions of the R package do.
     const bool feasible_only =
         (trex_da_ctrl_.bt_selection_mode == BTSelectionMode::FeasibleOnly);
 

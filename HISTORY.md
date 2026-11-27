@@ -6,6 +6,41 @@ The feature release after C++ 1.0.3, R 2.0.3 and Python 1.0.3, not published yet
 solver family is excluded from the three packages, as their deprecation texts announced. The version
 files read C++ 1.0.3, R 2.0.3 and Python 1.0.3 until the release is prepared.
 
+### 2026-11-27
+
+#### The selection mode of BT, NN and the prior groups is deprecated
+
+- Fabian, 2026-11-27: "since we must be sure here, I want that you make a comprehensive investigation".
+  The question was whether `FeasibleOnly` and `RFaithful` of `BTSelectionMode` are two rules, which one
+  the papers state, and what the difference does to a selection.
+- The reading. Eq. (11), Algorithm 1 and Theorem 4 of the paper of the dependency-aware T-Rex selector
+  (Signal Processing 234, 2025) take the largest selection among the cells of the calibration grid whose
+  FDP estimate holds the target. That is `FeasibleOnly`. `select_var_fun_DA_BT` of the 1.x versions of the
+  R package takes the largest count over these cells and then scans the whole array for it, so a cell
+  above the target can win. That is `RFaithful`. The core function `select_var_fun` of the 1.x versions
+  does the same, and the C++ core selector has the feasible rule without an option.
+- The study. Both rules were applied to the arrays of one run, in 37,000 runs of the library (27
+  settings, 500 replicates) and in 6,400 runs of the `trex()` function of the 1.x versions (11 settings,
+  200 replicates). The selections differ in 2.6 % of the core runs, 12 % with BT, 35 % with NN and 11 %
+  with the prior groups, and the two arms agree. For the core the mean FDP and TPP of the two rules differ
+  by at most 0.003 and 0.004. With BT on the block design of the paper the whole-grid rule has the higher
+  FDR and the lower TPR by 0.02 to 0.06, and both rules stay below the target, so the conclusion of the
+  paper stands. With NN at low correlation the whole-grid rule exceeds the target (FDR 0.37 against 0.02
+  at the target 0.2, TPR 0.25 against 0.58). In no setting was it better beyond the noise.
+- The decision of Fabian. The option is deprecated, and `FeasibleOnly` becomes the only rule. `RFaithful`
+  still runs. C++ marks the enumeration, the enumerator and the field `bt_selection_mode` with
+  `@deprecated`. `TRexDASelector` raises the deprecation warning of the package in R and a `FutureWarning`
+  in Python when the mode reaches it.
+- The texts. The help of the three surfaces said that the default mode mitigates the FDR excess of BT, NN
+  and the prior groups at a very high correlation within the groups, and it placed the cost of
+  `RFaithful` at a high correlation. The study supports neither. In blocks of five variables with a
+  correlation of 0.9 and 0.95 and no independent predictors both rules exceed the target alike (BT 0.340
+  against 0.343, and 0.444 against 0.441). The paragraph now says that the selector can exceed the target
+  there, where it had named TLARS alone, and that a greedy solver lowers the excess slightly and does not
+  remove it (TOMP with BT 0.322 and 0.397, an indication from three settings).
+- Tests. R and Python pin that the default and an explicit `FeasibleOnly` stay silent, and that
+  `RFaithful` warns with the text of the package and still runs.
+
 ### 2026-11-26
 
 #### The coordinate-descent solver family is excluded from the packages

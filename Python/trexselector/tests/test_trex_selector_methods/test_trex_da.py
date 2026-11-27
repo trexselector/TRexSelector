@@ -1,6 +1,8 @@
 """
 Tests for TRexDASelector.
 """
+import warnings
+
 import numpy as np
 import pytest
 import trexselector
@@ -64,6 +66,36 @@ def test_da_control_parameter_fields():
     # bt_selection_mode
     ctrl.bt_selection_mode = trexselector.BTSelectionMode.RFaithful
     assert ctrl.bt_selection_mode == trexselector.BTSelectionMode.RFaithful
+
+
+def test_r_faithful_is_deprecated(signal_data, fast_control):
+    """The deprecated selection mode still runs, and it warns when it reaches the selector."""
+    X, y, n, p = signal_data
+
+    def build(mode=None):
+        ctrl = trexselector.TRexDAControlParameter()
+        if mode is not None:
+            ctrl.bt_selection_mode = mode
+        return trexselector.TRexDASelector(X.copy(order="F"), y.copy(), da_control=ctrl,
+                                           trex_control=fast_control, seed=7, verbose=False)
+
+    # The default, an explicit FeasibleOnly and a control that is only set stay silent
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", FutureWarning)
+        default = build().select()
+        feasible = build(trexselector.BTSelectionMode.FeasibleOnly).select()
+        trexselector.TRexDAControlParameter().bt_selection_mode = trexselector.BTSelectionMode.RFaithful
+    assert np.array_equal(default.selected_var, feasible.selected_var)
+
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
+        selector = build(trexselector.BTSelectionMode.RFaithful)
+    future = [w for w in record if issubclass(w.category, FutureWarning)]
+    assert len(future) == 1
+    assert str(future[0].message) == ("BTSelectionMode.RFaithful is deprecated. "
+                                      "Use the default BTSelectionMode.FeasibleOnly.")
+    assert future[0].filename == __file__
+    assert len(selector.select().selected_var) == p
 
 
 # ---------------------------------------------------------------------------
