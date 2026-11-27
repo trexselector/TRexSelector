@@ -44,9 +44,9 @@
 #include <Eigen/Dense>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
 
 // ml_methods includes
 #include <ml_methods/scaler_methods/z_score_scaler.hpp>

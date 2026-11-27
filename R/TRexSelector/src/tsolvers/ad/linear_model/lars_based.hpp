@@ -11,15 +11,15 @@
  */
 // ====================================================================
 
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tstepwise_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tstagewise_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stepwise.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stagewise.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_tiknet.hpp>
 
 // ====================================================================
 #endif /* End of TSOLVERS_LINEAR_MODEL_LARS_BASED_HPP */

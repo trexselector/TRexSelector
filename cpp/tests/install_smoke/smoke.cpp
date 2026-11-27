@@ -7,7 +7,7 @@
 
 #include <ml_methods/clustering/hierarchical/agglomerative/dendrogram_utils.hpp>
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
 #include <utils/checked_arith.hpp>
 #include <utils/datageneration/utils_datagen.hpp>
 

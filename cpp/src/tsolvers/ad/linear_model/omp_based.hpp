@@ -11,12 +11,12 @@
  */
 // ====================================================================
 
-#include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tgp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tacgp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tmp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_omp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_gp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_acgp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_mp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ools.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ncgmp.hpp>
 
 // ====================================================================
 #endif /* End of TSOLVERS_LINEAR_MODEL_OMP_BASED_HPP */

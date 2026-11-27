@@ -34,10 +34,10 @@
 #include <string>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tstagewise_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stagewise.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_omp.hpp>
 #include <tsolvers/ad/solver_utils/buffer_registry.hpp>
 
 // selector include (shared registry)

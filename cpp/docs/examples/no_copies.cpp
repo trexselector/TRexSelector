@@ -12,8 +12,8 @@
 #include <Eigen/Dense>
 
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
 #include <ml_methods/scaler_methods/lp_norm_scaler.hpp>
 #include <ml_methods/model_selection/ridge_cv_svd.hpp>
 

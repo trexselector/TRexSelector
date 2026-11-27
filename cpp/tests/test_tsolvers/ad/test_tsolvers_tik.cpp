@@ -30,10 +30,10 @@
 #include <Eigen/Sparse>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tiknet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_tiknet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_omp.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>

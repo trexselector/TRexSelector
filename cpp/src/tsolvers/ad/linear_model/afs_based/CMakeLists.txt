@@ -10,7 +10,7 @@
 target_sources(trex_tsolvers PRIVATE
     # AFS based solvers
     # -----------------------------------------------
-    ${CMAKE_CURRENT_LIST_DIR}/tafs_solver.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_afs.cpp
 )
 # ==============================================================================
 
@@ -24,6 +24,8 @@ target_sources(trex_tsolvers PUBLIC
     FILES
         # AFS based solvers
         # -----------------------------------------------
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_afs.hpp
+        # old include paths, forwarding headers for one release
         ${CMAKE_CURRENT_LIST_DIR}/tafs_solver.hpp
 )
 # ==============================================================================

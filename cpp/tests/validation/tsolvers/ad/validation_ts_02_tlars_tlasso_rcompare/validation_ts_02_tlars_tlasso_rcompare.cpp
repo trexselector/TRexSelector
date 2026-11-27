@@ -56,10 +56,10 @@
 #include <Eigen/Dense>
 
 #include <utils/openmp/utils_openmp.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
 
 namespace lars     = trex::tsolvers::ad::linear_model::lars_based;
 namespace ts       = trex::tsolvers::ad;

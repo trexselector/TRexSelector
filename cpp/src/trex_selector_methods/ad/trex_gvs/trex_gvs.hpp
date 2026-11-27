@@ -37,7 +37,7 @@
  *                       augmented columns are already unit-scale by the d1/d2
  *                       algebra, and this exactly reproduces the Gram-based
  *                       TENET path (verified to machine precision; see
- *                       tenet_aug_solver.hpp). GVS therefore passes the SAME
+ *                       tsolver_enet_aug.hpp). GVS therefore passes the SAME
  *                       pre-normalized D_k as for plain TENET.
  *
  *    - GVSType::IEN   Informed Elastic Net (Machkour et al., CAMSAP 2023).

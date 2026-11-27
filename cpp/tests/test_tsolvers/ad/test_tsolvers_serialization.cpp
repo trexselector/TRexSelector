@@ -20,7 +20,7 @@
 #include <string>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>

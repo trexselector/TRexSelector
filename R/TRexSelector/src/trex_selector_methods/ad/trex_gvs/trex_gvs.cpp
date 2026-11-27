@@ -51,12 +51,12 @@
 #include <trex_selector_methods/ad/trex_utils/trex_solver_dispatch.hpp>
 
 // Concrete solver types (for direct in-memory warm-start)
-#include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
 
 // OpenMP (parallel-K loop)
 #ifdef _OPENMP

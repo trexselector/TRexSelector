@@ -21,9 +21,9 @@
 #include <Eigen/Dense>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
-#include <tsolvers/ad/solver_options.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/tsolver_options.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>

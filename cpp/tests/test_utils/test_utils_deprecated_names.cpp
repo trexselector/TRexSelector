@@ -2,7 +2,8 @@
 /**
  * @file test_utils_deprecated_names.cpp
  *
- * @brief The old type names are aliases of the new ones.
+ * @brief The old type names are aliases of the new ones, and the old include paths of the T-solvers
+ *        forward to the new files.
  */
 // ========================================================================================
 
@@ -26,6 +27,31 @@
 #include <trex_selector_methods/ad/trex_spca/trex_spca.hpp>
 #include <trex_selector_methods/ad/trex_tikhonov/trex_tikhonov.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_solver_dispatch.hpp>
+#include <tsolvers/ad/linear_model/afs_based/tsolver_afs.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_tiknet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stagewise.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stepwise.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_acgp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_gp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_mp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ncgmp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_omp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ools.hpp>
+#include <tsolvers/ad/tsolver_options.hpp>
+#include <tsolvers/ad/tsolver_base.hpp>
+#include <utils/datageneration/utils_dummygen.hpp>
+
+// The old include paths of the T-solvers forward to the new files. Each one prints a note on purpose.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-W#pragma-messages"
+#endif
 #include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
 #include <tsolvers/ad/linear_model/lars_based/tenet_solver.hpp>
@@ -43,8 +69,9 @@
 #include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
 #include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
 #include <tsolvers/ad/solver_options.hpp>
-#include <tsolvers/ad/tsolver_base.hpp>
-#include <utils/datageneration/utils_dummygen.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 // ========================================================================================
 

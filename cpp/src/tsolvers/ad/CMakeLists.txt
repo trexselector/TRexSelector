@@ -27,6 +27,8 @@ target_sources(trex_tsolvers PUBLIC
     BASE_DIRS ${PROJECT_SOURCE_DIR}/src          # project root /src
     FILES
         ${CMAKE_CURRENT_LIST_DIR}/tsolver_base.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_options.hpp
+        # old include paths, forwarding headers for one release
         ${CMAKE_CURRENT_LIST_DIR}/solver_options.hpp
 )
 # ==============================================================================

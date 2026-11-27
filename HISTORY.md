@@ -9,6 +9,21 @@ gives the three packages one set of names, C++ first. The version files read C++
 
 ### 2026-11-27
 
+#### The files of the T-solvers follow their classes
+
+- The second step of the naming pass in C++. The 16 solver headers, their 16 source files and the header of
+  the solver options carried the old class names in their file names. Each takes the name of its class in
+  snake_case, which is also the name of the R function: `tlars_solver.hpp` is `tsolver_lars.hpp`,
+  `tools_solver.hpp` is `tsolver_ools.hpp`, and `solver_options.hpp` is `tsolver_options.hpp`. Fabian
+  decided it on 2026-11-27 after an example of the include lines.
+- Every old include path stays for one release as a forwarding header. It includes the new file and prints
+  a compile-time note that names it. The library, the tests and the bindings include the new paths alone,
+  and a test includes the 17 old paths.
+- The family headers `lars_based.hpp`, `omp_based.hpp` and `afs_based.hpp` and every other header keep
+  their names.
+- The object lists of the R package follow through the vendoring script.
+- Tests. C++ 700, R 2,111 and Python 726.
+
 #### The naming pass starts: the C++ types take their final names
 
 - The names of the three packages are settled for the feature release. Fabian decided them on 2026-11-27,

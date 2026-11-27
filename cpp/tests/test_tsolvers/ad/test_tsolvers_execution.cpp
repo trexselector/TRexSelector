@@ -26,19 +26,19 @@
 #include <Eigen/Dense>
 
 // tsolvers includes
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlasso_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tstagewise_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tenet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_solver.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tienet_aug_solver.hpp>
-#include <tsolvers/ad/linear_model/afs_based/tafs_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tacgp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tncgmp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tmp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tomp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tgp_solver.hpp>
-#include <tsolvers/ad/linear_model/omp_based/tools_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lasso.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_stagewise.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_enet_aug.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_ienet_aug.hpp>
+#include <tsolvers/ad/linear_model/afs_based/tsolver_afs.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_acgp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ncgmp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_mp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_omp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_gp.hpp>
+#include <tsolvers/ad/linear_model/omp_based/tsolver_ools.hpp>
 
 // utils includes
 #include <utils/datageneration/utils_datagen.hpp>

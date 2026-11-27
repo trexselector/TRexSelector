@@ -16,7 +16,7 @@
 
 #include <trex_selector_methods/ad/trex_core/trex.hpp>
 #include <trex_selector_methods/ad/trex_utils/trex_data_normalizer.hpp>
-#include <tsolvers/ad/linear_model/lars_based/tlars_solver.hpp>
+#include <tsolvers/ad/linear_model/lars_based/tsolver_lars.hpp>
 #include <ml_methods/scaler_methods/z_score_scaler.hpp>
 #include <ml_methods/model_selection/enet_cv_ccd.hpp>
 #include <utils/memmap/memory_mapped_matrix.hpp>

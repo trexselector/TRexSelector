@@ -42,7 +42,7 @@
 // tsolvers includes
 #include <tsolvers/ad/solver_utils/solver_preprocessing.hpp>
 #include <tsolvers/ad/solver_utils/buffer_registry.hpp>
-#include <tsolvers/ad/solver_options.hpp>
+#include <tsolvers/ad/tsolver_options.hpp>
 
 // ===================================================================================
 

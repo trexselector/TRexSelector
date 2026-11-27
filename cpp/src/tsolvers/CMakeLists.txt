@@ -48,7 +48,7 @@
 # |-- ad.hpp  vd.hpp  sd.hpp    one umbrella per family
 # |
 # |-- ad/                       augmented (appended) dummies: solvers run on [X, D]
-#     |-- tsolver_base.{hpp,cpp}, solver_options.hpp, solver_utils/
+#     |-- tsolver_base.{hpp,cpp}, tsolver_options.hpp, solver_utils/
 #     |-- linear_model/{lars_based, omp_based, afs_based}/
 # |
 # |-- vd/                       virtual dummies, realized on demand (VD_Base root)

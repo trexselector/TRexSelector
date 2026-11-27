@@ -7,12 +7,12 @@
 # 1. Append Source Files (.cpp - private)
 # ==============================================================================
 target_sources(trex_tsolvers PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/tomp_solver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tgp_solver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tacgp_solver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tmp_solver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tncgmp_solver.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/tools_solver.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_omp.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_gp.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_acgp.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_mp.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_ncgmp.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tsolver_ools.cpp
 )
 # ==============================================================================
 
@@ -27,11 +27,18 @@ target_sources(trex_tsolvers PUBLIC
     FILES
         # OMP based solvers
         # -----------------------------------------------
-        ${CMAKE_CURRENT_LIST_DIR}/tomp_solver.hpp
-        ${CMAKE_CURRENT_LIST_DIR}/tgp_solver.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_omp.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_gp.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_acgp.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_mp.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_ncgmp.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tsolver_ools.hpp
+        # old include paths, forwarding headers for one release
         ${CMAKE_CURRENT_LIST_DIR}/tacgp_solver.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tgp_solver.hpp
         ${CMAKE_CURRENT_LIST_DIR}/tmp_solver.hpp
         ${CMAKE_CURRENT_LIST_DIR}/tncgmp_solver.hpp
+        ${CMAKE_CURRENT_LIST_DIR}/tomp_solver.hpp
         ${CMAKE_CURRENT_LIST_DIR}/tools_solver.hpp
 )
 # ==============================================================================
